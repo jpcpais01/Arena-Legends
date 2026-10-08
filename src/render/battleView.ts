@@ -99,6 +99,13 @@ export class BattleView implements View {
     this.layout();
   }
 
+  /** Swaps the arena under a running battle (the arena picker). */
+  setTheme(theme: Theme): void {
+    if (theme === this.theme) return;
+    this.theme = theme;
+    if (this.battle) this.layout();
+  }
+
   /** Pre-draws sprites within a time budget; true when everything is ready. */
   warm(budgetMs: number): boolean {
     let done = true;

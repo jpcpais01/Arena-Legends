@@ -12,6 +12,19 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.5.0',
+    date: '2026-10-08',
+    title: 'Skygrove Isle gets a glow-up, and you pick the arena',
+    notes: [
+      'Skygrove Isle is now the default arena: it is what you see when you open the game, and where fights take place.',
+      'New arena picker in Settings: choose any arena, or Random for the old rotation. The view behind the menu switches right away.',
+      'Skygrove Isle is rounder and wilder: its edges wobble and curve away, the front lip is ragged with grass hanging over it, and on tall screens you can see its rocky underside end above the clouds.',
+      'Sunbeams slowly shift across the grove, pollen twinkles, butterflies flutter by, birds glide in the distance, and a faint rainbow arcs over the far isles.',
+      'Small rocks float and bob around the island. The spectators have left; the tall grass and flowers sway in the wind instead, harder when the fight heats up.',
+      'Stone lanterns with glowing crystals now flank the old arch, and the meadow has clover patches and more mushrooms.',
+    ],
+  },
+  {
     version: '0.4.0',
     date: '2026-10-08',
     title: 'Item skins: rare, mythic and legendary',
