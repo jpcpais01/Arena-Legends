@@ -14,14 +14,28 @@ export class Xf {
     readonly ang: number,
     readonly sx = 1,
     readonly sy = 1,
-  ) {}
+  ) {
+    this.c = Math.cos(ang);
+    this.s = Math.sin(ang);
+  }
+
+  private readonly c: number;
+  private readonly s: number;
+
+  /** Raster point back to local coordinates (textures). */
+  ix(x: number, y: number): number {
+    return ((x - this.ox) * this.c + (this.oy - y) * this.s) / (this.sx || 1);
+  }
+  iy(x: number, y: number): number {
+    return (-(x - this.ox) * this.s + (this.oy - y) * this.c) / (this.sy || 1);
+  }
 
   /** Local point to raster coordinates. */
   x(lx: number, ly: number): number {
-    return this.ox + (lx * this.sx * Math.cos(this.ang) - ly * this.sy * Math.sin(this.ang));
+    return this.ox + (lx * this.sx * this.c - ly * this.sy * this.s);
   }
   y(lx: number, ly: number): number {
-    return this.oy - (lx * this.sx * Math.sin(this.ang) + ly * this.sy * Math.cos(this.ang));
+    return this.oy - (lx * this.sx * this.s + ly * this.sy * this.c);
   }
   p(lx: number, ly: number): [number, number] {
     return [this.x(lx, ly), this.y(lx, ly)];

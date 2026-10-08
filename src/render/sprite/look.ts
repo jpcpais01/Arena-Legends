@@ -1,11 +1,14 @@
 import {
   ACCENT_COLORS, DEFAULT_LOOK, EYE_COLORS, HAIR_COLORS, OUTFIT_COLORS, SPECIES, type Appearance,
 } from '../../character/appearance';
+import { skinOn, type SkinMap } from '../../character/skins';
 import type { CharacterBuild } from '../../sim/loadout';
-import type { ChestId, FormId, GearSet, HeadId, BootsId, MainWeaponId, SecondaryId } from '../../sim/types';
+import type { ChestId, FormId, GearId, GearSet, HeadId, BootsId, MainWeaponId, SecondaryId } from '../../sim/types';
 import { mix, toHsl, fromHsl } from '../pixel/color';
 import { material, type Material } from '../pixel/raster';
 import { bodyFor, type BodySpec } from './body';
+import { SKIN_ART, type SkinArt } from './skins';
+import type { HeadDraw } from './skins/heads';
 import { MAIN_FAMILY, SEC_FAMILY, weaponArt, type MainFamily, type SecFamily, type WeaponArt } from './weapons';
 
 /**
@@ -29,6 +32,13 @@ export interface CharacterArt {
   chest: ChestLook;
   headgear: HeadId | null;
   boots: BootsLook;
+  /** Item skins in use, and their art (null when the item is plain). */
+  skins: SkinMap;
+  mainSkin: SkinArt | null;
+  secSkin: SkinArt | null;
+  headSkin: SkinArt | null;
+  /** Reshaped headgear from a skin, drawn instead of the stock piece. */
+  headDraw: HeadDraw | null;
 }
 
 export interface ChestLook {
@@ -179,12 +189,33 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     band: material({ base: 0xf0c040 }),
     bandTail: material({ base: 0xd8a030 }),
   };
+  const skins = build.skins ?? {};
+  const skinArt = (id: GearId | undefined): [string | null, SkinArt | null] => {
+    const s = id ? skinOn(skins, id) : null;
+    return s ? [s.id, SKIN_ART[s.id] ?? null] : [null, null];
+  };
   const mainId = build.gear.main;
   const secId = build.gear.secondary ?? null;
-  const main = weaponArt(mainId)!;
-  const sec = secId ? weaponArt(secId) : null;
+  const [mainSkinId, mainSkin] = skinArt(mainId);
+  const [secSkinId, secSkin] = skinArt(secId ?? undefined);
+  const main = weaponArt(mainId, mainSkinId)!;
+  const sec = secId ? weaponArt(secId, secSkinId) : null;
   for (const [k, v] of Object.entries(main.mats)) mats['w.' + k] = v;
   if (sec) for (const [k, v] of Object.entries(sec.mats)) mats['s.' + k] = v;
+  // Armour skins recolour the body's armour materials; reshaped headgear brings its own.
+  let headDraw: HeadDraw | null = null;
+  let headSkin: SkinArt | null = null;
+  for (const slot of ['head', 'chest', 'boots'] as const) {
+    const [, art] = skinArt(build.gear[slot]);
+    if (!art) continue;
+    if (slot === 'head') headSkin = art;
+    for (const [k, spec] of Object.entries(art.mats ?? {})) mats[k] = material(spec);
+    if (art.head) {
+      const hs = art.head();
+      Object.assign(mats, hs.mats);
+      headDraw = hs.draw;
+    }
+  }
   return {
     build, look, form: build.form,
     body: bodyFor(build.form, look.species),
@@ -196,5 +227,6 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     chest: tunicFor(build.gear.chest),
     headgear: build.gear.head ?? null,
     boots: bootsFor(build.gear.boots),
+    skins, mainSkin, secSkin, headSkin, headDraw,
   };
 }

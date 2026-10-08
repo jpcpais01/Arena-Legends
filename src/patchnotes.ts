@@ -12,7 +12,7 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.4.0',
+    version: '0.5.0',
     date: '2026-10-08',
     title: 'Online duels against a friend',
     notes: [
@@ -21,6 +21,20 @@ export const PATCH_NOTES: PatchNote[] = [
       'Before every round you both pick a build: body form and all six gear slots, then Ready. Your saved fighter is not changed by online picks.',
       'Both players watch the same fight. Speed it up if you like; pausing is off online.',
       'If someone drops, the match waits for them and the pick clock stops. Reloading the page puts you back into your match.',
+      'Your item skins come with you online, and you can change them along with your build between rounds.',
+    ],
+  },
+  {
+    version: '0.4.0',
+    date: '2026-10-08',
+    title: 'Item skins: rare, mythic and legendary',
+    notes: [
+      'Gear can now wear skins. Open Gear, pick a slot, and choose a look for the item from the new Skins row. Skins are looks only: they never change a fight.',
+      'Rare skins give an item new colours and a new finish, like patina, folded steel, wood grain or scales.',
+      'Mythic skins also reshape the item: a serrated bone blade, a twin-crescent axe, a dragon glaive, a recurve bow, a horned warhelm and more.',
+      'Legendary skins go further: surfaces that move (light running up Dawnbreaker, lightning crawling through Thunderfall, a galaxy turning in the Staff of the Cosmos), brighter swing trails, sparkles from the weapon and bursts of colour on every hit.',
+      'Every main weapon type has at least one skin of each rarity: 43 skins in all, across weapons, shields, helmets, crowns, armour and boots.',
+      'Your skin choice is kept per item, so swapping gear and back keeps it. Rivals now show up wearing skins too.',
     ],
   },
   {

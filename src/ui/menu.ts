@@ -1,5 +1,6 @@
 import { DEFAULT_LOOK, SPECIES } from '../character/appearance';
 import type { PlayerCharacter } from '../character/profile';
+import { skinOn } from '../character/skins';
 import { iconCanvas } from '../render/icons';
 import { FORMS } from '../sim/forms';
 import { gearIds, type CharacterBuild } from '../sim/loadout';
@@ -76,9 +77,10 @@ export class Menu {
 /** A fighter's plate: preview, name, species and form, gear icons and buttons. */
 export function fighterCard(c: CharacterBuild, p: Preview, right: boolean, tag: string, btns: HTMLElement[]): HTMLElement {
   const gear = gearIds(c.gear).map((id) => {
-    const ic = iconCanvas(id);
+    const skin = skinOn(c.skins, id);
+    const ic = iconCanvas(id, undefined, skin?.id);
     ic.classList.add('icon');
-    ic.title = gearOf(id).name;
+    ic.title = skin ? `${gearOf(id).name} · ${skin.name}` : gearOf(id).name;
     return ic;
   });
   const species = SPECIES[(c.look ?? DEFAULT_LOOK).species].name;
