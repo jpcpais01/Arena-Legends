@@ -12,6 +12,20 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.9.0',
+    date: '2026-10-08',
+    title: 'A fresh look for every menu, and a new character creator',
+    notes: [
+      'Brand new character creator in three steps: pick your species, then your body form, then your name, colours and hair all on one screen.',
+      'Every species and body form shows your own fighter on its card, and body forms come with stat bars so you can compare them at a glance.',
+      'Your fighter stands on a stage while you create them and plays a move whenever you change something. Tap the Gear button to see them with or without their equipment.',
+      'New title screen: your fighter and the rival sit on cards with all six gear slots, and Fight and Online duel are always one tap away. On phones the cards move out of the way of the duel behind them.',
+      'The gear screen is now full screen with a big view of your fighter and their stats next to the item list.',
+      'Settings use simple on/off switches, and the results screen shows each stat as a tug-of-war bar between the two fighters.',
+      'Every screen was resized for phones in landscape and portrait and for PC screens, so nothing is too big, too small or cut off.',
+    ],
+  },
+  {
     version: '0.8.0',
     date: '2026-10-08',
     title: '30 new item skins',

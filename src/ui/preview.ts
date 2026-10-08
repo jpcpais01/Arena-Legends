@@ -4,6 +4,35 @@ import type { AnimOut } from '../render/sprite/animator';
 import { SpriteBank, type Sprite } from '../render/sprite/bank';
 import { makeArt } from '../render/sprite/look';
 import { css } from '../render/pixel/color';
+import { fitPixels } from './pixelfit';
+
+export interface PreviewOptions {
+  flip?: boolean;
+  /** Plays a random move every few seconds. */
+  autoplay?: boolean;
+  /** Draws one idle frame and stops (portraits on cards). */
+  still?: boolean;
+  /** Feet height above the canvas bottom, in art pixels; negative crops to a bust. */
+  ground?: number;
+  /** A small stone pedestal under the feet. */
+  pedestal?: boolean;
+  /** Box the canvas is fitted into at a whole device-pixel scale. */
+  fit?: HTMLElement;
+}
+
+// Still portraits are rasterized a couple per frame so opening a screen full of them doesn't hitch.
+const stills: Preview[] = [];
+let stillRaf = 0;
+function queueStill(p: Preview): void {
+  stills.push(p);
+  if (stillRaf) return;
+  const run = () => {
+    const t0 = performance.now();
+    while (stills.length && performance.now() - t0 < 8) stills.shift()!.drawStill();
+    stillRaf = stills.length ? requestAnimationFrame(run) : 0;
+  };
+  stillRaf = requestAnimationFrame(run);
+}
 
 const SHOWCASE_SKIP = new Set(['idle', 'run', 'back', 'hurt', 'stun', 'air', 'ko', 'roll', 'leap', 'evade', 'blink', 'sec.riposte']);
 
@@ -28,14 +57,24 @@ export class Preview {
   private sparks: { x: number; y: number; t: number; a: number; b: number }[] = [];
   private sparkT = 0;
 
-  /** `w`, `h` in art pixels; `zoom` art→device pixels is picked to fit the CSS box. */
-  constructor(build: CharacterBuild, readonly w = 100, readonly h = 90, opts: { flip?: boolean; autoplay?: boolean } = {}) {
+  private still: boolean;
+  private ground: number;
+  private pedestal: boolean;
+  private unfit: (() => void) | null = null;
+
+  /** `w`, `h` in art pixels; the CSS size comes from the stylesheet or the `fit` box. */
+  constructor(build: CharacterBuild, readonly w = 100, readonly h = 90, opts: PreviewOptions = {}) {
     this.el = document.createElement('canvas');
     this.el.className = 'preview';
     this.el.width = w; this.el.height = h;
     this.g = this.el.getContext('2d')!;
     this.flip = !!opts.flip;
+    this.still = !!opts.still;
+    this.ground = opts.ground ?? (opts.pedestal ? 12 : 8);
+    this.pedestal = !!opts.pedestal;
+    if (opts.fit) this.unfit = fitPixels(this.el, opts.fit);
     this.set(build);
+    if (this.still) return;
     this.el.addEventListener('click', () => this.showcase());
     if (opts.autoplay) this.next = 2.5;
     const loop = (now: number) => {
@@ -56,6 +95,22 @@ export class Preview {
     this.playing = null;
     this.t = 0;
     this.sparks.length = 0;
+    if (this.still) queueStill(this);
+  }
+
+  /** Fits the canvas into `box` at a whole device-pixel scale (see `fitPixels`). */
+  fitTo(box: HTMLElement): void {
+    this.unfit?.();
+    this.unfit = fitPixels(this.el, box);
+  }
+
+  /** Still portraits: the first idle frame. */
+  drawStill(): void {
+    if (!this.alive) return;
+    this.out.clip = 'idle';
+    this.out.frame = 0;
+    this.out.key = 'idle.0.';
+    this.draw(this.bank.get(this.out));
   }
 
   /** Plays a move (a given clip, or a random one). */
@@ -67,6 +122,7 @@ export class Preview {
   dispose(): void {
     this.alive = false;
     cancelAnimationFrame(this.raf);
+    this.unfit?.();
   }
 
   private tick(dt: number): void {
@@ -86,18 +142,24 @@ export class Preview {
     }
     o.key = `${o.clip}.${o.frame}.`;
     const s = this.bank.get(o);
+    const [gx, gy] = this.draw(s);
+    this.drawSparks(dt, s, gx, gy);
+  }
+
+  private draw(s: Sprite): [number, number] {
     const g = this.g;
     g.clearRect(0, 0, this.w, this.h);
+    const gx = Math.round(this.w / 2), gy = this.h - this.ground;
+    if (this.pedestal) drawPedestal(g, gx, gy);
     // Ground shadow.
     g.fillStyle = 'rgba(0,0,0,0.3)';
-    const gx = Math.round(this.w / 2), gy = this.h - 8;
     g.fillRect(gx - 11, gy - 1, 22, 3);
     if (this.flip) {
       g.save(); g.translate(gx + 1, 0); g.scale(-1, 1);
       g.drawImage(s.img, -s.ox, gy - s.oy);
       g.restore();
     } else g.drawImage(s.img, gx - s.ox, gy - s.oy);
-    this.drawSparks(dt, s, gx, gy);
+    return [gx, gy];
   }
 
   /** Legendary skins twinkle where they're worn (weapon tips, head, body, feet), like in battle. */
@@ -131,4 +193,25 @@ export class Preview {
     }
   }
 
+}
+
+/** A round stone dais, its top face centred on (x, y): a lit top with a gold inlay over a darker side. */
+function drawPedestal(g: CanvasRenderingContext2D, x: number, y: number): void {
+  const rx = 30, ry = 6, depth = 6;
+  const half = (i: number) => Math.round(rx * Math.sqrt(Math.max(0, 1 - (i / (ry + 0.5)) ** 2)));
+  // Side: the ellipse swept down, darker towards the bottom.
+  for (let d = depth; d >= 1; d--) {
+    g.fillStyle = d > depth - 2 ? '#1c1530' : '#2c2346';
+    for (let i = 0; i <= ry; i++) g.fillRect(x - half(i), y + i + d, half(i) * 2, 1);
+  }
+  // Top face with a lit back rim.
+  for (let i = -ry; i <= ry; i++) {
+    g.fillStyle = i <= -ry + 1 ? '#8c7cb4' : i < 0 ? '#5f5186' : '#524577';
+    g.fillRect(x - half(i), y + i, half(i) * 2, 1);
+  }
+  g.fillStyle = 'rgba(245,191,69,0.6)';
+  for (let a = 0; a < 72; a++) {
+    const t = (a / 72) * Math.PI * 2;
+    g.fillRect(Math.round(x + Math.cos(t) * (rx - 6)), Math.round(y + Math.sin(t) * (ry - 2)), 1, 1);
+  }
 }

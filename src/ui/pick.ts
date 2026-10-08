@@ -3,7 +3,7 @@ import { WINS_NEEDED, type Side } from '../net/protocol';
 import type { CharacterBuild } from '../sim/loadout';
 import { h } from './dom';
 import { icon } from './icons';
-import { fighterCard } from './menu';
+import { CARD_ART, fighterCard } from './menu';
 import { scoreLine } from './online';
 import { Preview } from './preview';
 
@@ -32,7 +32,7 @@ export interface PickCallbacks {
 export class PickScreen {
   readonly el: HTMLElement;
   private bar = h('div.match-bar.plate');
-  private matchup = h('div.matchup');
+  private dock = h('div.menu-dock');
   private actions = h('div.menu-actions');
   private clock = h('b.pick-clock');
   private previews: [Preview | null, Preview | null] = [null, null];
@@ -45,8 +45,7 @@ export class PickScreen {
     this.el = h('div.menu.pick', null,
       h('div.menu-top', null, this.bar,
         h('div.menu-tools', null, h('button.btn', { title: 'Leave match', onclick: () => { sfx.play('ui'); cb.onLeave(); } }, icon('exit'), 'Leave'))),
-      h('div'),
-      h('div.menu-main', null, this.matchup, this.actions));
+      this.dock);
     this.el.hidden = true;
   }
 
@@ -60,27 +59,27 @@ export class PickScreen {
     for (const s of [0, 1] as const) {
       if (buildKeys[s] === this.keys[s] && this.previews[s]) continue;
       this.previews[s]?.dispose();
-      this.previews[s] = new Preview(info.builds[s], 100, 90, { autoplay: true, flip: s === 1 });
+      this.previews[s] = new Preview(info.builds[s], ...CARD_ART, { autoplay: true, flip: s === 1, ground: 3 });
     }
     this.keys = buildKeys;
     const you = info.you, them = (1 - you) as Side;
     const mine = info.ready[you];
     const cards = ([0, 1] as const).map((s) => {
       const own = s === you;
-      const tag = own ? (mine ? 'Locked in' : 'You') : info.ready[s] ? 'Ready' : 'Picking';
-      const btns = own && !mine ? [h('button.btn', { onclick: () => this.cb.onGear() }, icon('bag'), 'Gear')] : [];
-      return fighterCard(info.builds[s], this.previews[s]!, s === 1, tag, btns);
+      const state = (own ? mine : info.ready[s]) ? 'Ready' : 'Picking';
+      const btns = own && !mine ? [h('button.btn.sm', { onclick: () => this.cb.onGear() }, icon('bag'), 'Build')] : [];
+      return fighterCard(info.builds[s], this.previews[s]!, s, own ? 'You' : 'Rival', state, btns);
     });
-    this.matchup.replaceChildren(cards[0], h('div.vs', null, 'VS'), cards[1]);
+    this.dock.replaceChildren(cards[0], this.actions, cards[1]);
     this.bar.replaceChildren(
       h('div.match-title', null, h('b', null, `Round ${info.round}`), h('small.muted', null, `First to ${WINS_NEEDED} wins`)),
       scoreLine(info.score),
       this.clock);
     this.actions.replaceChildren(mine
-      ? h('div.pick-wait', null,
-        h('span.muted', null, info.ready[them] ? 'Starting' : `Waiting for ${info.builds[them].name}`),
-        h('button.btn', { onclick: () => { sfx.play('ui'); this.cb.onUnready(); } }, 'Change build'))
-      : h('button.btn.primary.big', { onclick: () => { sfx.play('ui'); this.cb.onReady(); } }, icon('lock'), 'Ready'));
+      ? h('div.pick-wait.plate', null,
+        h('div.lobby-status', null, h('span.spinner'), info.ready[them] ? 'Starting' : `Waiting for ${info.builds[them].name}`),
+        h('button.btn.sm', { onclick: () => { sfx.play('ui'); this.cb.onUnready(); } }, 'Change build'))
+      : h('button.btn.primary.big.fight', { onclick: () => { sfx.play('ui'); this.cb.onReady(); } }, icon('lock'), 'Ready'));
     this.lastSec = -1;
     this.tick();
   }

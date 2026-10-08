@@ -3,8 +3,8 @@ import type { PlayerCharacter } from '../character/profile';
 import { skinOn } from '../character/skins';
 import { iconCanvas } from '../render/icons';
 import { FORMS } from '../sim/forms';
-import { gearIds, type CharacterBuild } from '../sim/loadout';
-import { gearOf } from '../sim/gear';
+import { GEAR_SLOTS, gearOf, SLOT_NAMES } from '../sim/gear';
+import type { CharacterBuild } from '../sim/loadout';
 import { h } from './dom';
 import { icon } from './icons';
 import { Preview } from './preview';
@@ -21,49 +21,52 @@ export interface MenuCallbacks {
 
 export interface Record { w: number; l: number }
 
+/** Art-pixel box of the little fighters on the cards. */
+export const CARD_ART: [number, number] = [64, 64];
+
 /**
- * Title screen over the background duel: the logo, your fighter against the
- * current rival, and the big Fight button.
+ * Title screen over the background duel: the logo and tools on top, and a dock
+ * along the bottom with your fighter, Fight and Online, and the rival.
  */
 export class Menu {
   readonly el: HTMLElement;
   private previews: Preview[] = [];
   private soundBtn: HTMLButtonElement;
-  private matchup = h('div.matchup');
+  private dock = h('div.menu-dock');
+  private actions: HTMLElement;
 
   constructor(private readonly cb: MenuCallbacks) {
     this.soundBtn = h<HTMLButtonElement>('button.btn.icon', { title: 'Sound', 'aria-label': 'Sound', onclick: () => cb.onSound() });
+    this.actions = h('div.menu-actions', null,
+      h('button.btn.primary.big.fight', { onclick: () => cb.onFight() }, icon('swords'), 'Fight'),
+      h('button.btn', { onclick: () => cb.onOnline() }, icon('globe'), 'Online duel'));
     this.el = h('div.menu', null,
       h('div.menu-top', null,
-        h('div.logo', null, 'ARENA ', h('em', null, 'LEGENDS'), h('small', null, 'AUTO DUEL ARENA')),
+        h('div.logo', null, 'ARENA ', h('em', null, 'LEGENDS'), h('small', null, '1V1 AUTO BATTLER')),
         h('div.menu-tools', null, this.soundBtn,
           h('button.btn.icon', { title: 'Settings', 'aria-label': 'Settings', onclick: () => cb.onSettings() }, icon('settings')))),
-      h('div'),
-      h('div.menu-main', null,
-        this.matchup,
-        h('div.menu-actions', null,
-          h('button.btn.primary.big', { onclick: () => cb.onFight() }, icon('swords'), 'Fight'),
-          h('button.btn.big', { onclick: () => cb.onOnline() }, icon('globe'), 'Online'))),
+      this.dock,
     );
   }
 
   setSound(on: boolean): void {
     this.soundBtn.replaceChildren(icon(on ? 'soundOn' : 'soundOff'));
+    this.soundBtn.title = on ? 'Sound on' : 'Sound off';
   }
 
   set(player: PlayerCharacter, rival: PlayerCharacter, rec: Record): void {
-    for (const p of this.previews) p.dispose();
-    const a = new Preview(player, 100, 90, { autoplay: true });
-    const b = new Preview(rival, 100, 90, { autoplay: true, flip: true });
+    this.dispose();
+    const a = new Preview(player, ...CARD_ART, { autoplay: true, ground: 3 });
+    const b = new Preview(rival, ...CARD_ART, { autoplay: true, flip: true, ground: 3 });
     this.previews = [a, b];
-    this.matchup.replaceChildren(
-      fighterCard(player, a, false, `${rec.w}W ${rec.l}L`, [
-        h('button.btn', { onclick: () => this.cb.onGear() }, icon('bag'), 'Gear'),
-        h('button.btn', { onclick: () => this.cb.onEditLook() }, icon('edit'), 'Edit'),
+    this.dock.replaceChildren(
+      fighterCard(player, a, 0, 'You', `${rec.w}W ${rec.l}L`, [
+        h('button.btn.sm', { onclick: () => this.cb.onGear() }, icon('bag'), 'Gear'),
+        h('button.btn.sm', { onclick: () => this.cb.onEditLook() }, icon('edit'), 'Edit'),
       ]),
-      h('div.vs', null, 'VS'),
-      fighterCard(rival, b, true, 'Rival', [
-        h('button.btn', { onclick: () => this.cb.onNewRival() }, icon('dice'), 'New rival'),
+      this.actions,
+      fighterCard(rival, b, 1, 'Rival', '', [
+        h('button.btn.sm', { onclick: () => this.cb.onNewRival() }, icon('dice'), 'New rival'),
       ]),
     );
   }
@@ -74,22 +77,31 @@ export class Menu {
   }
 }
 
-/** A fighter's plate: preview, name, species and form, gear icons and buttons. */
-export function fighterCard(c: CharacterBuild, p: Preview, right: boolean, tag: string, btns: HTMLElement[]): HTMLElement {
-  const gear = gearIds(c.gear).map((id) => {
+/**
+ * A fighter's card: the fighter on a little stage, a corner tag, name,
+ * species and form, the six gear slots and the card's buttons.
+ * Side 0 is the blue corner (left), side 1 the red one (right, mirrored).
+ */
+export function fighterCard(c: CharacterBuild, p: Preview, side: 0 | 1, tag: string, extra: string, btns: HTMLElement[]): HTMLElement {
+  const gear = GEAR_SLOTS.map((slot) => {
+    const id = c.gear[slot];
+    if (!id) return h('i', { title: `${SLOT_NAMES[slot]}: empty` });
     const skin = skinOn(c.skins, id);
     const ic = iconCanvas(id, undefined, skin?.id);
     ic.classList.add('icon');
     ic.title = skin ? `${gearOf(id).name} · ${skin.name}` : gearOf(id).name;
     return ic;
   });
-  const species = SPECIES[(c.look ?? DEFAULT_LOOK).species].name;
-  return h(`div.card.plate${right ? '.right' : ''}`, null,
-    h('div.card-art', null, p.el),
-    h('div', { style: { minWidth: '0' } },
-      h('div.card-name', null, c.name),
-      h('div.card-sub', null, `${species} · ${FORMS[c.form].name}${tag ? ` · ${tag}` : ''}`),
-      h('div.card-gear', null, ...gear),
-      h('div.card-btns', null, ...btns)),
+  const look = c.look ?? DEFAULT_LOOK;
+  const art = h('div.fcard-art', null, p.el);
+  p.fitTo(art);
+  return h(`div.fcard${side ? '.rival' : '.you'}`, null,
+    art,
+    h('div.fcard-info', null,
+      h('div.fcard-tag', null, h('span', null, tag), extra ? h('span.rec', null, extra) : null),
+      h('div.fcard-name', null, c.name),
+      h('div.fcard-sub', null, `${SPECIES[look.species].name} · ${FORMS[c.form].name}`),
+      h('div.fcard-gear', null, ...gear)),
+    btns.length ? h('div.fcard-btns', null, ...btns) : null,
   );
 }

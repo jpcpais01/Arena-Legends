@@ -32,12 +32,14 @@ function emptyIcon(): HTMLCanvasElement {
 export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { forms?: boolean; title?: string } = {}): { el: HTMLElement; dispose(): void } {
   let c = start;
   let slot: GearSlot = 'main';
-  const preview = new Preview(c, 100, 90);
-  const stats = h('div.statline');
+  const stageBox = h('div.stage-box');
+  const preview = new Preview(c, 100, 90, { pedestal: true, fit: stageBox });
+  stageBox.append(preview.el, h('span.stage-hint', null, 'Tap for a move'));
+  const stats = h('div.stats-list');
   const slots = h('div.slots');
   const list = h('div.items');
-  const desc = h('p.muted', { style: { margin: '0 0 10px', fontSize: '13px' } });
-  const forms = h('div.field');
+  const desc = h('p.slot-desc');
+  const forms = h('div.field.forms-row');
 
   const skins = h('div.skins');
   const skinOf = (id: GearId) => skinOn(c.skins, id);
@@ -51,9 +53,10 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     return h(`button.item${on ? '.on' : ''}`, { onclick: () => equip(g ? g.id : null) },
       ic,
       h('div', null,
-        h('b', null, g ? g.name : 'Nothing'),
-        g ? h(`span.rar.r-${g.rarity}`, null, g.rarity) : null,
-        nSkins ? h('span.skin-count', null, `${nSkins} skin${nSkins > 1 ? 's' : ''}`) : null,
+        h('div.item-top', null,
+          h('b', null, g ? g.name : 'Nothing'),
+          g ? h(`span.rar.r-${g.rarity}`, null, g.rarity) : null,
+          nSkins ? h('span.skin-count', null, `${nSkins} skin${nSkins > 1 ? 's' : ''}`) : null),
         h('p', null, g ? g.desc : 'Leave this slot empty.'),
         ...abil.map((a) => h('div.abil', null, h('i', null, a.name), a.desc ? ` · ${a.desc}` : '')),
         mods ? h('div.stats', null, mods) : null,
@@ -100,14 +103,14 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
       }, ic, h('b', null, sk ? sk.name : 'Default'), h('small', null, sk ? sk.rarity : 'Plain'));
     };
     skins.replaceChildren(
-      h('div.skins-head', null, h('span', null, `Skins · ${gearOf(id).name}`), h('i', null, cur ? RARITY_INFO[cur.rarity] : 'Looks only, never changes a fight.')),
+      h('div.skins-head', null, h('span.label', null, icon('star'), `Skins · ${gearOf(id).name}`), h('i', null, cur ? RARITY_INFO[cur.rarity] : 'Looks only, never changes a fight.')),
       h('div.skin-row', null, chip(null), ...list.map(chip)),
     );
   }
 
   function render(): void {
     if (opts.forms) {
-      forms.replaceChildren(h('div.label', null, 'Body form'),
+      forms.replaceChildren(h('div.label', null, icon('body'), 'Body form'),
         h('div.opts', null, ...FORM_IDS.map((id) => h(`button.opt${id === c.form ? '.on' : ''}`, {
           title: FORMS[id].blurb,
           onclick: () => {
@@ -124,7 +127,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
       const id = c.gear[s];
       const ic = id ? iconCanvas(id, undefined, skinOf(id)?.id) : emptyIcon();
       ic.classList.add('icon');
-      return h(`button.slot${s === slot ? '.on' : ''}`, { title: SLOT_NAMES[s], onclick: () => { slot = s; sfx.play('ui'); render(); } }, ic, h('small', null, SHORT[s]));
+      return h(`button.slot${s === slot ? '.on' : ''}${id ? '' : '.empty'}`, { title: SLOT_NAMES[s], onclick: () => { slot = s; sfx.play('ui'); render(); } }, ic, h('small', null, SHORT[s]));
     }));
     desc.textContent = SLOT_INFO[slot];
     const ids = gearIdsFor(slot) as GearId[];
@@ -137,17 +140,19 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
   }
 
   render();
-  const el = h('div.sheet-wrap', null,
-    h('div.sheet.plate', { role: 'dialog', 'aria-label': 'Gear' },
-      h('div.sheet-head', null, h('h2', null, opts.title ?? 'Gear'),
-        h('button.btn.icon', { title: 'Close', 'aria-label': 'Close', onclick: () => { sfx.play('ui'); cb.onClose(); } }, icon('close'))),
-      h('div.sheet-body.split', null,
-        h('div.stage', null, preview.el, h('div.hint', null, 'Tap to see a move'), stats),
-        h('div.panel-scroll', null, opts.forms ? forms : null, slots, desc, skins, list)),
-      h('div.sheet-foot', null, h('button.btn.primary', { onclick: () => { sfx.play('ui'); cb.onClose(); } }, icon('check'), 'Done')),
-    ),
+  const close = () => { sfx.play('ui'); cb.onClose(); };
+  const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+  window.addEventListener('keydown', onKey);
+  const el = h('div.scr.gear', { role: 'dialog', 'aria-label': opts.title ?? 'Gear' },
+    h('header.scr-head', null,
+      h('div.scr-title', null, h('h1', null, opts.title ?? 'Gear'), h('small', null, 'Pick a slot, then an item. Changes save at once.')),
+      h('div.grow'),
+      h('button.btn.icon', { title: 'Close', 'aria-label': 'Close', onclick: close }, icon('close'))),
+    h('section.scr-stage', null, stageBox, stats),
+    h('section.scr-panel', null, opts.forms ? forms : null, slots, desc, skins, list),
+    h('footer.scr-nav', null, h('div.grow'), h('button.btn.primary', { onclick: close }, icon('check'), 'Done')),
   );
-  return { el, dispose: () => preview.dispose() };
+  return { el, dispose: () => { preview.dispose(); window.removeEventListener('keydown', onKey); } };
 }
 
 const SLOT_INFO: Record<GearSlot, string> = {

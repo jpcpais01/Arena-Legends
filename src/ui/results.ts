@@ -25,10 +25,11 @@ export function resultsSheet(b: Battle, reason: 'ko' | 'time', you: boolean, cb:
   const sub = w === -1
     ? 'Time ran out with both fighters level'
     : reason === 'ko' ? `${b.fighters[w].name} wins by K.O. at ${b.time.toFixed(1)}s` : `${b.fighters[w].name} wins on remaining health`;
+  const mood = w === -1 ? 'draw' : !you || w === 0 ? 'win' : 'lose';
   return h('div.sheet-wrap', null,
-    h('div.sheet.plate.results', { role: 'dialog', 'aria-label': 'Results' },
-      h('div.sheet-head', null, h('h2', null, 'Results')),
-      h('div.sheet-body', null, h('div.res-head', null, h('b', null, head), h('span', null, sub)), statTable(b)),
+    h(`div.sheet.plate.results.${mood}`, { role: 'dialog', 'aria-label': 'Results' },
+      h('div.res-banner', null, h('b', null, head), h('span', null, sub)),
+      h('div.sheet-body.res-body', null, statTable(b)),
       h('div.sheet-foot', null,
         h('button.btn', { onclick: cb.onMenu }, icon('home'), 'Menu'),
         h('button.btn', { onclick: cb.onNewRival }, icon('dice'), 'New rival'),
@@ -37,19 +38,22 @@ export function resultsSheet(b: Battle, reason: 'ko' | 'time', you: boolean, cb:
   );
 }
 
-/** Both fighters' totals side by side; the better number is gold. */
+/** Both fighters' totals side by side with tug-of-war bars; the better number is gold. */
 function statTable(b: Battle): HTMLElement {
   const [a, c] = b.fighters;
   const rows = ROWS.filter(([k]) => KEEP.has(k) || a.totals[k] > 0 || c.totals[k] > 0).map(([k, label]) => {
     const x = a.totals[k], y = c.totals[k];
-    return h('tr', null,
-      h(`td${x > y ? '.best' : ''}`, null, fmtInt(x)),
-      h('th', null, label),
-      h(`td${y > x ? '.best' : ''}`, null, fmtInt(y)));
+    const m = Math.max(x, y) || 1;
+    const pct = (v: number) => `${Math.round((v / m) * 100)}%`;
+    return h('div.res-row', null,
+      h(`b${x > y ? '.best' : ''}`, null, fmtInt(x)),
+      h('div.res-mid', null, h('span', null, label),
+        h('div.res-bar', null, h('i', { style: { '--w': pct(x) } }), h('i', { style: { '--w': pct(y) } }))),
+      h(`b${y > x ? '.best' : ''}`, null, fmtInt(y)));
   });
-  return h('table.res-table', null,
-    h('thead', null, h('tr', null, h('th', null, a.name), h('th', null, ''), h('th', null, c.name))),
-    h('tbody', null, ...rows));
+  return h('div.res-stats', null,
+    h('div.res-names', null, h('span', null, a.name), h('i', null, 'VS'), h('span', null, c.name)),
+    h('div.res-rows', null, ...rows));
 }
 
 /** How an online round stands, from the host's official result (or this device's own until it arrives). */
@@ -95,11 +99,12 @@ export function onlineResultsSheet(b: Battle, o: OnlineOutcome, cb: OnlineResult
       ? h('button.btn.primary', { disabled: true }, `Waiting for ${rival}`)
       : h('button.btn.primary', { disabled: o.offline, onclick: cb.onNext }, icon('play'), 'Next round');
   }
+  const won = over ? o.matchWinner === o.you : o.winner === o.you;
+  const mood = !over && o.winner === -1 ? 'draw' : won ? 'win' : 'lose';
   return h('div.sheet-wrap', null,
-    h('div.sheet.plate.results', { role: 'dialog', 'aria-label': 'Round results' },
-      h('div.sheet-head', null, h('h2', null, over ? 'Match over' : `Round ${o.round}`)),
-      h('div.sheet-body', null,
-        h('div.res-head', null, h('b', null, head), h('span', null, who)),
+    h(`div.sheet.plate.results.${mood}`, { role: 'dialog', 'aria-label': 'Round results' },
+      h('div.res-banner', null, h('small.chip', null, over ? 'Match over' : `Round ${o.round}`), h('b', null, head), h('span', null, who)),
+      h('div.sheet-body.res-body', null,
         scoreLine(o.score),
         over && o.rivalRematch && !o.waiting ? h('p.res-note', null, `${rival} wants a rematch.`) : null,
         o.desync ? h('p.res-note.muted', null, "Your devices saw this round slightly differently; the host's result counts.") : null,
