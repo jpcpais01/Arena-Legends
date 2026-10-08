@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.1.1',
+    date: '2026-10-08',
+    title: 'Settings: battle quotes on or off',
+    notes: [
+      'New Settings menu, from the cog button on the title screen or during a battle.',
+      'Battle quotes can be switched off: no more speech bubbles over the fighters mid-fight. Your choice is remembered.',
+      'Sound can also be switched on or off from Settings.',
+    ],
+  },
+  {
     version: '0.1.0',
     date: '2026-10-08',
     title: 'Arena Legends: the pixel arena opens',

@@ -14,6 +14,7 @@ export interface MenuCallbacks {
   onGear(): void;
   onNewRival(): void;
   onSound(): void;
+  onSettings(): void;
 }
 
 export interface Record { w: number; l: number }
@@ -33,7 +34,8 @@ export class Menu {
     this.el = h('div.menu', null,
       h('div.menu-top', null,
         h('div.logo', null, 'ARENA ', h('em', null, 'LEGENDS'), h('small', null, 'AUTO DUEL ARENA')),
-        h('div.menu-tools', null, this.soundBtn)),
+        h('div.menu-tools', null, this.soundBtn,
+          h('button.btn.icon', { title: 'Settings', 'aria-label': 'Settings', onclick: () => cb.onSettings() }, icon('settings')))),
       h('div'),
       h('div.menu-main', null,
         this.matchup,

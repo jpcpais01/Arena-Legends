@@ -35,6 +35,7 @@ export interface HudCallbacks {
   onSpeed(s: number): void;
   onPause(): void;
   onExit(): void;
+  onSettings(): void;
 }
 
 /**
@@ -53,7 +54,7 @@ export class Hud {
   private bannerT = 0;
   private lastClock = -1;
   private battle: Battle | null = null;
-  bubbles = true;
+  private bubbles = true;
 
   constructor(private readonly cb: HudCallbacks, private readonly view: BattleView) {
     this.el = h<HTMLDivElement>('div.hud');
@@ -90,7 +91,9 @@ export class Hud {
       title: 'Speed', onclick: () => this.cb.onSpeed(SPEEDS[(SPEEDS.indexOf(this.speedV) + 1) % SPEEDS.length]),
     });
     this.pauseBtn = h<HTMLButtonElement>('button.btn', { title: 'Pause', 'aria-label': 'Pause', onclick: () => this.cb.onPause() }, icon('pause'));
-    const ctrl = h('div.hud-ctrl', null, this.speedBtn, this.pauseBtn,
+    const ctrl = h('div.hud-ctrl', null,
+      h('button.btn', { title: 'Settings', 'aria-label': 'Settings', onclick: () => this.cb.onSettings() }, icon('settings')),
+      this.speedBtn, this.pauseBtn,
       h('button.btn', { title: 'Leave', 'aria-label': 'Leave', onclick: () => this.cb.onExit() }, icon('close')));
     this.banner = h('div.banner', { hidden: true });
     this.el.replaceChildren(top, ...bubbles, ctrl, this.banner);
@@ -104,6 +107,12 @@ export class Hud {
     this.speedV = s;
     this.speedBtn?.replaceChildren(icon('fast'), `${s}x`);
     this.speedBtn?.classList.toggle('on', s > 1);
+  }
+
+  /** Shows or hides the fighters' thought bubbles (hiding clears any on screen). */
+  setBubbles(on: boolean): void {
+    this.bubbles = on;
+    if (!on) for (const s of this.sides) { s.bubble.hidden = true; s.bubbleT = 0; }
   }
 
   setPaused(p: boolean): void {
