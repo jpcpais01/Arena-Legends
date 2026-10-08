@@ -12,6 +12,19 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.5.0',
+    date: '2026-10-08',
+    title: 'Online duels against a friend',
+    notes: [
+      'New Online button on the title screen: create a room and send the code or the invite link to a friend, or type their code to join.',
+      'Matches are best of five: the first to three round wins takes it. Rematch straight from the end screen.',
+      'Before every round you both pick a build: body form and all six gear slots, then Ready. Your saved fighter is not changed by online picks.',
+      'Both players watch the same fight. Speed it up if you like; pausing is off online.',
+      'If someone drops, the match waits for them and the pick clock stops. Reloading the page puts you back into your match.',
+      'Your item skins come with you online, and you can change them along with your build between rounds.',
+    ],
+  },
+  {
     version: '0.4.0',
     date: '2026-10-08',
     title: 'Item skins: rare, mythic and legendary',
