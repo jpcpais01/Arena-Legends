@@ -7,6 +7,10 @@ import type { BattleView } from '../render/battleView';
 import { h } from './dom';
 import { fmtHp } from './format';
 import { icon } from './icons';
+import { scoreLine } from './online';
+
+/** Online: the round and score shown under the clock. */
+export interface HudMatch { round: number; score: [number, number] }
 
 const SPEEDS = [1, 2, 4];
 
@@ -84,7 +88,8 @@ export class Hud {
       if (side === 0) top.append(el);
       else {
         this.clock = h('div.clock.plate', null, String(ROUND_TIME));
-        top.append(this.clock, el);
+        this.matchChip = h('div.match-chip.plate', { hidden: true });
+        top.append(h('div.mid', null, this.clock, this.matchChip), el);
       }
     }
     this.speedBtn = h<HTMLButtonElement>('button.btn', {
@@ -100,6 +105,19 @@ export class Hud {
     this.setSpeed(speed);
     this.lastClock = -1;
     this.bannerT = 0;
+    this.setMatch(this.match);
+  }
+
+  private match: HudMatch | null = null;
+  private matchChip!: HTMLElement;
+
+  /** Online: round and score under the clock, and no pause (both devices play at once). */
+  setMatch(m: HudMatch | null): void {
+    this.match = m;
+    if (!this.matchChip) return;
+    this.matchChip.hidden = !m;
+    this.pauseBtn.hidden = !!m;
+    if (m) this.matchChip.replaceChildren(h('small', null, `Round ${m.round}`), scoreLine(m.score));
   }
 
   private speedV = 1;

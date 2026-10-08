@@ -2,6 +2,7 @@ import { sfx } from '../audio/sfx';
 import type { PlayerCharacter } from '../character/profile';
 import { iconCanvas } from '../render/icons';
 import { GEAR_SLOTS, gearIdsFor, gearOf, SLOT_NAMES, type GearDef } from '../sim/gear';
+import { FORMS, FORM_IDS } from '../sim/forms';
 import { withGear } from '../sim/loadout';
 import type { GearId, GearSlot } from '../sim/types';
 import { h } from './dom';
@@ -27,7 +28,7 @@ function emptyIcon(): HTMLCanvasElement {
  * Gear picker: the six slots on top, the items for the chosen slot below.
  * Picking an item equips it at once (and saves through `onChange`).
  */
-export function gearSheet(start: PlayerCharacter, cb: GearCallbacks): { el: HTMLElement; dispose(): void } {
+export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { forms?: boolean; title?: string } = {}): { el: HTMLElement; dispose(): void } {
   let c = start;
   let slot: GearSlot = 'main';
   const preview = new Preview(c, 100, 90);
@@ -35,6 +36,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks): { el: HTML
   const slots = h('div.slots');
   const list = h('div.items');
   const desc = h('p.muted', { style: { margin: '0 0 10px', fontSize: '13px' } });
+  const forms = h('div.field');
 
   const card = (g: GearDef | null, on: boolean) => {
     const ic = g ? iconCanvas(g.id) : emptyIcon();
@@ -63,6 +65,20 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks): { el: HTML
   }
 
   function render(): void {
+    if (opts.forms) {
+      forms.replaceChildren(h('div.label', null, 'Body form'),
+        h('div.opts', null, ...FORM_IDS.map((id) => h(`button.opt${id === c.form ? '.on' : ''}`, {
+          title: FORMS[id].blurb,
+          onclick: () => {
+            if (id === c.form) return;
+            c = { ...c, form: id };
+            sfx.play('ui');
+            cb.onChange(c);
+            preview.set(c);
+            render();
+          },
+        }, FORMS[id].name))));
+    }
     slots.replaceChildren(...GEAR_SLOTS.map((s) => {
       const id = c.gear[s];
       const ic = id ? iconCanvas(id) : emptyIcon();
@@ -81,11 +97,11 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks): { el: HTML
   render();
   const el = h('div.sheet-wrap', null,
     h('div.sheet.plate', { role: 'dialog', 'aria-label': 'Gear' },
-      h('div.sheet-head', null, h('h2', null, 'Gear'),
+      h('div.sheet-head', null, h('h2', null, opts.title ?? 'Gear'),
         h('button.btn.icon', { title: 'Close', 'aria-label': 'Close', onclick: () => { sfx.play('ui'); cb.onClose(); } }, icon('close'))),
       h('div.sheet-body.split', null,
         h('div.stage', null, preview.el, h('div.hint', null, 'Tap to see a move'), stats),
-        h('div.panel-scroll', null, slots, desc, list)),
+        h('div.panel-scroll', null, opts.forms ? forms : null, slots, desc, list)),
       h('div.sheet-foot', null, h('button.btn.primary', { onclick: () => { sfx.play('ui'); cb.onClose(); } }, icon('check'), 'Done')),
     ),
   );
