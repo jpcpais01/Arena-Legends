@@ -31,8 +31,8 @@ function emptyIcon(): HTMLCanvasElement {
 /**
  * Gear screen: the fighter stands big in the middle with the six slots around
  * them like a paper doll; the items for the chosen slot are a grid of icons.
- * Tapping an item opens a card with its text, skills, stat changes and skins,
- * and equips from there. Changes save at once (through `onChange`).
+ * Tapping an item grows it in place into a 2x2 card with its text, skills,
+ * stat changes and skins, and equips from there. Changes save at once (through `onChange`).
  */
 export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { forms?: boolean; title?: string } = {}): { el: HTMLElement; dispose(): void } {
   let c = start;
@@ -62,7 +62,6 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
   const slotHead = h('div.slot-head');
   const list = h('div.items');
   const panel = h('section.scr-panel', null, opts.forms ? forms : null, slotHead, list);
-  const pop = h('div.item-pop.plate', { role: 'dialog', hidden: true });
 
   const skinOf = (id: GearId) => skinOn(c.skins, id);
   const iconOf = (id: GearId | null | undefined, px?: number) => {
@@ -118,54 +117,57 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
   }
 
   function tile(id: GearId | null): HTMLElement {
+    if (id && open === id) return card(id);
     const g = id ? gearOf(id) : null;
     const on = id ? c.gear[slot] === id : !c.gear[slot];
-    return h(`button.itile.r-${g?.rarity ?? 'none'}${on ? '.on' : ''}${id && open === id ? '.sel' : ''}`, {
+    return h(`button.itile.r-${g?.rarity ?? 'none'}${on ? '.on' : ''}`, {
       'aria-pressed': String(on), title: g ? g.name : 'Leave this slot empty',
       onclick: () => (id ? show(id) : equip(null)),
     }, iconOf(id), h('b', null, g ? g.name : 'None'));
   }
 
-  function renderPop(): void {
-    if (!open || gearOf(open).slot !== slot) { pop.hidden = true; pop.replaceChildren(); return; }
-    const id = open;
+  /** The open item: grows in place to 2x2 cells with its text, stat changes, skins and Equip. */
+  function card(id: GearId): HTMLElement {
     const g = gearOf(id);
     const on = c.gear[slot] === id;
     const abil = [...(g.abilities ?? []), ...(g.evade ? [g.evade] : [])];
-    const mods = modText(g.add, g.mul);
+    // Not equipped: what would change. Equipped: the item's own stats.
     const diff = on ? [] : statDiff(c.form, c.gear, withGear(c, slot, id).gear);
+    const mods = on ? modText(g.add, g.mul) : '';
     const skins = skinsFor(id);
     const cur = skinOf(id);
-    const chip = (sk: SkinDef | null) => h(`button.skin${sk ? '.' + sk.rarity : ''}${(cur?.id ?? null) === (sk?.id ?? null) ? '.on' : ''}`, {
-      title: sk ? `${sk.name}: ${RARITY_INFO[sk.rarity]}` : 'The plain item.',
-      onclick: () => wear(id, sk),
-    }, Object.assign(iconCanvas(id, 40, sk?.id), { className: 'icon' }), h('b', null, sk ? sk.name : 'Default'), h('small', null, sk ? sk.rarity : 'Plain'));
-    const hands = g.weapon ? `${g.weapon.hands === 2 ? 'Two' : 'One'}-handed${g.weapon.ranged ? ' · ranged' : ''}` : SLOT_NAMES[g.slot];
-
-    pop.replaceChildren(
-      h('div.pop-head', null,
-        h(`div.pop-icon.r-${g.rarity}`, null, iconOf(id, 64)),
-        h('div.pop-title', null,
+    const chip = (sk: SkinDef | null) => {
+      const ic = iconCanvas(id, 40, sk?.id);
+      ic.className = 'icon';
+      const sel = (cur?.id ?? null) === (sk?.id ?? null);
+      return h(`button.sk.${sk ? sk.rarity : 'plain'}${sel ? '.on' : ''}`, {
+        title: sk ? `${sk.name} (${sk.rarity}): ${RARITY_INFO[sk.rarity]}` : 'Default: the plain item',
+        'aria-label': sk ? sk.name : 'Default', 'aria-pressed': String(sel),
+        onclick: () => wear(id, sk),
+      }, ic);
+    };
+    const hands = g.weapon ? `${g.weapon.hands === 2 ? '2' : '1'}-handed${g.weapon.ranged ? ', ranged' : ''}` : '';
+    const el = h(`div.icard.r-${g.rarity}${on ? '.on' : ''}`, { role: 'group', 'aria-label': g.name },
+      h('button.icard-head', { title: 'Close', onclick: () => show(id) },
+        iconOf(id),
+        h('div.icard-title', null,
           h('b', null, g.name),
-          h('div.pop-tags', null, h(`span.rar.r-${g.rarity}`, null, g.rarity), h('span', null, hands))),
-        h('button.btn.sm.icon.ghost', { title: 'Close', 'aria-label': 'Close', onclick: () => show(id) }, icon('close'))),
-      h('div.pop-body', null,
-        h('p.pop-desc', null, g.desc),
-        abil.length ? h('div.pop-abils', null, ...abil.map((a) => h('div.abil', null,
-          h('div.abil-top', null, h('i', null, a.name), a.slot !== 'basic' && a.cooldown ? h('small', null, `${a.cooldown}s`) : null),
-          a.desc ? h('span', null, a.desc) : null))) : null,
-        mods ? h('div.pop-mods', null, mods) : null,
-        diff.length ? h('div.diff', null, h('div.label', null, 'If equipped'), h('div.diff-grid', null, ...diff)) : null,
-        skins.length ? h('div.pop-skins', null,
-          h('div.label', null, icon('star'), 'Skins', h('i', null, cur ? RARITY_INFO[cur.rarity] : 'Looks only')),
-          h('div.skin-row', null, chip(null), ...skins.map(chip))) : null),
-      h('div.pop-foot', null,
-        on && slot !== 'main' ? h('button.btn.ghost', { onclick: () => equip(null) }, 'Unequip') : null,
+          h('small', null, h(`span.r-${g.rarity}`, null, g.rarity), hands ? ` · ${hands}` : '')),
+        icon('close')),
+      h('div.icard-body', null,
+        h('p.desc', { title: g.desc }, g.desc),
+        ...abil.map((a) => h('p.ab', { title: a.desc ? `${a.name}: ${a.desc}` : a.name }, h('i', null, a.name),
+          a.slot !== 'basic' && a.cooldown ? h('small', null, ` ${a.cooldown}s`) : '', a.desc ? ` ${a.desc}` : '')),
+        diff.length ? h('div.diff', null, ...diff) : null,
+        mods ? h('p.mods', null, mods) : null),
+      skins.length ? h('div.icard-skins', { title: cur ? `Skin: ${cur.name}` : 'Skins' }, icon('star'), chip(null), ...skins.map(chip)) : null,
+      h('div.icard-foot', null,
         on
-          ? h('button.btn.equipped', { disabled: true }, icon('check'), 'Equipped')
-          : h('button.btn.primary', { onclick: () => equip(id) }, icon('bag'), 'Equip')),
+          ? (slot !== 'main' ? h('button.btn.sm.ghost', { onclick: () => equip(null) }, 'Unequip') : h('span.eq', null, icon('check'), 'Equipped'))
+          : h('button.btn.sm.primary', { onclick: () => equip(id) }, 'Equip')),
     );
-    pop.hidden = false;
+    requestAnimationFrame(() => el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+    return el;
   }
 
   function render(): void {
@@ -182,7 +184,6 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     const ids = gearIdsFor(slot) as GearId[];
     list.replaceChildren(...(slot === 'main' ? [] : [tile(null)]), ...ids.map(tile));
     stats.replaceChildren(...statLines(c.form, c.gear));
-    renderPop();
   }
 
   render();
@@ -198,17 +199,8 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
       h('div.scr-title', null, h('h1', null, opts.title ?? 'Gear'), h('small', null, 'Pick a slot, then tap an item. Changes save at once.')),
       h('div.grow'),
       h('button.btn.primary.done', { onclick: close }, icon('check'), 'Done')),
-    stage, panel, pop,
+    stage, panel,
   );
-  // A tap outside the card (and not on another item) closes it.
-  el.addEventListener('pointerdown', (e) => {
-    const t = e.target as Element;
-    if (!open || pop.contains(t) || t.closest('.itile')) return;
-    // No re-render here: it would replace the button being pressed and swallow its click.
-    open = null;
-    renderPop();
-    for (const s of list.querySelectorAll('.itile.sel')) s.classList.remove('sel');
-  });
   return { el, dispose: () => { preview.dispose(); window.removeEventListener('keydown', onKey); } };
 }
 

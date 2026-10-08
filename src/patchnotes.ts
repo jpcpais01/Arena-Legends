@@ -22,6 +22,16 @@ export const PATCH_NOTES: PatchNote[] = [
     ],
   },
   {
+    version: '0.11.1',
+    date: '2026-10-08',
+    title: 'Item details open right in the gear grid',
+    notes: [
+      'Tapping an item in the gear screen no longer opens a big pop-up. The item grows in place into a small card the size of four tiles, with the rest of the grid moving around it.',
+      'The card is compact: a short description, the skills with cooldowns, how your stats would change, a row of skin icons to pick from, and the Equip button.',
+      'Long item names now wrap onto two lines instead of being cut off.',
+    ],
+  },
+  {
     version: '0.11.0',
     date: '2026-10-08',
     title: 'Skygrove: real sun shafts and softer shadows',
