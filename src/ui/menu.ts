@@ -1,9 +1,9 @@
-import { SPECIES } from '../character/appearance';
+import { DEFAULT_LOOK, SPECIES } from '../character/appearance';
 import type { PlayerCharacter } from '../character/profile';
 import { skinOn } from '../character/skins';
 import { iconCanvas } from '../render/icons';
 import { FORMS } from '../sim/forms';
-import { gearIds } from '../sim/loadout';
+import { gearIds, type CharacterBuild } from '../sim/loadout';
 import { gearOf } from '../sim/gear';
 import { h } from './dom';
 import { icon } from './icons';
@@ -16,6 +16,7 @@ export interface MenuCallbacks {
   onNewRival(): void;
   onSound(): void;
   onSettings(): void;
+  onOnline(): void;
 }
 
 export interface Record { w: number; l: number }
@@ -40,7 +41,9 @@ export class Menu {
       h('div'),
       h('div.menu-main', null,
         this.matchup,
-        h('div.menu-actions', null, h('button.btn.primary.big', { onclick: () => cb.onFight() }, icon('swords'), 'Fight'))),
+        h('div.menu-actions', null,
+          h('button.btn.primary.big', { onclick: () => cb.onFight() }, icon('swords'), 'Fight'),
+          h('button.btn.big', { onclick: () => cb.onOnline() }, icon('globe'), 'Online'))),
     );
   }
 
@@ -54,32 +57,14 @@ export class Menu {
     const b = new Preview(rival, 100, 90, { autoplay: true, flip: true });
     this.previews = [a, b];
     this.matchup.replaceChildren(
-      this.card(player, a, false, `${rec.w}W ${rec.l}L`, [
+      fighterCard(player, a, false, `${rec.w}W ${rec.l}L`, [
         h('button.btn', { onclick: () => this.cb.onGear() }, icon('bag'), 'Gear'),
         h('button.btn', { onclick: () => this.cb.onEditLook() }, icon('edit'), 'Edit'),
       ]),
       h('div.vs', null, 'VS'),
-      this.card(rival, b, true, 'Rival', [
+      fighterCard(rival, b, true, 'Rival', [
         h('button.btn', { onclick: () => this.cb.onNewRival() }, icon('dice'), 'New rival'),
       ]),
-    );
-  }
-
-  private card(c: PlayerCharacter, p: Preview, right: boolean, tag: string, btns: HTMLElement[]): HTMLElement {
-    const gear = gearIds(c.gear).map((id) => {
-      const skin = skinOn(c.skins, id);
-      const ic = iconCanvas(id, undefined, skin?.id);
-      ic.classList.add('icon');
-      ic.title = skin ? `${gearOf(id).name} · ${skin.name}` : gearOf(id).name;
-      return ic;
-    });
-    return h(`div.card.plate${right ? '.right' : ''}`, null,
-      h('div.card-art', null, p.el),
-      h('div', { style: { minWidth: '0' } },
-        h('div.card-name', null, c.name),
-        h('div.card-sub', null, `${SPECIES[c.look.species].name} · ${FORMS[c.form].name} · ${tag}`),
-        h('div.card-gear', null, ...gear),
-        h('div.card-btns', null, ...btns)),
     );
   }
 
@@ -87,4 +72,24 @@ export class Menu {
     for (const p of this.previews) p.dispose();
     this.previews = [];
   }
+}
+
+/** A fighter's plate: preview, name, species and form, gear icons and buttons. */
+export function fighterCard(c: CharacterBuild, p: Preview, right: boolean, tag: string, btns: HTMLElement[]): HTMLElement {
+  const gear = gearIds(c.gear).map((id) => {
+    const skin = skinOn(c.skins, id);
+    const ic = iconCanvas(id, undefined, skin?.id);
+    ic.classList.add('icon');
+    ic.title = skin ? `${gearOf(id).name} · ${skin.name}` : gearOf(id).name;
+    return ic;
+  });
+  const species = SPECIES[(c.look ?? DEFAULT_LOOK).species].name;
+  return h(`div.card.plate${right ? '.right' : ''}`, null,
+    h('div.card-art', null, p.el),
+    h('div', { style: { minWidth: '0' } },
+      h('div.card-name', null, c.name),
+      h('div.card-sub', null, `${species} · ${FORMS[c.form].name}${tag ? ` · ${tag}` : ''}`),
+      h('div.card-gear', null, ...gear),
+      h('div.card-btns', null, ...btns)),
+  );
 }

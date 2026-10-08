@@ -12,7 +12,7 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.5.0',
+    version: '0.6.0',
     date: '2026-10-08',
     title: 'Skygrove Isle gets a glow-up, and you pick the arena',
     notes: [
@@ -22,6 +22,19 @@ export const PATCH_NOTES: PatchNote[] = [
       'Sunbeams slowly shift across the grove, pollen twinkles, butterflies flutter by, birds glide in the distance, and a faint rainbow arcs over the far isles.',
       'Small rocks float and bob around the island. The spectators have left; the tall grass and flowers sway in the wind instead, harder when the fight heats up.',
       'Stone lanterns with glowing crystals now flank the old arch, and the meadow has clover patches and more mushrooms.',
+    ],
+  },
+  {
+    version: '0.5.0',
+    date: '2026-10-08',
+    title: 'Online duels against a friend',
+    notes: [
+      'New Online button on the title screen: create a room and send the code or the invite link to a friend, or type their code to join.',
+      'Matches are best of five: the first to three round wins takes it. Rematch straight from the end screen.',
+      'Before every round you both pick a build: body form and all six gear slots, then Ready. Your saved fighter is not changed by online picks.',
+      'Both players watch the same fight. Speed it up if you like; pausing is off online.',
+      'If someone drops, the match waits for them and the pick clock stops. Reloading the page puts you back into your match.',
+      'Your item skins come with you online, and you can change them along with your build between rounds.',
     ],
   },
   {
