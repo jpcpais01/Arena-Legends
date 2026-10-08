@@ -12,6 +12,27 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.3.0',
+    date: '2026-10-08',
+    title: 'A new species: Humans',
+    notes: [
+      'Humans join the roster as a seventh species, first in the list in the character creator.',
+      'Every human wears a long scarf in their accent colour that streams behind them as they run, leap and swing.',
+      'Humans show their mood on their brows, have five skin tones, and work with every body form, hairstyle and piece of gear.',
+      'Like every species, Humans are looks only: your body form still sets your stats.',
+    ],
+  },
+  {
+    version: '0.2.0',
+    date: '2026-10-08',
+    title: 'New arena: Skygrove Isle',
+    notes: [
+      'A fourth arena: Skygrove Isle, a grassy island floating high above a sea of clouds. Fight on a meadow trail with a fairy ring of mushrooms, an old ruined arch and a grove of green and blossom trees behind you.',
+      'Look around: other islands drift in the sky with waterfalls pouring off their edges, the clouds roll by slowly and petals blow across the fight.',
+      'The island ends past each side of the arena, marked by mossy standing stones with floating crystals. On wide screens you can see its edges and the roots hanging from underneath.',
+    ],
+  },
+  {
     version: '0.1.1',
     date: '2026-10-08',
     title: 'Settings: battle quotes on or off',

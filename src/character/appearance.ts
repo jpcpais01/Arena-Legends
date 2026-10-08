@@ -3,9 +3,9 @@
  * draws it. Species are looks only; stats come from the body form and gear.
  */
 
-export type SpeciesId = 'kitsu' | 'ogrin' | 'wisp' | 'lop' | 'imp' | 'golem';
+export type SpeciesId = 'human' | 'kitsu' | 'ogrin' | 'wisp' | 'lop' | 'imp' | 'golem';
 
-export const SPECIES_IDS: SpeciesId[] = ['kitsu', 'lop', 'imp', 'ogrin', 'wisp', 'golem'];
+export const SPECIES_IDS: SpeciesId[] = ['human', 'kitsu', 'lop', 'imp', 'ogrin', 'wisp', 'golem'];
 
 export interface SpeciesDef {
   id: SpeciesId;
@@ -18,6 +18,10 @@ export interface SpeciesDef {
 }
 
 export const SPECIES: Record<SpeciesId, SpeciesDef> = {
+  human: {
+    id: 'human', name: 'Human', blurb: 'Wandering heroes with a trailing scarf and nothing to lean on but nerve.',
+    skins: [0xf6dcc4, 0xe8b893, 0xc98c62, 0x9a6440, 0x6a4230], hair: true,
+  },
   kitsu: {
     id: 'kitsu', name: 'Kitsu', blurb: 'Fox-folk with tall ears and a brush of a tail.',
     skins: [0xf2c9a0, 0xe8a77a, 0xd98a5a, 0xf6e2c8], hair: true,

@@ -135,6 +135,8 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     outfit: material({ base: outfit }),
     pants: material({ base: shade(outfit, -0.12, -0.08) }),
     accent: material({ base: accent, shiny: true }),
+    scarf: material({ base: accent, step: 0.13 }),
+    brow: material({ base: shade(hair, -0.18) }),
     belt: material({ base: 0x5a3a26 }),
     leather: material({ base: 0x6a4428 }),
     shoe: material({ base: 0x4a3024 }),
