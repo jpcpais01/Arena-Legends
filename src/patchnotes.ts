@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.9.1',
+    date: '2026-10-08',
+    title: 'Bigger creator buttons on phones',
+    notes: [
+      'On phones, the Next and Back buttons in the character creator are bigger, fill the bottom of the screen and stay centred on every step.',
+      'Back and Save turn into square icon buttons when space is tight, so the Next button always has room for its label.',
+    ],
+  },
+  {
     version: '0.9.0',
     date: '2026-10-08',
     title: 'A fresh look for every menu, and a new character creator',

@@ -552,9 +552,12 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
   .nameplate { padding-top: 0.25rem; gap: 4px; }
   .nameplate b { font-size: 1.15rem; }
   .scr-panel { padding: 0.6rem var(--safe-r) 0.8rem 0.5rem; }
-  .scr-nav { padding: 0.4rem 0.5rem var(--safe-b) var(--safe-l); border-top: 0; }
-  .scr-nav .btn { flex: 1; }
-  .scr-nav .btn.primary { min-width: 0; flex: 1.6; }
+  .scr-nav { padding: 0.45rem 0.4rem var(--safe-b) var(--safe-l); border-top: 0; gap: 6px; }
+  .scr-nav .btn { flex: 1 1 0; min-width: 0; min-height: 3.2rem; padding-left: 0.5rem; padding-right: 0.5rem; font-size: 1.05rem; }
+  .scr-nav .btn.primary { flex-grow: 1.8; }
+  .scr-nav .btn.back { flex: 0 0 3.4rem; }
+  .scr-nav .btn.back .lbl, .scr-nav .btn.save .lbl { display: none; }
+  .scr-nav .btn.save { flex: 0 0 3.4rem; }
   .scr-nav .grow { display: none; }
   .step { padding: 0.2rem 0.3rem; font-size: 0.75rem; }
   .step i { width: 1.55rem; height: 1.55rem; }
@@ -633,8 +636,10 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
   .nameplate b { font-size: 1.2rem; }
   .scr-panel { padding: 0.8rem var(--safe-r) 1rem var(--safe-l); }
   .scr-nav { padding: 0.5rem var(--safe-r) var(--safe-b) var(--safe-l); background: rgba(10, 7, 18, 0.6); }
-  .scr-nav .btn { flex: 1; }
-  .scr-nav .btn.primary { flex: 1.6; min-width: 0; }
+  .scr-nav .btn { flex: 1 1 0; min-width: 0; min-height: 3.5rem; padding-left: 0.5rem; padding-right: 0.5rem; font-size: 1.1rem; }
+  .scr-nav .btn.primary { flex-grow: 1.8; }
+  .scr-nav .btn.back { flex: 0 0 3.6rem; }
+  .scr-nav .btn.back .lbl { display: none; }
   .scr-nav .grow { display: none; }
   .step-head h2 { font-size: 1.35rem; }
   .card-grid { gap: 6px; }

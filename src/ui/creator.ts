@@ -67,9 +67,9 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
   const plateTags = h('div.tags');
   const stepsEl = h('nav.steps', { 'aria-label': 'Steps' });
   const panel = h('section.scr-panel');
-  const back = h<HTMLButtonElement>('button.btn.ghost', { onclick: () => go(step - 1) }, icon('back'), 'Back');
+  const back = h<HTMLButtonElement>('button.btn.ghost.back', { title: 'Back', 'aria-label': 'Back', onclick: () => go(step - 1) }, icon('back'), h('span.lbl', null, 'Back'));
   const next = h<HTMLButtonElement>('button.btn.primary', { onclick: () => advance() });
-  const save = h<HTMLButtonElement>('button.btn', { onclick: () => finish() }, icon('check'), 'Save');
+  const save = h<HTMLButtonElement>('button.btn.save', { title: 'Save', 'aria-label': 'Save', onclick: () => finish() }, icon('check'), h('span.lbl', null, 'Save'));
 
   const name = h<HTMLInputElement>('input.name', {
     value: c.name, maxlength: String(NAME_MAX), placeholder: 'Name your fighter', autocomplete: 'off', spellcheck: 'false', enterkeyhint: 'done',
@@ -102,7 +102,7 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
         onclick: () => go(i),
       }, h('i', null, String(i + 1)), h('span', null, s.label)),
     ]));
-    back.style.visibility = step > 0 ? '' : 'hidden';
+    back.hidden = step === 0;
     const last = step === STEPS.length - 1;
     next.replaceChildren(...(last
       ? [icon(editing ? 'check' : 'swords'), editing ? 'Save' : 'Enter the arena']
