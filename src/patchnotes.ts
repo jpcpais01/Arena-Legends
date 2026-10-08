@@ -12,6 +12,19 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.4.0',
+    date: '2026-10-08',
+    title: 'Item skins: rare, mythic and legendary',
+    notes: [
+      'Gear can now wear skins. Open Gear, pick a slot, and choose a look for the item from the new Skins row. Skins are looks only: they never change a fight.',
+      'Rare skins give an item new colours and a new finish, like patina, folded steel, wood grain or scales.',
+      'Mythic skins also reshape the item: a serrated bone blade, a twin-crescent axe, a dragon glaive, a recurve bow, a horned warhelm and more.',
+      'Legendary skins go further: surfaces that move (light running up Dawnbreaker, lightning crawling through Thunderfall, a galaxy turning in the Staff of the Cosmos), brighter swing trails, sparkles from the weapon and bursts of colour on every hit.',
+      'Every main weapon type has at least one skin of each rarity: 43 skins in all, across weapons, shields, helmets, crowns, armour and boots.',
+      'Your skin choice is kept per item, so swapping gear and back keeps it. Rivals now show up wearing skins too.',
+    ],
+  },
+  {
     version: '0.3.0',
     date: '2026-10-08',
     title: 'A new species: Humans',
