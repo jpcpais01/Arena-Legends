@@ -81,6 +81,7 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
 
   // --- Behind everything: tail, cape, long hair, slung gear --------------------
   drawTail(r, art, T, m, sway);
+  if (sp === 'human') drawScarfTails(r, art, T, m, sway);
   if (chest.cape) drawCape(r, T, body.torso, m(chest.cape), sway);
   drawHairBack(r, art, H, m, sway);
   if (hold.main === 'back') drawMainOnBack(r, art, sk, OX, OY, m);
@@ -97,6 +98,7 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
   drawTorso(r, art, sk, T, X, Y, m);
   if (hold.sec === 'stowed' && art.secFamily !== 'shield') drawSecHolster(r, art, sk, T, OX, OY, m, false);
   drawLeg(r, art, sk, 'N', X, Y, m);
+  if (sp === 'human') drawScarfWrap(r, art, T, m);
   if (chest.skirt > 0) drawSkirt(r, art, T, sk, m(chest.skirtMat), sway, m(chest.trim ?? chest.skirtMat));
   else drawHem(r, art, T, m);
 
@@ -321,6 +323,30 @@ function drawTail(r: Raster, art: CharacterArt, T: Xf, m: (k: string) => number,
   }
 }
 
+/** Human: a long scarf whose two tails stream back from the neck and trail the motion. */
+function drawScarfTails(r: Raster, art: CharacterArt, T: Xf, m: (k: string) => number, sway: number): void {
+  const top = art.body.torso + 0.8;
+  const s = sway * 3;
+  const tail = (pts: [number, number, number][]) => {
+    const shapes: Shape[] = [];
+    for (let i = 1; i < pts.length; i++) shapes.push(T.cap(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1], pts[i - 1][2], pts[i][2]));
+    return union(...shapes);
+  };
+  // The far tail sits a little lower and darker, so the pair reads as two strips.
+  r.fill(tail([[-1.5, top - 0.6, 1.4], [-5.5 - s * 0.5, top - 2.6, 1.3], [-8.5 - s, top - 5.6, 1.2], [-10 - s * 1.3, top - 8.6, 1.1]]), m('scarf'), { group: G.cape, bevel: 1.4, toneBias: -1 });
+  r.fill(tail([[-1.5, top, 1.6], [-6 - s * 0.6, top - 0.6, 1.5], [-10.5 - s, top - 2.4, 1.4], [-14 - s * 1.5, top - 4.2, 1.2]]), m('scarf'), { group: G.cape, bevel: 1.6 });
+  // Frayed tip.
+  r.fill(T.poly([-13.4 - s * 1.5, top - 3, -16.4 - s * 1.7, top - 3.6, -14.6 - s * 1.6, top - 4.6, -15.6 - s * 1.7, top - 5.8, -13 - s * 1.4, top - 5.2]), m('scarf'), { group: G.cape, bevel: 1 });
+}
+
+/** Human: the scarf's wrap around the neck, over the collar. */
+function drawScarfWrap(r: Raster, art: CharacterArt, T: Xf, m: (k: string) => number): void {
+  if (art.chest.hood) return; // the cloak's hood is bunched there instead
+  const top = art.body.torso;
+  r.fill(T.ell(0.3, top + 0.9, 3.4, 1.9, -0.12), m('scarf'), { group: G.cape, bevel: 1.8 });
+  r.fill(intersect(T.ell(0.3, top + 0.9, 3.4, 1.9, -0.12), T.rect(0, top + 0.4, 6, 0.35)), m('scarf'), { group: G.cape, flat: 1, noLine: true });
+}
+
 function drawCape(r: Raster, T: Xf, top: number, mat: number, sway: number): void {
   const s = sway * 3;
   r.fill(T.poly([
@@ -389,6 +415,18 @@ function drawFace(r: Raster, art: CharacterArt, H: Xf, face: Expression, m: (k: 
       r.dot(nx - 1, ny - 2, lash, 0, g); r.dot(nx, ny - 2, lash, 0, g); r.dot(nx + 1, ny - 1, lash, 0, g);
       r.dot(fx - 1, fy - 1, lash, 0, g);
     }
+  }
+  if (sp === 'human' && face !== 'fierce' && face !== 'shout') {
+    // Humans wear their mood on their brows: level when calm, lifted when hurt.
+    const lift = face === 'hurt' || face === 'ko' ? -1 : 0;
+    const brow = m('brow');
+    r.dot(nx - 1, ny - 2 + lift + (face === 'hurt' ? 1 : 0), brow, 0, g); r.dot(nx, ny - 2 + lift, brow, 0, g); r.dot(nx + 1, ny - 2 + lift, brow, 0, g);
+    r.dot(fx, fy - 2 + lift, brow, 0, g);
+  }
+  if (sp === 'human') {
+    // A small nose: one shaded pixel under the far eye.
+    const [qx, qy] = px(H, 5.4, -1.4);
+    r.dot(qx, qy, m('skin'), 1, g);
   }
   // Mouth.
   const [mx, my] = px(H, 3.6, -3.4);
@@ -554,6 +592,9 @@ function drawEarsFront(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => nu
     r.fill(H.poly([-1.6, 0.2, -6.4, 2.8, -1.8, -1.6]), m('skin'), { group: G.ears, bevel: 1.4 });
   } else if (sp === 'ogrin' || sp === 'wisp') {
     r.fill(H.poly([-1.4, 0.6, -7.2, 3.2, -1.6, -1.8]), m('skin'), { group: G.ears, bevel: 1.4 });
+  } else if (sp === 'human' && !helm) {
+    // Small round ear, set back from the cheek.
+    r.fill(H.ell(-2.4, -0.6, 1.5, 2), m('skin'), { group: G.ears, bevel: 1.2 });
   }
 }
 
