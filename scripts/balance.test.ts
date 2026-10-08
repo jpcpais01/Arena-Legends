@@ -3,6 +3,7 @@ import { Rng } from '../src/core/rng';
 import { FORM_IDS } from '../src/sim/forms';
 import { GEAR_SLOTS } from '../src/sim/gear';
 import { randomBuild, type CharacterBuild } from '../src/sim/loadout';
+import { ROUND_TIME } from '../src/sim/constants';
 import { runHeadless } from '../src/sim/headless';
 import type { FormId } from '../src/sim/types';
 
@@ -39,7 +40,7 @@ it('balance report', () => {
       const bWon = r.winner === (side ? 0 : 1);
       if (aWon) w++;
       totalTime += r.time; games++;
-      if (r.time >= 99) timeouts++;
+      if (r.time >= ROUND_TIME) timeouts++;
       for (const f of r.fighters) { stats.parries += f.totals.parries; stats.feints += f.totals.feints; stats.evades += f.totals.evades; }
       count(fa, aWon);
       count(fb, bWon);

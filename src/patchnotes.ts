@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.12.0',
+    date: '2026-10-08',
+    title: 'Faster rounds: 60 seconds',
+    notes: [
+      'Battles now last 60 seconds instead of 99. If nobody is knocked out by then, the round goes to time as before.',
+      'On Skygrove Isle the sun now crosses the sky, sets and gives way to night within those 60 seconds.',
+      'Fighters still play the clock in the last few seconds: whoever is ahead plays it safe and whoever is behind goes all in.',
+    ],
+  },
+  {
     version: '0.11.0',
     date: '2026-10-08',
     title: 'Skygrove: real sun shafts and softer shadows',
