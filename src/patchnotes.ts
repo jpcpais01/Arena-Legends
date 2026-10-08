@@ -12,7 +12,7 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.10.0',
+    version: '0.11.0',
     date: '2026-10-08',
     title: 'Skygrove: real sun shafts and softer shadows',
     notes: [
@@ -21,6 +21,27 @@ export const PATCH_NOTES: PatchNote[] = [
       'Fighters and the standing stones cast a shadow away from the sun that grows longer as it sets.',
       'Soft ambient shadows everywhere: under the tree crowns, at the foot of bushes and trunks, where the meadow meets the grove and under the island\'s grassy lip.',
       'In the golden hour the side facing the sun glows warm and the far side cools down.',
+    ],
+  },
+  {
+    version: '0.10.0',
+    date: '2026-10-08',
+    title: 'A new gear screen built around your fighter',
+    notes: [
+      'Your fighter now stands big in the middle of the gear screen, with the six gear slots around them: what you hold on the left, what you wear on the right.',
+      'Items are shown as a clean grid of icons and names. Tap one to open its card with the description, skills and cooldowns, its stats, how your stats would change, and its skins. Equip it from there.',
+      'On phones, a Stats button shows your full stats over the stage, and Done sits at the top so the list has more room.',
+      'The character creator shows your fighter much larger on phones, with the name and tags tucked into the corner of the stage.',
+      'Creator buttons on phones are smaller and cleaner, and Next stays centred.',
+    ],
+  },
+  {
+    version: '0.9.1',
+    date: '2026-10-08',
+    title: 'Bigger creator buttons on phones',
+    notes: [
+      'On phones, the Next and Back buttons in the character creator are bigger, fill the bottom of the screen and stay centred on every step.',
+      'Back and Save turn into square icon buttons when space is tight, so the Next button always has room for its label.',
     ],
   },
   {
