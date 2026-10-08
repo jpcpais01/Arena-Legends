@@ -1,6 +1,6 @@
 import { Rng } from '../core/rng';
 import { ARENA_HALF_WIDTH } from '../sim/constants';
-import { mix, pack, unpackHex } from './pixel/color';
+import { mix, pack, rgbOf, unpackHex } from './pixel/color';
 import { bayer, Pix } from './pixel/paint';
 import { PPM } from './sprite/animator';
 import type { ArenaArt, DayCycle, Floater, Layer, SkyKey, Theme } from './arenaArt';
@@ -84,6 +84,7 @@ export function buildIsle(theme: Theme, W: number, H: number, gy: number, travel
     const w = rng.range(54, 96);
     paintIsland(mid, rng, x, rng.range(Math.max(18, hz - 196), hz - 96), w, 0.3, horizon, hz + 6, rng.chance(0.75));
   }
+  occlude(mid, 5, 10, 0.3, mix(0x1a2440, horizon, 0.45));
 
   const nearSea = new Pix(lw(0.42), H);
   paintCloudSea(nearSea, rng, floorTop - 4, H + 24, 9, 0.22);
@@ -91,8 +92,9 @@ export function buildIsle(theme: Theme, W: number, H: number, gy: number, travel
   const grove = new Pix(lw(wallFactor), floorTop + 1);
   const swayA = new Pix(grove.w, grove.h), swayB = new Pix(grove.w, grove.h);
   const lanterns = paintGrove(grove, swayA, swayB, rng, floorTop, edgeAt(vTop, -1) * wallFactor, edgeAt(vTop, 1) * wallFactor, theme.sky[3]);
+  occlude(grove, 7, 16, 0.42, 0x142236);
 
-  const floor = paintMeadow(rng, Math.ceil(W / 0.65 + 2 * travel * 1.6 + 64), Math.ceil(D) * 2, D, edgeAt, lipAt);
+  const floor = paintMeadow(rng, Math.ceil(W / 0.65 + 2 * travel * 1.6 + 64), Math.ceil(D) * 2, D, vTop, edgeAt, lipAt);
 
   // The underside layer starts a few rows above the lip for grass blades along the edge.
   const lift = 7;
@@ -133,11 +135,10 @@ export function buildIsle(theme: Theme, W: number, H: number, gy: number, travel
     crowd: [swayA, swayB], crowdLayer: L(swayA, wallFactor), floor, torches: [],
     pillar: paintMenhir(),
     crystal: paintCrystal(),
-    rays: paintRays(rng, W * 2, gy + 12, W, 0, Math.hypot(W, gy)),
     cycle: {
       hz, keys: SKY_KEYS, sunR: theme.body.r,
       stars: paintStars(rng, W, hz), rainbow: paintRainbow(W, hz), moon: paintMoon(),
-      rayOrigin: [W, 0], lamps, lampColor: SG.rune[2],
+      lamps, lampColor: SG.rune[2],
     },
     floaters,
     ambience: {
@@ -194,6 +195,41 @@ function haze(p: Pix, c: number, t: number): void {
 }
 
 interface Blob { x: number; y: number; rx: number; ry: number }
+
+/**
+ * Ambient occlusion: each pixel sinks toward `shade` by how much of the layer
+ * fills a box above it, so crown undersides, the feet of trunks and bushes and
+ * every crevice go dark while tops stay lit. A summed-area table makes the box
+ * free; the result is dithered into a few steps to stay pixel art.
+ */
+function occlude(p: Pix, rx: number, up: number, strength: number, shade: number): void {
+  const { w, h, data } = p;
+  const sw = w + 1;
+  const sat = new Uint32Array(sw * (h + 1));
+  for (let y = 0; y < h; y++) {
+    let row = 0;
+    for (let x = 0; x < w; x++) {
+      if (data[y * w + x] >>> 24) row++;
+      sat[(y + 1) * sw + x + 1] = sat[y * sw + x + 1] + row;
+    }
+  }
+  const [sr, sg, sb] = rgbOf(shade);
+  const area = (2 * rx + 1) * up;
+  for (let y = 1; y < h; y++) {
+    const y0 = Math.max(0, y - up);
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x, c = data[i];
+      if (!(c >>> 24)) continue;
+      const x0 = Math.max(0, x - rx), x1 = Math.min(w, x + rx + 1);
+      const n = sat[y * sw + x1] - sat[y0 * sw + x1] - sat[y * sw + x0] + sat[y0 * sw + x0];
+      const cov = Math.min(1, Math.max(0, (n / area - 0.12) / 0.72));
+      const k = (Math.floor(cov * 4 + bayer(x, y)) / 4) * strength;
+      if (k <= 0) continue;
+      const r = c & 255, g = (c >>> 8) & 255, b = (c >>> 16) & 255;
+      data[i] = ((c & 0xff000000) | (Math.round(b + (sb - b) * k) << 16) | (Math.round(g + (sg - g) * k) << 8) | Math.round(r + (sr - r) * k)) >>> 0;
+    }
+  }
+}
 
 /** Clumpy foliage: each blob lit from the upper right, lower blobs painted first. */
 function foliage(p: Pix, blobs: Blob[], pal: number[], seed: number): void {
@@ -618,7 +654,7 @@ function paintGrove(p: Pix, sa: Pix, sb: Pix, rng: Rng, floorTop: number, hwL: n
 // --- Floor and underside -------------------------------------------------------------
 
 /** The meadow: u = world px (centre at w/2), v = depth row; transparent past the island's edge. */
-function paintMeadow(rng: Rng, w: number, h: number, D: number, edgeAt: Outline, lipAt: (u: number) => number): Pix {
+function paintMeadow(rng: Rng, w: number, h: number, D: number, vTop: number, edgeAt: Outline, lipAt: (u: number) => number): Pix {
   const p = new Pix(w, h);
   const cx = w / 2;
   const G = SG.grass, Dt = SG.dirt;
@@ -702,6 +738,19 @@ function paintMeadow(rng: Rng, w: number, h: number, D: number, edgeAt: Outline,
     if (k & 1) { p.set(x, v, SG.flowers[2]); p.set(x + 1, v, SG.flowers[2]); p.set(x, v + 1, SG.flowers[1]); }
     else { p.rect(x - 1, v, 3, 1, 0xd8483a); p.set(x, v, 0xfff0e0); p.rect(x - 1, v - 1, 3, 1, 0xf0e0c8); }
   }
+  // Ambient occlusion where the meadow runs in under the grove: dark right at
+  // the back row, gone a few screen rows forward.
+  const back = (D * D) / vTop;
+  for (let v = Math.floor(D * 1.08); v < h; v++) {
+    const k = 0.55 * Math.exp(-((D * D) / v - back) / 3.2);
+    if (k < 0.04) continue;
+    for (let x = 0; x < w; x++) {
+      const c = p.get(x, v);
+      if (!(c >>> 24)) continue;
+      const kq = Math.floor(k * 4 + bayer(x, v)) / 4;
+      if (kq > 0) p.set(x, v, mix(unpackHex(c), 0x173026, kq));
+    }
+  }
   return p;
 }
 
@@ -779,6 +828,16 @@ function paintUnderside(p: Pix, rng: Rng, hwL: number, hwR: number, top: number)
       }
     }
   }
+  // The lip overhangs the rock face: shadow tucked in right under it.
+  for (let y = top; y < top + 14; y++) {
+    const k = 0.5 * (1 - (y - top) / 14) ** 1.5;
+    for (let x = 0; x < p.w; x++) {
+      const c = p.get(x, y);
+      if (!(c >>> 24)) continue;
+      const kq = Math.floor(k * 4 + bayer(x, y)) / 4;
+      if (kq > 0) p.set(x, y, mix(unpackHex(c), 0x1c1428, kq * 0.8));
+    }
+  }
   p.outline(SG.ink);
   // No ink along the lip itself: the floor's edge meets the soil there.
   p.data.fill(0, (top - 1) * p.w, top * p.w);
@@ -816,29 +875,6 @@ function paintChunk(rng: Rng, w: number, sky: number, fog: number): Pix {
   const p = new Pix(Math.ceil(w + 8), Math.ceil(w * 1.75 + 34));
   paintIsland(p, rng, p.w / 2, Math.ceil(w * 0.55), w, fog, sky, 0, false, w > 13);
   return p;
-}
-
-/** Two sets of sun shafts fanning down from a sun at (sx, sy); the view moves them with the sun and cross-fades them. */
-function paintRays(rng: Rng, W: number, h: number, sx: number, sy: number, reach: number): [Pix, Pix] {
-  const out: [Pix, Pix] = [new Pix(W, h), new Pix(W, h)];
-  const shafts: { a: number; w: number; k: 0 | 1 }[] = [];
-  for (let i = 0; i < 10; i++) shafts.push({ a: 0.5 + (i / 9) * 2.15 + rng.range(-0.06, 0.06), w: rng.range(0.022, 0.055), k: (i & 1) as 0 | 1 });
-  const col = 0xfff4c8;
-  for (let y = Math.max(0, sy + 1); y < h; y++) for (let x = 0; x < W; x++) {
-    const dx = x - sx, dy = y - sy;
-    const dist = Math.hypot(dx, dy);
-    const fade = Math.min(1, (dist - 24) / 70) * (1 - dist / reach);
-    if (fade <= 0) continue;
-    const ang = Math.atan2(dy, dx);
-    for (const s of shafts) {
-      const da = Math.abs(ang - s.a);
-      if (da >= s.w) continue;
-      const f = (1 - da / s.w) * fade;
-      const a = Math.round(Math.sin(f * Math.PI / 2) * 80);
-      if (a > 2 && a > out[s.k].get(x, y) >>> 24) out[s.k].set(x, y, col, a);
-    }
-  }
-  return out;
 }
 
 // --- Props -----------------------------------------------------------------------------

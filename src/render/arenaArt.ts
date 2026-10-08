@@ -152,8 +152,6 @@ export interface DayCycle {
   stars: Pix;
   rainbow: Pix;
   moon: Pix;
-  /** Where the sun sits inside each sun-shaft canvas. */
-  rayOrigin: [number, number];
   /** Spots that glow at night: screen x at camera 0, screen y, parallax factor, radius. */
   lamps: { x: number; y: number; factor: number; r: number }[];
   lampColor: number;
@@ -194,8 +192,6 @@ export interface ArenaArt {
   floorEnd: number;
   /** Floating crystal over each pillar; without one the pillars carry burning braziers. */
   crystal: Pix | null;
-  /** Two sets of sun shafts the view cross-fades, screen-anchored. */
-  rays: [Pix, Pix] | null;
   /** Live sky and day-to-night lighting; when set, `layers` has no sky of its own. */
   cycle: DayCycle | null;
   floaters: Floater[];
@@ -278,7 +274,7 @@ export function buildArena(theme: Theme, W: number, H: number, gy: number, trave
     theme, gy, hy, floorTop, wallFactor,
     layers: [L(sky, 0), L(clouds, 0.06), L(mFar, 0.12), L(mNear, 0.2), L(city, 0.35), L(stands, wallFactor)],
     crowd: [crowdA, crowdB], crowdLayer, floor, torches, pillar,
-    front: [], floorEnd: Infinity, crystal: null, rays: null, cycle: null, floaters: [], ambience: null,
+    front: [], floorEnd: Infinity, crystal: null, cycle: null, floaters: [], ambience: null,
   };
 }
 
