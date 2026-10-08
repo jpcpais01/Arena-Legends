@@ -113,6 +113,32 @@ export interface Layer {
   y: number;
   /** Slow wind drift in px/s (the layer must tile horizontally). */
   drift?: number;
+  /** Ambient things drawn right after this layer. */
+  after?: 'birds' | 'floaters';
+}
+
+/** A rock floating near the arena, bobbing gently. */
+export interface Floater {
+  pix: Pix;
+  /** Screen x of its centre at camera 0, and screen y of its top. */
+  x: number;
+  y: number;
+  factor: number;
+  /** In front of the floor (else behind the grove). */
+  front: boolean;
+  phase: number;
+}
+
+/** Living details over a nature arena. */
+export interface Ambience {
+  /** Petals and leaves tumbling across. */
+  petals: number[];
+  /** Wing colour of each butterfly. */
+  butterflies: number[];
+  /** Twinkling pollen. */
+  sparkle: number;
+  /** Distant birds. */
+  bird: number;
 }
 
 export interface ArenaArt {
@@ -138,8 +164,10 @@ export interface ArenaArt {
   floorEnd: number;
   /** Floating crystal over each pillar; without one the pillars carry burning braziers. */
   crystal: Pix | null;
-  /** Colours of petals and leaves drifting on the wind, if any. */
-  motes: number[] | null;
+  /** Two sets of sun shafts the view cross-fades, screen-anchored. */
+  rays: [Pix, Pix] | null;
+  floaters: Floater[];
+  ambience: Ambience | null;
 }
 
 /** `travel`: how far (px) the camera can travel from centre. */
@@ -218,7 +246,7 @@ export function buildArena(theme: Theme, W: number, H: number, gy: number, trave
     theme, gy, hy, floorTop, wallFactor,
     layers: [L(sky, 0), L(clouds, 0.06), L(mFar, 0.12), L(mNear, 0.2), L(city, 0.35), L(stands, wallFactor)],
     crowd: [crowdA, crowdB], crowdLayer, floor, torches, pillar,
-    front: [], floorEnd: Infinity, crystal: null, motes: null,
+    front: [], floorEnd: Infinity, crystal: null, rays: null, floaters: [], ambience: null,
   };
 }
 

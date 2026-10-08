@@ -6,7 +6,7 @@ import { sfx } from './audio/sfx';
 import { sanitizeAppearance } from './character/appearance';
 import { generateRival, loadCharacter, newCharacter, saveCharacter, type PlayerCharacter } from './character/profile';
 import { BattleView } from './render/battleView';
-import { THEMES } from './render/arenaArt';
+import { THEMES, type Theme } from './render/arenaArt';
 import { Screen } from './render/screen';
 import { Battle } from './sim/battle';
 import { DEFAULT_BUILDS, sanitizeBuild } from './sim/loadout';
@@ -27,7 +27,6 @@ import { PickScreen, type PickInfo } from './ui/pick';
 import { onlineResultsSheet, type OnlineOutcome } from './ui/results';
 import type { CharacterBuild } from './sim/loadout';
 import { ROUND_TIME } from './sim/constants';
-import type { Theme } from './render/arenaArt';
 
 type State = 'menu' | 'intro' | 'battle' | 'results';
 
@@ -43,6 +42,10 @@ let record = store<WinLoss>('al.record', { w: 0, l: 0 });
 let speed = [1, 2, 4].includes(store<number>('al.speed', 1)) ? store<number>('al.speed', 1) : 1;
 let soundOn = store<boolean>('al.sound', true);
 let quotesOn = store<boolean>('al.quotes', true) !== false;
+// Arena for every fight and the menu backdrop: Skygrove Isle unless the player picks another (or random).
+let arenaPick = store<string>('al.arena', 'isle');
+if (arenaPick !== 'random' && !THEMES.some((t) => t.id === arenaPick)) arenaPick = 'isle';
+const arenaFor = (seed: number): Theme => THEMES.find((t) => t.id === arenaPick) ?? THEMES[seed % THEMES.length];
 sfx.setMuted(!soundOn);
 
 function loadRival(): PlayerCharacter | null {
@@ -98,13 +101,19 @@ function setSound(on: boolean): void {
 function openSettings(): void {
   closeSheet();
   sfx.play('ui');
-  sheet = settingsSheet({ quotes: quotesOn, sound: soundOn }, (s) => {
+  const arenas = THEMES.map((t) => ({ id: t.id, name: t.name, sky: t.sky, floor: t.floor }));
+  sheet = settingsSheet({ quotes: quotesOn, sound: soundOn, arena: arenaPick }, arenas, (s) => {
     if (s.quotes !== quotesOn) {
       quotesOn = s.quotes;
       save('al.quotes', quotesOn);
       hud.setBubbles(quotesOn);
     }
     if (s.sound !== soundOn) setSound(s.sound);
+    if (s.arena !== arenaPick) {
+      arenaPick = s.arena;
+      save('al.arena', arenaPick);
+      if (view.battle) view.setTheme(arenaFor(view.battle.seed));
+    }
   }, () => closeSheet());
   ui.append(sheet.el);
 }
@@ -164,13 +173,14 @@ let demoRunning = false;
 function startDemo(): void {
   demoRunning = true;
   const a = generateRival(), b = generateRival(a.name);
-  const battle = new Battle({ seed: (Math.random() * 2 ** 32) >>> 0, fighters: [a, b] });
+  const seed = (Math.random() * 2 ** 32) >>> 0;
+  const battle = new Battle({ seed, fighters: [a, b] });
   view.quiet = true;
   view.hold = false;
   view.paused = false;
   view.speed = 1;
   view.listener = { onEnd: () => { demoWait = 1.5; } };
-  view.start(battle);
+  view.start(battle, arenaFor(seed));
 }
 
 function toMenu(): void {
@@ -207,7 +217,7 @@ function beginBattle(seed: number, fighters: [CharacterBuild, CharacterBuild]): 
   badge.hidden = true;
   demoRunning = false;
   battle = new Battle({ seed, fighters: [{ ...fighters[0] }, { ...fighters[1] }] });
-  const theme: Theme = THEMES[seed % THEMES.length];
+  const theme = arenaFor(seed);
   view.quiet = false;
   view.hold = true;
   view.paused = false;
