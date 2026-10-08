@@ -1,7 +1,10 @@
 import type { GearId, MainWeaponId, SecondaryId } from '../../sim/types';
-import { material, type Material, type Raster } from '../pixel/raster';
+import { material } from '../pixel/raster';
 import { union, type Shape } from '../pixel/sdf';
-import type { Xf } from './xform';
+import { SKIN_ART } from './skins';
+import { clearShape, fillAll, M, type MainFamily, type SecFamily, type WeaponArt } from './weaponKit';
+
+export type { MainFamily, SecFamily, WeaponArt, WeaponDrawOpts } from './weaponKit';
 
 /**
  * Pixel art for every weapon, built from shapes in weapon-local space: the
@@ -9,48 +12,6 @@ import type { Xf } from './xform';
  * +y is the spine side. Drawn fresh for each frame at whatever angle the
  * animation asks for, so swings never smear the art.
  */
-
-export type MainFamily = 'sword' | 'wand' | 'heavy' | 'polearm' | 'staff' | 'bow';
-export type SecFamily = 'shield' | 'parry' | 'buckler' | 'knife' | 'crossbow' | 'chakram' | 'wand' | 'horn';
-
-export interface WeaponArt {
-  /** Distance from the grip to the tip (smears, hit sparks). */
-  tip: number;
-  /** Two-handed: where the far hand holds the weapon (x along the weapon). */
-  grip2?: number;
-  /** Draw order details: parts in order. */
-  draw(r: Raster, t: Xf, m: (name: string) => number, opts: WeaponDrawOpts): void;
-  mats: Record<string, Material>;
-}
-
-export interface WeaponDrawOpts {
-  /** Toned down when on the far side. */
-  toneBias?: number;
-  group?: number;
-  /** 0..1 how far the bowstring is drawn (bows and crossbows). */
-  pull?: number;
-  /** Bow: where the string hand is, in raster space. */
-  stringTo?: [number, number];
-}
-
-const M = {
-  steel: () => material({ base: 0xb8c4d4, shiny: true, step: 0.15 }),
-  darkSteel: () => material({ base: 0x6a7488, shiny: true }),
-  gold: () => material({ base: 0xd8a838, shiny: true }),
-  bronze: () => material({ base: 0xb07a40, shiny: true }),
-  wood: () => material({ base: 0x8a5a32 }),
-  darkWood: () => material({ base: 0x5a3a24 }),
-  leather: () => material({ base: 0x6a4028 }),
-  wrap: (c: number) => material({ base: c }),
-  cloth: (c: number) => material({ base: c }),
-  glow: (c: number) => material({ base: c, glow: true }),
-  gem: (c: number) => material({ base: c, shiny: true, step: 0.17 }),
-  string: () => material({ base: 0xe8e0c8 }),
-};
-
-const fillAll = (r: Raster, shapes: Shape[], mat: number, o: WeaponDrawOpts, bevel = 1.6, extra = 0) => {
-  for (const s of shapes) r.fill(s, mat, { group: o.group ?? 6, bevel, toneBias: (o.toneBias ?? 0) + extra });
-};
 
 // -----------------------------------------------------------------------------
 // Main weapons
@@ -237,9 +198,9 @@ function kiteShield(): WeaponArt {
       const outer = t.poly([-8, -5.6, -9, -2, -9, 2, -8, 5.6, -2, 6.2, 6, 3.2, 11.5, 0, 6, -3.2, -2, -6.2]);
       fillAll(r, [outer], m('rim'), o, 2);
       const inner = t.poly([-7.2, -4.4, -7.8, 0, -7.2, 4.4, -2, 5, 5.4, 2.4, 9.5, 0, 5.4, -2.4, -2, -5]);
-      r.fill(inner, m('face'), { group: o.group ?? 6, bevel: 3.5, toneBias: o.toneBias, noLine: true });
-      r.fill(t.poly([-4, -0.7, 4, -0.7, 4, 0.7, -4, 0.7]), m('emblem'), { group: o.group ?? 6, bevel: 1, noLine: true, toneBias: o.toneBias });
-      r.fill(t.poly([-1.5, -2.6, 1.5, -2.6, 1.5, 2.6, -1.5, 2.6]), m('emblem'), { group: o.group ?? 6, bevel: 1, noLine: true, toneBias: o.toneBias });
+      r.fill(inner, m('face'), { group: o.group ?? 6, bevel: 3.5, toneBias: o.toneBias, noLine: true, local: o.local });
+      r.fill(t.poly([-4, -0.7, 4, -0.7, 4, 0.7, -4, 0.7]), m('emblem'), { group: o.group ?? 6, bevel: 1, noLine: true, toneBias: o.toneBias, local: o.local });
+      r.fill(t.poly([-1.5, -2.6, 1.5, -2.6, 1.5, 2.6, -1.5, 2.6]), m('emblem'), { group: o.group ?? 6, bevel: 1, noLine: true, toneBias: o.toneBias, local: o.local });
     },
   };
 }
@@ -265,7 +226,7 @@ function buckler(): WeaponArt {
     mats: { face: M.darkSteel(), rim: M.steel(), spike: M.steel() },
     draw(r, t, m, o) {
       fillAll(r, [t.ell(2, 0, 2.2, 6.2)], m('rim'), o, 2);
-      r.fill(t.ell(2.4, 0, 1.6, 5.2), m('face'), { group: o.group ?? 6, bevel: 3, noLine: true, toneBias: o.toneBias });
+      r.fill(t.ell(2.4, 0, 1.6, 5.2), m('face'), { group: o.group ?? 6, bevel: 3, noLine: true, toneBias: o.toneBias, local: o.local });
       fillAll(r, [t.poly([3.5, -1.5, 8, 0, 3.5, 1.5])], m('spike'), o, 1.2);
     },
   };
@@ -351,18 +312,6 @@ function warHorn(): WeaponArt {
   };
 }
 
-function clearShape(r: Raster, s: Shape): void {
-  const x0 = Math.max(0, Math.floor(s.box.x0)), y0 = Math.max(0, Math.floor(s.box.y0));
-  const x1 = Math.min(r.w - 1, Math.ceil(s.box.x1)), y1 = Math.min(r.h - 1, Math.ceil(s.box.y1));
-  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-    if (s.sdf(x + 0.5, y + 0.5) < 0) {
-      const i = y * r.w + x;
-      // Only clear what the ring just drew (keep the body behind it).
-      if (r.group[i] === 6 || r.group[i] === 7) { r.mat[i] = 0; r.order[i] = 0; }
-    }
-  }
-}
-
 export const MAIN_FAMILY: Record<MainWeaponId, MainFamily> = {
   longsword: 'sword', katana: 'sword', mace: 'sword', dagger: 'sword', ember_wand: 'wand',
   warhammer: 'heavy', greataxe: 'heavy', spear: 'polearm', arcane_staff: 'staff', longbow: 'bow',
@@ -382,10 +331,23 @@ const BUILDERS: Partial<Record<GearId, () => WeaponArt>> = {
 
 const cache = new Map<string, WeaponArt>();
 
-export function weaponArt(id: GearId): WeaponArt | null {
+/**
+ * Art for a weapon, optionally in a skin: mythic and legendary skins bring a
+ * reshaped weapon, rare ones recolour the stock one. Textures are laid out in
+ * weapon space so they stay glued to the item as it swings.
+ */
+export function weaponArt(id: GearId, skinId?: string | null): WeaponArt | null {
   const b = BUILDERS[id];
   if (!b) return null;
-  let a = cache.get(id);
-  if (!a) { a = b(); cache.set(id, a); }
+  const skin = skinId ? SKIN_ART[skinId] : undefined;
+  const key = skin ? `${id}|${skinId}` : id;
+  let a = cache.get(key);
+  if (!a) {
+    const base = skin?.weapon ? skin.weapon() : b();
+    const mats = { ...base.mats };
+    if (skin?.mats) for (const [k, spec] of Object.entries(skin.mats)) mats[k] = material(spec);
+    a = { ...base, mats, draw: (r, t, m, o) => base.draw(r, t, m, { ...o, local: t }) };
+    cache.set(key, a);
+  }
   return a;
 }

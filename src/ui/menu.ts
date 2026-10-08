@@ -1,5 +1,6 @@
 import { SPECIES } from '../character/appearance';
 import type { PlayerCharacter } from '../character/profile';
+import { skinOn } from '../character/skins';
 import { iconCanvas } from '../render/icons';
 import { FORMS } from '../sim/forms';
 import { gearIds } from '../sim/loadout';
@@ -66,9 +67,10 @@ export class Menu {
 
   private card(c: PlayerCharacter, p: Preview, right: boolean, tag: string, btns: HTMLElement[]): HTMLElement {
     const gear = gearIds(c.gear).map((id) => {
-      const ic = iconCanvas(id);
+      const skin = skinOn(c.skins, id);
+      const ic = iconCanvas(id, undefined, skin?.id);
       ic.classList.add('icon');
-      ic.title = gearOf(id).name;
+      ic.title = skin ? `${gearOf(id).name} · ${skin.name}` : gearOf(id).name;
       return ic;
     });
     return h(`div.card.plate${right ? '.right' : ''}`, null,

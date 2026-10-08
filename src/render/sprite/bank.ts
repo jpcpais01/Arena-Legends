@@ -1,7 +1,7 @@
 import { Raster, type Frame } from '../pixel/raster';
 import { clipLength, frameSpec, type ClipSet } from './anims';
 import type { AnimOut } from './animator';
-import { drawFigure } from './draw';
+import { drawFigure, figureMarks } from './draw';
 import type { CharacterArt } from './look';
 
 export interface Sprite {
@@ -11,6 +11,8 @@ export interface Sprite {
   oy: number;
   w: number;
   h: number;
+  /** Main weapon tip relative to the feet, when the weapon is in hand. */
+  tip?: [number, number];
 }
 
 const OX = 88, OY = 126;
@@ -86,9 +88,12 @@ export class SpriteBank {
     const c = this.set.clips.get(clip) ?? this.set.clips.get('idle')!;
     const r = (shared ??= new Raster(176, 150));
     r.clear();
+    // Animated skin surfaces step with the frame.
+    r.phase = frame;
     drawFigure(r, this.art, frameSpec(c, frame, face, secOut), OX, OY);
+    const tip = figureMarks.tip;
     const f = r.compose(OX, OY);
-    const s: Sprite = { img: toCanvas(f), ox: f.ox, oy: f.oy, w: f.w, h: f.h };
+    const s: Sprite = { img: toCanvas(f), ox: f.ox, oy: f.oy, w: f.w, h: f.h, tip: tip ? [tip[0] - OX, tip[1] - OY] : undefined };
     this.sprites.set(key, s);
     return s;
   }

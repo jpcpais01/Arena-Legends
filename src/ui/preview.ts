@@ -3,6 +3,7 @@ import { clipLength, clipsFor } from '../render/sprite/anims';
 import type { AnimOut } from '../render/sprite/animator';
 import { SpriteBank } from '../render/sprite/bank';
 import { makeArt } from '../render/sprite/look';
+import { css } from '../render/pixel/color';
 
 const SHOWCASE_SKIP = new Set(['idle', 'run', 'back', 'hurt', 'stun', 'air', 'ko', 'roll', 'leap', 'evade', 'blink', 'sec.riposte']);
 
@@ -23,6 +24,9 @@ export class Preview {
   private next = 0;
   private flip = false;
   private out: AnimOut = { clip: 'idle', frame: 0, face: null, secOut: false, jitter: 0, hop: 0, key: '' };
+  /** Legendary weapon sparkles: position (canvas px) and age. */
+  private sparks: { x: number; y: number; t: number }[] = [];
+  private sparkT = 0;
 
   /** `w`, `h` in art pixels; `zoom` art→device pixels is picked to fit the CSS box. */
   constructor(build: CharacterBuild, readonly w = 100, readonly h = 90, opts: { flip?: boolean; autoplay?: boolean } = {}) {
@@ -51,6 +55,7 @@ export class Preview {
     this.clips = [...set.clips.keys()].filter((k) => !SHOWCASE_SKIP.has(k));
     this.playing = null;
     this.t = 0;
+    this.sparks.length = 0;
   }
 
   /** Plays a move (a given clip, or a random one). */
@@ -92,5 +97,26 @@ export class Preview {
       g.drawImage(s.img, -s.ox, gy - s.oy);
       g.restore();
     } else g.drawImage(s.img, gx - s.ox, gy - s.oy);
+    this.drawSparks(dt, s.tip ? [gx + (this.flip ? -s.tip[0] : s.tip[0]), gy + s.tip[1]] : null);
+  }
+
+  /** A legendary weapon twinkles at its tip, like it does in battle. */
+  private drawSparks(dt: number, tip: [number, number] | null): void {
+    const fx = this.bank.art.mainSkin?.fx;
+    if (!fx) { this.sparks.length = 0; return; }
+    if (tip && (this.sparkT -= dt) <= 0) {
+      this.sparkT = this.playing ? 0.05 : 0.16;
+      this.sparks.push({ x: Math.round(tip[0] + (Math.random() - 0.5) * 4), y: Math.round(tip[1] + (Math.random() - 0.5) * 4), t: 0 });
+    }
+    const g = this.g;
+    for (let i = this.sparks.length - 1; i >= 0; i--) {
+      const p = this.sparks[i];
+      p.t += dt;
+      if (p.t > 0.5) { this.sparks.splice(i, 1); continue; }
+      const y = Math.round(p.y - p.t * 8);
+      g.fillStyle = css(p.t < 0.25 ? fx.spark : fx.spark2);
+      g.fillRect(p.x, y, 1, 1);
+      if (p.t < 0.2) { g.fillRect(p.x - 1, y, 3, 1); g.fillRect(p.x, y - 1, 1, 3); }
+    }
   }
 }

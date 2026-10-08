@@ -1,4 +1,5 @@
 import { randomAppearance, sanitizeAppearance, type Appearance } from '../character/appearance';
+import { sanitizeSkins, type SkinMap } from '../character/skins';
 import type { Rng } from '../core/rng';
 import { EVADE } from './abilities';
 import { FORMS, FORM_IDS, type Personality } from './forms';
@@ -16,6 +17,8 @@ export interface CharacterBuild {
   form: FormId;
   gear: GearSet;
   look?: Appearance;
+  /** Cosmetic item skins. The sim never reads them. */
+  skins?: SkinMap;
 }
 
 /** Fighting habits the AI derives from form + gear. */
@@ -151,7 +154,7 @@ export function sanitizeBuild(raw: unknown, fallback: CharacterBuild): Character
   if (!gear.main) return fallback;
   const name = typeof o.name === 'string' && o.name.trim() ? o.name.trim().slice(0, 16) : fallback.name;
   const look = o.look && typeof o.look === 'object' ? sanitizeAppearance(o.look) : fallback.look;
-  return { name, form, gear: gear as unknown as GearSet, look };
+  return { name, form, gear: gear as unknown as GearSet, look, skins: sanitizeSkins(o.skins) };
 }
 
 /** Replaces one slot, keeping the rest. Passing null empties it (not allowed for `main`). */

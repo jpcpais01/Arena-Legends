@@ -115,16 +115,18 @@ function special(id: SpecialId, r: Raster, c: number): void {
 
 const cache = new Map<string, Frame>();
 
-/** Icon frame for a piece of gear (cropped, outlined). */
-export function iconFrame(id: GearId): Frame {
-  let f = cache.get(id);
+/** Icon frame for a piece of gear, optionally in a skin (cropped, outlined). */
+export function iconFrame(id: GearId, skin?: string | null): Frame {
+  const key = skin ? `${id}|${skin}` : id;
+  let f = cache.get(key);
   if (f) return f;
   const def = gearOf(id);
   const r = R();
   r.clear();
+  r.phase = 0;
   const c = 70;
   if (def.slot === 'main' || def.slot === 'secondary') {
-    const w = weaponArt(id)!;
+    const w = weaponArt(id, skin)!;
     const shield = id === 'kite_shield' || id === 'buckler';
     const bow = id === 'longbow';
     const ang = shield ? -Math.PI / 2 : bow ? -Math.PI / 4 : Math.PI / 4;
@@ -144,15 +146,17 @@ export function iconFrame(id: GearId): Frame {
   } else {
     // Armour: crop the relevant part of a body wearing only that piece.
     const gear = { main: 'dagger', [def.slot]: id } as unknown as GearSet;
-    const art = makeArt({ name: '', form: 'balanced', gear, look: { ...DEFAULT_LOOK, species: 'golem', outfit: 7 } });
+    const art = makeArt({ name: '', form: 'balanced', gear, look: { ...DEFAULT_LOOK, species: 'golem', outfit: 7 }, skins: skin ? { [id]: skin } : {} });
     const ox = 70, oy = 120;
     const sk = drawFigure(r, art, { pose: { ...STAND, hNx: -0.3, hNy: -0.9, wAng: -1.8 }, hold: { main: 'none', sec: 'gone' }, face: 'calm' }, ox, oy);
     const full = r.compose(ox, oy);
-    const center = def.slot === 'head' ? { x: sk.head.x, y: sk.head.y + 1 } : def.slot === 'chest' ? { x: sk.chest.x - 1, y: (sk.chest.y + sk.hip.y) / 2 } : { x: (sk.ankleN.x + sk.ankleF.x) / 2 + 2, y: sk.kneeN.y * 0.45 };
-    const half = def.slot === 'chest' ? 17 : 13;
+    // Reshaped headgear can rise well above the head (horns, halos).
+    const tall = def.slot === 'head' && !!art.headDraw;
+    const center = def.slot === 'head' ? { x: sk.head.x, y: sk.head.y + (tall ? 4 : 1) } : def.slot === 'chest' ? { x: sk.chest.x - 1, y: (sk.chest.y + sk.hip.y) / 2 } : { x: (sk.ankleN.x + sk.ankleF.x) / 2 + 2, y: sk.kneeN.y * 0.45 };
+    const half = def.slot === 'chest' ? 17 : tall ? 16 : 13;
     f = crop(full, ox + center.x - (ox - full.ox) - half, oy - center.y - (oy - full.oy) - half, half * 2, half * 2);
   }
-  cache.set(id, f);
+  cache.set(key, f);
   return f;
 }
 
@@ -169,8 +173,8 @@ function crop(src: Frame, x0: number, y0: number, w: number, h: number): Frame {
 export const ICON_SIZE = SIZE;
 
 /** Icon as a canvas at `scale` device pixels per art pixel, centred in a square. */
-export function iconCanvas(id: GearId, px = SIZE): HTMLCanvasElement {
-  const f = iconFrame(id);
+export function iconCanvas(id: GearId, px = SIZE, skin?: string | null): HTMLCanvasElement {
+  const f = iconFrame(id, skin);
   const c = document.createElement('canvas');
   c.width = c.height = px;
   const g = c.getContext('2d')!;

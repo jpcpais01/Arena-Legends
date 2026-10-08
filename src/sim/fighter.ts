@@ -6,6 +6,7 @@ import type {
   StatusInstance,
 } from './types';
 import { MAX_ENERGY } from './constants';
+import type { SkinMap } from '../character/skins';
 
 export { computeBaseStats };
 
@@ -20,6 +21,8 @@ export interface Fighter {
   gearIds: GearId[];
   has: Set<GearId>;
   look: Appearance | undefined;
+  /** Cosmetic item skins, carried for the renderer only. */
+  skins: SkinMap;
   /** Hands the main weapon needs. */
   hands: 1 | 2;
   /** AI temperament and spacing derived from form + gear. */
@@ -83,6 +86,7 @@ export function createFighter(id: FighterId, cfg: FighterConfig): Fighter {
     gearIds: ids,
     has: new Set(ids),
     look: cfg.look,
+    skins: cfg.skins ?? {},
     hands: mainHands(cfg.gear),
     profile: buildProfile(cfg.form, cfg.gear),
     abilities,
