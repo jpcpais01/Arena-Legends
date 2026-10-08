@@ -30,6 +30,9 @@ interface FighterView {
   ghosts: { x: number; y: number; s: Sprite; flip: boolean; t: number }[];
   ghostT: number;
   emberT: number;
+  /** Legendary skin sparkle timers (weapon tip, headgear). */
+  sparkT: number;
+  crownT: number;
   headY: number;
 }
 
@@ -71,6 +74,7 @@ export class BattleView implements View {
   hold = false;
   /** Called after the scene is drawn (HUD overlays). */
   onFrame: ((dt: number) => void) | null = null;
+  private lastDt = 0;
 
   constructor(readonly screen: Screen) {
     screen.onResize = () => this.layout();
@@ -80,9 +84,12 @@ export class BattleView implements View {
     this.battle = b;
     this.theme = theme ?? THEMES[b.seed % THEMES.length];
     this.fighters = b.fighters.map((f) => {
-      const art = makeArt({ name: f.name, form: f.form, gear: f.gear, look: f.look });
+      const art = makeArt({ name: f.name, form: f.form, gear: f.gear, look: f.look, skins: f.skins });
       const anim = new Animator(art);
-      return { art, anim, bank: new SpriteBank(art, anim.set), out: anim.update(f, f.x, 0, false, false, false), flash: 0, ghosts: [], ghostT: 0, emberT: 0, headY: 2 };
+      return {
+        art, anim, bank: new SpriteBank(art, anim.set), out: anim.update(f, f.x, 0, false, false, false),
+        flash: 0, ghosts: [], ghostT: 0, emberT: 0, sparkT: 0, crownT: 0, headY: 2,
+      };
     });
     this.fx.clear();
     this.acc = 0;
@@ -221,6 +228,7 @@ export class BattleView implements View {
 
   private drawFighter(g: CanvasRenderingContext2D, f: Fighter, v: FighterView, dt: number, secOut: boolean): void {
     const b = this.battle!;
+    this.lastDt = dt;
     const x = this.lx(f), y = this.ly(f);
     const over = b.over;
     v.out = v.anim.update(f, x, dt, over, b.winner === f.id, secOut);
@@ -251,6 +259,8 @@ export class BattleView implements View {
     if (f.invuln > 0 && f.alive && Math.floor(this.time * 30) % 2 === 0) g.globalAlpha = 0.55;
     blit(g, s, px, py, flip);
     g.globalAlpha = 1;
+
+    if (dt > 0 && f.alive) this.legendSparks(f, v, s, x, y, flip);
 
     // Tints and overlays.
     const tint = (color: string, a: number) => {
@@ -316,6 +326,21 @@ export class BattleView implements View {
     }
   }
 
+  /** Legendary skins: sparkles shed from the weapon tip (more mid-swing) and from a legendary crown. */
+  private legendSparks(f: Fighter, v: FighterView, s: Sprite, x: number, y: number, flip: boolean): void {
+    const main = v.art.mainSkin?.fx;
+    if (main && s.tip && (v.sparkT -= this.lastDt) <= 0) {
+      v.sparkT = f.action ? 0.03 : 0.12;
+      const tx = x + (flip ? -s.tip[0] : s.tip[0]) / PPM, ty = y + (v.out.hop - s.tip[1]) / PPM;
+      this.fx.burst({ x: tx, y: ty, jitter: 0.06, count: 1, dir: Math.PI / 2, spread: 0.8, speed: [0.1, 0.5], life: [0.25, 0.55], color: main.spark, color2: main.spark2, kind: 'twinkle' });
+    }
+    const crown = v.art.headSkin?.fx;
+    if (crown && (v.crownT -= this.lastDt) <= 0) {
+      v.crownT = 0.35;
+      this.fx.burst({ x: x - f.facing * 0.05, y: y + 2.35, jitter: 0.22, jitterY: 0.06, count: 1, dir: Math.PI / 2, spread: 0.2, speed: [0.2, 0.45], life: [0.5, 0.9], color: crown.spark, color2: crown.spark2, kind: 'twinkle' });
+    }
+  }
+
   private drawItem(g: CanvasRenderingContext2D, f: Fighter): void {
     const it = f.item;
     if (!it) return;
@@ -355,6 +380,9 @@ export class BattleView implements View {
       s = projSprite(style, frame, 0);
       blit(g, s, sx, sy, true);
     } else g.drawImage(s.img, sx - s.ox, sy - s.oy);
+    // Legendary weapons leave sparkles behind their shots.
+    const legend = p.def.from === 'main' ? this.fighters[p.owner]?.art.mainSkin?.fx : undefined;
+    if (legend && Math.random() < 0.6) this.fx.burst({ x, y, jitter: 0.05, count: 1, speed: [0, 0.3], life: [0.2, 0.4], color: legend.spark, color2: legend.spark2, kind: 'twinkle' });
     // Trails.
     if (Math.random() < (style === 'meteor' ? 1 : 0.5)) {
       const col = STYLE_COLOR[style];
@@ -426,6 +454,7 @@ export class BattleView implements View {
         const color = e.blocked ? 0xbfd8ff : e.dtype === 'magic' ? 0xc58cff : e.ability === 'lightning' ? 0xaedcff : 0xffd27a;
         fx.burst({ x: e.x, y: e.y, count: e.blocked ? 8 : heavy ? 22 : 12, dir, spread: e.blocked ? 1.2 : 0.8, speed: heavy ? [5, 12] : [3, 8], life: [0.12, 0.35], color: 0xffffff, color2: color, gravity: 12, drag: 2, kind: 'streak' });
         fx.pulse('star', e.x, e.y, e.blocked ? 0.25 : heavy ? 0.5 : 0.32, color, heavy ? 0.16 : 0.1);
+        this.legendHit(e.attacker, e.target, e.ability, e.blocked, heavy, e.x, e.y);
         if (heavy && !e.blocked) {
           fx.pulse('ring', e.x, e.y, 0.9, color, 0.25);
           fx.burst({ x: e.x, y: 0.1, count: 4, jitter: 0.3, dir: Math.PI / 2, spread: 1, speed: [0.5, 1.5], life: [0.4, 0.7], color: 0xb0a090, color2: 0x6a5a60, kind: 'smoke', size: 3 });
@@ -567,6 +596,21 @@ export class BattleView implements View {
         break;
       default:
         break;
+    }
+  }
+
+  /** Legendary skins: hits with the weapon burst in its colours; a legendary shield flares when it blocks. */
+  private legendHit(attacker: FighterId, target: FighterId, ability: string, blocked: boolean, heavy: boolean, x: number, y: number): void {
+    const b = this.battle!;
+    const main = this.fighters[attacker]?.art.mainSkin?.fx;
+    if (main && !blocked && b.fighters[attacker].abilities.find((a) => a.id === ability)?.from === 'main') {
+      this.fx.burst({ x, y, count: heavy ? 14 : 8, speed: [2, 6], life: [0.25, 0.5], color: main.spark, color2: main.spark2, drag: 2.5, kind: 'twinkle' });
+      this.fx.pulse('ring', x, y, heavy ? 0.75 : 0.5, main.spark2, 0.22);
+    }
+    const shield = this.fighters[target]?.art.secSkin?.fx;
+    if (shield && blocked) {
+      this.fx.burst({ x, y, count: 12, speed: [2, 5], life: [0.25, 0.5], color: shield.spark, color2: shield.spark2, drag: 2.5, kind: 'twinkle' });
+      this.fx.pulse('ring', x, y, 0.6, shield.spark2, 0.25);
     }
   }
 

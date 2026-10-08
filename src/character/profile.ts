@@ -1,5 +1,6 @@
 import { DEFAULT_BUILDS, randomBuild, sanitizeBuild, type CharacterBuild } from '../sim/loadout';
 import { randomAppearance, sanitizeAppearance, type Appearance } from './appearance';
+import { randomSkins } from './skins';
 
 /**
  * The player's one persistent character: name, body form, look and the gear
@@ -38,7 +39,7 @@ export function saveCharacter(c: PlayerCharacter): void {
 
 export function newCharacter(): PlayerCharacter {
   const base = DEFAULT_BUILDS[0];
-  return { name: '', form: 'balanced', gear: { ...base.gear }, look: randomAppearance() };
+  return { name: '', form: 'balanced', gear: { ...base.gear }, look: randomAppearance(), skins: {} };
 }
 
 const FIRST = [
@@ -52,10 +53,10 @@ export function randomName(r: () => number = Math.random): string {
   return r() < 0.4 ? cleanName(`${f} ${EPITHET[Math.floor(r() * EPITHET.length)]}`) : f;
 }
 
-/** A generated rival: random name, form, gear and look. */
+/** A generated rival: random name, form, gear, look and item skins. */
 export function generateRival(avoidName?: string): PlayerCharacter {
   let name = randomName();
   for (let i = 0; i < 4 && name === avoidName; i++) name = randomName();
   const build = randomBuild();
-  return { ...build, name, look: randomAppearance() };
+  return { ...build, name, look: randomAppearance(), skins: randomSkins(build.gear) };
 }

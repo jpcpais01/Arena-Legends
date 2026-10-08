@@ -15,7 +15,7 @@ interface Particle {
   color: number; color2: number;
   size: number;
   gravity: number; drag: number;
-  kind: 'dot' | 'streak' | 'smoke' | 'ember';
+  kind: 'dot' | 'streak' | 'smoke' | 'ember' | 'twinkle';
   ground: boolean;
 }
 
@@ -159,6 +159,16 @@ export class Fx {
         for (let i = 0; i < len; i++) g.fillRect(Math.round(x - ux * i), Math.round(y - uy * i), 1, 1);
       } else if (p.kind === 'ember') {
         if ((Math.floor(p.life * 20) & 1) === 0) g.fillRect(x, y, 1, 1);
+      } else if (p.kind === 'twinkle') {
+        // A little four-point star that shrinks to a dot (legendary skins).
+        g.fillRect(x, y, 1, 1);
+        if (k < 0.45) {
+          g.fillRect(x - 1, y, 3, 1);
+          g.fillRect(x, y - 1, 1, 3);
+          if (k < 0.15) { g.fillRect(x - 2, y, 5, 1); g.fillRect(x, y - 2, 1, 5); }
+          g.fillStyle = '#fff';
+          g.fillRect(x, y, 1, 1);
+        }
       } else {
         const s = p.size > 1 && k > 0.6 ? p.size - 1 : p.size;
         g.fillRect(x, y, s, s);

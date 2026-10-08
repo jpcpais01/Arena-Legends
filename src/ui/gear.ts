@@ -1,5 +1,6 @@
 import { sfx } from '../audio/sfx';
 import type { PlayerCharacter } from '../character/profile';
+import { RARITY_INFO, skinOn, skinsFor, type SkinDef } from '../character/skins';
 import { iconCanvas } from '../render/icons';
 import { GEAR_SLOTS, gearIdsFor, gearOf, SLOT_NAMES, type GearDef } from '../sim/gear';
 import { withGear } from '../sim/loadout';
@@ -36,8 +37,12 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks): { el: HTML
   const list = h('div.items');
   const desc = h('p.muted', { style: { margin: '0 0 10px', fontSize: '13px' } });
 
+  const skins = h('div.skins');
+  const skinOf = (id: GearId) => skinOn(c.skins, id);
+
   const card = (g: GearDef | null, on: boolean) => {
-    const ic = g ? iconCanvas(g.id) : emptyIcon();
+    const ic = g ? iconCanvas(g.id, undefined, skinOf(g.id)?.id) : emptyIcon();
+    const nSkins = g ? skinsFor(g.id).length : 0;
     ic.classList.add('icon');
     const abil = g ? [...(g.abilities ?? []), ...(g.evade ? [g.evade] : [])] : [];
     const mods = g ? modText(g.add, g.mul) : '';
@@ -46,6 +51,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks): { el: HTML
       h('div', null,
         h('b', null, g ? g.name : 'Nothing'),
         g ? h(`span.rar.r-${g.rarity}`, null, g.rarity) : null,
+        nSkins ? h('span.skin-count', null, `${nSkins} skin${nSkins > 1 ? 's' : ''}`) : null,
         h('p', null, g ? g.desc : 'Leave this slot empty.'),
         ...abil.map((a) => h('div.abil', null, h('i', null, a.name), a.desc ? ` · ${a.desc}` : '')),
         mods ? h('div.stats', null, mods) : null,
@@ -62,10 +68,45 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks): { el: HTML
     render();
   }
 
+  /** Picks a skin for an item (null = the plain item). Kept per item, even after swapping it out. */
+  function wear(id: GearId, skin: SkinDef | null): void {
+    if ((skinOf(id)?.id ?? null) === (skin?.id ?? null)) return;
+    const next = { ...c.skins };
+    if (skin) next[id] = skin.id;
+    else delete next[id];
+    c = { ...c, skins: next };
+    sfx.play('ui');
+    cb.onChange(c);
+    preview.set(c);
+    preview.showcase();
+    render();
+  }
+
+  /** Skins for the item in this slot: the plain item first, then rare, mythic, legendary. */
+  function renderSkins(): void {
+    const id = c.gear[slot];
+    const list = id ? skinsFor(id) : [];
+    skins.hidden = !list.length;
+    if (!id || !list.length) { skins.replaceChildren(); return; }
+    const cur = skinOf(id);
+    const chip = (sk: SkinDef | null) => {
+      const ic = iconCanvas(id, 40, sk?.id);
+      ic.classList.add('icon');
+      return h(`button.skin${sk ? '.' + sk.rarity : ''}${(cur?.id ?? null) === (sk?.id ?? null) ? '.on' : ''}`, {
+        title: sk ? `${sk.name}: ${RARITY_INFO[sk.rarity]}` : 'The plain item.',
+        onclick: () => wear(id, sk),
+      }, ic, h('b', null, sk ? sk.name : 'Default'), h('small', null, sk ? sk.rarity : 'Plain'));
+    };
+    skins.replaceChildren(
+      h('div.skins-head', null, h('span', null, `Skins · ${gearOf(id).name}`), h('i', null, cur ? RARITY_INFO[cur.rarity] : 'Looks only, never changes a fight.')),
+      h('div.skin-row', null, chip(null), ...list.map(chip)),
+    );
+  }
+
   function render(): void {
     slots.replaceChildren(...GEAR_SLOTS.map((s) => {
       const id = c.gear[s];
-      const ic = id ? iconCanvas(id) : emptyIcon();
+      const ic = id ? iconCanvas(id, undefined, skinOf(id)?.id) : emptyIcon();
       ic.classList.add('icon');
       return h(`button.slot${s === slot ? '.on' : ''}`, { title: SLOT_NAMES[s], onclick: () => { slot = s; sfx.play('ui'); render(); } }, ic, h('small', null, SHORT[s]));
     }));
@@ -76,6 +117,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks): { el: HTML
       ...ids.map((id) => card(gearOf(id), c.gear[slot] === id)),
     );
     stats.replaceChildren(...statLines(c.form, c.gear));
+    renderSkins();
   }
 
   render();
@@ -85,7 +127,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks): { el: HTML
         h('button.btn.icon', { title: 'Close', 'aria-label': 'Close', onclick: () => { sfx.play('ui'); cb.onClose(); } }, icon('close'))),
       h('div.sheet-body.split', null,
         h('div.stage', null, preview.el, h('div.hint', null, 'Tap to see a move'), stats),
-        h('div.panel-scroll', null, slots, desc, list)),
+        h('div.panel-scroll', null, slots, desc, skins, list)),
       h('div.sheet-foot', null, h('button.btn.primary', { onclick: () => { sfx.play('ui'); cb.onClose(); } }, icon('check'), 'Done')),
     ),
   );

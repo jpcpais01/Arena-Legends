@@ -21,6 +21,20 @@ export interface Material {
   /** Self-lit: always drawn at `glowTone`, no outline. */
   glow: boolean;
   glowTone: number;
+  /** Surface texture: tone offset at a point (see tex.ts). */
+  tex?: Tex;
+}
+
+/**
+ * A surface pattern: tone offset (usually -1, 0 or +1) at a point in the
+ * shape's own space. `phase` is the animation frame, so patterns can flow.
+ */
+export type Tex = (x: number, y: number, phase: number) => number;
+
+/** Maps raster pixels back into a part's own space (weapon-local textures). */
+export interface LocalSpace {
+  ix(x: number, y: number): number;
+  iy(x: number, y: number): number;
 }
 
 export interface MaterialSpec {
@@ -32,6 +46,7 @@ export interface MaterialSpec {
   ink?: number;
   /** Lightness step of the ramp (contrast). */
   step?: number;
+  tex?: Tex;
 }
 
 export function material(spec: MaterialSpec): Material {
@@ -43,6 +58,7 @@ export function material(spec: MaterialSpec): Material {
     ink: spec.ink ?? inkFor(r[0]),
     glow: !!spec.glow,
     glowTone: 3,
+    tex: spec.tex,
   };
 }
 
@@ -61,6 +77,8 @@ export interface FillOptions {
   noLine?: boolean;
   /** Ignore the light's horizontal component (cloth hanging, faces). */
   softLight?: boolean;
+  /** Space textures are laid out in (raster space when omitted). */
+  local?: LocalSpace;
 }
 
 export interface Frame {
@@ -90,6 +108,10 @@ export class Raster {
   readonly order: Uint16Array;
   readonly flags: Uint8Array;
   readonly materials: Material[] = [];
+  /** Animation frame being drawn (flowing textures). */
+  phase = 0;
+  /** Default space for textures when a fill doesn't name one (null = raster space). */
+  space: LocalSpace | null = null;
   private nextOrder = 1;
 
   constructor(w: number, h: number) {
@@ -111,6 +133,7 @@ export class Raster {
     this.flags.fill(0);
     this.materials.length = 0;
     this.nextOrder = 1;
+    this.space = null;
   }
 
   /** Registers a material for this frame and returns its handle. */
@@ -133,6 +156,7 @@ export class Raster {
     const group = o.group ?? 1;
     const ord = this.nextOrder++;
     const flag = (mt.glow ? FLAG_GLOW : 0) | (o.noLine ? FLAG_NOLINE : 0);
+    const tex = mt.tex, loc = o.local ?? this.space, phase = this.phase;
     const e = 0.5;
     for (let y = y0; y <= y1; y++) {
       const cy = y + 0.5;
@@ -157,6 +181,8 @@ export class Raster {
         tone += bias;
         if (tone > mt.maxTone && !mt.glow) tone = mt.maxTone;
         if (tone < mt.minTone) tone = mt.minTone;
+        // Textures may reach past the lighting's range (glints, glowing veins).
+        if (tex) tone += loc ? tex(loc.ix(cx, cy), loc.iy(cx, cy), phase) : tex(cx, cy, phase);
         if (tone < 0) tone = 0;
         if (tone > 4) tone = 4;
         const i = y * w + x;

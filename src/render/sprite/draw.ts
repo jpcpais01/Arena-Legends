@@ -52,6 +52,9 @@ const G = {
   ears: 11, cape: 12, headgear: 13, skirt: 14, smear: 15,
 } as const;
 
+/** Where the last drawn figure's main weapon tip was (raster space), for legendary sparkles. */
+export const figureMarks: { tip: [number, number] | null } = { tip: null };
+
 export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: number, OY: number): Skeleton {
   const { body, chest } = art;
   const pose = spec.pose;
@@ -78,6 +81,9 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
   const H = frameAt(OX, OY, sk.head, sk.headAng, body.headRx / 6.2, body.headRy / 6.4);
   const sp = art.look.species;
   const sway = pose.sway;
+  figureMarks.tip = null;
+  // Skin textures on clothes and armour follow the torso (and the head, below).
+  r.space = T;
 
   // --- Behind everything: tail, cape, long hair, slung gear --------------------
   drawTail(r, art, T, m, sway);
@@ -103,18 +109,21 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
   else drawHem(r, art, T, m);
 
   // --- Head -------------------------------------------------------------------------
+  r.space = H;
   drawEarsBehind(r, art, H, m);
   drawHead(r, art, H, m);
   drawFace(r, art, H, spec.face, m);
   drawHairFront(r, art, H, m);
   drawEarsFront(r, art, H, m, sp);
   drawHeadgear(r, art, H, m, sway);
+  r.space = T;
 
   // --- Front --------------------------------------------------------------------------
   if (hold.sec === 'hand' && hold.secFront) drawSec(r, art, sk, pose, hold, OX, OY, m, 0);
   if (spec.smear && hold.main === 'hand') drawSmear(r, art, sk, { ...spec.smear, from: spec.smear.from + pose.rot, to: spec.smear.to + pose.rot }, OX, OY);
   if (hold.main === 'hand' && !hold.mainBehind && art.family !== 'bow') drawMain(r, art, sk, pose, hold, OX, OY, m, 0);
   drawArm(r, art, sk, 'N', X, Y, m);
+  r.space = null;
   return sk;
 }
 
@@ -452,7 +461,7 @@ function drawFace(r: Raster, art: CharacterArt, H: Xf, face: Expression, m: (k: 
 }
 
 /** Hair cap: everything of an enlarged head above the brow-to-nape line. */
-function hairCap(H: Xf, front: number, back: number, grow = 0.9): Shape {
+export function hairCap(H: Xf, front: number, back: number, grow = 0.9): Shape {
   const cap = H.ell(-0.4, 0.9, 6.2 + grow, 6.1 + grow);
   const a = H.p(7, front), b = H.p(-7.5, back);
   // Keep the side of line a→b where the crown is.
@@ -600,7 +609,8 @@ function drawEarsFront(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => nu
 
 function drawHeadgear(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => number, sway: number): void {
   const g = G.headgear;
-  switch (art.headgear) {
+  if (art.headDraw) art.headDraw(r, H, m, g, sway);
+  else switch (art.headgear) {
     case 'iron_helm': {
       const dome = hairCap(H, 1.2, -3.6, 1.25);
       r.fill(dome, m('helm'), { group: g, bevel: 3 });
@@ -669,11 +679,13 @@ function drawMain(r: Raster, art: CharacterArt, sk: Skeleton, pose: Pose, hold: 
     const pull = hold.pull ?? 0;
     const stringTo: [number, number] | undefined = pull > 0.05 ? [OX + sk.handN.x, OY - sk.handN.y] : undefined;
     art.main.draw(r, t, wm, { group: G.main, toneBias: bias, pull, stringTo });
+    figureMarks.tip = t.p(-3, 20);
     return;
   }
   const sc = hold.mainScale ?? 1;
   const t = frameAt(OX, OY, sk.handN, pose.wAng + pose.rot, sc);
   art.main.draw(r, t, wm, { group: G.main, toneBias: bias });
+  figureMarks.tip = t.p(art.main.tip * 0.85, 0);
 }
 
 function drawMainOnBack(r: Raster, art: CharacterArt, sk: Skeleton, OX: number, OY: number, m: (k: string) => number): void {
@@ -719,6 +731,8 @@ function drawSmear(r: Raster, art: CharacterArt, sk: Skeleton, s: Smear, OX: num
   const shape = arc(cx, cy, Math.max(3, reach - art.main.tip * 0.75), reach + 1, -s.from, -s.to);
   const mat = r.add(smearMat(art));
   const dim = r.add(smearDim(art));
+  // Legendary skins leave a fuller, brighter trail.
+  const legend = !!art.mainSkin?.fx;
   const span = s.to - s.from;
   const x0 = Math.max(0, Math.floor(shape.box.x0)), x1 = Math.min(r.w - 1, Math.ceil(shape.box.x1));
   const y0 = Math.max(0, Math.floor(shape.box.y0)), y1 = Math.min(r.h - 1, Math.ceil(shape.box.y1));
@@ -735,8 +749,8 @@ function drawSmear(r: Raster, art: CharacterArt, sk: Skeleton, s: Smear, OX: num
     const thick = art.main.tip * (0.08 + 0.62 * u * u);
     const depth = reach + 0.5 - rr;
     if (depth > thick || u < 0.12) continue;
-    if (u < 0.45 && ((x + y) & 1)) continue;
-    r.dot(x, y, depth < 2.2 && u > 0.35 ? mat : dim, 3, G.smear);
+    if (u < (legend ? 0.3 : 0.45) && ((x + y) & 1)) continue;
+    r.dot(x, y, depth < (legend ? 3.4 : 2.2) && u > 0.35 ? mat : dim, 3, G.smear);
   }
 }
 
@@ -764,8 +778,11 @@ const smearCache = new WeakMap<CharacterArt, [Material, Material]>();
 function smearMats(art: CharacterArt): [Material, Material] {
   let s = smearCache.get(art);
   if (!s) {
+    const skin = art.mainSkin?.trail;
     const tint = art.mainId === 'ember_wand' ? 0xffc070 : art.mainId === 'dagger' ? 0xd8ffc0 : art.mainId === 'greataxe' ? 0xffe0d8 : 0xf4f8ff;
-    s = [material({ base: tint, glow: true }), material({ base: mixHex(tint, 0x8aa0c8, 0.45), glow: true })];
+    s = skin
+      ? [material({ base: skin[0], glow: true }), material({ base: skin[1], glow: true })]
+      : [material({ base: tint, glow: true }), material({ base: mixHex(tint, 0x8aa0c8, 0.45), glow: true })];
     smearCache.set(art, s);
   }
   return s;
