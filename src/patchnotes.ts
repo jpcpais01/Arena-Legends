@@ -12,6 +12,18 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.10.0',
+    date: '2026-10-08',
+    title: 'A new gear screen built around your fighter',
+    notes: [
+      'Your fighter now stands big in the middle of the gear screen, with the six gear slots around them: what you hold on the left, what you wear on the right.',
+      'Items are shown as a clean grid of icons and names. Tap one to open its card with the description, skills and cooldowns, its stats, how your stats would change, and its skins. Equip it from there.',
+      'On phones, a Stats button shows your full stats over the stage, and Done sits at the top so the list has more room.',
+      'The character creator shows your fighter much larger on phones, with the name and tags tucked into the corner of the stage.',
+      'Creator buttons on phones are smaller and cleaner, and Next stays centred.',
+    ],
+  },
+  {
     version: '0.9.1',
     date: '2026-10-08',
     title: 'Bigger creator buttons on phones',
