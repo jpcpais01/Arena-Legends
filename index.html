@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#120c1a" />
+    <meta name="description" content="Pixel-art 1v1 auto battler: build a fighter, then watch the adaptive AI duel." />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="icon" href="/icons/favicon-32.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <title>Arena Legends</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #120c1a; overflow: hidden; }
+      .boot { position: fixed; inset: 0; display: grid; place-items: center; align-content: center; gap: 18px; color: #f4ecdc; font: 700 32px/1 monospace; letter-spacing: 0.08em; }
+      .boot em { font-style: normal; color: #f2b840; }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="ui">
+        <div id="boot" class="boot"><div>ARENA <em>LEGENDS</em></div></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
