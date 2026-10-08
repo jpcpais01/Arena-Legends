@@ -16,7 +16,7 @@ import type {
 export const WISP_BOLT: AbilityDef = {
   id: 'wisp_bolt', name: 'Spirit Bolt', slot: 'item', kind: 'projectile',
   range: 9, cost: 0, cooldown: 3.2, windup: 0.35, active: 0, recovery: 0,
-  power: 0.42, damageType: 'magic', stagger: 0.1,
+  power: 0.5, damageType: 'magic', stagger: 0.1,
   projectile: { speed: 12, radius: 0.3, style: 'wisp' },
   anim: 'item', desc: 'The lantern spirit shoots a small bolt.',
 };

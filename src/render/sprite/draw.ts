@@ -17,7 +17,7 @@ export type Expression = 'calm' | 'fierce' | 'hurt' | 'ko' | 'shout' | 'blink';
 
 export interface Hold {
   /** Main weapon: in hand, or slung on the back while the secondary is out. */
-  main: 'hand' | 'back';
+  main: 'hand' | 'back' | 'none';
   /** Secondary: in the far hand, holstered, or away (thrown). */
   sec: 'hand' | 'stowed' | 'gone';
   /** Shield-like items held in front of the torso rather than behind it. */
