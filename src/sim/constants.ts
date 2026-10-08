@@ -6,7 +6,7 @@ export const ARENA_HALF_WIDTH = 9;
 export const START_GAP = 4.2;
 /** Minimum centre-to-centre distance; fighters push each other apart below this. */
 export const BODY_GAP = 1.0;
-export const ROUND_TIME = 99;
+export const ROUND_TIME = 60;
 
 export const MAX_ENERGY = 100;
 export const BASE_ENERGY_REGEN = 3.2;

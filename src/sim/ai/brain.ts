@@ -482,7 +482,7 @@ export class Brain implements FighterBrain {
     const enemyDots = stacksOf(e, 'burn') + stacksOf(e, 'poison');
     const myUlt = this.kit.info.some((a) => a.ultimate && f.energy >= a.ab.cost);
     const theirUlt = this.ek.info.some((a) => a.ultimate && e.energy >= a.ab.cost);
-    const late = b.time > ROUND_TIME - 18;
+    const late = b.time > ROUND_TIME * 0.82;
     const losingOnTime = late && myHp <= enHp;
     const winningOnTime = late && myHp > enHp + 0.12;
     const theirDef = readyDefenses(e, this.ek, 0.3);
