@@ -39,12 +39,12 @@ export function modText(add?: Partial<Stats>, mul?: Partial<Stats>): string {
   return out.join(' · ');
 }
 
-/** The stats that change between two gear sets, as "label · old → new" rows (for a `.diff` grid). */
+/** The stats that change between two gear sets, as small "label new" chips marked up or down (for a `.diff` row). */
 export function statDiff(form: FormId, from: GearSet, to: GearSet): HTMLElement[] {
   const a = computeBaseStats(form, from), b = computeBaseStats(form, to);
   return LINES.flatMap(([k, label, f]) => {
     const x = a[k] as number, y = b[k] as number;
     if (f(x) === f(y)) return [];
-    return [h('span', null, label), h('s', null, f(x)), h(`b.${y > x ? 'up' : 'down'}`, null, f(y))];
+    return [h(`span.chg.${y > x ? 'up' : 'down'}`, { title: `${label}: ${f(x)} to ${f(y)}` }, label, ' ', h('b', null, f(y)))];
   });
 }
