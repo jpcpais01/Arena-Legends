@@ -1,7 +1,7 @@
 import { sfx, type Sfx } from '../audio/sfx';
 import { clamp } from '../core/math';
 import type { Battle } from '../sim/battle';
-import { ARENA_HALF_WIDTH, DT } from '../sim/constants';
+import { ARENA_HALF_WIDTH, DT, ROUND_TIME } from '../sim/constants';
 import { getStatus, type Fighter } from '../sim/fighter';
 import type { BattleEvent, FighterId, Projectile, ProjectileStyle } from '../sim/types';
 import { ArenaView } from './arena';
@@ -205,6 +205,7 @@ export class BattleView implements View {
     const g = this.screen.g;
     const b = this.battle!;
     const cam = this.camX * PPM - this.shakeX;
+    this.arena!.setDay(b.time / ROUND_TIME);
     this.arena!.draw(g, cam, this.time);
     this.fx.drawUnder(g, this);
     // Shadows.
@@ -222,6 +223,7 @@ export class BattleView implements View {
     for (const id of order) this.drawFighter(g, b.fighters[id], this.fighters[id], dt, secOut(id));
     for (const f of b.fighters) this.drawItem(g, f);
     for (const p of b.projectiles) if (p.alive) this.drawProjectile(g, p);
+    this.arena!.light(g, cam, this.time);
     this.fx.draw(g, this);
     if (this.flashT > 0) {
       g.globalAlpha = Math.min(0.5, this.flashT * 4);

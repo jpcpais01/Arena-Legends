@@ -129,6 +129,36 @@ export interface Floater {
   phase: number;
 }
 
+/** One moment of the day: sky gradient (top → horizon), sun glow and the light over the world. */
+export interface SkyKey {
+  at: number;
+  sky: [number, number, number, number];
+  glow: number;
+  glowA: number;
+  /** Warm band along the horizon under the sun (sunset afterglow). */
+  band: number;
+  bandA: number;
+  /** Colour the whole world is pulled toward, and how far. */
+  tint: number;
+  tintA: number;
+}
+
+/** A sky drawn live, moving from day through sunset to night over one round. */
+export interface DayCycle {
+  /** Screen y of the horizon. */
+  hz: number;
+  keys: SkyKey[];
+  sunR: number;
+  stars: Pix;
+  rainbow: Pix;
+  moon: Pix;
+  /** Where the sun sits inside each sun-shaft canvas. */
+  rayOrigin: [number, number];
+  /** Spots that glow at night: screen x at camera 0, screen y, parallax factor, radius. */
+  lamps: { x: number; y: number; factor: number; r: number }[];
+  lampColor: number;
+}
+
 /** Living details over a nature arena. */
 export interface Ambience {
   /** Petals and leaves tumbling across. */
@@ -166,6 +196,8 @@ export interface ArenaArt {
   crystal: Pix | null;
   /** Two sets of sun shafts the view cross-fades, screen-anchored. */
   rays: [Pix, Pix] | null;
+  /** Live sky and day-to-night lighting; when set, `layers` has no sky of its own. */
+  cycle: DayCycle | null;
   floaters: Floater[];
   ambience: Ambience | null;
 }
@@ -246,7 +278,7 @@ export function buildArena(theme: Theme, W: number, H: number, gy: number, trave
     theme, gy, hy, floorTop, wallFactor,
     layers: [L(sky, 0), L(clouds, 0.06), L(mFar, 0.12), L(mNear, 0.2), L(city, 0.35), L(stands, wallFactor)],
     crowd: [crowdA, crowdB], crowdLayer, floor, torches, pillar,
-    front: [], floorEnd: Infinity, crystal: null, rays: null, floaters: [], ambience: null,
+    front: [], floorEnd: Infinity, crystal: null, rays: null, cycle: null, floaters: [], ambience: null,
   };
 }
 
