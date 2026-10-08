@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.6.1',
+    date: '2026-10-08',
+    title: 'A clear blue sky over Skygrove',
+    notes: [
+      'The Skygrove Isle sky is now a smooth, clean blue that fades softly toward the horizon, with no grainy texture.',
+      'The sun glows softly, the rainbow blends in gently, and the sunbeams fade smoothly instead of looking speckled.',
+      'Clouds are cleaner too.',
+    ],
+  },
+  {
     version: '0.6.0',
     date: '2026-10-08',
     title: 'Skygrove Isle gets a glow-up, and you pick the arena',

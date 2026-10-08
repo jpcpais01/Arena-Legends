@@ -202,7 +202,7 @@ function puff(p: Pix, cx: number, cy: number, rx: number, ry: number, cut = Infi
       for (let x = x0; x <= x1; x++) {
         const u = (x + 0.5 - cx - ox) / rx, v = (y + 0.5 - cy) / ry;
         if (u * u + v * v > 1) continue;
-        p.set(x, y, tone(SG.cloud, light - v * 0.5 + u * 0.12, x, y, 0.22));
+        p.set(x, y, tone(SG.cloud, light - v * 0.5 + u * 0.12, x, y, 0.06));
       }
     }
   }
@@ -210,40 +210,38 @@ function puff(p: Pix, cx: number, cy: number, rx: number, ry: number, cut = Infi
 
 // --- Sky and distance ---------------------------------------------------------------
 
+/** A clean sky: smooth per-row gradient, soft sun glow, a faint rainbow. No dithering. */
 function paintSky(th: Theme, W: number, H: number, hz: number): Pix {
   const p = new Pix(W, H);
-  p.gradient(0, 0, W, hz + 8, th.sky);
-  p.rect(0, hz + 8, W, H - hz - 8, th.sky[th.sky.length - 1]);
   const b = th.body;
-  const bx = Math.round(W * b.x), by = Math.round(hz * b.y);
-  // Sun shafts slanting down-left, very faint.
-  for (const [a, w] of [[2.25, 0.05], [2.45, 0.035], [2.7, 0.06], [2.95, 0.03]]) {
-    for (let y = by; y < hz; y++) for (let x = 0; x < bx; x++) {
-      const ang = Math.atan2(y - by, x - bx);
-      if (Math.abs(ang - a) > w) continue;
-      const f = 1 - Math.hypot(x - bx, y - by) / (hz * 1.4);
-      if (f > 0 && bayer(x, y) < f * 0.22) p.set(x, y, mix(unpackHex(p.get(x, y)), 0xffffff, 0.22));
-    }
-  }
-  // A faint rainbow on the side away from the sun.
+  const bx = W * b.x, by = hz * b.y;
+  const n = th.sky.length - 1;
   const rcx = W * 0.16, rcy = hz + 34, rr = hz * 0.92;
   const bands = [0xff7070, 0xffb060, 0xffe880, 0x90e080, 0x70b8ff, 0xb090ff];
-  for (let y = 0; y < hz; y++) for (let x = 0; x < W; x++) {
-    const d = Math.hypot(x - rcx, y - rcy) - rr;
-    if (d < 0 || d >= 12) continue;
-    const fade = Math.min(1, (rcy - y) / 70) * Math.min(1, (W * 0.6 - x) / 80);
-    if (bayer(x, y) < 0.34 * fade) p.set(x, y, mix(unpackHex(p.get(x, y)), bands[Math.floor(d / 2)], 0.4));
-  }
-  // Halo: dithered rings that brighten toward the disc.
-  for (let k = 4; k >= 1; k--) {
-    const r = b.r + k * 10;
-    for (let y = by - r; y <= by + r; y++) for (let x = bx - r; x <= bx + r; x++) {
-      if (Math.hypot(x - bx, y - by) > r || !p.has(x, y)) continue;
-      if (bayer(x, y) < 0.3 + (4 - k) * 0.17) p.set(x, y, mix(unpackHex(p.get(x, y)), b.glow, 0.3));
+  const glowR = b.r * 12;
+  for (let y = 0; y < H; y++) {
+    // Deep blue overhead, fading gently to the pale horizon.
+    const t = Math.min(1, y / (hz + 8));
+    const e = Math.pow(t, 1.25);
+    const k = e * n, i = Math.min(n - 1, Math.floor(k));
+    const row = mix(th.sky[i], th.sky[i + 1], k - i);
+    for (let x = 0; x < W; x++) {
+      let c = row;
+      const d = Math.hypot(x + 0.5 - bx, y + 0.5 - by);
+      if (d < glowR) {
+        const g = Math.exp(-((d / (b.r * 2.6)) ** 2)) * 0.7 + Math.exp(-d / (b.r * 3.5)) * 0.25;
+        c = mix(c, b.glow, Math.min(1, g));
+        if (d < b.r + 1.5) c = d < b.r ? (d < b.r - 4 ? mix(b.color, 0xffffff, 0.55) : b.color) : mix(c, b.color, b.r + 1.5 - d);
+      }
+      const rd = Math.hypot(x + 0.5 - rcx, y + 0.5 - rcy) - rr;
+      if (rd >= 0 && rd < 14 && y < hz) {
+        const fade = Math.min(1, (rcy - y) / 90) * Math.max(0, Math.min(1, (W * 0.6 - x) / 100));
+        const q = (rd / 14) * (bands.length - 1), qi = Math.min(bands.length - 2, Math.floor(q));
+        c = mix(c, mix(bands[qi], bands[qi + 1], q - qi), 0.2 * Math.sin((rd / 14) * Math.PI) * fade);
+      }
+      p.set(x, y, c);
     }
   }
-  p.ellipse(bx, by, b.r, b.r, b.color);
-  p.ellipse(bx + 2, by - 2, b.r - 5, b.r - 5, mix(b.color, 0xffffff, 0.6));
   return p;
 }
 
@@ -263,9 +261,8 @@ function paintHighClouds(p: Pix, rng: Rng, hz: number): void {
   for (let i = 0; i < n + 1; i++) {
     const y = Math.round(rng.range(hz * 0.06, hz * 0.62)), x0 = rng.range(0, p.w), len = rng.range(40, 110);
     for (let x = 0; x < len; x++) {
-      const e = Math.min(x, len - x) / 12;
-      if (bayer(x0 + x, y) < e) p.set((Math.round(x0 + x) + p.w) % p.w, y, SG.cloud[3]);
-      if (x > len * 0.2 && x < len * 0.7 && bayer(x0 + x, y + 1) < e * 0.6) p.set((Math.round(x0 + x + 6) + p.w) % p.w, y + 1, SG.cloud[2]);
+      if (x > 2 && x < len - 2) p.set((Math.round(x0 + x) + p.w) % p.w, y, SG.cloud[3]);
+      if (x > len * 0.25 && x < len * 0.7) p.set((Math.round(x0 + x + 6) + p.w) % p.w, y + 1, SG.cloud[2]);
     }
   }
 }
@@ -801,9 +798,9 @@ function paintRays(rng: Rng, W: number, h: number, sx: number, sy: number): [Pix
     for (const s of shafts) {
       const da = Math.abs(ang - s.a);
       if (da >= s.w) continue;
-      const f = (1 - da / s.w) * fade, b = bayer(x, y);
-      if (b < f * 0.45) out[s.k].set(x, y, col, 120);
-      else if (b < f) out[s.k].set(x, y, col, 60);
+      const f = (1 - da / s.w) * fade;
+      const a = Math.round(Math.sin(f * Math.PI / 2) * 80);
+      if (a > 2 && a > out[s.k].get(x, y) >>> 24) out[s.k].set(x, y, col, a);
     }
   }
   return out;
