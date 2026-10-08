@@ -1,7 +1,6 @@
 import { it } from 'vitest';
 import { buildArena, floorRow, THEMES, type Layer } from '../src/render/arenaArt';
 import { Pix } from '../src/render/pixel/paint';
-import { mix, unpackHex } from '../src/render/pixel/color';
 import { writePng } from './png';
 
 /** Dev preview: an arena composed at a camera position (`THEME=0 CAM=0 W=560 H=315 OUT=...`). */
@@ -25,10 +24,6 @@ it('arena preview', () => {
       const c = a.floor.get(u, v);
       if (c >>> 24) out.data[y * W + x] = c;
     }
-  }
-  for (const r of a.rays ?? []) for (let i = 0; i < r.data.length; i++) {
-    const c = r.data[i], al = (c >>> 24) / 255 * 0.55;
-    if (al > 0) out.data[i] = (0xff000000 | (out.data[i] & 0xffffff)) >>> 0, out.set(i % W, Math.floor(i / W), mix(unpackHex(out.data[i]), unpackHex(c), al));
   }
   for (const l of a.front) layer(l);
   floaters(true);

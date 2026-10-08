@@ -212,10 +212,7 @@ export class BattleView implements View {
     for (const f of b.fighters) {
       const x = Math.round(this.sx(this.lx(f))), y = Math.round(this.sy(0));
       const lift = clamp(this.ly(f) / 2.5, 0, 0.7);
-      const rx = Math.round((11 + (f.form === 'robust' || f.form === 'mighty' ? 2 : 0)) * (1 - lift * 0.5));
-      g.fillStyle = 'rgba(20,10,30,0.38)';
-      g.fillRect(x - rx + 2, y - 1, rx * 2 - 3, 3);
-      g.fillRect(x - rx, y, rx * 2 + 1, 1);
+      this.arena!.shadow(g, x, y, 11 + (f.form === 'robust' || f.form === 'mighty' ? 2 : 0), 1, lift);
     }
     // The fighter mid-attack draws in front.
     const order: FighterId[] = b.fighters[0].action && !b.fighters[1].action ? [1, 0] : [0, 1];

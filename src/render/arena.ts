@@ -40,6 +40,13 @@ function glowSprite(color: number): HTMLCanvasElement {
   return c;
 }
 
+/** A small offscreen canvas and its context, for the light-shaft pass. */
+function scratch(w: number, h: number): { c: HTMLCanvasElement; g: CanvasRenderingContext2D } {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  return { c, g: c.getContext('2d')! };
+}
+
 function canvasOf(p: Pix): HTMLCanvasElement {
   const c = document.createElement('canvas');
   c.width = p.w; c.height = p.h;
@@ -83,7 +90,10 @@ export class ArenaView {
   private floor: HTMLCanvasElement;
   private pillar: HTMLCanvasElement;
   private crystal: HTMLCanvasElement | null;
-  private rays: HTMLCanvasElement[];
+  /** Quarter-res ping-pong buffers for the light shafts (live-sky arenas only). */
+  private shafts: { a: ReturnType<typeof scratch>; b: ReturnType<typeof scratch> } | null;
+  /** This frame's light for shafts and shadows: screen position, colour, shaft strength, cast-shadow length/side/strength. */
+  private sun = { x: 0, y: 0, color: 0xffffff, power: 0, len: 0, dir: 1, shade: 0.2 };
   private floaters: FloaterImg[];
   private amb: { petals: string[]; wings: string[]; sparkle: string; bird: string } | null;
   private sky: { stars: HTMLCanvasElement; rainbow: HTMLCanvasElement; moon: HTMLCanvasElement; lamp: HTMLCanvasElement; firefly: HTMLCanvasElement } | null;
@@ -101,7 +111,8 @@ export class ArenaView {
     this.layers = this.art.layers.map(img);
     this.front = this.art.front.map(img);
     this.crystal = this.art.crystal && canvasOf(this.art.crystal);
-    this.rays = (this.art.rays ?? []).map(canvasOf);
+    const q = 4;
+    this.shafts = this.art.cycle && { a: scratch(Math.ceil(W / q), Math.ceil(H / q)), b: scratch(Math.ceil(W / q), Math.ceil(H / q)) };
     this.floaters = this.art.floaters.map((f) => ({ ...f, img: canvasOf(f.pix) }));
     const a = this.art.ambience;
     const cy = this.art.cycle;
@@ -129,6 +140,67 @@ export class ArenaView {
     return [this.W * (0.18 + 0.64 * s), hz * (0.14 + s * s)];
   }
 
+  private moonPos(): [number, number] {
+    const m = smooth(0.76, 1, this.day), hz = this.art.cycle!.hz;
+    return [this.W * (0.12 + 0.14 * m), hz * (1.08 - 0.72 * m)];
+  }
+
+  /**
+   * Where the light comes from this frame: the sun until it sinks into the
+   * clouds, then the moon; arenas with a painted sky keep theirs fixed.
+   * Shadows fall away from it, longer the lower it sits.
+   */
+  private aim(): void {
+    const W = this.W, cy = this.art.cycle, L = this.sun;
+    let elev: number, cast: number;
+    if (!cy) {
+      const b = this.theme.body;
+      L.x = W * b.x; L.y = this.gy * b.y; L.power = 0;
+      elev = 1 - b.y; cast = 0.2;
+    } else if (this.day < 0.78) {
+      const p = this.day;
+      [L.x, L.y] = this.sunPos();
+      L.color = mix(0xfff2cc, 0xffb068, smooth(0.42, 0.7, p));
+      L.power = (0.6 + 0.4 * smooth(0.45, 0.68, p)) * (1 - smooth(0.68, 0.77, p));
+      elev = 1 - L.y / cy.hz;
+      cast = 0.32 * (1 - smooth(0.7, 0.77, p));
+    } else {
+      const m = smooth(0.8, 0.95, this.day);
+      [L.x, L.y] = this.moonPos();
+      L.color = 0x9cb6ff;
+      L.power = 0.45 * m;
+      elev = 1 - L.y / cy.hz;
+      cast = 0.16 * m;
+    }
+    const az = Math.max(-1, Math.min(1, (L.x - W / 2) / (W / 2)));
+    L.dir = az > 0 ? -1 : 1;
+    L.len = (4 + 40 * Math.max(0, 1 - elev) ** 1.5) * (0.4 + 0.6 * Math.abs(az));
+    L.shade = cast;
+  }
+
+  /**
+   * Ground shadow for something standing at screen (x, y): a dark contact
+   * patch that grounds it, plus a softer shadow cast away from the light.
+   * `tall` scales the cast (1 = a fighter); `lift` (0..1) fades it off the ground.
+   */
+  shadow(g: CanvasRenderingContext2D, x: number, y: number, rx: number, tall = 1, lift = 0): void {
+    const r = Math.round(rx * (1 - lift * 0.5));
+    g.fillStyle = 'rgba(20,10,30,0.38)';
+    g.fillRect(x - r + 2, y - 1, r * 2 - 3, 3);
+    g.fillRect(x - r, y, r * 2 + 1, 1);
+    const L = this.sun;
+    const a = L.shade * (1 - lift * 0.7);
+    if (a < 0.01) return;
+    const len = Math.round(L.len * tall * (1 - lift * 0.5));
+    g.fillStyle = '#140c24';
+    for (let s = 0; s < len; s += 3) {
+      const t = s / len, rows = t < 0.45 ? 3 : t < 0.8 ? 2 : 1;
+      g.globalAlpha = a * (1 - t * 0.8);
+      g.fillRect(L.dir > 0 ? x + s : x - s - 3, y + 2 - rows, 3, rows);
+    }
+    g.globalAlpha = 1;
+  }
+
   update(dt: number): void {
     this.excite = Math.max(0, this.excite - dt * 0.5);
     this.crowdT += dt * (1.5 + this.excite * 9);
@@ -138,6 +210,7 @@ export class ArenaView {
   /** Everything behind the fighters. `cam` is the camera centre in art px; `t` real time. */
   draw(g: CanvasRenderingContext2D, cam: number, t: number): void {
     const W = this.W;
+    this.aim();
     // A live sky is painted behind everything afterwards (see light()).
     if (this.sky) g.clearRect(0, 0, W, this.H);
     const off = (img: HTMLCanvasElement, f: number) => Math.round(-(img.width - W) / 2 - cam * f);
@@ -171,22 +244,14 @@ export class ArenaView {
       const sx = fw / 2 + cam - srcW / 2;
       g.drawImage(this.floor, sx, v, srcW, 1, 0, y, W, 1);
     }
-    // Sun shafts slowly trading places.
-    const sun = this.sky ? this.sunPos() : [0, 0];
-    const o = this.art.cycle?.rayOrigin ?? [0, 0];
-    const beam = this.sky ? 1 - smooth(0.55, 0.72, this.day) : 1;
-    if (beam > 0) for (let k = 0; k < this.rays.length; k++) {
-      g.globalAlpha = (0.55 + 0.45 * Math.sin(t * 0.45 + k * Math.PI)) * beam;
-      g.drawImage(this.rays[k], Math.round(sun[0] - o[0]), Math.round(sun[1] - o[1]));
-    }
-    g.globalAlpha = 1;
     for (const l of this.front) layer(l);
     if (this.floaters.length) this.drawFloaters(g, cam, t, true);
     if (this.amb) this.drawAmbience(g, cam, t);
     // Pillars with braziers at the arena bounds.
     for (const side of [-1, 1]) {
       const x = Math.round(W / 2 + side * (ARENA_HALF_WIDTH + 0.75) * PPM - cam - this.pillar.width / 2);
-      if (x > W || x + this.pillar.width < 0) continue;
+      if (x > W + 60 || x + this.pillar.width < -60) continue;
+      this.shadow(g, x + (this.pillar.width >> 1), this.gy + 1, 12, 1.5);
       g.drawImage(this.pillar, x, this.gy - this.pillar.height + 2);
       if (this.crystal) {
         const bob = Math.round(Math.sin(t * 1.8 + side) * 2);
@@ -208,13 +273,27 @@ export class ArenaView {
     if (!cy || !sk) return;
     const W = this.W, H = this.H, hz = cy.hz, p = this.day;
     const k = skyAt(cy.keys, p);
+    const L = this.sun;
+    // Before the sky goes in, the buffer's alpha is exactly what blocks the light.
+    const shafts = L.power > 0.01 ? this.castShafts(g) : null;
+    g.globalCompositeOperation = 'source-atop';
     if (k.tintA > 0.004) {
-      g.globalCompositeOperation = 'source-atop';
       g.globalAlpha = k.tintA;
       g.fillStyle = css(k.tint);
       g.fillRect(0, 0, W, H);
-      g.globalAlpha = 1;
     }
+    // Low sun: warm on the side it shines from, cooler and dimmer away from it.
+    const side = smooth(0.38, 0.6, p) * (1 - smooth(0.72, 0.8, p));
+    if (side > 0.01) {
+      const lg = g.createLinearGradient(L.x, 0, L.x < W / 2 ? W : 0, 0);
+      lg.addColorStop(0, css(L.color, 0.16 * side));
+      lg.addColorStop(0.45, css(L.color, 0));
+      lg.addColorStop(1, css(0x2a1a50, 0.18 * side));
+      g.globalAlpha = 1;
+      g.fillStyle = lg;
+      g.fillRect(0, 0, W, H);
+    }
+    g.globalAlpha = 1;
     // Sky, front to back, each piece slipped behind what is already there.
     g.globalCompositeOperation = 'destination-over';
     const [sx, sy] = this.sunPos();
@@ -227,7 +306,7 @@ export class ArenaView {
     }
     const moon = smooth(0.76, 1, p);
     if (moon > 0) {
-      const mx = W * (0.12 + 0.14 * moon), my = hz * (1.08 - 0.72 * moon);
+      const [mx, my] = this.moonPos();
       g.drawImage(sk.moon, Math.round(mx - sk.moon.width / 2), Math.round(my - sk.moon.height / 2));
       const mg = g.createRadialGradient(mx, my, 0, mx, my, 44);
       mg.addColorStop(0, css(0xc8d8ff, 0.35 * moon)); mg.addColorStop(1, css(0xc8d8ff, 0));
@@ -256,6 +335,14 @@ export class ArenaView {
     k.sky.forEach((c, i) => sg.addColorStop(i / 3, css(c)));
     g.fillStyle = sg;
     g.fillRect(0, 0, W, H);
+    // Light shafts over everything, sky included.
+    if (shafts) {
+      g.globalCompositeOperation = 'lighter';
+      g.globalAlpha = L.power;
+      g.imageSmoothingEnabled = true;
+      g.drawImage(shafts, 0, 0, W, H);
+      g.imageSmoothingEnabled = false;
+    }
     // Night lights.
     const lamps = smooth(0.66, 0.86, p);
     g.globalCompositeOperation = 'lighter';
@@ -282,6 +369,61 @@ export class ArenaView {
     }
     g.globalAlpha = 1;
     g.globalCompositeOperation = 'source-over';
+  }
+
+  /**
+   * Volumetric light the cheap way: a glow around the light source, minus
+   * whatever stands in front of it (the buffer's alpha before the sky is
+   * painted), smeared outward from the source by a log-step zoom blur at
+   * quarter resolution. Gaps between leaves, islands and fighters turn into
+   * shafts; whatever blocks the sun casts its shadow through the air.
+   */
+  private castShafts(g: CanvasRenderingContext2D): HTMLCanvasElement {
+    const sh = this.shafts!, L = this.sun;
+    const w = sh.a.c.width, h = sh.a.c.height;
+    const cx = (L.x * w) / this.W, cy = (L.y * h) / this.H;
+    let src = sh.a, dst = sh.b;
+    const m = src.g;
+    m.globalCompositeOperation = 'copy';
+    const rg = m.createRadialGradient(cx, cy, 0, cx, cy, w * 0.8);
+    rg.addColorStop(0, css(L.color, 0.9));
+    rg.addColorStop(0.04, css(L.color, 0.82));
+    rg.addColorStop(0.25, css(L.color, 0.6));
+    rg.addColorStop(0.6, css(L.color, 0.25));
+    rg.addColorStop(1, css(L.color, 0));
+    m.fillStyle = rg;
+    m.fillRect(0, 0, w, h);
+    m.globalCompositeOperation = 'destination-out';
+    m.drawImage(g.canvas, 0, 0, w, h);
+    // Opaque from here on: black is no light.
+    m.globalCompositeOperation = 'destination-over';
+    m.fillStyle = '#000';
+    m.fillRect(0, 0, w, h);
+    // Six passes, each averaging the image with a copy scaled about the light:
+    // 64 taps reaching ~3x the distance from the source.
+    for (let i = 0; i < 6; i++) {
+      const z = 1.018 ** (1 << i);
+      const d = dst.g;
+      d.globalCompositeOperation = 'copy';
+      d.globalAlpha = 1;
+      d.fillStyle = '#000';
+      d.fillRect(0, 0, w, h);
+      d.globalCompositeOperation = 'lighter';
+      d.globalAlpha = 0.5;
+      d.drawImage(src.c, 0, 0);
+      d.setTransform(z, 0, 0, z, cx * (1 - z), cy * (1 - z));
+      d.drawImage(src.c, 0, 0);
+      d.setTransform(1, 0, 0, 1, 0, 0);
+      d.globalAlpha = 1;
+      [src, dst] = [dst, src];
+    }
+    // Squared for contrast: shafts stay bright, the haze between them falls away.
+    const d = dst.g;
+    d.globalCompositeOperation = 'copy';
+    d.drawImage(src.c, 0, 0);
+    d.globalCompositeOperation = 'multiply';
+    d.drawImage(src.c, 0, 0);
+    return dst.c;
   }
 
   private drawFloaters(g: CanvasRenderingContext2D, cam: number, t: number, front: boolean): void {
