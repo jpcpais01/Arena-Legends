@@ -1,8 +1,10 @@
 import { ARENA_HALF_WIDTH } from '../sim/constants';
 import { css, mix } from './pixel/color';
 import type { Pix } from './pixel/paint';
-import { buildArena, floorRow, type ArenaArt, type Theme } from './arenaArt';
+import { buildArena, floorRow, type ArenaArt, type Layer, type Theme } from './arenaArt';
 import { PPM } from './sprite/animator';
+
+interface LayerImg { img: HTMLCanvasElement; factor: number; y: number; drift: number }
 
 function canvasOf(p: Pix): HTMLCanvasElement {
   const c = document.createElement('canvas');
@@ -41,10 +43,13 @@ function flameFrames(fire: number, big: boolean): HTMLCanvasElement[] {
  */
 export class ArenaView {
   readonly art: ArenaArt;
-  private layers: { img: HTMLCanvasElement; factor: number; y: number }[];
+  private layers: LayerImg[];
+  private front: LayerImg[];
   private crowd: HTMLCanvasElement[];
   private floor: HTMLCanvasElement;
   private pillar: HTMLCanvasElement;
+  private crystal: HTMLCanvasElement | null;
+  private motes: string[];
   private torch: HTMLCanvasElement[];
   private brazier: HTMLCanvasElement[];
   private excite = 0;
@@ -52,8 +57,12 @@ export class ArenaView {
   private crowdFrame = 0;
 
   constructor(readonly theme: Theme, readonly W: number, readonly H: number, readonly gy: number, travel: number) {
-    this.art = buildArena(theme, W, gy, travel);
-    this.layers = this.art.layers.map((l) => ({ img: canvasOf(l.pix), factor: l.factor, y: l.y }));
+    this.art = buildArena(theme, W, H, gy, travel);
+    const img = (l: Layer): LayerImg => ({ img: canvasOf(l.pix), factor: l.factor, y: l.y, drift: l.drift ?? 0 });
+    this.layers = this.art.layers.map(img);
+    this.front = this.art.front.map(img);
+    this.crystal = this.art.crystal && canvasOf(this.art.crystal);
+    this.motes = (this.art.motes ?? []).map((c) => css(c));
     this.crowd = this.art.crowd.map(canvasOf);
     this.floor = canvasOf(this.art.floor);
     this.pillar = canvasOf(this.art.pillar);
@@ -76,7 +85,15 @@ export class ArenaView {
   draw(g: CanvasRenderingContext2D, cam: number, t: number): void {
     const W = this.W;
     const off = (img: HTMLCanvasElement, f: number) => Math.round(-(img.width - W) / 2 - cam * f);
-    for (const l of this.layers) g.drawImage(l.img, off(l.img, l.factor), l.y);
+    const layer = (l: LayerImg) => {
+      const x = off(l.img, l.factor);
+      if (!l.drift) { g.drawImage(l.img, x, l.y); return; }
+      // Drifting layers tile: two copies cover the screen at any offset.
+      const dx = x + Math.round((t * l.drift) % l.img.width);
+      g.drawImage(l.img, dx, l.y);
+      g.drawImage(l.img, dx - l.img.width, l.y);
+    };
+    for (const l of this.layers) layer(l);
     const wf = this.art.wallFactor;
     const cx = off(this.crowd[0], wf);
     g.drawImage(this.crowd[this.crowdFrame], cx, 0);
@@ -87,19 +104,41 @@ export class ArenaView {
     }
     // Floor rows, nearest-neighbour, each with its own scale.
     const fw = this.floor.width;
-    for (let y = this.art.floorTop; y < this.H; y++) {
+    const floorEnd = Math.min(this.H, this.art.floorEnd);
+    for (let y = this.art.floorTop; y < floorEnd; y++) {
       const { s, v } = floorRow(this.art, y);
       const srcW = W / s;
       const sx = fw / 2 + cam - srcW / 2;
       g.drawImage(this.floor, sx, v, srcW, 1, 0, y, W, 1);
     }
+    for (const l of this.front) layer(l);
+    if (this.motes.length) this.drawMotes(g, cam, t);
     // Pillars with braziers at the arena bounds.
     for (const side of [-1, 1]) {
       const x = Math.round(W / 2 + side * (ARENA_HALF_WIDTH + 0.75) * PPM - cam - this.pillar.width / 2);
       if (x > W || x + this.pillar.width < 0) continue;
       g.drawImage(this.pillar, x, this.gy - this.pillar.height + 2);
+      if (this.crystal) {
+        const bob = Math.round(Math.sin(t * 1.8 + side) * 2);
+        g.drawImage(this.crystal, x + ((this.pillar.width - this.crystal.width) >> 1), this.gy - this.pillar.height - this.crystal.height + bob);
+        continue;
+      }
       const fr = this.brazier[(fi + (side > 0 ? 1 : 0)) % 3];
       g.drawImage(fr, x + (this.pillar.width >> 1) - (fr.width >> 1), this.gy - this.pillar.height + 2 - fr.height + 3);
+    }
+  }
+
+  /** Petals and leaves tumbling across on the wind, behind the fighters. */
+  private drawMotes(g: CanvasRenderingContext2D, cam: number, t: number): void {
+    const spanX = this.W + 40, spanY = this.gy + 30;
+    for (let i = 0; i < 24; i++) {
+      const fall = 7 + ((i * 7) % 11);
+      const y = ((i * 53.7 + t * fall) % spanY) - 16;
+      const wx = i * 97.3 + t * (9 + (i % 4) * 4) - cam * (0.6 + (i % 3) * 0.2);
+      const x = (((wx % spanX) + spanX) % spanX) - 20 + Math.sin(t * (0.9 + (i % 5) * 0.21) + i) * 7;
+      const spin = Math.sin(t * (3 + (i % 3)) + i * 1.7);
+      g.fillStyle = this.motes[i % this.motes.length];
+      g.fillRect(Math.round(x), Math.round(y), spin > 0.3 ? 2 : 1, spin < -0.3 ? 2 : 1);
     }
   }
 }
