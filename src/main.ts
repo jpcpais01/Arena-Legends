@@ -63,6 +63,8 @@ save('al.rival', rival);
 // --- UI pieces ---------------------------------------------------------------------------
 let state: State = 'menu';
 let sheet: { el: HTMLElement; dispose(): void } | null = null;
+/** A full screen (creator, gear) hides the arena: skip drawing it until it closes. */
+let covered = false;
 let resultsEl: HTMLElement | null = null;
 
 const hud = new Hud({
@@ -137,6 +139,7 @@ function closeSheet(): void {
   sheet?.dispose();
   sheet?.el.remove();
   sheet = null;
+  covered = false;
 }
 
 function openCreator(first = false): void {
@@ -154,6 +157,7 @@ function openCreator(first = false): void {
     onCancel: first ? undefined : () => closeSheet(),
   });
   ui.append(sheet.el);
+  covered = true;
 }
 
 function openGear(): void {
@@ -165,6 +169,7 @@ function openGear(): void {
     onClose: () => { closeSheet(); refreshMenu(); },
   });
   ui.append(sheet.el);
+  covered = true;
 }
 
 // --- Background duel behind the menu -------------------------------------------------------
@@ -420,6 +425,7 @@ function openDraftGear(): void {
     onClose: () => closeSheet(),
   }, { forms: true, title: `Round ${s.snap.round} build` });
   ui.append(sheet.el);
+  covered = true;
 }
 
 /** Both builds are in: play the round from the host's seed. */
@@ -477,7 +483,7 @@ function loop(now: number): void {
     if (session) pick.tick();
     if (demoWait > 0 && (demoWait -= dt) <= 0) startDemo();
   }
-  view.frame(dt);
+  if (!covered) view.frame(dt);
   if (state !== 'menu') hud.update(view.paused ? 0 : dt * speed);
   requestAnimationFrame(loop);
 }
