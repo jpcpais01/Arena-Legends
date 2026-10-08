@@ -12,13 +12,25 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.10.1',
+    version: '0.11.1',
     date: '2026-10-08',
     title: 'Item details open right in the gear grid',
     notes: [
       'Tapping an item in the gear screen no longer opens a big pop-up. The item grows in place into a small card the size of four tiles, with the rest of the grid moving around it.',
       'The card is compact: a short description, the skills with cooldowns, how your stats would change, a row of skin icons to pick from, and the Equip button.',
       'Long item names now wrap onto two lines instead of being cut off.',
+    ],
+  },
+  {
+    version: '0.11.0',
+    date: '2026-10-08',
+    title: 'Skygrove: real sun shafts and softer shadows',
+    notes: [
+      'Sun shafts on Skygrove Isle now come from the sun itself and get blocked by whatever is in the way: floating islands, tree crowns, the arch, even the fighters. At sunset the light streams out between the tree trunks.',
+      'Once night falls the moon casts faint shafts of its own.',
+      'Fighters and the standing stones cast a shadow away from the sun that grows longer as it sets.',
+      'Soft ambient shadows everywhere: under the tree crowns, at the foot of bushes and trunks, where the meadow meets the grove and under the island\'s grassy lip.',
+      'In the golden hour the side facing the sun glows warm and the far side cools down.',
     ],
   },
   {
