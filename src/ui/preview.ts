@@ -53,8 +53,8 @@ export class Preview {
   private next = 0;
   private flip = false;
   private out: AnimOut = { clip: 'idle', frame: 0, face: null, secOut: false, jitter: 0, hop: 0, key: '' };
-  /** Legendary weapon sparkles: position (canvas px) and age. */
-  private sparks: { x: number; y: number; t: number }[] = [];
+  /** Legendary skin sparkles: position (canvas px), age and colours. */
+  private sparks: { x: number; y: number; t: number; a: number; b: number }[] = [];
   private sparkT = 0;
 
   private still: boolean;
@@ -143,7 +143,7 @@ export class Preview {
     o.key = `${o.clip}.${o.frame}.`;
     const s = this.bank.get(o);
     const [gx, gy] = this.draw(s);
-    this.drawSparks(dt, s.tip ? [gx + (this.flip ? -s.tip[0] : s.tip[0]), gy + s.tip[1]] : null);
+    this.drawSparks(dt, s, gx, gy);
   }
 
   private draw(s: Sprite): [number, number] {
@@ -162,13 +162,24 @@ export class Preview {
     return [gx, gy];
   }
 
-  /** A legendary weapon twinkles at its tip, like it does in battle. */
-  private drawSparks(dt: number, tip: [number, number] | null): void {
-    const fx = this.bank.art.mainSkin?.fx;
-    if (!fx) { this.sparks.length = 0; return; }
-    if (tip && (this.sparkT -= dt) <= 0) {
-      this.sparkT = this.playing ? 0.05 : 0.16;
-      this.sparks.push({ x: Math.round(tip[0] + (Math.random() - 0.5) * 4), y: Math.round(tip[1] + (Math.random() - 0.5) * 4), t: 0 });
+  /** Legendary skins twinkle where they're worn (weapon tips, head, body, feet), like in battle. */
+  private drawSparks(dt: number, s: Sprite, gx: number, gy: number): void {
+    const art = this.bank.art;
+    const fl = (p: [number, number]): [number, number] => [gx + (this.flip ? -p[0] : p[0]), gy + p[1]];
+    const top = gy - s.oy;
+    const spots: [{ spark: number; spark2: number } | undefined, [number, number] | null, number][] = [
+      [art.mainSkin?.fx, s.tip ? fl(s.tip) : null, 4],
+      [art.secSkin?.fx, s.secTip ? fl(s.secTip) : null, 4],
+      [art.headSkin?.fx, [gx, top + 4], 8],
+      [art.chestSkin?.fx, [gx, gy - 30], 14],
+      [art.bootsSkin?.fx, [gx, gy - 1], 12],
+    ];
+    if ((this.sparkT -= dt) <= 0) {
+      this.sparkT = this.playing ? 0.05 : 0.14;
+      for (const [fx, p, spread] of spots) {
+        if (!fx || !p) continue;
+        this.sparks.push({ x: Math.round(p[0] + (Math.random() - 0.5) * spread), y: Math.round(p[1] + (Math.random() - 0.5) * spread * 0.6), t: 0, a: fx.spark, b: fx.spark2 });
+      }
     }
     const g = this.g;
     for (let i = this.sparks.length - 1; i >= 0; i--) {
@@ -176,11 +187,12 @@ export class Preview {
       p.t += dt;
       if (p.t > 0.5) { this.sparks.splice(i, 1); continue; }
       const y = Math.round(p.y - p.t * 8);
-      g.fillStyle = css(p.t < 0.25 ? fx.spark : fx.spark2);
+      g.fillStyle = css(p.t < 0.25 ? p.a : p.b);
       g.fillRect(p.x, y, 1, 1);
       if (p.t < 0.2) { g.fillRect(p.x - 1, y, 3, 1); g.fillRect(p.x, y - 1, 1, 3); }
     }
   }
+
 }
 
 /** A round stone dais, its top face centred on (x, y): a lit top with a gold inlay over a darker side. */

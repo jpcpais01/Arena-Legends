@@ -49,7 +49,7 @@ describe('item skins', () => {
   it('rarities follow their rules', () => {
     for (const s of SKINS) {
       const a = SKIN_ART[s.id];
-      const reshaped = !!(a.weapon || a.head);
+      const reshaped = !!(a.weapon || a.head || a.chest || a.boots);
       if (s.rarity === 'rare') {
         expect(reshaped, s.id).toBe(false);
         expect(a.mats && Object.keys(a.mats).length, s.id).toBeTruthy();

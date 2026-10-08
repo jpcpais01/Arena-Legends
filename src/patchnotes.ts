@@ -12,6 +12,38 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.8.0',
+    date: '2026-10-08',
+    title: '30 new item skins',
+    notes: [
+      '10 new Rare skins for helmets, chest pieces and boots, like the Rose Gold Circlet, Crimson Cowl, Ember Cloak, Obsidian Mirror and Jade Leapers.',
+      '10 new Mythic skins that reshape the item: Morningstar, Skullcrusher, Lionheart, Swordbreaker, Wyrm Repeater, Kraken Conch, Icicle Scepter, Oni Mask, Raven Hood and Dragonknight Plate.',
+      '10 new Legendary skins with living animations and sparkles: Kagutsuchi (a burning katana), Voidfang, Geode Heart, Frostreaver, Winter\'s Heart, Solar Disc, the Eternity Circlet with a ticking clock, Phoenix Band, Nebula Robe and Stormstriders.',
+      'Legendary helmets, chest pieces and boots now sparkle in battle too, and legendary off-hand weapons leave sparkles and coloured hit bursts.',
+      'Pick them in the Skins row of the Gear screen. Skins are cosmetic only and never change a fight.',
+    ],
+  },
+  {
+    version: '0.7.0',
+    date: '2026-10-08',
+    title: 'Day turns to night on Skygrove Isle',
+    notes: [
+      'On Skygrove Isle the sun now crosses the sky during each round: bright day, a warm golden hour, a fiery sunset, then a purple dusk and finally a starry night with the moon rising.',
+      'The light changes with it: everything on the island, the fighters included, warms up at sunset and turns cool and blue at night. Sunbeams fade out as the sun goes down, and the rainbow fades away in the afternoon.',
+      'When night falls, the lanterns, the crystals on the standing stones and the crystals in the rock below light up, and fireflies drift over the meadow. Butterflies and birds go to rest.',
+    ],
+  },
+  {
+    version: '0.6.1',
+    date: '2026-10-08',
+    title: 'A clear blue sky over Skygrove',
+    notes: [
+      'The Skygrove Isle sky is now a smooth, clean blue that fades softly toward the horizon, with no grainy texture.',
+      'The sun glows softly, the rainbow blends in gently, and the sunbeams fade smoothly instead of looking speckled.',
+      'Clouds are cleaner too.',
+    ],
+  },
+  {
     version: '0.6.0',
     date: '2026-10-08',
     title: 'Skygrove Isle gets a glow-up, and you pick the arena',
