@@ -1,11 +1,44 @@
 import { ARENA_HALF_WIDTH } from '../sim/constants';
 import { css, mix } from './pixel/color';
 import type { Pix } from './pixel/paint';
-import { buildArena, floorRow, type ArenaArt, type Layer, type Theme } from './arenaArt';
+import { buildArena, floorRow, type ArenaArt, type Layer, type SkyKey, type Theme } from './arenaArt';
 import { PPM } from './sprite/animator';
 
 interface LayerImg { img: HTMLCanvasElement; factor: number; y: number; drift: number; after?: Layer['after'] }
 interface FloaterImg { img: HTMLCanvasElement; x: number; y: number; factor: number; front: boolean; phase: number }
+
+const smooth = (a: number, b: number, x: number) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+
+/** The sky key for day progress `p`, eased between neighbours. */
+function skyAt(keys: SkyKey[], p: number): SkyKey {
+  let i = 0;
+  while (i < keys.length - 2 && p >= keys[i + 1].at) i++;
+  const a = keys[i], b = keys[i + 1];
+  const t = smooth(a.at, b.at, p);
+  const m = (x: number, y: number) => mix(x, y, t);
+  const n = (x: number, y: number) => x + (y - x) * t;
+  return {
+    at: p, sky: [m(a.sky[0], b.sky[0]), m(a.sky[1], b.sky[1]), m(a.sky[2], b.sky[2]), m(a.sky[3], b.sky[3])],
+    glow: m(a.glow, b.glow), glowA: n(a.glowA, b.glowA), band: m(a.band, b.band), bandA: n(a.bandA, b.bandA),
+    tint: m(a.tint, b.tint), tintA: n(a.tintA, b.tintA),
+  };
+}
+
+function glowSprite(color: number): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d')!;
+  const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, css(color, 0.6));
+  grad.addColorStop(0.35, css(color, 0.22));
+  grad.addColorStop(1, css(color, 0));
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 64, 64);
+  return c;
+}
 
 function canvasOf(p: Pix): HTMLCanvasElement {
   const c = document.createElement('canvas');
@@ -53,6 +86,9 @@ export class ArenaView {
   private rays: HTMLCanvasElement[];
   private floaters: FloaterImg[];
   private amb: { petals: string[]; wings: string[]; sparkle: string; bird: string } | null;
+  private sky: { stars: HTMLCanvasElement; rainbow: HTMLCanvasElement; moon: HTMLCanvasElement; lamp: HTMLCanvasElement; firefly: HTMLCanvasElement } | null;
+  /** Share of the round gone by (0 noon … 1 night) for arenas with a day cycle. */
+  private day = 0;
   private torch: HTMLCanvasElement[];
   private brazier: HTMLCanvasElement[];
   private excite = 0;
@@ -68,6 +104,8 @@ export class ArenaView {
     this.rays = (this.art.rays ?? []).map(canvasOf);
     this.floaters = this.art.floaters.map((f) => ({ ...f, img: canvasOf(f.pix) }));
     const a = this.art.ambience;
+    const cy = this.art.cycle;
+    this.sky = cy && { stars: canvasOf(cy.stars), rainbow: canvasOf(cy.rainbow), moon: canvasOf(cy.moon), lamp: glowSprite(cy.lampColor), firefly: glowSprite(0xd8ff70) };
     this.amb = a && { petals: a.petals.map((c) => css(c)), wings: a.butterflies.map((c) => css(c)), sparkle: css(a.sparkle), bird: css(a.bird) };
     this.crowd = this.art.crowd.map(canvasOf);
     this.floor = canvasOf(this.art.floor);
@@ -81,6 +119,16 @@ export class ArenaView {
     this.excite = Math.min(1, Math.max(this.excite, amount));
   }
 
+  /** Day progress for the live sky (0..1); arenas without one ignore it. */
+  setDay(p: number): void {
+    this.day = Math.min(1, Math.max(0, p));
+  }
+
+  private sunPos(): [number, number] {
+    const s = Math.min(1, this.day / 0.76), hz = this.art.cycle!.hz;
+    return [this.W * (0.18 + 0.64 * s), hz * (0.14 + s * s)];
+  }
+
   update(dt: number): void {
     this.excite = Math.max(0, this.excite - dt * 0.5);
     this.crowdT += dt * (1.5 + this.excite * 9);
@@ -90,6 +138,8 @@ export class ArenaView {
   /** Everything behind the fighters. `cam` is the camera centre in art px; `t` real time. */
   draw(g: CanvasRenderingContext2D, cam: number, t: number): void {
     const W = this.W;
+    // A live sky is painted behind everything afterwards (see light()).
+    if (this.sky) g.clearRect(0, 0, W, this.H);
     const off = (img: HTMLCanvasElement, f: number) => Math.round(-(img.width - W) / 2 - cam * f);
     const layer = (l: LayerImg) => {
       const x = off(l.img, l.factor);
@@ -101,7 +151,7 @@ export class ArenaView {
     };
     for (const l of this.layers) {
       layer(l);
-      if (l.after === 'birds' && this.amb) this.drawBirds(g, cam, t);
+      if (l.after === 'birds' && this.amb && this.day < 0.8) this.drawBirds(g, cam, t);
       else if (l.after === 'floaters') this.drawFloaters(g, cam, t, false);
     }
     const wf = this.art.wallFactor;
@@ -122,9 +172,12 @@ export class ArenaView {
       g.drawImage(this.floor, sx, v, srcW, 1, 0, y, W, 1);
     }
     // Sun shafts slowly trading places.
-    for (let k = 0; k < this.rays.length; k++) {
-      g.globalAlpha = 0.55 + 0.45 * Math.sin(t * 0.45 + k * Math.PI);
-      g.drawImage(this.rays[k], 0, 0);
+    const sun = this.sky ? this.sunPos() : [0, 0];
+    const o = this.art.cycle?.rayOrigin ?? [0, 0];
+    const beam = this.sky ? 1 - smooth(0.55, 0.72, this.day) : 1;
+    if (beam > 0) for (let k = 0; k < this.rays.length; k++) {
+      g.globalAlpha = (0.55 + 0.45 * Math.sin(t * 0.45 + k * Math.PI)) * beam;
+      g.drawImage(this.rays[k], Math.round(sun[0] - o[0]), Math.round(sun[1] - o[1]));
     }
     g.globalAlpha = 1;
     for (const l of this.front) layer(l);
@@ -143,6 +196,92 @@ export class ArenaView {
       const fr = this.brazier[(fi + (side > 0 ? 1 : 0)) % 3];
       g.drawImage(fr, x + (this.pillar.width >> 1) - (fr.width >> 1), this.gy - this.pillar.height + 2 - fr.height + 3);
     }
+  }
+
+  /**
+   * Day-cycle lighting, after the fighters: pulls the whole world toward the
+   * hour's light, paints the live sky into whatever is still transparent, then
+   * adds what glows at night.
+   */
+  light(g: CanvasRenderingContext2D, cam: number, t: number): void {
+    const cy = this.art.cycle, sk = this.sky;
+    if (!cy || !sk) return;
+    const W = this.W, H = this.H, hz = cy.hz, p = this.day;
+    const k = skyAt(cy.keys, p);
+    if (k.tintA > 0.004) {
+      g.globalCompositeOperation = 'source-atop';
+      g.globalAlpha = k.tintA;
+      g.fillStyle = css(k.tint);
+      g.fillRect(0, 0, W, H);
+      g.globalAlpha = 1;
+    }
+    // Sky, front to back, each piece slipped behind what is already there.
+    g.globalCompositeOperation = 'destination-over';
+    const [sx, sy] = this.sunPos();
+    const r = cy.sunR;
+    if (sy < hz + r) {
+      g.fillStyle = css(mix(0xffffff, 0xffe9a8, smooth(0.3, 0.7, p)));
+      g.beginPath(); g.arc(sx, sy, r - 4, 0, Math.PI * 2); g.fill();
+      g.fillStyle = css(mix(0xfffbe2, 0xff9a50, smooth(0.45, 0.74, p)));
+      g.beginPath(); g.arc(sx, sy, r, 0, Math.PI * 2); g.fill();
+    }
+    const moon = smooth(0.76, 1, p);
+    if (moon > 0) {
+      const mx = W * (0.12 + 0.14 * moon), my = hz * (1.08 - 0.72 * moon);
+      g.drawImage(sk.moon, Math.round(mx - sk.moon.width / 2), Math.round(my - sk.moon.height / 2));
+      const mg = g.createRadialGradient(mx, my, 0, mx, my, 44);
+      mg.addColorStop(0, css(0xc8d8ff, 0.35 * moon)); mg.addColorStop(1, css(0xc8d8ff, 0));
+      g.fillStyle = mg; g.fillRect(mx - 44, my - 44, 88, 88);
+    }
+    if (k.glowA > 0.01) {
+      const gr = g.createRadialGradient(sx, sy, 0, sx, sy, r * 8);
+      gr.addColorStop(0, css(k.glow, k.glowA)); gr.addColorStop(0.25, css(k.glow, k.glowA * 0.45)); gr.addColorStop(1, css(k.glow, 0));
+      g.fillStyle = gr; g.fillRect(0, 0, W, hz + 12);
+    }
+    if (k.bandA > 0.01) {
+      g.save();
+      g.translate(Math.min(W * 0.85, sx), hz);
+      g.scale(1, 0.3);
+      const br = g.createRadialGradient(0, 0, 0, 0, 0, W * 0.75);
+      br.addColorStop(0, css(k.band, k.bandA)); br.addColorStop(1, css(k.band, 0));
+      g.fillStyle = br; g.fillRect(-W * 2, -hz * 4, W * 4, hz * 8);
+      g.restore();
+    }
+    const bow = 1 - smooth(0.32, 0.5, p);
+    if (bow > 0) { g.globalAlpha = bow; g.drawImage(sk.rainbow, 0, 0); }
+    const stars = smooth(0.74, 0.9, p);
+    if (stars > 0) { g.globalAlpha = stars; g.drawImage(sk.stars, 0, 0); }
+    g.globalAlpha = 1;
+    const sg = g.createLinearGradient(0, 0, 0, hz + 8);
+    k.sky.forEach((c, i) => sg.addColorStop(i / 3, css(c)));
+    g.fillStyle = sg;
+    g.fillRect(0, 0, W, H);
+    // Night lights.
+    const lamps = smooth(0.66, 0.86, p);
+    g.globalCompositeOperation = 'lighter';
+    if (lamps > 0) {
+      for (let i = 0; i < cy.lamps.length; i++) {
+        const l = cy.lamps[i];
+        const x = l.x - cam * l.factor;
+        if (x < -l.r || x > W + l.r) continue;
+        g.globalAlpha = lamps * (0.85 + 0.15 * Math.sin(t * 2.3 + i * 1.7));
+        g.drawImage(sk.lamp, x - l.r, l.y - l.r, l.r * 2, l.r * 2);
+      }
+      // Fireflies drifting over the meadow.
+      const span = W + 40;
+      for (let i = 0; i < 18; i++) {
+        const tw = Math.sin(t * (1.1 + (i % 4) * 0.35) + i * 2.3);
+        if (tw < -0.2) continue;
+        const x = ((((i * 71.3 + Math.sin(t * 0.25 + i) * 40 - cam * 0.85) % span) + span) % span) - 20;
+        const y = this.art.gy - 10 - (i % 6) * 14 - Math.sin(t * 0.6 + i * 1.3) * 10;
+        g.globalAlpha = lamps * (0.5 + 0.5 * tw);
+        g.drawImage(sk.firefly, Math.round(x) - 6, Math.round(y) - 6, 12, 12);
+        g.fillStyle = '#f4ffb0';
+        g.fillRect(Math.round(x), Math.round(y), 1, 1);
+      }
+    }
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
   }
 
   private drawFloaters(g: CanvasRenderingContext2D, cam: number, t: number, front: boolean): void {
@@ -180,8 +319,9 @@ export class ArenaView {
       g.fillStyle = a.petals[i % a.petals.length];
       g.fillRect(Math.round(x), Math.round(y), spin > 0.3 ? 2 : 1, spin < -0.3 ? 2 : 1);
     }
+    const night = smooth(0.7, 0.86, this.day);
     g.fillStyle = a.sparkle;
-    for (let i = 0; i < 22; i++) {
+    for (let i = 0; i < (night < 0.5 ? 22 : 0); i++) {
       const tw = Math.sin(t * (1.3 + (i % 4) * 0.4) + i * 2.1);
       if (tw < 0.1) continue;
       const x = Math.round(wrap(i * 61.7 + Math.sin(t * 0.3 + i) * 18 - cam * 0.8, spanX));
@@ -189,7 +329,7 @@ export class ArenaView {
       g.fillRect(x, y, 1, 1);
       if (tw > 0.85) { g.fillRect(x - 1, y, 3, 1); g.fillRect(x, y - 1, 1, 3); }
     }
-    for (let i = 0; i < a.wings.length; i++) {
+    for (let i = 0; i < (night < 0.4 ? a.wings.length : 0); i++) {
       const x = Math.round(wrap(i * 191 + t * (5 + i) + Math.sin(t * 0.6 + i * 2) * 40 - cam * 0.85, spanX));
       const y = Math.round(this.gy - 26 - i * 9 + Math.sin(t * 1.1 + i) * 10 + Math.sin(t * 5.3 + i) * 1.5);
       const open = Math.sin(t * 16 + i * 5) > 0;

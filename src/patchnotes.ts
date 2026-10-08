@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.7.0',
+    date: '2026-10-08',
+    title: 'Day turns to night on Skygrove Isle',
+    notes: [
+      'On Skygrove Isle the sun now crosses the sky during each round: bright day, a warm golden hour, a fiery sunset, then a purple dusk and finally a starry night with the moon rising.',
+      'The light changes with it: everything on the island, the fighters included, warms up at sunset and turns cool and blue at night. Sunbeams fade out as the sun goes down, and the rainbow fades away in the afternoon.',
+      'When night falls, the lanterns, the crystals on the standing stones and the crystals in the rock below light up, and fireflies drift over the meadow. Butterflies and birds go to rest.',
+    ],
+  },
+  {
     version: '0.6.1',
     date: '2026-10-08',
     title: 'A clear blue sky over Skygrove',

@@ -3,7 +3,7 @@ import { ARENA_HALF_WIDTH } from '../sim/constants';
 import { mix, pack, unpackHex } from './pixel/color';
 import { bayer, Pix } from './pixel/paint';
 import { PPM } from './sprite/animator';
-import type { ArenaArt, Floater, Layer, Theme } from './arenaArt';
+import type { ArenaArt, DayCycle, Floater, Layer, SkyKey, Theme } from './arenaArt';
 
 /**
  * Skygrove Isle: the duel happens on a grassy island floating above a sea of
@@ -65,9 +65,6 @@ export function buildIsle(theme: Theme, W: number, H: number, gy: number, travel
   const hz = gy - 46;
   const lw = (f: number) => Math.ceil(W + 2 * travel * f + 8);
   const horizon = theme.sky[theme.sky.length - 1];
-  const sunX = Math.round(W * theme.body.x), sunY = Math.round(hz * theme.body.y);
-
-  const sky = paintSky(theme, W, H, hz);
 
   const high = new Pix(lw(0.05), hz);
   paintHighClouds(high, rng, hz);
@@ -93,14 +90,21 @@ export function buildIsle(theme: Theme, W: number, H: number, gy: number, travel
 
   const grove = new Pix(lw(wallFactor), floorTop + 1);
   const swayA = new Pix(grove.w, grove.h), swayB = new Pix(grove.w, grove.h);
-  paintGrove(grove, swayA, swayB, rng, floorTop, edgeAt(vTop, -1) * wallFactor, edgeAt(vTop, 1) * wallFactor, theme.sky[3]);
+  const lanterns = paintGrove(grove, swayA, swayB, rng, floorTop, edgeAt(vTop, -1) * wallFactor, edgeAt(vTop, 1) * wallFactor, theme.sky[3]);
 
   const floor = paintMeadow(rng, Math.ceil(W / 0.65 + 2 * travel * 1.6 + 64), Math.ceil(D) * 2, D, edgeAt, lipAt);
 
   // The underside layer starts a few rows above the lip for grass blades along the edge.
   const lift = 7;
   const under = new Pix(lw(sLip), Math.max(1, H - lipY + lift));
-  paintUnderside(under, rng, edgeAt(vLip, -1) * sLip, edgeAt(vLip, 1) * sLip, lift);
+  const veins = paintUnderside(under, rng, edgeAt(vLip, -1) * sLip, edgeAt(vLip, 1) * sLip, lift);
+
+  // Things that glow once night falls: lanterns, crystal veins, the crystals over the standing stones.
+  const lamps: DayCycle['lamps'] = [
+    ...lanterns.map(([x, y]) => ({ x: x - (grove.w - W) / 2, y, factor: wallFactor, r: 14 })),
+    ...veins.map(([x, y]) => ({ x: x - (under.w - W) / 2, y: y + lipY - lift, factor: sLip, r: 12 })),
+    ...[-1, 1].map((sd) => ({ x: W / 2 + sd * (ARENA_HALF_WIDTH + 0.75) * PPM, y: gy - 112 - 10, factor: 1, r: 22 })),
+  ];
 
   // Rocks drifting around the island: a few behind its back corners, a few below the lip.
   const floaters: Floater[] = [];
@@ -121,7 +125,7 @@ export function buildIsle(theme: Theme, W: number, H: number, gy: number, travel
   return {
     theme, gy, hy, floorTop, wallFactor,
     layers: [
-      L(sky, 0), L(high, 0.05, 0, 1.2), L(far, 0.1), L(farSea, 0.16, 0, 2),
+      L(high, 0.05, 0, 1.2), L(far, 0.1), L(farSea, 0.16, 0, 2),
       { ...L(mid, 0.27), after: 'birds' }, { ...L(nearSea, 0.42, 0, 4.5), after: 'floaters' }, L(grove, wallFactor),
     ],
     front: [L(under, sLip, lipY - lift)],
@@ -129,7 +133,12 @@ export function buildIsle(theme: Theme, W: number, H: number, gy: number, travel
     crowd: [swayA, swayB], crowdLayer: L(swayA, wallFactor), floor, torches: [],
     pillar: paintMenhir(),
     crystal: paintCrystal(),
-    rays: paintRays(rng, W, gy + 12, sunX, sunY),
+    rays: paintRays(rng, W * 2, gy + 12, W, 0, Math.hypot(W, gy)),
+    cycle: {
+      hz, keys: SKY_KEYS, sunR: theme.body.r,
+      stars: paintStars(rng, W, hz), rainbow: paintRainbow(W, hz), moon: paintMoon(),
+      rayOrigin: [W, 0], lamps, lampColor: SG.rune[2],
+    },
     floaters,
     ambience: {
       petals: [SG.leaves[3], SG.blossom[3], SG.flowers[1], SG.leaves[4], SG.blossom[4]],
@@ -141,6 +150,16 @@ export function buildIsle(theme: Theme, W: number, H: number, gy: number, travel
 }
 
 type Outline = (v: number, side: number) => number;
+
+/** Day → golden hour → sunset → dusk → night, keyed on the share of the round gone by. */
+const SKY_KEYS: SkyKey[] = [
+  { at: 0, sky: [0x2f6cd0, 0x4c8fe0, 0x86c2ef, 0xd6eef4], glow: 0xfff4c8, glowA: 0.55, band: 0xfff0d0, bandA: 0, tint: 0xffffff, tintA: 0 },
+  { at: 0.38, sky: [0x2a66cc, 0x4a8ede, 0x8ac6ee, 0xdcf0f0], glow: 0xfff0b8, glowA: 0.55, band: 0xffe0b0, bandA: 0.05, tint: 0xffe0b0, tintA: 0.04 },
+  { at: 0.56, sky: [0x3a64b8, 0x6a8ed0, 0xd8b896, 0xffd49a], glow: 0xffcf80, glowA: 0.6, band: 0xffb070, bandA: 0.3, tint: 0xffb070, tintA: 0.14 },
+  { at: 0.7, sky: [0x2a3c80, 0x74589a, 0xe8806a, 0xffb070], glow: 0xff9050, glowA: 0.7, band: 0xff7a40, bandA: 0.55, tint: 0xff7a50, tintA: 0.26 },
+  { at: 0.8, sky: [0x141c48, 0x2e2e68, 0x6a4a7a, 0xc0707a], glow: 0xff7060, glowA: 0.2, band: 0xd06070, bandA: 0.35, tint: 0x3a3070, tintA: 0.4 },
+  { at: 0.92, sky: [0x060a1e, 0x0c1636, 0x1a2a52, 0x2c4068], glow: 0x8090c0, glowA: 0, band: 0x304070, bandA: 0.1, tint: 0x0a1030, tintA: 0.5 },
+];
 
 // --- Noise and shading helpers ---------------------------------------------------
 
@@ -210,38 +229,45 @@ function puff(p: Pix, cx: number, cy: number, rx: number, ry: number, cut = Infi
 
 // --- Sky and distance ---------------------------------------------------------------
 
-/** A clean sky: smooth per-row gradient, soft sun glow, a faint rainbow. No dithering. */
-function paintSky(th: Theme, W: number, H: number, hz: number): Pix {
-  const p = new Pix(W, H);
-  const b = th.body;
-  const bx = W * b.x, by = hz * b.y;
-  const n = th.sky.length - 1;
+/** Stars for the night sky, thinning toward the horizon (transparent elsewhere). */
+function paintStars(rng: Rng, W: number, hz: number): Pix {
+  const p = new Pix(W, hz);
+  for (let i = 0; i < W * hz * 0.0022; i++) {
+    const x = rng.int(0, W - 1), y = rng.int(0, hz - 1);
+    const f = 1 - y / hz;
+    if (rng.next() > f * 1.2) continue;
+    const a = Math.round(90 + 165 * f * rng.next());
+    p.set(x, y, rng.chance(0.2) ? 0xfff2d0 : 0xdce8ff, a);
+    if (rng.chance(0.05)) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) p.set(x + dx, y + dy, 0xa8c0f0, a >> 1);
+  }
+  return p;
+}
+
+/** A faint rainbow arc on the left, smooth alpha only. */
+function paintRainbow(W: number, hz: number): Pix {
+  const p = new Pix(W, hz);
   const rcx = W * 0.16, rcy = hz + 34, rr = hz * 0.92;
   const bands = [0xff7070, 0xffb060, 0xffe880, 0x90e080, 0x70b8ff, 0xb090ff];
-  const glowR = b.r * 12;
-  for (let y = 0; y < H; y++) {
-    // Deep blue overhead, fading gently to the pale horizon.
-    const t = Math.min(1, y / (hz + 8));
-    const e = Math.pow(t, 1.25);
-    const k = e * n, i = Math.min(n - 1, Math.floor(k));
-    const row = mix(th.sky[i], th.sky[i + 1], k - i);
-    for (let x = 0; x < W; x++) {
-      let c = row;
-      const d = Math.hypot(x + 0.5 - bx, y + 0.5 - by);
-      if (d < glowR) {
-        const g = Math.exp(-((d / (b.r * 2.6)) ** 2)) * 0.7 + Math.exp(-d / (b.r * 3.5)) * 0.25;
-        c = mix(c, b.glow, Math.min(1, g));
-        if (d < b.r + 1.5) c = d < b.r ? (d < b.r - 4 ? mix(b.color, 0xffffff, 0.55) : b.color) : mix(c, b.color, b.r + 1.5 - d);
-      }
-      const rd = Math.hypot(x + 0.5 - rcx, y + 0.5 - rcy) - rr;
-      if (rd >= 0 && rd < 14 && y < hz) {
-        const fade = Math.min(1, (rcy - y) / 90) * Math.max(0, Math.min(1, (W * 0.6 - x) / 100));
-        const q = (rd / 14) * (bands.length - 1), qi = Math.min(bands.length - 2, Math.floor(q));
-        c = mix(c, mix(bands[qi], bands[qi + 1], q - qi), 0.2 * Math.sin((rd / 14) * Math.PI) * fade);
-      }
-      p.set(x, y, c);
-    }
+  for (let y = 0; y < hz; y++) for (let x = 0; x < W; x++) {
+    const rd = Math.hypot(x + 0.5 - rcx, y + 0.5 - rcy) - rr;
+    if (rd < 0 || rd >= 14) continue;
+    const fade = Math.min(1, (rcy - y) / 90) * Math.max(0, Math.min(1, (W * 0.6 - x) / 100));
+    const q = (rd / 14) * (bands.length - 1), qi = Math.min(bands.length - 2, Math.floor(q));
+    const a = Math.round(60 * Math.sin((rd / 14) * Math.PI) * fade);
+    if (a > 1) p.set(x, y, mix(bands[qi], bands[qi + 1], q - qi), a);
   }
+  return p;
+}
+
+/** A pale full moon with a few soft craters. */
+function paintMoon(): Pix {
+  const r = 9, p = new Pix(r * 2 + 1, r * 2 + 1);
+  for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) {
+    const u = (x - r) / r, v = (y - r) / r, d = u * u + v * v;
+    if (d > 1) continue;
+    p.set(x, y, mix(0xf4f6ff, 0xc8d0ea, Math.max(0, (u - v) * 0.35 + d * 0.25)));
+  }
+  for (const [cx, cy, cr] of [[6, 7, 2.2], [12, 11, 1.6], [8, 13, 1.2], [13, 5, 1]]) p.ellipse(cx, cy, cr, cr, 0xc0c8e2);
   return p;
 }
 
@@ -506,7 +532,8 @@ function boulder(p: Pix, x: number, base: number, rx: number, ry: number): void 
   }
 }
 
-function paintGrove(p: Pix, sa: Pix, sb: Pix, rng: Rng, floorTop: number, hwL: number, hwR: number, sky: number): void {
+/** Paints the grove; returns the lanterns' crystal windows (layer coordinates). */
+function paintGrove(p: Pix, sa: Pix, sb: Pix, rng: Rng, floorTop: number, hwL: number, hwR: number, sky: number): [number, number][] {
   const cx = p.w / 2;
   const left = cx - hwL, right = cx + hwR;
   // Back row: tall, hazed trees, leaving the middle open for the view.
@@ -521,7 +548,11 @@ function paintGrove(p: Pix, sa: Pix, sb: Pix, rng: Rng, floorTop: number, hwL: n
   const ax = Math.round(cx + rng.range(-24, 24));
   p.blit(arch, ax - (arch.w >> 1), floorTop - 6 - arch.h);
   const lantern = paintLantern();
-  for (const s of [-1, 1]) p.blit(lantern, ax + s * 46 - (lantern.w >> 1), floorTop - 5 - lantern.h);
+  const lamps: [number, number][] = [];
+  for (const s of [-1, 1]) {
+    p.blit(lantern, ax + s * 46 - (lantern.w >> 1), floorTop - 5 - lantern.h);
+    lamps.push([ax + s * 46, floorTop - 5 - lantern.h + 6]);
+  }
   // Front row: fewer, bigger crowns.
   for (let x = left + rng.range(40, 90); x < right - 30; x += rng.range(150, 240)) {
     if (Math.abs(x - cx) < 90) continue;
@@ -581,6 +612,7 @@ function paintGrove(p: Pix, sa: Pix, sb: Pix, rng: Rng, floorTop: number, hwL: n
       if (head >= 0) { buf.set(tx, base - hgt, head); buf.set(tx + 1, base - hgt, head); buf.set(tx, base - hgt - 1, mix(head, 0xffffff, 0.35)); }
     }
   }
+  return lamps;
 }
 
 // --- Floor and underside -------------------------------------------------------------
@@ -677,7 +709,8 @@ function paintMeadow(rng: Rng, w: number, h: number, D: number, edgeAt: Outline,
  * The island's front face from the lip down: soil, rock strata tapering to a
  * jagged point, roots and vines. Rows above `top` hold grass blades along the edge.
  */
-function paintUnderside(p: Pix, rng: Rng, hwL: number, hwR: number, top: number): void {
+function paintUnderside(p: Pix, rng: Rng, hwL: number, hwR: number, top: number): [number, number][] {
+  const veins: [number, number][] = [];
   const cx = p.w / 2;
   const Dm = 92;
   const bottom = new Float32Array(p.w).fill(-1);
@@ -738,6 +771,7 @@ function paintUnderside(p: Pix, rng: Rng, hwL: number, hwR: number, top: number)
     const x = Math.floor(rng.range(0, p.w));
     if (bottom[x] < top + 40) continue;
     const y = Math.round(rng.range(top + 16, bottom[x] - 14));
+    veins.push([x, y - 2]);
     for (const [ox, oh] of [[0, 6], [3, 4], [-3, 3]]) {
       for (let k = 0; k < oh; k++) {
         p.set(x + ox, y - k, k === oh - 1 ? SG.rune[3] : SG.rune[2]);
@@ -774,6 +808,7 @@ function paintUnderside(p: Pix, rng: Rng, hwL: number, hwR: number, top: number)
       }
     }
   }
+  return veins;
 }
 
 /** A chunk of rock with a grass cap, floating near the island. */
@@ -783,12 +818,12 @@ function paintChunk(rng: Rng, w: number, sky: number, fog: number): Pix {
   return p;
 }
 
-/** Two sets of dithered sun shafts fanning down from the sun; the view cross-fades them. */
-function paintRays(rng: Rng, W: number, h: number, sx: number, sy: number): [Pix, Pix] {
+/** Two sets of sun shafts fanning down from a sun at (sx, sy); the view moves them with the sun and cross-fades them. */
+function paintRays(rng: Rng, W: number, h: number, sx: number, sy: number, reach: number): [Pix, Pix] {
   const out: [Pix, Pix] = [new Pix(W, h), new Pix(W, h)];
   const shafts: { a: number; w: number; k: 0 | 1 }[] = [];
-  for (let i = 0; i < 7; i++) shafts.push({ a: 1.72 + (i / 6) * 1.05 + rng.range(-0.06, 0.06), w: rng.range(0.022, 0.055), k: (i & 1) as 0 | 1 });
-  const col = 0xfff4c8, reach = Math.hypot(W, h) * 0.95;
+  for (let i = 0; i < 10; i++) shafts.push({ a: 0.5 + (i / 9) * 2.15 + rng.range(-0.06, 0.06), w: rng.range(0.022, 0.055), k: (i & 1) as 0 | 1 });
+  const col = 0xfff4c8;
   for (let y = Math.max(0, sy + 1); y < h; y++) for (let x = 0; x < W; x++) {
     const dx = x - sx, dy = y - sy;
     const dist = Math.hypot(dx, dy);
