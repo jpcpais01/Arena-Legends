@@ -191,7 +191,7 @@ function longbow(): WeaponArt {
   // Held in the far hand by the middle, limbs along local ±y. x is "up the limb".
   return {
     tip: 22,
-    mats: { limb: M.wood(), grip: M.leather(), tip: M.gold(), string: M.string() },
+    mats: { limb: M.wood(), grip: M.leather(), tip: M.gold(), string: M.string(), arrow: M.steel(), fletch: M.cloth(0xe84a3a) },
     draw(r, t, m, o) {
       const pull = o.pull ?? 0;
       const limbs: Shape[] = [];
@@ -213,6 +213,13 @@ function longbow(): WeaponArt {
       const sx = o.stringTo ?? t.p(-bend - 0.5, 0);
       r.line(t.x(-bend, 21.5), t.y(-bend, 21.5), sx[0], sx[1], m('string'), 3, 9);
       r.line(sx[0], sx[1], t.x(-bend, -21.5), t.y(-bend, -21.5), m('string'), 3, 9);
+      if (o.stringTo && pull > 0.15) {
+        // Nocked arrow from the string hand past the grip.
+        const hx = t.x(7, 0), hy = t.y(7, 0);
+        r.line(sx[0], sx[1], hx, hy, m('arrow'), 2, 9);
+        r.dot(hx, hy, m('arrow'), 4, 9);
+        r.dot(sx[0], sx[1] - 1, m('fletch'), 3, 9);
+      }
     },
   };
 }

@@ -164,7 +164,8 @@ export function solve(body: BodySpec, p: Pose, armOverride?: { far?: P; near?: P
   const hipF = v(hip.x + side.x * body.hipSpread, hip.y + side.y * body.hipSpread);
   const ankle = (root: P, x: number, y: number) => {
     const t = v(root.x + x * leg, root.y + y * leg);
-    if (t.y < body.footH) t.y = body.footH;
+    // Feet stay on the ground, except when the whole body turns (rolls, falls).
+    if (!p.rot && t.y < body.footH) t.y = body.footH;
     return t;
   };
   // Knees bend forward: from hip to ankle the knee lies counter-clockwise.
@@ -192,8 +193,13 @@ export function solve(body: BodySpec, p: Pose, armOverride?: { far?: P; near?: P
     shN, shF, elN: armN.mid, elF: armF.mid, wrN: armN.end, wrF: armF.end,
     handN: handOf(armN.mid, armN.end), handF: handOf(armF.mid, armF.end),
   };
-  if (p.rot) rotateSkeleton(sk, p.rot, v(hip.x + up.x * body.torso * 0.35, hip.y + up.y * body.torso * 0.35));
+  if (p.rot) rotateSkeleton(sk, p.rot, rotPivot(body, sk));
   return sk;
+}
+
+/** The point whole-body rotations turn around (the belly). */
+export function rotPivot(body: BodySpec, sk: Skeleton): P {
+  return v(sk.hip.x + sk.up.x * body.torso * 0.35, sk.hip.y + sk.up.y * body.torso * 0.35);
 }
 
 /** Rotates every joint around `c` (rolls and falls). */

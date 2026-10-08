@@ -4,7 +4,7 @@ import {
   arc, capsule as capsuleR, circle as circleR, ellipse as ellipseR, intersect, polygon as polyR, union, type Shape,
 } from '../pixel/sdf';
 import type { CharacterArt } from './look';
-import { alongWeapon, solve, type P, type Pose, type Skeleton } from './pose';
+import { alongWeapon, rotateSkeleton, rotPivot, solve, type P, type Pose, type Skeleton } from './pose';
 import { frameAt, Xf } from './xform';
 
 /**
@@ -26,12 +26,16 @@ export interface Hold {
   mainBehind?: boolean;
   /** Bow/crossbow string pull 0..1. */
   pull?: number;
+  /** Main weapon length scale: foreshortened while it swings past the viewer (negative points it back). */
+  mainScale?: number;
 }
 
 export interface Smear {
   /** Weapon angles (rig radians) the swing sweeps between. */
   from: number;
   to: number;
+  /** Horizontal whirl around the waist instead of an arc. */
+  ring?: boolean;
 }
 
 export interface FrameSpec {
@@ -56,18 +60,21 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
   for (const [k, v] of Object.entries(art.mats)) h[k] = r.add(v);
   const m = (k: string) => h[k];
 
-  // Two-handed weapons: the far hand rides the shaft.
-  let sk = solve(body, pose);
+  // Two-handed weapons: the far hand rides the shaft. Solved upright, then
+  // the whole skeleton turns for rolls and falls.
+  const upright = pose.rot ? { ...pose, rot: 0 } : pose;
+  let sk = solve(body, upright);
   const twoHanded = hold.main === 'hand' && art.main.grip2 !== undefined && art.family !== 'bow';
   if (twoHanded) {
     const g2 = alongWeapon(sk.handN, pose.wAng, art.main.grip2!);
-    sk = solve(body, pose, { far: backFromHand(sk.elF, g2, body.hand) });
+    sk = solve(body, upright, { far: backFromHand(sk.elF, g2, body.hand) });
     sk.handF = g2;
   }
+  if (pose.rot) rotateSkeleton(sk, pose.rot, rotPivot(body, sk));
 
   const X = (p: P) => OX + p.x;
   const Y = (p: P) => OY - p.y;
-  const T = frameAt(OX, OY, sk.hip, -pose.lean);
+  const T = frameAt(OX, OY, sk.hip, -pose.lean + pose.rot);
   const H = frameAt(OX, OY, sk.head, sk.headAng, body.headRx / 6.2, body.headRy / 6.4);
   const sp = art.look.species;
   const sway = pose.sway;
@@ -103,7 +110,7 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
 
   // --- Front --------------------------------------------------------------------------
   if (hold.sec === 'hand' && hold.secFront) drawSec(r, art, sk, pose, hold, OX, OY, m, 0);
-  if (spec.smear && hold.main === 'hand') drawSmear(r, art, sk, spec.smear, OX, OY);
+  if (spec.smear && hold.main === 'hand') drawSmear(r, art, sk, { ...spec.smear, from: spec.smear.from + pose.rot, to: spec.smear.to + pose.rot }, OX, OY);
   if (hold.main === 'hand' && !hold.mainBehind && art.family !== 'bow') drawMain(r, art, sk, pose, hold, OX, OY, m, 0);
   drawArm(r, art, sk, 'N', X, Y, m);
   return sk;
@@ -137,8 +144,12 @@ function drawLeg(r: Raster, art: CharacterArt, sk: Skeleton, side: 'N' | 'F', X:
   const heel = { x: ankle.x - 1.1, y: ankle.y - body.footH * 0.55 };
   r.fill(cap(heel, toe, body.ankleR + 0.3 + bulk * 0.6, 1.15 + bulk * 0.4), m(boots.mat), { group: g, bevel: 1.6, toneBias: bias });
   if (boots.trim) {
-    const tr = { x: bt.x, y: bt.y };
-    r.fill(cap({ x: tr.x - 0.1, y: tr.y }, { x: tr.x + 0.1, y: tr.y - 0.8 }, body.shinR + bulk + 0.35, body.shinR + bulk + 0.25), m(boots.trim), { group: g, bevel: 1, toneBias: bias });
+    // A cuff band across the top of the boot.
+    const dx = knee.x - ankle.x, dy = knee.y - ankle.y, l = Math.hypot(dx, dy) || 1;
+    const w = body.shinR + bulk + 0.4;
+    const nx = -dy / l * w, ny = dx / l * w;
+    const c = { x: bt.x - dx / l * 0.6, y: bt.y - dy / l * 0.6 };
+    r.fill(cap({ x: c.x - nx, y: c.y - ny }, { x: c.x + nx, y: c.y + ny }, 0.9, 0.9), m(boots.trim), { group: g, bevel: 0.8, toneBias: bias });
   }
   if (boots.knee) r.fill(circleR(X(knee) + 0.6, Y(knee), body.kneeR + 0.9), m(boots.knee), { group: g, bevel: 1.8, toneBias: bias });
   if (boots.wing && !far) {
@@ -519,7 +530,7 @@ function drawEarsBehind(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => n
   if (sp === 'kitsu') {
     r.fill(H.poly([1.8, 5, 4.6, 11.4, 5.6, 4.2]), m('skin'), { group: G.ears, bevel: 1.5, toneBias: -1 });
   } else if (sp === 'lop') {
-    r.fill(H.cap(1, 5.2, 4.5, -5.6, 1.6, 1.9), m('skin'), { group: G.ears, bevel: 1.6, toneBias: -1 });
+    r.fill(union(H.cap(1.2, 5.6, -1.6, 3.2, 1.8, 2.2), H.cap(-1.6, 3.2, -2.8, -1, 2.2, 2)), m('skin'), { group: G.ears, bevel: 1.6, toneBias: -1 });
   } else if (sp === 'imp') {
     r.fill(H.poly([3.6, 4.5, 5.5, 8.6, 2.6, 11, 4.2, 8, 2, 5.2]), m('horn'), { group: G.ears, bevel: 1, toneBias: -1 });
   }
@@ -533,9 +544,11 @@ function drawEarsFront(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => nu
     r.fill(H.poly([-3.4, 4.4, -1.4, 12.4, 1.8, 5.2]), m('skin'), { group: G.ears, bevel: 1.6 });
     r.fill(H.poly([-2.2, 5.4, -1.2, 10, 0.6, 5.6]), m('inner'), { group: G.ears, flat: 2, noLine: true });
   } else if (sp === 'lop') {
-    const s = H.cap(-2, 5.6, -6.8, -5, 2, 2.3);
-    r.fill(s, m('skin'), { group: G.ears, bevel: 2 });
-    r.fill(H.cap(-2.6, 3.6, -6.2, -3.8, 0.8, 1.1), m('inner'), { group: G.ears, flat: 2, noLine: true });
+    // Floppy ears: up over the crown, then hanging down the back of the head.
+    const s = union(H.cap(-1.2, 6, -5.2, 4.2, 2.2, 2.7), H.cap(-5.2, 4.2, -7.2, -0.6, 2.7, 2.5));
+    r.fill(s, m('skin'), { group: G.ears, bevel: 2.2 });
+    r.fill(H.circ(-7.2, -0.8, 2.1), m('fur'), { group: G.ears, bevel: 1.4, noLine: true });
+    r.fill(H.cap(-4.6, 3.4, -6.3, 0.4, 0.7, 0.9), m('inner'), { group: G.ears, flat: 2, noLine: true });
   } else if (sp === 'imp') {
     if (!helm) r.fill(H.poly([1.6, 4.6, 0, 8.8, -3.4, 11, -0.8, 8, -0.2, 4.8]), m('horn'), { group: G.ears, bevel: 1.2 });
     r.fill(H.poly([-1.6, 0.2, -6.4, 2.8, -1.8, -1.6]), m('skin'), { group: G.ears, bevel: 1.4 });
@@ -611,13 +624,14 @@ function drawHeadgear(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => num
 function drawMain(r: Raster, art: CharacterArt, sk: Skeleton, pose: Pose, hold: Hold, OX: number, OY: number, m: (k: string) => number, bias: number): void {
   const wm = (k: string) => m('w.' + k);
   if (art.family === 'bow') {
-    const t = frameAt(OX, OY, sk.handF, pose.wAng);
+    const t = frameAt(OX, OY, sk.handF, pose.wAng + pose.rot);
     const pull = hold.pull ?? 0;
     const stringTo: [number, number] | undefined = pull > 0.05 ? [OX + sk.handN.x, OY - sk.handN.y] : undefined;
     art.main.draw(r, t, wm, { group: G.main, toneBias: bias, pull, stringTo });
     return;
   }
-  const t = frameAt(OX, OY, sk.handN, pose.wAng);
+  const sc = hold.mainScale ?? 1;
+  const t = frameAt(OX, OY, sk.handN, pose.wAng + pose.rot, sc);
   art.main.draw(r, t, wm, { group: G.main, toneBias: bias });
 }
 
@@ -637,7 +651,7 @@ function drawMainOnBack(r: Raster, art: CharacterArt, sk: Skeleton, OX: number, 
 function drawSec(r: Raster, art: CharacterArt, sk: Skeleton, pose: Pose, hold: Hold, OX: number, OY: number, m: (k: string) => number, bias: number): void {
   if (!art.sec) return;
   const sm = (k: string) => m('s.' + k);
-  const t = frameAt(OX, OY, sk.handF, pose.sAng);
+  const t = frameAt(OX, OY, sk.handF, pose.sAng + pose.rot);
   art.sec.draw(r, t, sm, { group: G.sec, toneBias: bias, pull: hold.pull });
 }
 
@@ -656,12 +670,12 @@ function drawSecHolster(r: Raster, art: CharacterArt, sk: Skeleton, T: Xf, OX: n
 }
 
 function drawSmear(r: Raster, art: CharacterArt, sk: Skeleton, s: Smear, OX: number, OY: number): void {
+  if (s.ring) { drawRing(r, art, sk, OX, OY); return; }
   const sh = sk.shN;
   const reach = Math.hypot(sk.handN.x - sh.x, sk.handN.y - sh.y) + art.main.tip;
-  const inner = Math.max(4, reach - art.main.tip * 0.55);
   const cx = OX + sh.x, cy = OY - sh.y;
   // Angles are measured around the shoulder: convert weapon angles to tip directions.
-  const shape = arc(cx, cy, inner, reach + 1, -s.from, -s.to);
+  const shape = arc(cx, cy, Math.max(3, reach - art.main.tip * 0.75), reach + 1, -s.from, -s.to);
   const mat = r.add(smearMat(art));
   const dim = r.add(smearDim(art));
   const span = s.to - s.from;
@@ -669,19 +683,39 @@ function drawSmear(r: Raster, art: CharacterArt, sk: Skeleton, s: Smear, OX: num
   const y0 = Math.max(0, Math.floor(shape.box.y0)), y1 = Math.min(r.h - 1, Math.ceil(shape.box.y1));
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     if (shape.sdf(x + 0.5, y + 0.5) >= 0) continue;
-    if (r.at(x, y) && r.group[y * r.w + x] !== G.smear && r.order[y * r.w + x] > 0) {
-      // Don't paint over the body; the smear trails behind the arm.
-      if (r.group[y * r.w + x] !== G.cape && r.group[y * r.w + x] !== G.tail) continue;
-    }
+    const i = y * r.w + x;
+    // Don't paint over the body; the smear trails behind the arm.
+    if (r.at(x, y) && r.group[i] !== G.smear && r.order[i] > 0 && r.group[i] !== G.cape && r.group[i] !== G.tail) continue;
     const a = -Math.atan2(y + 0.5 - cy, x + 0.5 - cx);
     let u = span === 0 ? 1 : (a - s.from) / span;
     u = ((u % 1) + 1) % 1;
     const rr = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
-    const edge = (rr - inner) / Math.max(1, reach - inner);
-    // Fade toward the start of the swing and the inside of the arc.
-    if (u < 0.35 && ((x + y) & 1)) continue;
-    if (u < 0.15) continue;
-    r.dot(x, y, edge > 0.55 && u > 0.5 ? mat : dim, 3, G.smear);
+    // A crescent: thick near the blade, thinning to nothing at the start of the swing.
+    const thick = art.main.tip * (0.08 + 0.62 * u * u);
+    const depth = reach + 0.5 - rr;
+    if (depth > thick || u < 0.12) continue;
+    if (u < 0.45 && ((x + y) & 1)) continue;
+    r.dot(x, y, depth < 2.2 && u > 0.35 ? mat : dim, 3, G.smear);
+  }
+}
+
+/** Whirlwind: a flat band of motion around the waist, behind the body where they overlap. */
+function drawRing(r: Raster, art: CharacterArt, sk: Skeleton, OX: number, OY: number): void {
+  const cx = OX + sk.hip.x, cy = OY - (sk.hip.y + sk.chest.y) / 2;
+  const rx = art.main.tip + 10, ry = 5;
+  const mat = r.add(smearMat(art));
+  const dim = r.add(smearDim(art));
+  const x0 = Math.max(0, Math.floor(cx - rx - 1)), x1 = Math.min(r.w - 1, Math.ceil(cx + rx + 1));
+  const y0 = Math.max(0, Math.floor(cy - ry - 1)), y1 = Math.min(r.h - 1, Math.ceil(cy + ry + 1));
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const u = (x + 0.5 - cx) / rx, v = (y + 0.5 - cy) / ry;
+    const d = u * u + v * v;
+    if (d > 1 || d < 0.55) continue;
+    const i = y * r.w + x;
+    if (r.at(x, y) && r.order[i] > 0 && r.group[i] !== G.smear) continue;
+    // Brighter on the outer rim and on the near (lower) half.
+    if (d < 0.7 && ((x + y) & 1)) continue;
+    r.dot(x, y, d > 0.82 && v > 0 ? mat : dim, 3, G.smear);
   }
 }
 
