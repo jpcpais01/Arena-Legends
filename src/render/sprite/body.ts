@@ -54,6 +54,7 @@ export const FORM_SHAPE: Record<FormId, Shape> = {
 
 /** Species tweak the build a little on top of the form (looks only). */
 const SPECIES_SHAPE: Record<SpeciesId, Shape> = {
+  human: { height: 1, bulk: 1, shoulders: 1.03, limbs: 1, head: 0.98 },
   kitsu: { height: 1, bulk: 0.97, shoulders: 1, limbs: 1.02, head: 1 },
   lop: { height: 0.97, bulk: 0.95, shoulders: 0.96, limbs: 1, head: 1.04 },
   imp: { height: 0.95, bulk: 0.95, shoulders: 1, limbs: 1, head: 1.04 },

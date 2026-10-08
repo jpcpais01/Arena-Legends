@@ -1,6 +1,7 @@
 import { Rng } from '../core/rng';
 import { mix } from './pixel/color';
 import { bayer, Pix } from './pixel/paint';
+import { buildIsle } from './isleArt';
 
 /**
  * Hand-painted (procedurally) arena backdrops. Everything is built as plain
@@ -15,6 +16,8 @@ import { bayer, Pix } from './pixel/paint';
 export interface Theme {
   id: string;
   name: string;
+  /** Which painter builds it: the walled colosseum (default) or the floating isle. */
+  kind?: 'isle';
   sky: number[];
   body: { color: number; glow: number; r: number; x: number; y: number; moon?: boolean };
   stars: boolean;
@@ -85,6 +88,21 @@ export const THEMES: Theme[] = [
     floor: 0xb8b08a, slab: 0x9a9a78, grout: 0x6a7058, emblem: 0xe8d898,
     fire: 0xffb040,
   },
+  {
+    id: 'isle', name: 'Skygrove Isle', kind: 'isle',
+    sky: [0x3672cc, 0x4a8cdc, 0x66a8e8, 0x8cc6f0, 0xb8e0f4, 0xe4f4f2],
+    body: { color: 0xfffbe2, glow: 0xfff0b4, r: 15, x: 0.74, y: 0.26 },
+    stars: false,
+    cloud: [0xffffff, 0xdae8f6, 0xb4cae4],
+    mountFar: 0x8eaed6, mountNear: 0x7898c4, snow: 0xf2f8ff,
+    city: 0x6a8ab0, windows: 0xfff0a0,
+    stone: 0x828c86, stoneDark: 0x5a6462, gate: 0x24343a, trim: 0x8ef0d6,
+    crowd: [0xd84a5a, 0xe8b040, 0x3a8ad0, 0xf0e8d8, 0x8a5ac8, 0xe07a3a, 0xd87a9a, 0x2e4a5a],
+    skins: [0xf0d0a8, 0xd8a880, 0xb07a58, 0x8a5e44],
+    banner: [0xd84a6a, 0xe8b040],
+    floor: 0x58a84a, slab: 0xbf9666, grout: 0x3f8a42, emblem: 0xffe07a,
+    fire: 0x8ef0d6,
+  },
 ];
 
 export interface Layer {
@@ -93,6 +111,8 @@ export interface Layer {
   factor: number;
   /** Screen y of the layer's top. */
   y: number;
+  /** Slow wind drift in px/s (the layer must tile horizontally). */
+  drift?: number;
 }
 
 export interface ArenaArt {
@@ -112,10 +132,19 @@ export interface ArenaArt {
   torches: [number, number][];
   /** World-anchored pillar sprite drawn at the arena bounds. */
   pillar: Pix;
+  /** Layers drawn over the floor (the isle's underside). */
+  front: Layer[];
+  /** Screen row where the floor stops (the isle's front lip). */
+  floorEnd: number;
+  /** Floating crystal over each pillar; without one the pillars carry burning braziers. */
+  crystal: Pix | null;
+  /** Colours of petals and leaves drifting on the wind, if any. */
+  motes: number[] | null;
 }
 
-/** How far (px) the camera can travel from centre. */
-export function buildArena(theme: Theme, W: number, gy: number, travel: number, seed = 7): ArenaArt {
+/** `travel`: how far (px) the camera can travel from centre. */
+export function buildArena(theme: Theme, W: number, H: number, gy: number, travel: number, seed = 7): ArenaArt {
+  if (theme.kind === 'isle') return buildIsle(theme, W, H, gy, travel, seed);
   const rng = new Rng(seed);
   const wallFactor = 0.78;
   const floorTop = gy - 22;
@@ -189,6 +218,7 @@ export function buildArena(theme: Theme, W: number, gy: number, travel: number, 
     theme, gy, hy, floorTop, wallFactor,
     layers: [L(sky, 0), L(clouds, 0.06), L(mFar, 0.12), L(mNear, 0.2), L(city, 0.35), L(stands, wallFactor)],
     crowd: [crowdA, crowdB], crowdLayer, floor, torches, pillar,
+    front: [], floorEnd: Infinity, crystal: null, motes: null,
   };
 }
 

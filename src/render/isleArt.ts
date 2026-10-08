@@ -1,0 +1,749 @@
+import { Rng } from '../core/rng';
+import { ARENA_HALF_WIDTH } from '../sim/constants';
+import { mix, pack, unpackHex } from './pixel/color';
+import { bayer, Pix } from './pixel/paint';
+import { PPM } from './sprite/animator';
+import type { ArenaArt, Layer, Theme } from './arenaArt';
+
+/**
+ * Skygrove Isle: the duel happens on a grassy island floating above a sea of
+ * clouds. Same parallax + perspective-floor scheme as the colosseum, but the
+ * floor is cut to the island's outline (the sky shows past its ends) and the
+ * island's rocky underside hangs below the front lip, roots and all.
+ *
+ * Back to front: sky and sun · high clouds · far peaks and isles · far cloud
+ * sea · near isles with waterfalls · low clouds · the grove on the island's
+ * back edge (trees, ruined arch, bushes, spectators) · meadow floor ·
+ * underside.
+ */
+
+const SG = {
+  leaves: [0x22492e, 0x32733c, 0x4b9444, 0x77bf54, 0xb0e078],
+  bush: [0x1f4a30, 0x2f6f3e, 0x469048, 0x6cb650, 0xa4da72],
+  blossom: [0x6e2f5a, 0xa84c74, 0xd87898, 0xf8acc2, 0xffe0ea],
+  bark: [0x40302a, 0x664834, 0x8c6848],
+  grass: [0x2f6c3a, 0x3f8a42, 0x58a84a, 0x80c858, 0xa6da6a],
+  dirt: [0x977050, 0xbf9666, 0xd8b682],
+  soil: [0x4f3426, 0x744e36],
+  rock: [0x3a3246, 0x564a60, 0x76697a, 0x9a8e9c],
+  stone: [0x5a6462, 0x828c86, 0xa8b0a4, 0xd0d6c6],
+  water: [0x78bce6, 0xb2e2f6, 0xf2fcff],
+  flowers: [0xff8cae, 0xffe07a, 0xfff8f0, 0xc09cff, 0xff9a5a],
+  rune: [0x23707a, 0x45c0b8, 0x8ef0d6, 0xeafff8],
+  /** Cloud tones, shadow to sunlit. */
+  cloud: [0x8aa6cc, 0xb4cae4, 0xdae8f6, 0xffffff],
+  ink: 0x1b2a2a,
+};
+
+export function buildIsle(theme: Theme, W: number, H: number, gy: number, travel: number, seed: number): ArenaArt {
+  const rng = new Rng(seed);
+  const wallFactor = 0.78;
+  const floorTop = gy - 22;
+  const hy = gy - 22 / (1 - wallFactor);
+  const D = gy - hy;
+  // The floor stops at the island's front lip; the underside layer takes over below.
+  const lipY = gy + 10;
+  const sLip = (lipY + 0.5 - hy) / D;
+  const vLip = D / sLip;
+  const vTop = D / ((floorTop + 0.5 - hy) / D);
+  // Island outline seen from above: a squarish superellipse a little wider than the arena.
+  const E = (ARENA_HALF_WIDTH + 2) * PPM;
+  const vc = (vLip + vTop) / 2 - 2, rv = (vTop - vLip) / 2 + 12;
+  const halfW = (v: number) => {
+    const k = Math.abs(v - vc) / rv;
+    return k >= 1 ? 0 : E * Math.pow(1 - k ** 4, 0.25);
+  };
+  const hz = gy - 46;
+  const lw = (f: number) => Math.ceil(W + 2 * travel * f + 8);
+  const horizon = theme.sky[theme.sky.length - 1];
+
+  const sky = paintSky(theme, W, H, hz);
+
+  const high = new Pix(lw(0.05), hz);
+  paintHighClouds(high, rng, hz);
+
+  const far = new Pix(lw(0.1), hz + 8);
+  paintRidge(far, rng, hz + 6, 34, mix(theme.mountFar, horizon, 0.35), mix(theme.mountFar, 0xffffff, 0.3), theme.snow);
+  for (let x = rng.range(0, 60); x < far.w; x += rng.range(90, 150)) {
+    const w = rng.range(18, 40);
+    paintIsland(far, rng, x, rng.range(Math.max(14, hz - 150), hz - 44), w, 0.6, horizon, hz + 4, rng.chance(0.45));
+  }
+
+  const farSea = new Pix(lw(0.16), H);
+  paintCloudSea(farSea, rng, hz - 3, Math.min(H, floorTop + 14), 3, 0.5);
+
+  const mid = new Pix(lw(0.27), hz + 12);
+  for (let x = rng.range(10, 80); x < mid.w; x += rng.range(170, 250)) {
+    const w = rng.range(54, 96);
+    paintIsland(mid, rng, x, rng.range(Math.max(18, hz - 196), hz - 96), w, 0.3, horizon, hz + 6, rng.chance(0.75));
+  }
+
+  const nearSea = new Pix(lw(0.42), H);
+  paintCloudSea(nearSea, rng, floorTop - 4, H + 24, 9, 0.22);
+
+  const grove = new Pix(lw(wallFactor), floorTop + 1);
+  const crowdA = new Pix(grove.w, grove.h), crowdB = new Pix(grove.w, grove.h);
+  paintGrove(grove, crowdA, crowdB, rng, theme, floorTop, halfW(vTop) * wallFactor, theme.sky[3]);
+
+  const floor = paintMeadow(rng, Math.ceil(W / 0.65 + 2 * travel * 1.6 + 64), Math.ceil(D) * 2, D, halfW);
+
+  const under = new Pix(lw(sLip), Math.max(1, H - lipY));
+  paintUnderside(under, rng, halfW(vLip) * sLip);
+
+  const L = (pix: Pix, factor: number, y = 0, drift = 0): Layer => ({ pix, factor, y, drift });
+  const crowdLayer = L(crowdA, wallFactor);
+  return {
+    theme, gy, hy, floorTop, wallFactor,
+    layers: [L(sky, 0), L(high, 0.05, 0, 1.2), L(far, 0.1), L(farSea, 0.16, 0, 2), L(mid, 0.27), L(nearSea, 0.42, 0, 4.5), L(grove, wallFactor)],
+    front: [L(under, sLip, lipY)],
+    floorEnd: lipY,
+    crowd: [crowdA, crowdB], crowdLayer, floor, torches: [],
+    pillar: paintMenhir(),
+    crystal: paintCrystal(),
+    motes: [SG.leaves[3], SG.blossom[3], SG.flowers[1], SG.leaves[4], SG.blossom[4]],
+  };
+}
+
+// --- Noise and shading helpers ---------------------------------------------------
+
+function hash(x: number, y: number, s: number): number {
+  let h = Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(s | 0, 1442695041);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+/** Smooth value noise in 0..1, with separate cell sizes per axis. */
+function noise(x: number, y: number, cx: number, cy: number, s: number): number {
+  const gx = x / cx, gy = cy > 0 ? y / cy : 0;
+  const ix = Math.floor(gx), iy = Math.floor(gy);
+  const fx = gx - ix, fy = gy - iy;
+  const ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy);
+  const a = hash(ix, iy, s), b = hash(ix + 1, iy, s), c = hash(ix, iy + 1, s), d = hash(ix + 1, iy + 1, s);
+  return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
+}
+
+/** Picks a tone from a dark→light palette for lightness `l`, dithered at band edges. */
+function tone(pal: number[], l: number, x: number, y: number, spread = 0.18): number {
+  const t = l + (bayer(x, y) - 0.5) * spread;
+  return pal[Math.max(0, Math.min(pal.length - 1, Math.floor(t * pal.length)))];
+}
+
+/** Blends every opaque pixel toward `c` (atmospheric haze). */
+function haze(p: Pix, c: number, t: number): void {
+  for (let i = 0; i < p.data.length; i++) {
+    const v = p.data[i];
+    if (v >>> 24) p.data[i] = pack(mix(unpackHex(v), c, t));
+  }
+}
+
+interface Blob { x: number; y: number; rx: number; ry: number }
+
+/** Clumpy foliage: each blob lit from the upper right, lower blobs painted first. */
+function foliage(p: Pix, blobs: Blob[], pal: number[], seed: number): void {
+  blobs.sort((a, b) => b.y - a.y);
+  for (const b of blobs) {
+    for (let y = Math.floor(b.y - b.ry); y <= b.y + b.ry; y++) for (let x = Math.floor(b.x - b.rx); x <= b.x + b.rx; x++) {
+      const u = (x + 0.5 - b.x) / b.rx, v = (y + 0.5 - b.y) / b.ry;
+      const d = u * u + v * v;
+      if (d > 1 || (d > 0.8 && hash(x, y, seed) < 0.4)) continue;
+      const l = 0.5 - v * 0.45 + u * 0.22 - d * 0.16;
+      let c = tone(pal, l, x, y);
+      const r = hash(x, y, seed + 1);
+      if (r < 0.06) c = l > 0.55 ? pal[pal.length - 1] : pal[0];
+      p.set(x, y, c);
+    }
+  }
+}
+
+/** A soft cloud puff (dark underside, sunlit top right), clipped below `cut`. */
+function puff(p: Pix, cx: number, cy: number, rx: number, ry: number, cut = Infinity, light = 0.78): void {
+  for (const ox of [-p.w, 0, p.w]) {
+    const x0 = Math.max(0, Math.floor(cx + ox - rx)), x1 = Math.min(p.w - 1, Math.ceil(cx + ox + rx));
+    if (x0 > x1) continue;
+    for (let y = Math.max(0, Math.floor(cy - ry)); y <= Math.min(p.h - 1, cy + ry, cut); y++) {
+      for (let x = x0; x <= x1; x++) {
+        const u = (x + 0.5 - cx - ox) / rx, v = (y + 0.5 - cy) / ry;
+        if (u * u + v * v > 1) continue;
+        p.set(x, y, tone(SG.cloud, light - v * 0.5 + u * 0.12, x, y, 0.22));
+      }
+    }
+  }
+}
+
+// --- Sky and distance ---------------------------------------------------------------
+
+function paintSky(th: Theme, W: number, H: number, hz: number): Pix {
+  const p = new Pix(W, H);
+  p.gradient(0, 0, W, hz + 8, th.sky);
+  p.rect(0, hz + 8, W, H - hz - 8, th.sky[th.sky.length - 1]);
+  const b = th.body;
+  const bx = Math.round(W * b.x), by = Math.round(hz * b.y);
+  // Sun shafts slanting down-left, very faint.
+  for (const [a, w] of [[2.25, 0.05], [2.45, 0.035], [2.7, 0.06], [2.95, 0.03]]) {
+    for (let y = by; y < hz; y++) for (let x = 0; x < bx; x++) {
+      const ang = Math.atan2(y - by, x - bx);
+      if (Math.abs(ang - a) > w) continue;
+      const f = 1 - Math.hypot(x - bx, y - by) / (hz * 1.4);
+      if (f > 0 && bayer(x, y) < f * 0.22) p.set(x, y, mix(unpackHex(p.get(x, y)), 0xffffff, 0.22));
+    }
+  }
+  // Halo: dithered rings that brighten toward the disc.
+  for (let k = 4; k >= 1; k--) {
+    const r = b.r + k * 10;
+    for (let y = by - r; y <= by + r; y++) for (let x = bx - r; x <= bx + r; x++) {
+      if (Math.hypot(x - bx, y - by) > r || !p.has(x, y)) continue;
+      if (bayer(x, y) < 0.3 + (4 - k) * 0.17) p.set(x, y, mix(unpackHex(p.get(x, y)), b.glow, 0.3));
+    }
+  }
+  p.ellipse(bx, by, b.r, b.r, b.color);
+  p.ellipse(bx + 2, by - 2, b.r - 5, b.r - 5, mix(b.color, 0xffffff, 0.6));
+  return p;
+}
+
+function paintHighClouds(p: Pix, rng: Rng, hz: number): void {
+  const n = Math.max(2, Math.round(p.w / 150));
+  for (let i = 0; i < n; i++) {
+    const cx = (i + rng.range(0, 0.7)) * (p.w / n), cy = rng.range(hz * 0.14, hz * 0.5);
+    const w = rng.range(26, 56);
+    const base = cy + w * 0.12;
+    for (let j = 0; j < 7; j++) {
+      const u = rng.range(-1, 1);
+      const r = (1 - Math.abs(u) * 0.55) * w * rng.range(0.26, 0.38);
+      puff(p, cx + u * w * 0.8, base - r * rng.range(0.4, 0.9), r * 1.35, r, base);
+    }
+  }
+  // Thin streaks.
+  for (let i = 0; i < n + 1; i++) {
+    const y = Math.round(rng.range(hz * 0.06, hz * 0.62)), x0 = rng.range(0, p.w), len = rng.range(40, 110);
+    for (let x = 0; x < len; x++) {
+      const e = Math.min(x, len - x) / 12;
+      if (bayer(x0 + x, y) < e) p.set((Math.round(x0 + x) + p.w) % p.w, y, SG.cloud[3]);
+      if (x > len * 0.2 && x < len * 0.7 && bayer(x0 + x, y + 1) < e * 0.6) p.set((Math.round(x0 + x + 6) + p.w) % p.w, y + 1, SG.cloud[2]);
+    }
+  }
+}
+
+function paintRidge(p: Pix, rng: Rng, base: number, amp: number, color: number, lit: number, snow: number | null): void {
+  const n = 64;
+  const pts = new Float32Array(n + 1);
+  pts[0] = rng.range(0.2, 0.8); pts[n] = rng.range(0.2, 0.8);
+  for (let step = n; step > 1; step >>= 1) {
+    for (let i = step >> 1; i < n; i += step) {
+      pts[i] = (pts[i - (step >> 1)] + pts[i + (step >> 1)]) / 2 + rng.range(-0.5, 0.5) * (step / n) * 1.8;
+    }
+  }
+  for (let x = 0; x < p.w; x++) {
+    const t = (x / p.w) * n, i = Math.min(n - 1, Math.floor(t)), f = t - i;
+    const v = Math.max(0, pts[i] * (1 - f) + pts[i + 1] * f);
+    const top = Math.round(base - v * amp);
+    const tn = Math.round(base - Math.max(0, pts[Math.min(n, i + 1)] * (1 - f) + pts[Math.min(n, i + 2)] * f) * amp);
+    for (let y = top; y < p.h; y++) {
+      let c = color;
+      if (y - top < 2 && tn > top) c = lit;
+      if (snow && y - top < 3 && top < base - amp * 0.55) c = snow;
+      p.set(x, y, c);
+    }
+  }
+}
+
+/** A sea of clouds seen from above: rows of puffs growing toward the viewer. */
+function paintCloudSea(p: Pix, rng: Rng, top: number, bottom: number, r0: number, light: number): void {
+  let y = top, r = r0;
+  // Body colour under the puffs so nothing shows through.
+  p.rect(0, Math.round(top + r0), p.w, p.h, SG.cloud[1]);
+  while (y < bottom) {
+    for (let x = rng.range(0, r * 2); x < p.w; x += r * rng.range(1.2, 2)) {
+      puff(p, x, y + rng.range(-r * 0.25, r * 0.25), r * rng.range(1.5, 2.4), r * rng.range(0.7, 1), Infinity, 0.5 + light);
+    }
+    y += r * 0.75;
+    r *= 1.22;
+  }
+}
+
+/** A small floating island, optionally with a waterfall pouring into the cloud sea. */
+function paintIsland(p: Pix, rng: Rng, cx: number, top: number, w: number, fog: number, sky: number, seaY: number, fall: boolean): void {
+  const hw = w / 2;
+  const depth = w * rng.range(0.55, 0.85);
+  const treeH = Math.ceil(w * 0.55);
+  const tmp = new Pix(Math.ceil(w + 6), Math.ceil(treeH + depth + 22));
+  const tcx = tmp.w / 2, ttop = treeH;
+  const sd = rng.int(0, 9999);
+  for (let x = 0; x < tmp.w; x++) {
+    const dx = x + 0.5 - tcx, t = Math.abs(dx) / hw;
+    if (t >= 1) continue;
+    const y0 = ttop + Math.round(t ** 3 * 2);
+    const tooth = hash(Math.floor(x / 4), 0, sd) * 6 * (1 - Math.abs((x % 4) - 1.5) / 2);
+    const bot = ttop + 3 + depth * Math.pow(1 - t * t, 0.8) * (0.75 + 0.5 * noise(x, 0, 9, 0, sd)) + tooth;
+    for (let y = y0; y <= bot; y++) {
+      const rel = y - y0;
+      let c: number;
+      if (rel === 0) c = SG.grass[3];
+      else if (rel < 3) c = SG.grass[2];
+      else if (rel < 5) c = SG.soil[1];
+      else {
+        const band = ((y + Math.round(Math.sin(x * 0.3) * 1.5)) >> 2) & 1;
+        let i = band ? 2 : 1;
+        if (bayer(x, y) < ((y - y0) / (bot - y0)) * 0.8) i--;
+        if (dx > 0 && t > 0.8 && rel < depth * 0.4) i = 3;
+        c = SG.rock[i];
+      }
+      if (y >= bot - 1 && rel > 4) c = mix(SG.rock[1], SG.cloud[1], 0.45);
+      tmp.set(x, y, c);
+    }
+  }
+  // Trees on top.
+  const nt = Math.max(1, Math.round(w / 22));
+  for (let i = 0; i < nt; i++) {
+    const tx = tcx + rng.range(-hw * 0.7, hw * 0.7), th = rng.range(w * 0.12, w * 0.3);
+    const r = Math.max(2.5, th * rng.range(0.4, 0.6));
+    tmp.rect(Math.round(tx), Math.round(ttop - th * 0.6), w > 60 ? 2 : 1, Math.ceil(th * 0.6), SG.bark[1]);
+    foliage(tmp, [{ x: tx, y: ttop - th, rx: r * 1.1, ry: r }, { x: tx + r * 0.5, y: ttop - th - r * 0.4, rx: r * 0.7, ry: r * 0.6 }], rng.chance(0.25) ? SG.blossom : SG.leaves, sd + i);
+  }
+  tmp.outline(SG.ink);
+  haze(tmp, sky, fog);
+  p.blit(tmp, Math.round(cx - tcx), Math.round(top - ttop));
+  if (fall) {
+    // Waterfall from a spring near the edge, thinning into mist as it falls.
+    const side = rng.chance(0.5) ? 1 : -1;
+    const fx = Math.round(cx + side * hw * rng.range(0.35, 0.65)), fw = Math.max(1, Math.round(w / 28));
+    for (let y = Math.round(top); y < seaY; y++) {
+      const f = (y - top) / (seaY - top);
+      for (let i = -1; i <= fw; i++) {
+        if (bayer(fx + i, y) < f * f * 0.75) continue;
+        const c = i < 0 || i === fw ? SG.water[0] : SG.water[1 + ((i + (y >> 1)) & 1)];
+        p.set(fx + i, y, mix(c, sky, fog * 0.6));
+      }
+    }
+    for (let k = 0; k < 3; k++) {
+      const mx = fx + rng.range(-5, 5), my = seaY - rng.range(0, 3), mr = rng.range(3, 6);
+      for (let y = Math.floor(my - mr); y <= my + mr; y++) for (let x = Math.floor(mx - mr * 1.6); x <= mx + mr * 1.6; x++) {
+        const d = Math.hypot((x - mx) / 1.6, y - my) / mr;
+        if (d < 1 && bayer(x, y) < 1 - d) p.set(x, y, mix(SG.water[2], sky, fog * 0.4));
+      }
+    }
+  }
+}
+
+// --- The grove on the island's back edge ------------------------------------------
+
+function paintTree(rng: Rng, h: number, leaves: number[], seed: number): Pix {
+  const cr = Math.round(h * rng.range(0.25, 0.32));
+  const lean = rng.range(-0.12, 0.12);
+  const w = Math.ceil(cr * 3 + 12 + Math.abs(lean) * h * 2), ph = h + 2;
+  const p = new Pix(w, ph);
+  const cx = w / 2, base = ph - 1;
+  const ccy = cr + 3;
+  const tw = Math.max(4, Math.round(h * 0.055));
+  const at = (y: number) => cx + lean * (base - y) + Math.sin((base - y) * 0.09) * 1.2;
+  for (let y = Math.round(ccy); y <= base; y++) {
+    const flare = y > base - 6 ? (y - (base - 6)) * 0.8 : 0;
+    const xl = Math.round(at(y) - tw / 2 - flare), xr = Math.round(at(y) + tw / 2 + flare);
+    for (let x = xl; x <= xr; x++) {
+      let c = x === xl ? SG.bark[0] : x >= xr - 1 ? SG.bark[2] : SG.bark[1];
+      if (x > xl && x < xr - 1 && hash(x, y >> 2, seed) < 0.22) c = SG.bark[0];
+      p.set(x, y, c);
+    }
+  }
+  // Branches reaching into the crown.
+  for (const s of [-1, 1]) {
+    const by = Math.round(ccy + cr * rng.range(0.5, 0.9));
+    const bx = at(by);
+    for (let i = 0; i < cr * 0.8; i++) {
+      p.set(Math.round(bx + s * i), Math.round(by - i * 0.7), SG.bark[1]);
+      p.set(Math.round(bx + s * i), Math.round(by - i * 0.7 + 1), SG.bark[0]);
+    }
+  }
+  const blobs: Blob[] = [{ x: at(ccy), y: ccy + cr * 0.15, rx: cr * 1.15, ry: cr * 0.72 }];
+  const n = rng.int(6, 9);
+  for (let i = 0; i < n; i++) {
+    const a = Math.PI + (i / (n - 1)) * Math.PI + rng.range(-0.2, 0.2);
+    const r = cr * rng.range(0.38, 0.55);
+    blobs.push({ x: at(ccy) + Math.cos(a) * cr * 0.85, y: ccy + Math.sin(a) * cr * 0.55 + cr * 0.15, rx: r * 1.15, ry: r * 0.85 });
+  }
+  foliage(p, blobs, leaves, seed);
+  // A few hanging vines.
+  for (let i = 0; i < 3; i++) {
+    if (!rng.chance(0.6)) continue;
+    const vx = Math.round(at(ccy) + rng.range(-cr, cr)), vy = Math.round(ccy + cr * 0.75), len = rng.int(5, 16);
+    for (let k = 0; k < len; k++) {
+      p.set(vx + (k % 6 === 3 ? 1 : 0), vy + k, leaves[1]);
+      if (k % 3 === 1) p.set(vx + ((k >> 1) & 1 ? 1 : -1), vy + k, leaves[3]);
+    }
+  }
+  p.outline(SG.ink);
+  return p;
+}
+
+function paintArch(rng: Rng): Pix {
+  const w = 54, h = 76, colW = 9;
+  const p = new Pix(w + 6, h + 2);
+  const ox = 3, acy = 27, R = w / 2, r = R - 8;
+  const ax = ox + w / 2;
+  const S = SG.stone;
+  const brokeTop = acy + rng.int(8, 20);
+  for (const [c0, yTop] of [[ox, acy], [ox + w - colW, brokeTop]] as const) {
+    for (let y = yTop; y < h; y++) for (let x = c0; x < c0 + colW; x++) {
+      if (y < yTop + 3 && hash(x, y, 3) < 0.5 && c0 !== ox) continue;
+      const u = (x - c0) / (colW - 1);
+      let c = u < 0.2 ? S[0] : u > 0.75 ? S[2] : S[1];
+      if ((y - acy) % 10 === 0 || hash(x, y, 5) < 0.05) c = S[0];
+      p.set(x, y, c);
+    }
+  }
+  // Broken just past the keystone.
+  const cut = rng.range(1.2, 1.42);
+  for (let y = acy - R; y <= acy; y++) for (let x = ax - R; x <= ax + R; x++) {
+    const d = Math.hypot(x + 0.5 - ax, y + 0.5 - acy);
+    if (d < r || d > R) continue;
+    const a = Math.atan2(y + 0.5 - acy, x + 0.5 - ax);
+    if (a > -cut) continue;
+    let c = d > R - 1.5 ? S[2] : d < r + 1 ? S[0] : S[1];
+    if (Math.abs(((a + Math.PI) / 0.32) % 1) < 0.1) c = S[0];
+    p.set(x, y, c);
+  }
+  // Fallen blocks at the foot of the broken side.
+  for (let i = 0; i < 3; i++) {
+    const bx = ox + w - colW - 10 + i * 7 + rng.int(-1, 1), bw = rng.int(5, 8), bh = rng.int(3, 5);
+    p.rect(bx, h - bh, bw, bh, S[1]);
+    p.rect(bx, h - bh, bw, 1, S[2]);
+    p.rect(bx, h - 1, bw, 1, S[0]);
+  }
+  // Moss on every top surface, dripping a little.
+  for (let x = 0; x < p.w; x++) {
+    let y = 0;
+    while (y < p.h && !p.has(x, y)) y++;
+    if (y >= p.h - 4) continue;
+    const drip = hash(x, 0, 9) < 0.25 ? 3 : 1;
+    for (let k = 0; k <= drip; k++) p.set(x, y + k, k === 0 ? SG.grass[3] : SG.grass[2]);
+  }
+  // Ivy down the left column.
+  for (let y = acy + 4; y < h - 6; y++) {
+    const x = ox + 2 + Math.round(Math.sin(y * 0.35) * 2);
+    p.set(x, y, SG.leaves[1]);
+    if (y % 3 === 0) p.set(x + 1, y, SG.leaves[3]);
+  }
+  p.outline(SG.ink);
+  return p;
+}
+
+function paintGrove(p: Pix, ca: Pix, cb: Pix, rng: Rng, th: Theme, floorTop: number, hw: number, sky: number): void {
+  const cx = p.w / 2;
+  const left = cx - hw, right = cx + hw;
+  // Back row: tall, hazed trees, leaving the middle open for the view.
+  for (let x = left + rng.range(10, 30); x < right - 10; x += rng.range(64, 110)) {
+    if (Math.abs(x - cx) < 46) continue;
+    const t = paintTree(rng, rng.int(100, 146), rng.chance(0.22) ? SG.blossom : SG.leaves, rng.int(0, 9999));
+    haze(t, sky, 0.24);
+    p.blit(t, Math.round(x - t.w / 2), floorTop - 8 - t.h);
+  }
+  // A ruined arch framing the middle.
+  const arch = paintArch(rng);
+  p.blit(arch, Math.round(cx + rng.range(-24, 24) - arch.w / 2), floorTop - 6 - arch.h);
+  // Front row: fewer, bigger crowns.
+  for (let x = left + rng.range(40, 90); x < right - 30; x += rng.range(150, 240)) {
+    if (Math.abs(x - cx) < 90) continue;
+    const t = paintTree(rng, rng.int(80, 116), rng.chance(0.3) ? SG.blossom : SG.leaves, rng.int(0, 9999));
+    p.blit(t, Math.round(x - t.w / 2), floorTop - 4 - t.h);
+  }
+  // Bushes and long grass along the edge.
+  const band = new Pix(p.w, 34);
+  const by = band.h - 1;
+  for (let x = Math.max(0, Math.floor(left)); x < Math.min(p.w, right); x++) {
+    for (let y = by - 3; y <= by; y++) band.set(x, y, bayer(x, y) < 0.3 ? SG.grass[2] : SG.grass[1]);
+  }
+  for (let x = left + rng.range(0, 6); x < right; x += rng.range(8, 15)) {
+    const edge = Math.min(x - left, right - x);
+    if (edge < 2) continue;
+    const k = Math.min(1, 0.35 + edge / 50);
+    const rx = rng.range(8, 15) * k, ry = rng.range(6, 11) * k;
+    const pal = rng.chance(0.12) ? SG.blossom : SG.bush;
+    foliage(band, [{ x, y: by - ry * 0.6, rx, ry }, { x: x + rx * 0.6, y: by - ry * 0.3, rx: rx * 0.7, ry: ry * 0.7 }], pal, rng.int(0, 9999));
+    if (pal === SG.bush) for (let i = 0; i < 3; i++) {
+      if (rng.chance(0.5)) band.set(Math.round(x + rng.range(-rx, rx) * 0.6), Math.round(by - ry * rng.range(0.3, 1.1)), rng.pick(SG.flowers));
+    }
+  }
+  for (let x = Math.max(0, Math.floor(left + 3)); x < Math.min(p.w, right - 3); x++) {
+    if (hash(x, 1, 31) < 0.35) {
+      const hgt = 2 + Math.floor(hash(x, 2, 31) * 4);
+      for (let k = 0; k < hgt; k++) band.set(x, by - k, k === hgt - 1 ? SG.grass[4] : SG.grass[3]);
+    }
+  }
+  band.outline(SG.ink);
+  p.blit(band, 0, floorTop - band.h + 1);
+  // Spectators on fallen logs, two frames (bob, cheer).
+  for (const s of [-1, 1]) {
+    for (let k = 0; k < 2; k++) {
+      const lx = Math.round(cx + s * (k ? rng.range(165, 205) : rng.range(75, 120)));
+      const n = rng.int(4, 7), lwid = n * 6 + 6;
+      if (lx - lwid / 2 < left + 10 || lx + lwid / 2 > right - 10) continue;
+      const ly = floorTop - 8;
+      const x0 = Math.round(lx - lwid / 2);
+      p.rect(x0, ly, lwid, 4, SG.bark[1]);
+      p.rect(x0, ly, lwid, 1, SG.bark[2]);
+      p.rect(x0, ly + 3, lwid, 1, SG.bark[0]);
+      p.rect(x0 - 1, ly, 2, 4, SG.dirt[2]);
+      p.set(x0, ly + 1, SG.bark[0]);
+      p.rect(x0 - 2, ly - 1, lwid + 4, 1, SG.ink);
+      p.rect(x0 - 2, ly + 4, lwid + 4, 1, SG.ink);
+      for (let i = 0; i < n; i++) {
+        const x = x0 + 3 + i * 6 + rng.int(-1, 1);
+        const shirt = th.crowd[rng.int(0, th.crowd.length - 1)];
+        const skin = th.skins[rng.int(0, th.skins.length - 1)];
+        const hair = rng.pick([0x2a1a14, 0x5a3a20, 0xc89040, 0x1a1a24, 0xa83a2a, 0xe8e0d0]);
+        const hop = rng.chance(0.5), cheer = rng.chance(0.4);
+        for (const [buf, up] of [[ca, 0], [cb, hop ? 1 : 0]] as const) {
+          const yy = ly - up;
+          buf.rect(x, yy - 5, 4, 5, shirt);
+          buf.rect(x, yy - 5, 4, 1, mix(shirt, 0xffffff, 0.25));
+          buf.rect(x + 1, yy - 8, 3, 3, skin);
+          buf.rect(x + 1, yy - 9, 3, 1, hair);
+          if (buf === cb && cheer) {
+            for (const ax of [x - 1, x + 4]) { buf.set(ax, yy - 7, skin); buf.set(ax, yy - 8, skin); buf.set(ax, yy - 9, SG.ink); }
+          }
+        }
+      }
+    }
+  }
+}
+
+// --- Floor and underside -------------------------------------------------------------
+
+/** The meadow: u = world px (centre at w/2), v = depth row; transparent past the island's edge. */
+function paintMeadow(rng: Rng, w: number, h: number, D: number, halfW: (v: number) => number): Pix {
+  const p = new Pix(w, h);
+  const cx = w / 2;
+  const G = SG.grass, Dt = SG.dirt;
+  const vBack = D * 1.22;
+  for (let v = 0; v < h; v++) {
+    const hw = halfW(v);
+    if (hw <= 0) continue;
+    const z = v * 2.6;
+    for (let x = Math.max(0, Math.floor(cx - hw)); x < Math.min(w, Math.ceil(cx + hw)); x++) {
+      const du = x + 0.5 - cx;
+      const edge = hw - Math.abs(du);
+      if (edge < 0) continue;
+      // The trodden path the fighters duel on, ragged at the edges.
+      const pc = D + (noise(du, 0, 90, 0, 11) - 0.5) * 5;
+      const ph = (5 + noise(du, 0, 34, 0, 12) * 3.5) * Math.min(1, edge / 70);
+      const pd = Math.abs(v - pc) - ph;
+      let c: number;
+      if (pd < -0.5 || (pd < 1.5 && bayer(x, v) < 0.5 - pd * 0.4)) {
+        const n = noise(du, z, 14, 6, 13) + (bayer(x, v) - 0.5) * 0.3;
+        c = n < 0.35 ? Dt[0] : n > 0.72 ? Dt[2] : Dt[1];
+        const r = hash(x, v, 14);
+        if (r < 0.025) c = SG.stone[2];
+        else if (pd > -2.5 && r < 0.3) c = G[2];
+      } else {
+        const n = noise(du, z, 26, 26, 21) * 0.7 + noise(du, z, 7, 7, 22) * 0.3 + (bayer(x, v) - 0.5) * 0.22;
+        let i = n < 0.36 ? 1 : n > 0.64 ? 3 : 2;
+        const r = hash(x, v, 23);
+        if (r < 0.07) i = Math.min(4, i + 1);
+        else if (r < 0.13) i = 1;
+        // Shade under the grove at the back.
+        if (v > vBack - 10 && bayer(x, v) < (v - (vBack - 10)) / 14) i = Math.max(0, i - 1);
+        c = G[i];
+      }
+      if (edge < 1.5) c = G[4];
+      p.set(x, v, c);
+    }
+  }
+  const inside = (x: number, v: number) => (p.get(x, v) >>> 24) > 0;
+  // Flowers, in loose patches.
+  for (let i = 0; i < w * h * 0.005; i++) {
+    const x = rng.int(0, w - 2), v = rng.int(0, h - 1);
+    if (!inside(x, v) || !inside(x + 1, v) || Math.abs(v - D) < 11) continue;
+    if (noise(x, v * 2.6, 60, 60, 24) < 0.45) continue;
+    const c = rng.pick(SG.flowers);
+    p.set(x, v, c); p.set(x + 1, v, c);
+    if (rng.chance(0.4)) p.set(x, v + 1, mix(c, 0xffffff, 0.4));
+  }
+  // Flat mossy stones.
+  for (let i = 0; i < Math.round(w / 90); i++) {
+    const x = rng.range(0, w), v = rng.range(D * 0.9, D * 1.25), rx = rng.range(4, 8), ry = rng.range(1.5, 2.8);
+    if (Math.abs(v - D) < 12 || !inside(Math.round(x - rx), Math.round(v)) || !inside(Math.round(x + rx), Math.round(v))) continue;
+    p.ellipse(x, v, rx + 1, ry + 1, G[0]);
+    p.ellipse(x, v, rx, ry, SG.stone[1]);
+    p.rect(Math.round(x - rx + 2), Math.round(v + ry - 1), Math.round(rx * 2 - 4), 1, SG.stone[2]);
+    if (rng.chance(0.6)) p.set(Math.round(x + rx * 0.3), Math.round(v), G[3]);
+  }
+  // A fairy ring of mushrooms and daisies around the middle.
+  const R = 66, n = 22;
+  for (let k = 0; k < n; k++) {
+    const a = (k / n) * Math.PI * 2 + rng.range(-0.05, 0.05);
+    const x = Math.round(cx + Math.cos(a) * R), v = Math.round(D + (Math.sin(a) * R) / 2.6);
+    if (!inside(x, v)) continue;
+    if (k & 1) { p.set(x, v, SG.flowers[2]); p.set(x + 1, v, SG.flowers[2]); p.set(x, v + 1, SG.flowers[1]); }
+    else { p.rect(x - 1, v, 3, 1, 0xd8483a); p.set(x, v, 0xfff0e0); p.rect(x - 1, v - 1, 3, 1, 0xf0e0c8); }
+  }
+  return p;
+}
+
+/** The island's front face: grass lip, soil, rock strata tapering to a jagged point, roots and vines. */
+function paintUnderside(p: Pix, rng: Rng, hw: number): void {
+  const cx = p.w / 2;
+  const Dm = 122;
+  const bottom = new Float32Array(p.w).fill(-1);
+  for (let x = 0; x < p.w; x++) {
+    const t = Math.abs(x + 0.5 - cx) / hw;
+    if (t >= 1) continue;
+    const cell = Math.floor(x / 7);
+    const tooth = hash(cell, 0, 41) * 14 * (1 - Math.abs((x % 7) - 3) / 3.5);
+    bottom[x] = 9 + Dm * Math.pow(1 - t * t, 0.65) * (0.72 + 0.5 * noise(x, 0, 23, 0, 42)) + tooth;
+  }
+  const R = SG.rock;
+  for (let x = 0; x < p.w; x++) {
+    const b = bottom[x];
+    if (b < 0) continue;
+    const wave = Math.sin(x * 0.045) * 3 + noise(x, 0, 16, 0, 43) * 4;
+    const nb = bottom[Math.min(p.w - 1, x + 2)];
+    for (let y = 0; y <= Math.min(p.h - 1, b); y++) {
+      let c: number;
+      if (y === 0) c = SG.grass[4];
+      else if (y < 3) c = SG.grass[2 + (y & 1) - 1];
+      else if (y < 10) {
+        c = bayer(x, y) < (y - 3) / 10 ? SG.soil[0] : SG.soil[1];
+        if (hash(x, y, 44) < 0.04) c = R[3];
+      } else {
+        // Strata that wander, darkening toward the point; a sunlit rim on the right slope.
+        const sv = (y + wave + noise(x, y, 26, 7, 46) * 7) / 7;
+        let i = Math.floor(sv) % 3 === 0 ? 1 : 2;
+        if (sv % 1 < 0.15 && i === 2) i = 3;
+        if (bayer(x, y) < (y / b) * 1.1 - 0.15) i--;
+        if (bayer(x + 2, y) < (y / b) * 1.1 - 0.75) i--;
+        if (y > nb && y < b - 1) i = 3;
+        c = R[Math.max(0, i)];
+        if (y >= b - 1) c = mix(R[1], SG.cloud[1], 0.5);
+      }
+      p.set(x, y, c);
+    }
+    // Grass overhang tufts.
+    if (hash(x, 3, 45) < 0.3) for (let k = 3; k < 3 + hash(x, 4, 45) * 3; k++) p.set(x, k, SG.grass[2]);
+  }
+  // Boulders bedded in the rock.
+  for (let i = 0; i < p.w / 16; i++) {
+    const x = Math.floor(rng.range(0, p.w));
+    if (bottom[x] < 30) continue;
+    const y = rng.range(13, bottom[x] - 10), rx = rng.range(3, 7), ry = rx * rng.range(0.6, 0.85);
+    for (let yy = Math.floor(y - ry); yy <= y + ry; yy++) for (let xx = Math.floor(x - rx); xx <= x + rx; xx++) {
+      const u = (xx + 0.5 - x) / rx, v = (yy + 0.5 - y) / ry;
+      const d = u * u + v * v;
+      if (d > 1 || !p.has(xx, yy)) continue;
+      p.set(xx, yy, d > 0.7 && v > 0 ? R[0] : tone(R, 0.55 - v * 0.35 + u * 0.15 - (yy / bottom[x]) * 0.3, xx, yy));
+    }
+  }
+  // Glowing crystals in the rock.
+  for (let i = 0; i < p.w / 120; i++) {
+    const x = Math.floor(rng.range(0, p.w));
+    if (bottom[x] < 40) continue;
+    const y = Math.round(rng.range(16, bottom[x] - 14));
+    for (const [ox, oh] of [[0, 6], [3, 4], [-3, 3]]) {
+      for (let k = 0; k < oh; k++) {
+        p.set(x + ox, y - k, k === oh - 1 ? SG.rune[3] : SG.rune[2]);
+        p.set(x + ox + 1, y - k + 1, SG.rune[1]);
+      }
+    }
+  }
+  p.outline(SG.ink);
+  // Roots and vines dangling below.
+  for (let i = 0; i < p.w / 12; i++) {
+    let x = Math.floor(rng.range(0, p.w));
+    if (bottom[x] < 12) continue;
+    const vine = rng.chance(0.35);
+    let y = rng.int(4, 9);
+    const len = vine ? rng.int(10, 40) : rng.int(8, 30) + Math.round(bottom[x] * rng.range(0, 0.5));
+    for (let k = 0; k < len && y < p.h; k++, y++) {
+      if (!vine && rng.chance(0.25)) x += rng.chance(0.5) ? 1 : -1;
+      if (vine) {
+        p.set(x, y, SG.leaves[1]);
+        if (k % 3 === 1) p.set(x + ((k >> 1) & 1 ? 1 : -1), y, SG.leaves[3]);
+        if (k === len - 1 && rng.chance(0.4)) p.set(x, y + 1, SG.flowers[0]);
+      } else {
+        p.set(x, y, k < len - 4 ? SG.bark[1] : SG.bark[0]);
+        if (k < len * 0.4) p.set(x + 1, y, SG.bark[0]);
+      }
+    }
+  }
+}
+
+// --- Props -----------------------------------------------------------------------------
+
+/** A mossy standing stone with a glowing rune, marking each end of the arena. */
+function paintMenhir(): Pix {
+  const w = 28, h = 112;
+  const p = new Pix(w, h);
+  const S = SG.stone;
+  const top = 10;
+  for (let y = top; y < h; y++) {
+    const f = (y - top) / (h - top);
+    const half = 6 + f * 4;
+    const slant = y < top + 8 ? (top + 8 - y) * 0.9 : 0;
+    const xl = Math.round(w / 2 - half), xr = Math.round(w / 2 + half - slant);
+    for (let x = xl; x <= xr; x++) {
+      const u = (x - xl) / Math.max(1, xr - xl);
+      let c = u < 0.18 ? S[0] : u > 0.78 ? S[2] : S[1];
+      if (hash(x, y >> 1, 51) < 0.07) c = S[0];
+      else if (u > 0.78 && hash(x, y, 52) < 0.15) c = S[3];
+      p.set(x, y, c);
+    }
+  }
+  // Rune groove down the face.
+  const rx = w / 2 - 1;
+  for (let y = top + 14; y < h - 22; y++) {
+    const k = (y - top - 14) % 12;
+    if (k > 8) continue;
+    const glyph = Math.floor((y - top - 14) / 12) % 3;
+    const dx = glyph === 0 ? (k < 4 ? k : 8 - k) - 2 : glyph === 1 ? 0 : (k === 4 ? -2 : 0);
+    p.set(rx + dx, y, SG.rune[2]);
+    if (glyph === 2 && k === 4) { p.set(rx - 1, y, SG.rune[2]); p.set(rx + 1, y, SG.rune[2]); }
+    p.set(rx + dx + 1, y, SG.rune[0]);
+  }
+  // Moss cap and streaks.
+  for (let x = 0; x < w; x++) {
+    let y = 0;
+    while (y < h && !p.has(x, y)) y++;
+    if (y >= h) continue;
+    const d = 2 + Math.floor(hash(x, 0, 53) * (x < w / 2 ? 9 : 4));
+    for (let k = 0; k < d; k++) p.set(x, y + k, k === 0 ? SG.grass[4] : bayer(x, y + k) < 0.5 ? SG.grass[2] : SG.grass[3]);
+  }
+  // Ivy climbing from the base.
+  for (let y = h - 4; y > h * 0.4; y--) {
+    const x = Math.round(w / 2 - 4 + Math.sin(y * 0.22) * 4);
+    p.set(x, y, SG.leaves[1]);
+    if (y % 3 === 0) { p.set(x - 1, y, SG.leaves[3]); p.set(x + 1, y - 1, SG.leaves[2]); }
+  }
+  // Grass and flowers at the foot.
+  for (let x = 1; x < w - 1; x++) {
+    const hgt = 2 + Math.floor(hash(x, 7, 54) * 5);
+    for (let k = 0; k < hgt; k++) p.set(x, h - 1 - k, k === hgt - 1 ? SG.grass[4] : SG.grass[2 + (k & 1)]);
+  }
+  p.set(4, h - 6, SG.flowers[0]); p.set(22, h - 5, SG.flowers[1]); p.set(17, h - 7, SG.flowers[2]);
+  p.outline(SG.ink);
+  return p;
+}
+
+/** The glowing crystal that floats over each standing stone. */
+function paintCrystal(): Pix {
+  const w = 15, h = 21;
+  const p = new Pix(w, h);
+  const cx = 7, cy = 10;
+  // Soft dithered glow.
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const d = Math.hypot((x - cx) / 7, (y - cy) / 10);
+    if (d < 1 && bayer(x, y) < (1 - d) * 0.55) p.set(x, y, SG.rune[2], 110);
+  }
+  const C = SG.rune;
+  for (let y = 3; y <= 17; y++) {
+    const half = y < 8 ? (y - 3) * 0.7 : (17 - y) * 0.36;
+    for (let x = Math.round(cx - half); x <= Math.round(cx + half); x++) {
+      const c = x < cx ? (y < 8 ? C[2] : C[1]) : x === cx ? C[3] : (y < 8 ? C[3] : C[2]);
+      p.set(x, y, c);
+    }
+  }
+  p.set(cx - 1, 6, C[3]); p.set(cx - 1, 7, C[3]);
+  const src = p.data.slice();
+  const solid = (xx: number, yy: number) => xx >= 0 && xx < w && yy >= 0 && yy < h && src[yy * w + xx] >>> 24 === 255;
+  for (let y = 2; y <= 18; y++) for (let x = 0; x < w; x++) {
+    if (!solid(x, y) && (solid(x - 1, y) || solid(x + 1, y) || solid(x, y - 1) || solid(x, y + 1))) p.set(x, y, C[0]);
+  }
+  return p;
+}
