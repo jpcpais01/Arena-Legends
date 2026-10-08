@@ -21,7 +21,7 @@ function toCanvas(f: Frame): HTMLCanvasElement {
   c.width = Math.max(1, f.w);
   c.height = Math.max(1, f.h);
   if (f.w && f.h) {
-    const img = new ImageData(new Uint8ClampedArray(f.data.buffer, f.data.byteOffset, f.w * f.h * 4), f.w, f.h);
+    const img = new ImageData(new Uint8ClampedArray(f.data.buffer as ArrayBuffer, f.data.byteOffset, f.w * f.h * 4), f.w, f.h);
     c.getContext('2d')!.putImageData(img, 0, 0);
   }
   return c;
