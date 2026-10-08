@@ -19,6 +19,7 @@ import { Hud } from './ui/hud';
 import { Menu, type Record as WinLoss } from './ui/menu';
 import { versionBadge } from './ui/patchNotes';
 import { resultsSheet } from './ui/results';
+import { settingsSheet } from './ui/settings';
 
 type State = 'menu' | 'intro' | 'battle' | 'results';
 
@@ -33,6 +34,7 @@ let rival: PlayerCharacter = loadRival() ?? generateRival(player?.name);
 let record = store<WinLoss>('al.record', { w: 0, l: 0 });
 let speed = [1, 2, 4].includes(store<number>('al.speed', 1)) ? store<number>('al.speed', 1) : 1;
 let soundOn = store<boolean>('al.sound', true);
+let quotesOn = store<boolean>('al.quotes', true) !== false;
 sfx.setMuted(!soundOn);
 
 function loadRival(): PlayerCharacter | null {
@@ -56,8 +58,10 @@ const hud = new Hud({
   onSpeed: (s) => { speed = s; save('al.speed', s); view.speed = s; hud.setSpeed(s); sfx.play('ui'); },
   onPause: () => togglePause(),
   onExit: () => { sfx.play('ui'); toMenu(); },
+  onSettings: () => openSettings(),
 }, view);
 hud.show(false);
+hud.setBubbles(quotesOn);
 
 const menu = new Menu({
   onFight: () => startFight(),
@@ -65,13 +69,32 @@ const menu = new Menu({
   onGear: () => openGear(),
   onNewRival: () => { sfx.play('ui'); setRival(generateRival(player?.name)); refreshMenu(); },
   onSound: () => {
-    soundOn = !soundOn;
-    save('al.sound', soundOn);
-    sfx.setMuted(!soundOn);
-    menu.setSound(soundOn);
+    setSound(!soundOn);
     sfx.play('ui');
   },
+  onSettings: () => openSettings(),
 });
+
+function setSound(on: boolean): void {
+  soundOn = on;
+  save('al.sound', on);
+  sfx.setMuted(!on);
+  menu.setSound(on);
+}
+
+function openSettings(): void {
+  closeSheet();
+  sfx.play('ui');
+  sheet = settingsSheet({ quotes: quotesOn, sound: soundOn }, (s) => {
+    if (s.quotes !== quotesOn) {
+      quotesOn = s.quotes;
+      save('al.quotes', quotesOn);
+      hud.setBubbles(quotesOn);
+    }
+    if (s.sound !== soundOn) setSound(s.sound);
+  }, () => closeSheet());
+  ui.append(sheet.el);
+}
 menu.setSound(soundOn);
 const badge = versionBadge(__APP_VERSION__, () => ui);
 ui.append(menu.el, hud.el, badge);
