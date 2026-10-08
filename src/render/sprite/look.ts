@@ -37,6 +37,8 @@ export interface CharacterArt {
   mainSkin: SkinArt | null;
   secSkin: SkinArt | null;
   headSkin: SkinArt | null;
+  chestSkin: SkinArt | null;
+  bootsSkin: SkinArt | null;
   /** Reshaped headgear from a skin, drawn instead of the stock piece. */
   headDraw: HeadDraw | null;
 }
@@ -204,11 +206,11 @@ export function makeArt(build: CharacterBuild): CharacterArt {
   if (sec) for (const [k, v] of Object.entries(sec.mats)) mats['s.' + k] = v;
   // Armour skins recolour the body's armour materials; reshaped headgear brings its own.
   let headDraw: HeadDraw | null = null;
-  let headSkin: SkinArt | null = null;
+  const worn: Record<'head' | 'chest' | 'boots', SkinArt | null> = { head: null, chest: null, boots: null };
   for (const slot of ['head', 'chest', 'boots'] as const) {
     const [, art] = skinArt(build.gear[slot]);
     if (!art) continue;
-    if (slot === 'head') headSkin = art;
+    worn[slot] = art;
     for (const [k, spec] of Object.entries(art.mats ?? {})) mats[k] = material(spec);
     if (art.head) {
       const hs = art.head();
@@ -224,9 +226,10 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     mainId, main, family: MAIN_FAMILY[mainId],
     hands: MAIN_FAMILY[mainId] === 'sword' || MAIN_FAMILY[mainId] === 'wand' ? 1 : 2,
     secId, sec, secFamily: secId ? SEC_FAMILY[secId] : null,
-    chest: tunicFor(build.gear.chest),
+    chest: { ...tunicFor(build.gear.chest), ...worn.chest?.chest },
     headgear: build.gear.head ?? null,
-    boots: bootsFor(build.gear.boots),
-    skins, mainSkin, secSkin, headSkin, headDraw,
+    boots: { ...bootsFor(build.gear.boots), ...worn.boots?.boots },
+    skins, mainSkin, secSkin, headDraw,
+    headSkin: worn.head, chestSkin: worn.chest, bootsSkin: worn.boots,
   };
 }

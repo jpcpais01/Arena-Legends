@@ -11,8 +11,9 @@ export interface Sprite {
   oy: number;
   w: number;
   h: number;
-  /** Main weapon tip relative to the feet, when the weapon is in hand. */
+  /** Main and secondary weapon tips relative to the feet, when in hand. */
   tip?: [number, number];
+  secTip?: [number, number];
 }
 
 const OX = 88, OY = 126;
@@ -91,9 +92,11 @@ export class SpriteBank {
     // Animated skin surfaces step with the frame.
     r.phase = frame;
     drawFigure(r, this.art, frameSpec(c, frame, face, secOut), OX, OY);
-    const tip = figureMarks.tip;
+    const { tip, secTip } = figureMarks;
     const f = r.compose(OX, OY);
-    const s: Sprite = { img: toCanvas(f), ox: f.ox, oy: f.oy, w: f.w, h: f.h, tip: tip ? [tip[0] - OX, tip[1] - OY] : undefined };
+    const s: Sprite = { img: toCanvas(f), ox: f.ox, oy: f.oy, w: f.w, h: f.h, tip: tip ? [tip[0] - OX, tip[1] - OY] : undefined,
+      secTip: secTip ? [secTip[0] - OX, secTip[1] - OY] : undefined,
+    };
     this.sprites.set(key, s);
     return s;
   }

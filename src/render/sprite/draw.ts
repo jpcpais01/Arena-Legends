@@ -52,8 +52,8 @@ const G = {
   ears: 11, cape: 12, headgear: 13, skirt: 14, smear: 15,
 } as const;
 
-/** Where the last drawn figure's main weapon tip was (raster space), for legendary sparkles. */
-export const figureMarks: { tip: [number, number] | null } = { tip: null };
+/** Where the last drawn figure's weapon tips were (raster space, in hand only), for legendary sparkles. */
+export const figureMarks: { tip: [number, number] | null; secTip: [number, number] | null } = { tip: null, secTip: null };
 
 export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: number, OY: number): Skeleton {
   const { body, chest } = art;
@@ -82,6 +82,7 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
   const sp = art.look.species;
   const sway = pose.sway;
   figureMarks.tip = null;
+  figureMarks.secTip = null;
   // Skin textures on clothes and armour follow the torso (and the head, below).
   r.space = T;
 
@@ -706,6 +707,7 @@ function drawSec(r: Raster, art: CharacterArt, sk: Skeleton, pose: Pose, hold: H
   const sm = (k: string) => m('s.' + k);
   const t = frameAt(OX, OY, sk.handF, pose.sAng + pose.rot);
   art.sec.draw(r, t, sm, { group: G.sec, toneBias: bias, pull: hold.pull });
+  figureMarks.secTip = t.p(art.sec.tip * 0.8, 0);
 }
 
 function drawSecHolster(r: Raster, art: CharacterArt, sk: Skeleton, T: Xf, OX: number, OY: number, m: (k: string) => number, back: boolean): void {

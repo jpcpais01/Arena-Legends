@@ -12,6 +12,18 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.8.0',
+    date: '2026-10-08',
+    title: '30 new item skins',
+    notes: [
+      '10 new Rare skins for helmets, chest pieces and boots, like the Rose Gold Circlet, Crimson Cowl, Ember Cloak, Obsidian Mirror and Jade Leapers.',
+      '10 new Mythic skins that reshape the item: Morningstar, Skullcrusher, Lionheart, Swordbreaker, Wyrm Repeater, Kraken Conch, Icicle Scepter, Oni Mask, Raven Hood and Dragonknight Plate.',
+      '10 new Legendary skins with living animations and sparkles: Kagutsuchi (a burning katana), Voidfang, Geode Heart, Frostreaver, Winter\'s Heart, Solar Disc, the Eternity Circlet with a ticking clock, Phoenix Band, Nebula Robe and Stormstriders.',
+      'Legendary helmets, chest pieces and boots now sparkle in battle too, and legendary off-hand weapons leave sparkles and coloured hit bursts.',
+      'Pick them in the Skins row of the Gear screen. Skins are cosmetic only and never change a fight.',
+    ],
+  },
+  {
     version: '0.7.0',
     date: '2026-10-08',
     title: 'Day turns to night on Skygrove Isle',

@@ -1,8 +1,13 @@
 import { mix } from '../../pixel/color';
 import type { MaterialSpec } from '../../pixel/raster';
-import { bands, damascus, glint, grain, lattice, speckle } from '../../pixel/tex';
+import { bands, damascus, glint, grain, hash, lattice, speckle } from '../../pixel/tex';
+import type { BootsLook, ChestLook } from '../look';
 import type { WeaponArt } from '../weaponKit';
-import { celestialCrown, hornedWarhelm, type HeadSkin } from './heads';
+import {
+  geodeHeart, icicleScepter, kagutsuchi, krakenConch, lionheart, morningstar, skullcrusher, solarDisc, swordbreaker,
+  frostreaver, voidfang, wintersHeart, wyrmRepeater,
+} from './arsenal';
+import { celestialCrown, eternityCirclet, hornedWarhelm, oniMask, phoenixBand, ravenHood, type HeadSkin } from './heads';
 import {
   aegis, boneTorch, cosmicStaff, dawnbreaker, dragonGlaive, dragonscaleShield, serpentKris, serpentStaff, starpiercer,
   sunstring, thunderfall, tsukuyomi, twinmoon, volcanoHeart, wyrmfang, wyvernRecurve,
@@ -19,9 +24,15 @@ export interface SkinArt {
   mats?: Record<string, MaterialSpec>;
   weapon?: () => WeaponArt;
   head?: () => HeadSkin;
+  /** Reshaped armour: changes to how the chest piece or boots are built (capes, spikes, wings...). */
+  chest?: Partial<ChestLook>;
+  boots?: Partial<BootsLook>;
   /** Swing trail colours (bright, dim). */
   trail?: [number, number];
-  /** Legendary sparkles and impact colours (bright, fading to). */
+  /**
+   * Legendary sparkles and impact colours (bright, fading to). They rise from
+   * where the item is: the weapon tip, the head, the body or the feet.
+   */
   fx?: { spark: number; spark2: number };
 }
 
@@ -36,6 +47,23 @@ const legend = (spark: number, spark2: number, trail = spark): Pick<SkinArt, 'fx
 });
 
 const hamon = (x: number, y: number) => (y < -0.25 + Math.sin(x * 0.9) * 0.35 ? 1 : 0);
+
+const Q = Math.PI / 2; // one idle frame of a four-frame loop
+
+/** Dark tones with a hot fifth tone that the texture lights up. */
+const veined = (dark: number[], hot: number, tex: MaterialSpec['tex']): MaterialSpec => ({ base: dark[2], ramp: [...dark, hot], tex });
+
+/** Nebula cloth: drifting violet clouds and twinkling stars (torso space). */
+const nebula: MaterialSpec['tex'] = (x, y, ph) => {
+  if (hash(Math.floor(x) + ph * 29, Math.floor(y) - ph * 11) < 0.045) return 4;
+  return Math.sin(x * 0.55 + y * 0.4 - ph * Q + Math.sin(y * 0.3) * 1.5) > 0.55 ? 1 : 0;
+};
+
+/** Forked lightning crawling through a material. */
+const storm: MaterialSpec['tex'] = (x, y, ph) => {
+  const v = Math.sin(y * 1.2 + Math.sin(x * 1.6 + ph * Q) * 2) + Math.sin(x * 0.9 - ph * Q) * 0.5;
+  return Math.abs(v) < 0.24 ? 4 : 0;
+};
 
 export const SKIN_ART: Record<string, SkinArt> = {
   // --- Main weapons -------------------------------------------------------------
@@ -130,4 +158,60 @@ export const SKIN_ART: Record<string, SkinArt> = {
   'leather_jerkin.snakeskin': { mats: { jerkin: plain(0x5a7a3a, lattice(3, -1)), jerkinDark: plain(0x2e4020) } },
   'leather_boots.snakeskin': { mats: { boot: plain(0x5a7a3a, lattice(3, -1)), bootDark: plain(0x2e4020) } },
   'iron_greaves.gilded': { mats: { greave: shiny(0xe0b850, speckle(0.05, 1)), greaveDark: shiny(0x8a5a20) } },
+
+  // --- Second wave: rare armour ----------------------------------------------------------
+  'chrono_circlet.rosegold': { mats: { gold: shiny(0xe8a08a, undefined, 0.15), gemPurple: glow(0x5affb0) } },
+  'executioner_hood.crimson': { mats: { hood: plain(0x5a1418, lattice(3, -1)), hoodEye: glow(0xffd040) } },
+  'duelist_band.azure': { mats: { band: shiny(0x3a7ae0), bandTail: plain(0xe8f0ff, bands(1.6, 1, -1)) } },
+  'phase_cloak.ember': { mats: { cloak: plain(0xc8401a, speckle(0.06, 1)), cloakTrim: glow(0xffd060) } },
+  'thornmail.autumn': { mats: { thorn: shiny(0xc8702a, speckle(0.08, -1)), thornDark: plain(0x6a3418), thornSpike: shiny(0xf0d890) } },
+  'mirror_mail.obsidian': { mats: { mirror: shiny(0x3a2a5a, speckle(0.06, 2), 0.16), mirrorGlow: glow(0xff7ad8) } },
+  'zephyr_boots.stormwind': { mats: { zephyr: plain(0x4a5a7a, bands(2, 1, 1)), zephyrTrim: shiny(0xffe080), wing: shiny(0xd8e4f0) } },
+  'shadow_treads.bloodshadow': { mats: { shadow: plain(0x3a0e14, speckle(0.06, 2)), shadowGlow: glow(0xff3a3a) } },
+  'colossus_boots.mossback': { mats: { colossus: plain(0x5a6a3a, speckle(0.14, -1)), colossusDark: plain(0x3a4426) } },
+  'leaping_boots.jade': { mats: { leap: shiny(0x2aa878, lattice(3, -1)), leapTrim: plain(0xf0ffd0), feather: plain(0xb8f0d8) } },
+
+  // --- Second wave: mythic ------------------------------------------------------------------
+  'mace.morningstar': { weapon: morningstar, trail: [0xe8eef8, 0x8a90a8] },
+  'warhammer.skullcrusher': { weapon: skullcrusher, trail: [0xfff0e0, 0xc85a3a] },
+  'buckler.lionheart': { weapon: lionheart },
+  'parrying_dagger.swordbreaker': { weapon: swordbreaker },
+  'hand_crossbow.wyrm': { weapon: wyrmRepeater },
+  'war_horn.kraken': { weapon: krakenConch },
+  'frost_wand.icicle': { weapon: icicleScepter },
+  'berserker_mask.oni': { head: oniMask },
+  'executioner_hood.raven': { head: ravenHood },
+  'plate_armor.dragonknight': {
+    mats: { plate: shiny(0x3a3040, speckle(0.05, 1)), plateDark: shiny(0xb8302a), 'k.cape': plain(0x8a1a22, bands(3, 1, -1)), 'k.spike': shiny(0xece2c8) },
+    chest: { cape: 'k.cape', spikes: 'k.spike' },
+  },
+
+  // --- Second wave: legendary ---------------------------------------------------------------
+  'katana.kagutsuchi': { weapon: kagutsuchi, ...legend(0xffd060, 0xd83a1a, 0xffb040) },
+  'dagger.voidfang': { weapon: voidfang, ...legend(0xf0d8ff, 0x7a3ad0, 0xd8a8ff) },
+  'mace.geode': { weapon: geodeHeart, ...legend(0xc8f8ff, 0xc060ff, 0xb8f0ff) },
+  'greataxe.frostreaver': { weapon: frostreaver, ...legend(0xf0ffff, 0x5ab8f0, 0xe0f8ff) },
+  'frost_wand.winter': { weapon: wintersHeart, fx: { spark: 0xf0ffff, spark2: 0x7ac8ff } },
+  'wind_chakram.solar': { weapon: solarDisc, fx: { spark: 0xfff0a0, spark2: 0xff8a20 } },
+  'chrono_circlet.eternity': { head: eternityCirclet, fx: { spark: 0xfff0b0, spark2: 0xb080ff } },
+  'duelist_band.phoenix': { head: phoenixBand, fx: { spark: 0xffd060, spark2: 0xd83a1a } },
+  'mage_robe.nebula': {
+    mats: {
+      robe: veined([0x120a2a, 0x22144a, 0x382070, 0x5a34a0], 0xf0d0ff, nebula),
+      robeTrim: glow(0xd8b8ff),
+      'k.cape': veined([0x120a2a, 0x22144a, 0x382070, 0x5a34a0], 0xf0d0ff, nebula),
+    },
+    chest: { cape: 'k.cape', hood: 'k.cape' },
+    fx: { spark: 0xffffff, spark2: 0x9a6aff },
+  },
+  'zephyr_boots.stormstriders': {
+    mats: {
+      zephyr: veined([0x141a30, 0x222c4a, 0x34446a, 0x4a5e8a], 0x9ae8ff, storm),
+      zephyrTrim: glow(0x9ae8ff),
+      'k.wing': shiny(0xe8f4ff, undefined, 0.14),
+      'k.knee': shiny(0x9aa8c8),
+    },
+    boots: { wing: 'k.wing', knee: 'k.knee', height: 0.75 },
+    fx: { spark: 0xe8fbff, spark2: 0x5aa8ff },
+  },
 };
