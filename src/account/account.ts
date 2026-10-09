@@ -43,6 +43,8 @@ let pushing: Promise<void> | null = null;
 /** A save from the cloud waiting for the game to be somewhere it can reload. */
 let pending: SaveMap | null = null;
 let gate: () => boolean = () => true;
+/** Firebase's own code for the last failed sign-in, shown small under the message so problems can be reported. */
+export let lastError = '';
 
 function readLink(): Link {
   try {
@@ -136,6 +138,8 @@ async function enter(name: string, password: string, create: boolean): Promise<A
     adopt(merged);
     return null;
   } catch (e) {
+    lastError = String((e as { code?: string })?.code ?? (e as Error)?.message ?? e);
+    console.warn('[account]', e);
     return c.errorCode(e);
   }
 }
