@@ -12,7 +12,7 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.22.0',
+    version: '0.23.0',
     date: '2026-10-09',
     title: 'Fights with a rhythm',
     notes: [
@@ -20,6 +20,18 @@ export const PATCH_NOTES: PatchNote[] = [
       'After a hot exchange, fighters break off and circle to catch their breath before the next clash. Hot-headed fighters barely pause and may chase you down, while patient ones take their time. They still punish any opening.',
       'The clock now matters more and more as the end approaches: a fighter who is behind stops resting and pushes hard, and one who is ahead plays it safe.',
       'A new "Circling" stance shows up on the battle HUD while a fighter is catching their breath.',
+    ],
+  },
+  {
+    version: '0.22.0',
+    date: '2026-10-09',
+    title: 'Smoother, more natural fighters',
+    notes: [
+      'Attacks have extra in-between frames: weapons travel in smooth arcs, the wind-up holds a moment before the strike, and fighters ease back into their stance instead of snapping.',
+      'Capes, scarves, hair and tails now trail behind the body and keep swinging after a lunge or a dodge.',
+      'Smoother run and back-pedal cycles with arm pumping and a steadier head. Fighters catch their weight when they stop running and crouch to absorb a landing.',
+      'Idle fighters breathe and shift their weight, each on their own rhythm.',
+      'Hits knock the fighter back a touch, and knocked-out fighters bounce once when they hit the ground.',
     ],
   },
   {
