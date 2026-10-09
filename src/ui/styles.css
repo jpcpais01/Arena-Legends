@@ -331,42 +331,38 @@ h1, h2, h3, p { margin: 0; }
 .menu.home.enter .home-actions { animation: rise-in 420ms cubic-bezier(0.2, 1.3, 0.4, 1) both; }
 .menu.home.enter .home-tools { animation: fade-in 420ms ease-out both; }
 
-/* Nameplate: portrait, tag, name, species and form; tapping folds the gear out underneath. */
+/* Nameplate: the portrait over tag, name, species and form, beside the gear two to a row. */
 .nplate {
-  --side: var(--blue); --side-lo: #22488a;
-  display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "art info" "gear gear";
-  align-items: center; gap: 0 8px; max-width: 15rem; min-width: 0; padding: 0 8px 0 0;
-  color: var(--text); text-align: left; cursor: pointer; pointer-events: auto;
+  --side: var(--blue); --side-lo: #22488a; --art-w: 8.4rem; --art-h: 6.6rem; --sock: 3rem;
+  display: grid; grid-template-columns: var(--art-w) auto; grid-template-areas: "art gear" "info gear";
+  align-items: start; gap: 0 6px; min-width: 0; padding: 0 6px 0 0;
+  color: var(--text); text-align: left;
   background: linear-gradient(90deg, rgba(14, 10, 26, 0.86), rgba(14, 10, 26, 0.62));
   border: var(--px) solid var(--ink);
   box-shadow: inset 0 calc(var(--px) * -2) 0 var(--side), inset 0 0 0 calc(var(--px) * 2) rgba(255, 255, 255, 0.05);
-  font: inherit; transition: filter 90ms;
 }
-.nplate:hover { filter: brightness(1.12); }
-.nplate:focus-visible { outline: calc(var(--px) * 2) solid var(--gold-hi); outline-offset: 0; }
 .nplate.rival {
   --side: var(--red); --side-lo: #8a2034;
-  grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "info art" "gear gear";
-  padding: 0 0 0 8px; text-align: right;
+  grid-template-columns: auto var(--art-w); grid-template-areas: "gear art" "gear info";
+  padding: 0 0 0 6px; text-align: right;
   background: linear-gradient(270deg, rgba(14, 10, 26, 0.86), rgba(14, 10, 26, 0.62));
 }
 .plate-art {
-  grid-area: art; display: grid; place-items: end center; overflow: hidden; width: 3.4rem; height: 3.4rem;
+  grid-area: art; display: grid; place-items: end center; overflow: hidden; width: var(--art-w); height: var(--art-h);
   background: radial-gradient(ellipse 70% 70% at 50% 100%, color-mix(in srgb, var(--side) 55%, transparent), transparent 75%), #0b0816;
-  border-right: var(--px) solid var(--ink);
+  border-bottom: var(--px) solid var(--ink); border-right: var(--px) solid var(--ink);
 }
 .nplate.rival .plate-art { border-right: 0; border-left: var(--px) solid var(--ink); }
-.plate-info { grid-area: info; display: grid; gap: 3px; min-width: 0; padding: 3px 0; }
-.plate-tag { display: flex; gap: 6px; align-items: center; font: 700 0.625rem/1 var(--font); letter-spacing: 0.12em; text-transform: uppercase; }
+.plate-info { grid-area: info; display: grid; gap: 3px; min-width: 0; padding: 4px 4px 6px 6px; }
+.nplate.rival .plate-info { padding: 4px 6px 6px 4px; }
+.plate-tag { display: flex; gap: 6px; align-items: center; font: 700 0.6875rem/1 var(--font); letter-spacing: 0.12em; text-transform: uppercase; }
 .nplate.rival .plate-tag { justify-content: flex-end; }
 .plate-tag .side-tag { padding: 1px 0.35rem 2px; }
 .plate-tag .rec { color: var(--gold); letter-spacing: 0.06em; text-shadow: 0 var(--px) 0 var(--ink); }
-.plate-name { font: 700 1.05rem/1 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 var(--px) 0 var(--ink), var(--px) 0 0 var(--ink); }
-.plate-sub { font-size: 0.6875rem; line-height: 1.1; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.plate-gear { grid-area: gear; display: none; grid-template-columns: repeat(4, max-content); gap: 3px; padding: 5px 6px 6px; border-top: var(--px) solid var(--ink); }
-.nplate.rival .plate-gear { justify-content: end; }
-.nplate.open .plate-gear { display: grid; animation: fade-in 140ms ease-out; }
-.plate-gear .sock { width: 1.6rem; height: 1.6rem; }
+.plate-name { font: 700 1.25rem/1 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 var(--px) 0 var(--ink), var(--px) 0 0 var(--ink); }
+.plate-sub { font-size: 0.75rem; line-height: 1.1; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plate-gear { grid-area: gear; display: grid; grid-template-columns: repeat(2, var(--sock)); gap: 3px; padding: 6px 0; align-self: center; }
+.plate-gear .sock { width: var(--sock); height: var(--sock); }
 .plate-gear canvas { width: 100%; height: 100%; }
 
 /* --- Modal sheets (settings, notes, online, results) ------------------------------------------ */
@@ -888,9 +884,9 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
   .home-actions { width: 16rem; gap: 5px; }
   .home .btn.fight { min-height: 3rem; font-size: 1.35rem; }
   .home-side { min-height: 1.9rem; font-size: 0.6875rem; }
-  .plate-art { width: 3rem; height: 3rem; }
+  .nplate { --art-w: 6.4rem; --art-h: 4.2rem; --sock: 1.95rem; }
   .plate-name { font-size: 0.95rem; }
-  .nplate { max-width: 13rem; }
+  .plate-tag { font-size: 0.625rem; }
   .menu-logo { width: 12rem; height: 4rem; }
   .menu-dock { grid-row: 2 / 4; grid-template-rows: minmax(0, 1fr) auto; align-items: center; gap: 8px 10px; }
   .menu-dock > .fcard { grid-row: 1; }
@@ -1033,7 +1029,8 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
   .home-top > .home-logo { grid-area: logo; justify-self: center; }
   .home-slot.you { grid-area: you; }
   .home-slot.rival { grid-area: rival; }
-  .nplate { max-width: 100%; width: 100%; }
+  .nplate { width: 100%; --art-w: minmax(0, 1fr); --sock: 2rem; }
+  .nplate .plate-art { width: 100%; }
   .home-actions { left: var(--safe-l); width: auto; bottom: calc(var(--safe-b) + 36px); }
   .home-tools { bottom: var(--safe-b); left: auto; right: var(--safe-r); }
   .menu-dock { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 8px; }

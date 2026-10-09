@@ -32,7 +32,7 @@ export const CARD_ART: [number, number] = [64, 64];
 
 /**
  * Main menu over the background duel, kept out of the fight's way: a slim
- * nameplate in each top corner (tap one to see that fighter's gear), the logo
+ * nameplate in each top corner with the fighter and their gear, the logo
  * between them, sound and settings in the bottom-left corner and every action
  * grouped in the bottom-right one. The middle of the screen stays the duel's.
  */
@@ -42,7 +42,6 @@ export class Menu {
   private soundBtn: HTMLButtonElement;
   private you = h('div.home-slot.you');
   private rival = h('div.home-slot.rival');
-  private open: [boolean, boolean] = [false, false];
   private chestBtn: HTMLButtonElement;
 
   constructor(cb: MenuCallbacks) {
@@ -90,28 +89,18 @@ export class Menu {
     this.rival.replaceChildren(this.plate(rival, b, 1, 'Rival', ''));
   }
 
-  /** A slim nameplate; tapping it folds the fighter's gear out underneath. */
+  /** A nameplate: the fighter's portrait over name, species and form, beside their gear two to a row. */
   private plate(c: CharacterBuild, p: Preview, side: 0 | 1, tag: string, extra: string): HTMLElement {
     const look = c.look ?? DEFAULT_LOOK;
     const art = h('div.plate-art', null, p.el);
     p.fitTo(art);
-    const gear = h('div.plate-gear', null, ...gearIcons(c).map((g) => h('span.sock', null, g)));
-    const el = h<HTMLButtonElement>(`button.nplate${side ? '.rival' : '.you'}`, {
-      title: 'Show gear', 'aria-expanded': String(this.open[side]),
-      onclick: () => {
-        this.open[side] = !this.open[side];
-        el.classList.toggle('open', this.open[side]);
-        el.setAttribute('aria-expanded', String(this.open[side]));
-      },
-    },
+    return h(`div.nplate${side ? '.rival' : '.you'}`, null,
       art,
-      h('span.plate-info', null,
-        h('span.plate-tag', null, h('span.side-tag', null, tag), extra ? h('span.rec', null, extra) : null),
-        h('span.plate-name', null, c.name),
-        h('span.plate-sub', null, `${SPECIES[look.species].name} · ${FORMS[c.form].name}`)),
-      gear);
-    el.classList.toggle('open', this.open[side]);
-    return el;
+      h('div.plate-info', null,
+        h('div.plate-tag', null, h('span.side-tag', null, tag), extra ? h('span.rec', null, extra) : null),
+        h('div.plate-name', null, c.name),
+        h('div.plate-sub', null, `${SPECIES[look.species].name} · ${FORMS[c.form].name}`)),
+      h('div.plate-gear', null, ...gearIcons(c).map((g) => h('span.sock', null, g))));
   }
 
   dispose(): void {
@@ -121,7 +110,7 @@ export class Menu {
 }
 
 /** Art-pixel box of the fighter portraits on the menu nameplates (head and shoulders). */
-const PLATE_ART: [number, number] = [44, 48];
+const PLATE_ART: [number, number] = [60, 48];
 
 /** Icons for every gear slot in order, skins applied; empty slots are blank. */
 function gearIcons(c: CharacterBuild): HTMLElement[] {

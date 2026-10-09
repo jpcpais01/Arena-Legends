@@ -2,7 +2,7 @@
 // who is signed in and sign out.
 import { sfx } from '../audio/sfx';
 import {
-  accountStatus, onAccount, signIn, signOut, signUp, validName, validPassword,
+  accountStatus, lastError, onAccount, signIn, signOut, signUp, validName, validPassword,
   type AccountError, type AccountStatus, type SyncState,
 } from '../account/account';
 import { PASSWORD_MIN } from '../account/config';
@@ -58,7 +58,7 @@ export function accountSheet(onClose: () => void): { el: HTMLElement; dispose():
     sfx.play('confirm');
     const err = await (mode === 'new' ? signUp(name, pass) : signIn(name, pass));
     busy = false;
-    if (err) { error = ERRORS[err]; sfx.play('back'); shake(err === 'taken' ? nameIn : passIn); }
+    if (err) { error = err === 'wrong' || err === 'taken' ? ERRORS[err] : `${ERRORS[err]} (${lastError})`; sfx.play('back'); shake(err === 'taken' ? nameIn : passIn); }
     else passIn.value = '';
     render();
   };
