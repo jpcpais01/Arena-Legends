@@ -12,7 +12,7 @@ import { Xf } from './sprite/xform';
 
 /**
  * Pixel icons for every piece of gear, drawn with the same rasterizer as the
- * fighters: weapons laid diagonally, armour cropped from a body wearing it,
+ * fighters: weapons laid diagonally, armour drawn on an invisible body,
  * special items hand-drawn.
  */
 
@@ -125,6 +125,11 @@ function special(id: SpecialId, r: Raster, c: number, skin?: string | null): voi
   }
 }
 
+/** Body materials left out of armour icons (skin, face, clothes under the armour, weapons). */
+const BODY = new Set(['skin', 'hair', 'hairGlow', 'iris', 'eyeGlow', 'white', 'lash', 'mouth', 'inner', 'outfit', 'pants', 'accent', 'scarf', 'brow', 'shoe', 'fur', 'furTip', 'horn', 'tusk', 'crystal', 'stoneCrack', 'muzzle', 'nose', 'scale', 'crest', 'cap', 'capSpot', 'gill']);
+/** The bare body's belt: part of the look under a helmet or boots, part of the piece on a chest. */
+const BELT = new Set(['belt', 'leather']);
+
 const cache = new Map<string, Frame>();
 
 /** Icon frame for a piece of gear, optionally in a skin (cropped, outlined). */
@@ -156,17 +161,25 @@ export function iconFrame(id: GearId, skin?: string | null): Frame {
     special(id as SpecialId, r, c, skin);
     f = r.compose(c, c);
   } else {
-    // Armour: crop the relevant part of a body wearing only that piece.
+    // Armour: drawn on an invisible body, so only the piece itself shows.
     const gear = { main: 'dagger', [def.slot]: id } as unknown as GearSet;
-    const art = makeArt({ name: '', form: 'balanced', gear, look: { ...DEFAULT_LOOK, species: 'golem', outfit: 7 }, skins: skin ? { [id]: skin } : {} });
+    let art = makeArt({ name: '', form: 'balanced', gear, look: { ...DEFAULT_LOOK, species: 'golem', outfit: 7 }, skins: skin ? { [id]: skin } : {} });
+    // A cloak worn over the tunic: its cloth wraps the torso too, so the icon reads as one garment.
+    const { torso, sleeve } = art.chest;
+    const wrap = def.slot === 'chest' && torso === 'outfit' && !!sleeve && sleeve !== 'outfit';
+    if (wrap) art = { ...art, mats: { ...art.mats, outfit: art.mats[sleeve!] } };
+    const hide = new Set<Material>();
+    for (const [k, m] of Object.entries(art.mats)) if (BODY.has(k) && !(wrap && k === 'outfit') || /^[ws]\.|^p\.|^plume|^fang/.test(k) || (def.slot !== 'chest' && BELT.has(k))) hide.add(m);
+    // A skin's own materials always belong to the piece, even under a body name.
+    if (skin) for (const k of Object.keys(SKIN_ART[skin]?.mats ?? {})) hide.delete(art.mats[k]);
+    r.skip = hide;
     const ox = 70, oy = 120;
-    const sk = drawFigure(r, art, { pose: { ...STAND, hNx: -0.3, hNy: -0.9, wAng: -1.8 }, hold: { main: 'none', sec: 'gone' }, face: 'calm' }, ox, oy);
+    drawFigure(r, art, { pose: { ...STAND, hNx: -0.3, hNy: -0.9, wAng: -1.8 }, hold: { main: 'none', sec: 'gone' }, face: 'calm' }, ox, oy);
+    r.skip = null;
+    // Centred in a square that fits the piece, so it fills its slot.
     const full = r.compose(ox, oy);
-    // Reshaped headgear can rise well above the head (horns, halos).
-    const tall = def.slot === 'head' && !!art.headDraw;
-    const center = def.slot === 'head' ? { x: sk.head.x, y: sk.head.y + (tall ? 4 : 1) } : def.slot === 'chest' ? { x: sk.chest.x - 1, y: (sk.chest.y + sk.hip.y) / 2 } : { x: (sk.ankleN.x + sk.ankleF.x) / 2 + 2, y: sk.kneeN.y * 0.45 };
-    const half = def.slot === 'chest' ? 17 : tall ? 16 : 13;
-    f = crop(full, ox + center.x - (ox - full.ox) - half, oy - center.y - (oy - full.oy) - half, half * 2, half * 2);
+    const side = Math.max(18, full.w, full.h);
+    f = crop(full, (full.w - side) / 2, (full.h - side) / 2, side, side);
   }
   cache.set(key, f);
   return f;

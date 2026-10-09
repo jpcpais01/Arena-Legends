@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.27.2',
+    date: '2026-10-09',
+    title: 'Armour icons show just the armour',
+    notes: [
+      'Head, chest and boots icons now show only the piece itself, with no body under it, and fill their slot.',
+    ],
+  },
+  {
     version: '0.27.1',
     date: '2026-10-09',
     title: 'Menus fit phones held sideways',
