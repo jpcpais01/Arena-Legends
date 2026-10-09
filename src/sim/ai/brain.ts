@@ -1,6 +1,6 @@
 import { clamp, dsin, lerp } from '../../core/math';
 import type { Battle } from '../battle';
-import { ARENA_HALF_WIDTH, DT, MATCH_TIME, ROUND_TIME } from '../constants';
+import { ARENA_HALF_WIDTH, DT, MATCH_TIME } from '../constants';
 import { getStatus, isDisabled, stacksOf, type Fighter } from '../fighter';
 import {
   analyzeKit, analyzeMatchup, ccValue, dpsAt, estDamage, fastestAnswer, liveReach, readyDefenses, STATUS_FX,
@@ -13,7 +13,7 @@ import { derivePersonality, type Personality } from './personality';
  * Strategic layer. A plan is a high-level intent that biases the tactical
  * utility scores and sets the spacing the fighter tries to keep.
  */
-export type Plan = 'pressure' | 'kite' | 'bait' | 'turtle' | 'allin' | 'recover';
+export type Plan = 'pressure' | 'kite' | 'bait' | 'turtle' | 'allin' | 'recover' | 'breathe';
 
 export const PLAN_LABELS: Record<Plan, string> = {
   pressure: 'Pressuring',
@@ -22,6 +22,7 @@ export const PLAN_LABELS: Record<Plan, string> = {
   turtle: 'Defending',
   allin: 'All-in',
   recover: 'Regrouping',
+  breathe: 'Circling',
 };
 
 /** What the battle needs from a fighter's controller. */
@@ -70,6 +71,23 @@ interface Snapshot {
   myEnergy: number;
   enEnergy: number;
 }
+
+/**
+ * Tempo. Heat is how hot the exchange is: it builds while both trade blows up
+ * close and drains while they stand apart. Nothing scripts the fight's phases:
+ * fighters back off to circle when the heat passes what their temper can take,
+ * probe while they still know little about the opponent, and stop resting when
+ * the clock and the score say they can't afford to.
+ */
+const HEAT_PER_HIT = 0.05;
+const HEAT_PER_GUARD = 0.035;
+/** Per unit of max HP lost by either fighter. */
+const HEAT_PER_DAMAGE = 0.8;
+const HEAT_BRAWL = 0.1;
+const HEAT_COOL = 0.32;
+const HEAT_IDLE = 0.04;
+/** Seconds before the end of the match when the clock starts to weigh on decisions. */
+const CLOCK_WINDOW = 35;
 
 /** Seconds imagined ahead for each option. */
 const HORIZON_TICKS = 54;
@@ -195,6 +213,20 @@ export class Brain implements FighterBrain {
   /** Movement chosen by the last look-ahead, kept until the next one. */
   private heldMove = 0;
 
+  // Tempo
+  /** How hot the exchange is (see HEAT_*). Both fighters measure the same fight. */
+  heat = 0;
+  private winded = false;
+  /** Seconds the enemy has kept on me while I was trying to breathe. */
+  private chased = 0;
+  private restDist = 4;
+  private seenHits = 0;
+  private seenGuards = 0;
+  private seenDamage = 0;
+  /** Stakes from the clock and the score, 0..1: how far behind / ahead I am when time matters. */
+  private behind = 0;
+  private ahead = 0;
+
   constructor(f: Fighter, variance: number) {
     this.f = f;
     this.kit = analyzeKit(f);
@@ -266,6 +298,7 @@ export class Brain implements FighterBrain {
     if (!this.imagined) {
       this.opp.observe(b, f, e, this.ek, actionKey(f), actionKey(e));
       this.learn(b, e);
+      this.tempo(b, e);
       this.planTimer -= DT;
       if (this.planTimer <= 0) this.choosePlan(b, e);
     } else if (this.script) {
@@ -465,6 +498,57 @@ export class Brain implements FighterBrain {
   }
 
   // ---------------------------------------------------------------------------
+  // Tempo
+  // ---------------------------------------------------------------------------
+
+  private tempo(b: Battle, e: Fighter): void {
+    const f = this.f;
+    const ft = f.totals, et = e.totals;
+    const hits = ft.hits + et.hits;
+    const guards = ft.blocks + et.blocks + ft.parries + et.parries + ft.evades + et.evades;
+    const damage = ft.damageTaken / f.stats.maxHp + et.damageTaken / e.stats.maxHp;
+    let heat = this.heat + (hits - this.seenHits) * HEAT_PER_HIT + (guards - this.seenGuards) * HEAT_PER_GUARD
+      + (damage - this.seenDamage) * HEAT_PER_DAMAGE;
+    this.seenHits = hits; this.seenGuards = guards; this.seenDamage = damage;
+
+    const dist = Math.abs(e.x - f.x);
+    const reach = Math.max(this.kit.meleeReach, this.ek.meleeReach, 1.5);
+    const engaged = dist < reach + 1;
+    // Shots from afar heat things up only when they land (counted above).
+    const busy = !!f.action || !!e.action;
+    heat += !engaged ? -HEAT_COOL * DT : busy ? HEAT_BRAWL * DT : -HEAT_IDLE * DT;
+    this.heat = clamp(heat, 0, 1);
+
+    // Stakes: the clock only matters near the end, and more the further behind (or ahead) I am.
+    const myHp = f.hp / f.stats.maxHp, enHp = e.hp / e.stats.maxHp;
+    const clock = clamp(1 - (MATCH_TIME - b.time) / CLOCK_WINDOW, 0, 1);
+    const pull = clock * clock * (3 - 2 * clock);
+    this.behind = clamp((enHp - myHp) * 3 + 0.15, 0, 1) * pull;
+    this.ahead = clamp((myHp - enHp) * 3 - 0.15, 0, 1) * pull;
+
+    // How much heat this fighter takes before wanting a breather: hot heads
+    // barely pause, and nobody rests when the kill or the clock is on the line.
+    const p = this.p;
+    const tolerance = 0.5 + p.aggression * 0.45 - p.caution * 0.1 + this.behind * 1.2 + pull * 0.25
+      + (enHp < 0.25 ? 0.3 : 0) + (isDisabled(e) ? 0.5 : 0);
+    const was = this.winded;
+    if (!this.winded && this.heat > tolerance) {
+      this.winded = true;
+      this.chased = 0;
+      this.restDist = clamp(Math.max(liveReach(e, this.ek, 0.4), this.m.engage) + 2.2, 4.2, 6.5);
+    } else if (this.winded) {
+      // They won't let me breathe: if they keep on me, fight back.
+      const onMe = dist < liveReach(e, this.ek, 0.4) + 0.4 && (b.brains[e.id] as Partial<Brain>).plan !== 'breathe';
+      this.chased = onMe ? this.chased + DT : Math.max(0, this.chased - DT * 0.5);
+      if (this.heat < tolerance * 0.55 || this.chased > 1.1 || this.behind > 0.5) {
+        this.winded = false;
+        if (this.chased > 1.1) this.heat = Math.min(this.heat, tolerance * 0.75);
+      }
+    }
+    if (was !== this.winded) this.planTimer = 0;
+  }
+
+  // ---------------------------------------------------------------------------
   // Strategy
   // ---------------------------------------------------------------------------
 
@@ -482,10 +566,13 @@ export class Brain implements FighterBrain {
     const enemyDots = stacksOf(e, 'burn') + stacksOf(e, 'poison');
     const myUlt = this.kit.info.some((a) => a.ultimate && f.energy >= a.ab.cost);
     const theirUlt = this.ek.info.some((a) => a.ultimate && e.energy >= a.ab.cost);
-    // Play the clock over the last stretch of overtime (same window as before overtime existed).
-    const late = b.time > MATCH_TIME - ROUND_TIME * 0.18;
-    const losingOnTime = late && myHp <= enHp;
-    const winningOnTime = late && myHp > enHp + 0.12;
+    // The clock: the further behind near the end, the less a careful plan is worth.
+    const behind = this.behind, ahead = this.ahead;
+    const losingOnTime = behind > 0.35;
+    const winningOnTime = ahead > 0.35;
+    // Early on, with little read on them, careful probing is worth more than commitment.
+    const unsure = (1 - o.confidence) * (1 - behind);
+    const enemyRests = (b.brains[e.id] as Partial<Brain>).plan === 'breathe';
     const theirDef = readyDefenses(e, this.ek, 0.3);
     const enemyZoner = this.ek.ranged && m.theirFar > m.theirClose * 0.5;
     const zoneBetter = m.zone > 0 ? clamp((m.zoneEdge - m.engageEdge) * 12, -0.4, 0.6) : -1;
@@ -494,21 +581,24 @@ export class Brain implements FighterBrain {
 
     const scores: Record<Plan, number> = {
       pressure: 0.45 + p.aggression * 0.4 + closeEdge + (enemyZoner ? 0.35 : 0) + (enHp < myHp ? 0.1 : 0)
-        - Math.max(0, zoneBetter) * 0.8 + (enemyNearWall ? 0.08 : 0) + rnd(),
-      kite: m.zone > 0 ? 0.3 + zoneBetter + p.caution * 0.15 + (enemyDots > 0 ? 0.12 : 0) + (winningOnTime ? 0.2 : 0) + rnd() : -1,
+        - Math.max(0, zoneBetter) * 0.8 + (enemyNearWall ? 0.08 : 0) - unsure * 0.12
+        + (enemyRests && !this.winded ? p.aggression * 0.25 : 0) + rnd(),
+      kite: m.zone > 0 ? 0.3 + zoneBetter + p.caution * 0.15 + (enemyDots > 0 ? 0.12 : 0) + ahead * 0.35 + rnd() : -1,
       bait: this.ek.ranged && enemyZoner ? -1
-        : p.cunning * 0.45 + (o.aggro > 0.55 ? 0.2 : 0) + o.defends * 0.3 + o.whiff * 0.4 + o.trade * 0.15 + rnd(),
+        : p.cunning * 0.45 + (o.aggro > 0.55 ? 0.2 : 0) + o.defends * 0.3 + o.whiff * 0.4 + o.trade * 0.15
+          + unsure * (0.3 + p.caution * 0.2) + rnd(),
       turtle: p.caution * 0.3 + (myHp < 0.35 ? 0.2 : 0) + (enemyBuffed ? 0.3 : 0) - p.aggression * 0.2
-        + (theirUlt && !myUlt ? 0.12 + p.caution * 0.15 : 0) + (winningOnTime ? 0.35 : 0)
+        + (theirUlt && !myUlt ? 0.12 + p.caution * 0.15 : 0) + ahead * 0.5
         + rnd(),
       allin: (myUlt ? 0.3 : 0) + (enHp < 0.3 ? 0.45 : 0) + (isDisabled(e) ? 0.3 : 0)
         + (!theirDef.any && Math.abs(e.x - f.x) < 5 ? 0.2 : 0)
         + (f.has.has('berserker_mask') && myHp < 0.4 ? 0.4 : 0)
         + (f.has.has('phoenix_feather') && !f.phoenixUsed && myHp < 0.35 ? 0.3 : 0)
-        + (losingOnTime ? 0.6 : 0) + rnd(),
+        + behind * 0.8 - unsure * 0.3 * (enHp < 0.3 ? 0 : 1) + rnd(),
       recover: (enemyBuffed && !this.kit.ranged ? 0.25 : 0) + (myHp < 0.25 && enHp > 0.5 ? 0.3 : 0)
         + (f.has.has('phoenix_feather') && !f.phoenixUsed && myHp < 0.2 ? -0.3 : 0)
-        + (f.stats.lifesteal > 0.1 ? -0.2 : 0) + (losingOnTime ? -0.5 : 0) + rnd(),
+        + (f.stats.lifesteal > 0.1 ? -0.2 : 0) - behind * 0.6 + rnd(),
+      breathe: this.winded ? 0.85 + p.caution * 0.25 + rnd() : -1,
     };
     scores[this.plan] += 0.1; // inertia
 
@@ -520,12 +610,13 @@ export class Brain implements FighterBrain {
       this.plan = best;
       b.emit({ type: 'plan', f: f.id, plan: best });
       const why: Record<Plan, string> = {
-        pressure: enemyZoner ? 'Closing in on the caster.' : m.engageEdge > 0.002 ? 'Wins up close — takes the initiative.' : 'Takes the initiative.',
+        pressure: enemyRests ? 'They back off — keeps the heat on!' : enemyZoner ? 'Closing in on the caster.' : m.engageEdge > 0.002 ? 'Wins up close — takes the initiative.' : 'Takes the initiative.',
         kite: winningOnTime ? 'Ahead on the clock — keeps away.' : 'Keeps distance and zones.',
-        bait: o.whiff > 0.35 ? 'They swing at air — baits the whiff.' : o.defends > 0.45 ? 'They react to windups — time to bait.' : 'Dances at the edge of range.',
+        bait: unsure > 0.45 ? 'Feels them out.' : o.whiff > 0.35 ? 'They swing at air — baits the whiff.' : o.defends > 0.45 ? 'They react to windups — time to bait.' : 'Dances at the edge of range.',
         turtle: enemyBuffed ? 'Waits out the enemy buff.' : theirUlt ? 'Their ultimate is up — stays careful.' : winningOnTime ? 'Protects the lead.' : 'Plays safe for a moment.',
         allin: losingOnTime ? 'Clock is running out — goes all in!' : enHp < 0.3 ? 'Smells blood — all in!' : !theirDef.any ? 'Their defenses are down — all in!' : 'Commits to the kill.',
         recover: 'Backs off to regroup.',
+        breathe: myHp < enHp - 0.15 ? 'Backs off to reset.' : 'Steps back to catch a breath.',
       };
       this.thought(b, why[best]);
     }
@@ -558,8 +649,17 @@ export class Brain implements FighterBrain {
       else r = null;
       if (!r) continue;
       if (r.wait) waiting = true;
+      // Catching a breath: no new attacks, only answers and punishes.
+      if (plan === 'breathe' && info.offensive && c.open < 0.15 && !(info.ab.knockback && c.dist < 2)) continue;
       if (r.val > 0) options.push({ choice: { kind: 'ability', idx: info.idx }, prior: r.val, why: r.why });
       if (r.val > bestVal) { bestVal = r.val; bestIdx = info.idx; bestWhy = r.why; }
+    }
+
+    // Catching a breath with nothing coming and nothing to punish: just keep the distance.
+    if (plan === 'breathe' && !c.threat && c.open <= 0.15 && bestIdx < 0) {
+      this.heldMove = 0;
+      this.moveDecision(b, c, waiting);
+      return;
     }
 
     // Look ahead: imagine the next second for the most promising options and
@@ -638,10 +738,12 @@ export class Brain implements FighterBrain {
       // ready ultimate always gets considered (its instinctive value is damped).
       if ((c.threat && info.defense) || info.ultimate) cands.push(o);
     }
+    // When footwork alone decides nothing, keep the plan's spacing.
+    const step = this.plan === 'breathe' ? this.footwork(c, waiting) * toward : 2;
     cands.push(
-      { choice: { kind: 'move', dir: toward }, prior: 0, why: '' },
-      { choice: { kind: 'move', dir: -toward }, prior: 0, why: '' },
-      { choice: { kind: 'move', dir: 0 }, prior: waiting ? 0.01 : 0, why: '' },
+      { choice: { kind: 'move', dir: toward }, prior: step === 1 ? 0.01 : 0, why: '' },
+      { choice: { kind: 'move', dir: -toward }, prior: step === -1 ? 0.01 : 0, why: '' },
+      { choice: { kind: 'move', dir: 0 }, prior: waiting || step === 0 ? 0.01 : 0, why: '' },
     );
 
     // Common random numbers: every option is imagined against the same luck.
@@ -700,7 +802,9 @@ export class Brain implements FighterBrain {
     const p = this.p;
     const myLoss = start.myHp - effectiveHp(f);
     const enLoss = start.enHp - effectiveHp(e);
-    let v = enLoss * (0.9 + p.aggression * 0.2) - myLoss * (0.8 + p.caution * 0.4);
+    // Behind with the clock running out, damage dealt is worth more than damage taken; ahead, the reverse.
+    let v = enLoss * (0.9 + p.aggression * 0.2) * (1 + this.behind * 0.6)
+      - myLoss * (0.8 + p.caution * 0.4) * (1 - this.behind * 0.35 + this.ahead * 0.5);
     if (!e.alive && !(e.has.has('phoenix_feather') && !e.phoenixUsed)) v += 0.5;
     if (!f.alive) v -= 0.5;
     // Who is free to act next.
@@ -717,8 +821,10 @@ export class Brain implements FighterBrain {
       if (Math.abs(e.x) > ARENA_HALF_WIDTH - 1.2 && Math.sign(e.x) !== Math.sign(f.x - e.x)) v += 0.012;
     }
     // Spacing preference for the current plan.
-    const want = this.plan === 'kite' && this.m.zone > 0 ? this.m.zone : this.plan === 'recover' ? 6 : this.m.engage;
+    const want = this.plan === 'kite' && this.m.zone > 0 ? this.m.zone : this.plan === 'recover' ? 6
+      : this.plan === 'breathe' ? this.restDist : this.m.engage;
     v -= Math.min(1, Math.abs(dist - want) / 4) * 0.01;
+    if (this.plan === 'breathe' && dist < want) v -= Math.min(1, (want - dist) / 3) * 0.04;
     return v;
   }
 
@@ -997,7 +1103,19 @@ export class Brain implements FighterBrain {
     if (plan === 'turtle' && !punishing) val *= 0.7;
     if (plan === 'bait' && !punishing) val *= 0.75;
     if (plan === 'recover' && !punishing) val *= 0.6;
+    if (plan === 'breathe' && !punishing) val *= info.ranged ? 0.6 : 0.4;
     val *= 0.8 + p.aggression * 0.4;
+
+    // Little read on them yet: test with quick, safe pokes before committing big.
+    const unsure = (1 - o.confidence) * (1 - this.behind);
+    if (unsure > 0.05 && !punishing) {
+      const big = info.ultimate || ab.heavy || windup >= 0.4 || ab.cost >= 40;
+      if (big) val *= 1 - unsure * 0.45 * (1 - p.aggression * 0.5);
+      else if (windup < 0.3 && ab.recovery / f.stats.attackSpeed < 0.35 && pHit > 0.5) {
+        val += unsure * 0.012;
+        why = why || 'Tests their reactions.';
+      }
+    }
 
     // Risk: whiffing up close hands them a free punish, scaled by how fast they can answer
     // and how much they like punishing.
@@ -1016,6 +1134,12 @@ export class Brain implements FighterBrain {
   }
 
   private moveDecision(b: Battle, c: Ctx, waiting: boolean): void {
+    this.f.move = this.footwork(c, waiting);
+    void b;
+  }
+
+  /** Step toward (+), away from (−) the enemy, or hold (0), to keep the plan's spacing. */
+  private footwork(c: Ctx, waiting: boolean): number {
     const f = this.f;
     const m = this.m;
     const dx = c.e.x - f.x;
@@ -1045,6 +1169,11 @@ export class Brain implements FighterBrain {
       case 'recover':
         desired = 7.5;
         break;
+      case 'breathe':
+        // Circle just outside their reach, drifting in and out.
+        this.bobPhase += DT * 2.5;
+        desired = Math.max(this.restDist, this.kit.ranged ? zone : 0) + dsin(this.bobPhase) * 0.6;
+        break;
     }
     // Step in to punish.
     if (c.open > 0.3 && brawler) desired = m.engage * 0.85;
@@ -1058,8 +1187,7 @@ export class Brain implements FighterBrain {
 
     // Don't back into the wall: hold ground instead.
     if (move === -toward && Math.abs(f.x - toward * 0.8) > ARENA_HALF_WIDTH - 0.4) move = 0;
-    f.move = move;
-    void b;
+    return move;
   }
 
   // ---------------------------------------------------------------------------

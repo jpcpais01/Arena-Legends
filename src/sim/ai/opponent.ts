@@ -29,6 +29,8 @@ export class OpponentModel {
   spacing = 4;
   /** Uses of each enemy ability. */
   uses: number[];
+  /** Things seen so far (their actions, their answers to mine): what the estimates rest on. */
+  seen = 0;
 
   private rate: number;
   private lastKey = -1;
@@ -46,6 +48,11 @@ export class OpponentModel {
     return this.guard + this.evade;
   }
 
+  /** 0 = knows nothing about them yet, 1 = has them read. Faster learners need fewer looks. */
+  get confidence(): number {
+    return 1 - Math.exp(-this.seen * this.rate * 0.7);
+  }
+
   observe(b: Battle, me: Fighter, e: Fighter, ek: Kit, myKey: number, enemyKey: number): void {
     const rate = this.rate;
     const ea = e.action;
@@ -55,6 +62,7 @@ export class OpponentModel {
     if (newEnemyAction) {
       const info = ek.info[ea.ability];
       this.uses[ea.ability]++;
+      this.seen++;
       if (info.offensive && !info.ranged && !ea.isCounter) {
         const out = dist > info.maxReach + 0.5;
         this.whiff = lerp(this.whiff, out ? 1 : 0, rate * 0.4);
@@ -89,6 +97,7 @@ export class OpponentModel {
       this.trade = lerp(this.trade, r === 'trade' ? 1 : 0, k);
       this.none = lerp(this.none, r === 'none' ? 1 : 0, k);
       this.watch = null;
+      this.seen += 1.5;
     }
     if (ma && ma.phase === 'recovery' && !ma.feint && this.recoveryWatch < 0 && me.abilities[ma.ability].power > 0) {
       this.recoveryWatch = b.time;
