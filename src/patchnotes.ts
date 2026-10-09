@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.21.0',
+    date: '2026-10-09',
+    title: 'Volume sliders',
+    notes: [
+      'Settings now has three volume sliders instead of on/off switches: Master, Music and Sound effects. Changes apply while you drag.',
+      'Setting Music to 0 turns the battle soundtrack off. If you had turned Music off before, it stays off. The sound button on the menu still mutes everything at once.',
+    ],
+  },
+  {
     version: '0.20.0',
     date: '2026-10-09',
     title: 'Three new bodies, three new species',

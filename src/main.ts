@@ -21,7 +21,7 @@ import { Hud } from './ui/hud';
 import { Menu, type Record as WinLoss } from './ui/menu';
 import { versionBadge } from './ui/patchNotes';
 import { resultsSheet } from './ui/results';
-import { settingsSheet } from './ui/settings';
+import { settingsSheet, type Volume } from './ui/settings';
 import { GuestSession, HostSession, savedMatch, type OnlineSession } from './net/session';
 import { matchWinner, normalizeCode, scoreOf, CODE_LENGTH, type RoundResult, type Snapshot } from './net/protocol';
 import { confirmLeave, Lobby, NetBanner, openOnlineSheet } from './ui/online';
@@ -43,7 +43,8 @@ let rival: PlayerCharacter = loadRival() ?? generateRival(player?.name);
 let record = store<WinLoss>('al.record', { w: 0, l: 0 });
 let speed = [1, 2, 4].includes(store<number>('al.speed', 1)) ? store<number>('al.speed', 1) : 1;
 let soundOn = store<boolean>('al.sound', true);
-let musicOn = store<boolean>('al.music', true) !== false;
+// Volume sliders (0..1). Older saves had a Music on/off switch: off becomes 0.
+let volume: Volume = { master: 1, music: store<boolean>('al.music', true) === false ? 0 : 1, sfx: 1, ...store<Partial<Volume>>('al.volume', {}) };
 let quotesOn = store<boolean>('al.quotes', true) !== false;
 let camMode = store<string>('al.camera', 'classic') as CamMode;
 if (!CAM_MODES.some((m) => m.id === camMode)) camMode = 'classic';
@@ -52,8 +53,7 @@ const camName = () => CAM_MODES.find((m) => m.id === camMode)!.name;
 let arenaPick = store<string>('al.arena', 'isle');
 if (arenaPick !== 'random' && !THEMES.some((t) => t.id === arenaPick)) arenaPick = 'isle';
 const arenaFor = (seed: number): Theme => THEMES.find((t) => t.id === arenaPick) ?? THEMES[seed % THEMES.length];
-sfx.setMuted(!soundOn);
-music.setEnabled(soundOn, musicOn);
+applyVolume();
 
 function loadRival(): PlayerCharacter | null {
   const raw = store<Record<string, unknown> | null>('al.rival', null);
@@ -111,11 +111,16 @@ const menu = new Menu({
   },
 });
 
+function applyVolume(): void {
+  sfx.setVolume(volume.master * volume.sfx);
+  sfx.setMuted(!soundOn);
+  music.setEnabled(soundOn, volume.master * volume.music);
+}
+
 function setSound(on: boolean): void {
   soundOn = on;
   save('al.sound', on);
-  sfx.setMuted(!on);
-  music.setEnabled(soundOn, musicOn);
+  applyVolume();
   menu.setSound(on);
 }
 
@@ -123,18 +128,19 @@ function openSettings(): void {
   closeSheet();
   sfx.play('ui');
   const arenas = THEMES.map((t) => ({ id: t.id, name: t.name, sky: t.sky, floor: t.floor }));
-  sheet = settingsSheet({ quotes: quotesOn, sound: soundOn, music: musicOn, arena: arenaPick }, arenas, (s) => {
+  sheet = settingsSheet({ quotes: quotesOn, volume, arena: arenaPick }, arenas, (s) => {
     if (s.quotes !== quotesOn) {
       quotesOn = s.quotes;
       save('al.quotes', quotesOn);
       hud.setBubbles(quotesOn);
     }
-    if (s.sound !== soundOn) setSound(s.sound);
-    if (s.music !== musicOn) {
-      musicOn = s.music;
-      save('al.music', musicOn);
-      music.setEnabled(soundOn, musicOn);
-      if (musicOn && state === 'battle') { music.intro(); music.fight(); }
+    if (s.volume !== volume) {
+      const wasMusic = volume.master * volume.music > 0;
+      volume = s.volume;
+      save('al.volume', volume);
+      // Raising a slider while muted from the menu switch unmutes.
+      if (!soundOn && volume.master > 0) setSound(true); else applyVolume();
+      if (!wasMusic && volume.master * volume.music > 0 && state === 'battle') { music.intro(); music.fight(); }
     }
     if (s.arena !== arenaPick) {
       arenaPick = s.arena;
