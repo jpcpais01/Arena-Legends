@@ -1,6 +1,7 @@
 import { DEFAULT_LOOK, SPECIES } from '../character/appearance';
 import type { PlayerCharacter } from '../character/profile';
 import { skinOn } from '../character/skins';
+import { applyBackdrop, BH, BW } from '../render/backdrops';
 import { iconCanvas } from '../render/icons';
 import { FORMS } from '../sim/forms';
 import { GEAR_SLOTS, gearOf, SLOT_NAMES } from '../sim/gear';
@@ -93,6 +94,7 @@ export class Menu {
   private plate(c: CharacterBuild, p: Preview, side: 0 | 1, tag: string, extra: string): HTMLElement {
     const look = c.look ?? DEFAULT_LOOK;
     const art = h('div.plate-art', null, p.el);
+    applyBackdrop(art, look.backdrop);
     p.fitTo(art);
     return h(`div.nplate${side ? '.rival' : '.you'}`, null,
       art,
@@ -110,7 +112,7 @@ export class Menu {
 }
 
 /** Art-pixel box of the fighter portraits on the menu nameplates (head and shoulders). */
-const PLATE_ART: [number, number] = [60, 48];
+const PLATE_ART: [number, number] = [BW, BH];
 
 /** Icons for every gear slot in order, skins applied; empty slots are blank. */
 function gearIcons(c: CharacterBuild): HTMLElement[] {
