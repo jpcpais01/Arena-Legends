@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.27.1',
+    date: '2026-10-09',
+    title: 'Menus fit phones held sideways',
+    notes: [
+      'On a phone held sideways, the hero steps now fit the screen. You see every species with its description, every body with all its stats, and the whole Look step without scrolling.',
+      'Surprise me now sits next to the Look title.',
+      'Settings on a sideways phone are side by side: volume and quotes on the left, the arena picker on the right.',
+    ],
+  },
+  {
     version: '0.27.0',
     date: '2026-10-09',
     title: 'A real game menu',
