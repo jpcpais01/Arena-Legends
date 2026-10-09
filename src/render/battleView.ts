@@ -367,12 +367,14 @@ export class BattleView implements View {
     if (getStatus(f, 'ironskin')) tint('#e8eef8', 0.25 + 0.15 * Math.sin(this.time * 10));
     if (getStatus(f, 'rage')) tint('#ff3020', 0.14 + 0.08 * Math.sin(this.time * 14));
     if (getStatus(f, 'vulnerable')) tint('#ff80a0', 0.12);
+    if (f.empowered && f.alive) tint('#a878ff', 0.12 + 0.07 * Math.sin(this.time * 6));
 
     // Status particles.
     v.emberT -= dt;
     if (v.emberT <= 0 && dt > 0 && f.alive) {
       v.emberT = 0.06;
       const bx = x, by = y + 0.9;
+      if (f.empowered && Math.random() < 0.4) this.fx.burst({ x: bx, y: by - 0.6, jitter: 0.45, jitterY: 0.9, count: 1, dir: Math.PI / 2, spread: 0.25, speed: [0.8, 1.8], life: [0.35, 0.7], color: 0xe8d8ff, color2: 0x8050f0, kind: 'twinkle' });
       if (getStatus(f, 'burn')) this.fx.burst({ x: bx, y: by, jitter: 0.35, jitterY: 0.6, count: 1, dir: Math.PI / 2, spread: 0.3, speed: [0.8, 1.6], life: [0.3, 0.6], color: 0xffd060, color2: 0xd83a1a, kind: 'ember' });
       if (getStatus(f, 'poison')) this.fx.burst({ x: bx, y: by, jitter: 0.3, jitterY: 0.6, count: 1, dir: Math.PI / 2, spread: 0.2, speed: [0.4, 0.8], life: [0.4, 0.7], color: 0x9cff4a, color2: 0x3a8a2a, size: 2 });
       if (getStatus(f, 'chill')) this.fx.burst({ x: bx, y: by + 0.6, jitter: 0.4, count: 1, dir: -Math.PI / 2, spread: 0.4, speed: [0.3, 0.7], life: [0.4, 0.8], color: 0xf0ffff, color2: 0x8ad8ff });
@@ -697,6 +699,19 @@ export class BattleView implements View {
         this.arena?.cheer(1);
         this.slowmo(0.25, 1.3);
         this.punchIn(2, 2.2, f.x);
+        break;
+      }
+      case 'overtime': {
+        // Night overtime: both fighters flare up, empowered until the end.
+        for (const f of b.fighters) {
+          if (!f.alive) continue;
+          fx.pulse('groundRing', f.x, 0, 2.6, 0xa070ff, 0.6);
+          fx.burst({ x: f.x, y: f.y + 1, jitter: 0.4, jitterY: 0.8, count: 24, dir: Math.PI / 2, spread: 0.9, speed: [2, 5], life: [0.4, 0.8], color: 0xe8d8ff, color2: 0x8050f0, drag: 2, kind: 'twinkle' });
+        }
+        this.play('roar');
+        this.shake(0.6);
+        this.flash(0x8060ff, 0.8);
+        this.arena?.cheer(1);
         break;
       }
       case 'end':

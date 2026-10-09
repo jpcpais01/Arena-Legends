@@ -26,7 +26,7 @@ import { confirmLeave, Lobby, NetBanner, openOnlineSheet } from './ui/online';
 import { PickScreen, type PickInfo } from './ui/pick';
 import { onlineResultsSheet, type OnlineOutcome } from './ui/results';
 import type { CharacterBuild } from './sim/loadout';
-import { ROUND_TIME } from './sim/constants';
+import { MATCH_TIME } from './sim/constants';
 
 type State = 'menu' | 'intro' | 'battle' | 'results';
 
@@ -460,7 +460,7 @@ function startNetFight(snap: Snapshot): void {
 function onlineOutcome(s: OnlineSession, snap: Snapshot): OnlineOutcome {
   const b = battle!;
   const official = snap.results.find((r) => r.round === netRound);
-  const local: RoundResult = { round: netRound, winner: b.winner, reason: b.time >= ROUND_TIME ? 'time' : 'ko' };
+  const local: RoundResult = { round: netRound, winner: b.winner, reason: b.time >= MATCH_TIME ? 'time' : 'ko' };
   const r = official ?? local;
   const all = official ? snap.results : [...snap.results, local];
   const mw = matchWinner(all, netRound);

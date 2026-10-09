@@ -1,5 +1,5 @@
 import { clamp } from '../../core/math';
-import { BASE_ENERGY_REGEN, MAX_ENERGY } from '../constants';
+import { BASE_ENERGY_REGEN, MAX_ENERGY, OVERTIME_DAMAGE } from '../constants';
 import { reachOf as abilityReach, stacksOf, type Fighter } from '../fighter';
 import type { AbilityDef, StatusId } from '../types';
 
@@ -167,6 +167,7 @@ export function estDamage(src: Fighter, ab: AbilityDef, dst: Fighter, withPassiv
   }
   if (withPassives && ab.power > 0) dmg += onHitBonus(src, dst, dmg) * (ab.hits ? Math.min(ab.hits, 3) / 1.5 : 1);
   dmg *= dst.stats.damageTakenMult;
+  if (src.empowered) dmg *= OVERTIME_DAMAGE;
   return dmg / dst.stats.maxHp;
 }
 

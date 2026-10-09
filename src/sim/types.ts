@@ -306,4 +306,6 @@ export type BattleEvent =
   | { type: 'thought'; f: FighterId; text: string }
   | { type: 'plan'; f: FighterId; plan: string }
   | { type: 'ko'; f: FighterId }
+  /** Regular time is up: night falls and both fighters deal double damage. */
+  | { type: 'overtime' }
   | { type: 'end'; winner: FighterId | -1; reason: 'ko' | 'time' };

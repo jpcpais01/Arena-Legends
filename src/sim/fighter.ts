@@ -57,6 +57,8 @@ export interface Fighter {
   stagger: number;
   invuln: number;
   alive: boolean;
+  /** Overtime: deals OVERTIME_DAMAGE times the damage. */
+  empowered: boolean;
 
   // Item state
   phoenixUsed: boolean;
@@ -106,6 +108,7 @@ export function createFighter(id: FighterId, cfg: FighterConfig): Fighter {
     stagger: 0,
     invuln: 0,
     alive: true,
+    empowered: false,
     phoenixUsed: false,
     stormCounter: 0,
     mirrorCd: 0,

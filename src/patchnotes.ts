@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.15.0',
+    date: '2026-10-09',
+    title: 'Night overtime',
+    notes: [
+      'If both fighters are still standing after 60 seconds, the round goes into 30 seconds of overtime instead of ending.',
+      'Overtime happens at night: both fighters glow violet and deal double damage until someone falls or time runs out.',
+      'The clock shows OT and counts down the 30 extra seconds. If nobody is knocked out by the end, the round still goes to remaining health.',
+      'Fighters play the clock in the last seconds of overtime: whoever is ahead plays it safe and whoever is behind goes all in.',
+    ],
+  },
+  {
     version: '0.14.1',
     date: '2026-10-09',
     title: 'Refresh for updates',
