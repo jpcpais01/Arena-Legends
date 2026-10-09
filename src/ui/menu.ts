@@ -19,6 +19,8 @@ export interface MenuCallbacks {
   onSound(): void;
   onSettings(): void;
   onOnline(): void;
+  /** Account button (only when accounts are switched on). */
+  onAccount?(): void;
 }
 
 export interface Record { w: number; l: number }
@@ -48,7 +50,9 @@ export class Menu {
       h('button.btn.sm.home-side', { title: label, onclick: fn }, icon(ic), h('span', null, label));
     this.el = h('div.menu.home', null,
       h('div.home-top', null, this.you, mark, this.rival),
-      h('div.home-tools', null, this.soundBtn,
+      h('div.home-tools', null,
+        cb.onAccount && h('button.btn.icon.sm', { title: 'Account', 'aria-label': 'Account', onclick: () => cb.onAccount!() }, icon('user')),
+        this.soundBtn,
         h('button.btn.icon.sm', { title: 'Settings', 'aria-label': 'Settings', onclick: () => cb.onSettings() }, icon('settings'))),
       h('div.home-actions', null,
         h('div.home-row', null,
