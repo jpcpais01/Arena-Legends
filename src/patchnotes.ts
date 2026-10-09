@@ -12,6 +12,18 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.22.0',
+    date: '2026-10-09',
+    title: 'Smoother, more natural fighters',
+    notes: [
+      'Attacks have extra in-between frames: weapons travel in smooth arcs, the wind-up holds a moment before the strike, and fighters ease back into their stance instead of snapping.',
+      'Capes, scarves, hair and tails now trail behind the body and keep swinging after a lunge or a dodge.',
+      'Smoother run and back-pedal cycles with arm pumping and a steadier head. Fighters catch their weight when they stop running and crouch to absorb a landing.',
+      'Idle fighters breathe and shift their weight, each on their own rhythm.',
+      'Hits knock the fighter back a touch, and knocked-out fighters bounce once when they hit the ground.',
+    ],
+  },
+  {
     version: '0.21.1',
     date: '2026-10-09',
     title: 'Tap an item card again to close it',
