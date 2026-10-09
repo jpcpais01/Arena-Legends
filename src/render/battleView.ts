@@ -108,6 +108,10 @@ export class BattleView implements View {
   /** Called after the scene is drawn (HUD overlays). */
   onFrame: ((dt: number) => void) | null = null;
   private lastDt = 0;
+  /** Sprites drawn this frame that pick up the night glow: feet position and facing. */
+  private glowList: { s: Sprite; x: number; y: number; flip: boolean }[] = [];
+  /** Scratch canvas for the glow rim, grown to the largest sprite seen. */
+  private rim = scratchCanvas();
 
   constructor(readonly screen: Screen) {
     screen.onResize = () => this.layout();
@@ -297,6 +301,7 @@ export class BattleView implements View {
     const g = this.screen.g;
     const b = this.battle!;
     const cam = this.camX * PPM;
+    this.glowList.length = 0;
     this.arena!.setDay(b.time / ROUND_TIME);
     this.arena!.draw(g, cam, this.time, this.shakeX, this.shakeY);
     this.fx.drawUnder(g, this);
@@ -313,6 +318,8 @@ export class BattleView implements View {
     for (const f of b.fighters) this.drawItem(g, f);
     for (const p of b.projectiles) if (p.alive) this.drawProjectile(g, p);
     this.arena!.light(g, cam, this.time);
+    const night = this.arena!.night();
+    if (night > 0.01) this.nightGlow(g, night);
     this.fx.draw(g, this);
     if (this.flashT > 0) {
       g.globalAlpha = Math.min(0.5, this.flashT * 4);
@@ -321,6 +328,55 @@ export class BattleView implements View {
       g.globalAlpha = 1;
       this.flashT -= dt;
     }
+  }
+
+  /**
+   * Night glow, once the live sky has turned dark: the fighters and what they
+   * carry hold a faint light of their own. A pale moonlit rim hugs each
+   * silhouette, a little of the sprite's own colour comes back through the
+   * night tint, and a dim halo sits around it. All of it scales with how far
+   * night has fallen (`n`), so it creeps in at dusk and never turns into a
+   * spotlight. Kept cool and near-white so it never reads as the violet
+   * overtime flare.
+   */
+  private nightGlow(g: CanvasRenderingContext2D, n: number): void {
+    const rc = this.rim.c, rg = this.rim.g;
+    g.globalCompositeOperation = 'lighter';
+    for (const { s, x, y, flip } of this.glowList) {
+      const w = s.w + 6, h = s.h + 6;
+      if (rc.width < w || rc.height < h) {
+        rc.width = Math.max(rc.width, w);
+        rc.height = Math.max(rc.height, h);
+      }
+      // Rim: the silhouette grown by two pixels, minus the sprite itself.
+      const sil = solidCache(s, '#dce6ff').img;
+      rg.clearRect(0, 0, w, h);
+      rg.globalCompositeOperation = 'source-over';
+      rg.globalAlpha = 0.4;
+      for (const [dx, dy] of RING2) rg.drawImage(sil, 3 + dx, 3 + dy);
+      rg.globalAlpha = 1;
+      for (const [dx, dy] of RING1) rg.drawImage(sil, 3 + dx, 3 + dy);
+      rg.globalCompositeOperation = 'destination-out';
+      rg.drawImage(s.img, 3, 3);
+      // Halo around the middle of the sprite.
+      const cx = flip ? x + 1 - (s.w / 2 - s.ox) : x - s.ox + s.w / 2, cy = y - s.oy + s.h / 2;
+      const r = Math.max(s.w, s.h) * 0.75;
+      g.globalAlpha = 0.11 * n;
+      g.drawImage(haloSprite(), cx - r, cy - r, r * 2, r * 2);
+      g.globalAlpha = 0.36 * n;
+      if (!flip) g.drawImage(rc, 0, 0, w, h, x - s.ox - 3, y - s.oy - 3, w, h);
+      else {
+        g.save();
+        g.translate(x + 1, 0);
+        g.scale(-1, 1);
+        g.drawImage(rc, 0, 0, w, h, -s.ox - 3, y - s.oy - 3, w, h);
+        g.restore();
+      }
+      g.globalAlpha = 0.16 * n;
+      blit(g, s, x, y, flip);
+    }
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
   }
 
   private drawFighter(g: CanvasRenderingContext2D, f: Fighter, v: FighterView, dt: number, secOut: boolean): void {
@@ -358,6 +414,7 @@ export class BattleView implements View {
     if (f.invuln > 0 && f.alive && Math.floor(this.time * 30) % 2 === 0) g.globalAlpha = 0.55;
     blit(g, s, px, py, flip);
     g.globalAlpha = 1;
+    this.glowList.push({ s, x: px, y: py, flip });
     if (set) drawSetAura(g, set, px, py + o.hop, this.time, 'front');
 
     if (dt > 0 && f.alive) this.legendSparks(f, v, s, x, y, flip);
@@ -491,6 +548,7 @@ export class BattleView implements View {
       const s = projSprite('sigil', Math.floor(this.time * 10), 0, this.fighters[f.id]?.art.specialSkinId);
       const x = Math.round(this.sx(this.lx(f))), y = Math.round(this.sy(this.ly(f) + 2.8));
       g.drawImage(s.img, x - s.ox, y - s.oy);
+      this.glowList.push({ s, x, y, flip: false });
       return;
     }
     // Phantom blade: rises, flies at the enemy, slashes, returns.
@@ -504,6 +562,7 @@ export class BattleView implements View {
     g.globalAlpha = 0.85;
     g.drawImage(s.img, x - s.ox, y - s.oy);
     g.globalAlpha = 1;
+    this.glowList.push({ s, x, y, flip: false });
     if (Math.random() < 0.5) {
       const c = this.glow(f.id, 0xd8e8ff, 0x6a8ad8);
       this.fx.burst({ x: it.x, y: it.y, count: 1, speed: [0.2, 0.6], life: [0.2, 0.4], color: c[0], color2: c[1] });
@@ -833,6 +892,31 @@ export class BattleView implements View {
     const [x, y] = this.headAt(id);
     drawText(g, text, x, y - 6, { color });
   }
+}
+
+const RING1 = [[1, 0], [-1, 0], [0, 1], [0, -1]] as const;
+const RING2 = [[2, 0], [-2, 0], [0, 2], [0, -2], [1, 1], [-1, 1], [1, -1], [-1, -1]] as const;
+
+function scratchCanvas(): { c: HTMLCanvasElement; g: CanvasRenderingContext2D } {
+  const c = document.createElement('canvas');
+  c.width = c.height = 96;
+  return { c, g: c.getContext('2d')! };
+}
+
+/** Soft moonlit halo behind a fighter at night (built on first use). */
+let nightHalo: HTMLCanvasElement | null = null;
+function haloSprite(): HTMLCanvasElement {
+  if (nightHalo) return nightHalo;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d')!;
+  const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, 'rgba(200,216,255,0.55)');
+  grad.addColorStop(0.45, 'rgba(200,216,255,0.2)');
+  grad.addColorStop(1, 'rgba(200,216,255,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 64, 64);
+  return (nightHalo = c);
 }
 
 const solid = new WeakMap<Sprite, Map<string, Sprite>>();

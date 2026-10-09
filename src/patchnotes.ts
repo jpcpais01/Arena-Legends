@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.28.0',
+    date: '2026-10-09',
+    title: 'Fighters glow softly at night',
+    notes: [
+      'As night falls on Skygrove Isle, the fighters and their weapons, armour and summoned items pick up a faint moonlit glow: a soft pale rim around them and a little of their own colour back, so they stay easy to read in the dark.',
+      'It creeps in at dusk and is at its strongest under the full night sky. It stays subtle and never looks like the violet overtime power-up.',
+    ],
+  },
+  {
     version: '0.27.2',
     date: '2026-10-09',
     title: 'Armour icons show just the armour',
