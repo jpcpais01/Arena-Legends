@@ -1,4 +1,4 @@
-import { PLAN_LABELS, type Plan } from '../sim/ai/brain';
+import { Brain, PLAN_LABELS, type Plan } from '../sim/ai/brain';
 import type { Battle } from '../sim/battle';
 import { MATCH_TIME, MAX_ENERGY, ROUND_TIME } from '../sim/constants';
 import { FORMS } from '../sim/forms';
@@ -27,6 +27,8 @@ interface SideEls {
   num: HTMLElement;
   en: HTMLElement;
   plan: HTMLElement;
+  /** DEBUG (temporary): AI heat bar, tolerance tick and readout. */
+  heat: HTMLElement; heatBar: HTMLElement; heatTick: HTMLElement; heatNum: HTMLElement; heatKey: string;
   statuses: HTMLElement;
   bubble: HTMLElement;
   bubbleT: number;
@@ -79,16 +81,19 @@ export class Hud {
       const en = h('i.fill');
       const plan = h('span.plan', null, PLAN_LABELS[b.brains[side].plan]);
       const statuses = h('div.statuses');
+      const heat = h('i.fill'), heatTick = h('i.tick'), heatNum = h('span.heat-num');
+      const heatBar = h('div.bar.heat', null, heat, heatTick);
       const bubble = h('div.bubble', { hidden: true });
       bubbles.push(bubble);
       const el = h(`div.side${side ? '.right' : ''}`, null,
         h('div.side-name', null, h('span', null, f.name), h('small.muted', null, FORMS[f.form].name)),
         h('div.bar', null, ghost, fill, shield, h('i.ticks')),
         h('div.bar.en', null, en),
+        h('div.heat-row', null, heatBar, heatNum),
         h('div.side-hp', null, num, ' · ', plan),
         statuses,
       );
-      this.sides.push({ fill, ghost, shield, num, en, plan, statuses, bubble, bubbleT: 0, ghostV: 1, last: { hp: -1, ghost: -1, shield: -1, en: -1, st: '-', band: '' } });
+      this.sides.push({ fill, ghost, shield, num, en, plan, heat, heatBar, heatTick, heatNum, heatKey: '', statuses, bubble, bubbleT: 0, ghostV: 1, last: { hp: -1, ghost: -1, shield: -1, en: -1, st: '-', band: '' } });
       if (side === 0) top.append(el);
       else {
         this.clock = h('div.clock.plate', null, String(ROUND_TIME));
@@ -216,6 +221,19 @@ export class Hud {
         s.last.en = en;
         s.en.style.transform = `scaleX(${(en / MAX_ENERGY).toFixed(2)})`;
         s.en.classList.toggle('full', en >= MAX_ENERGY);
+      }
+      // DEBUG (temporary): heat vs this fighter's tolerance; tinted while circling.
+      const br = b.brains[i];
+      if (br instanceof Brain) {
+        const ht = Math.round(br.heat * 100), tol = Math.round(Math.min(1, br.tolerance) * 100);
+        const key = `${ht}|${tol}|${br.breathing}`;
+        if (key !== s.heatKey) {
+          s.heatKey = key;
+          s.heat.style.transform = `scaleX(${(ht / 100).toFixed(2)})`;
+          s.heatTick.style.left = `${tol}%`;
+          s.heatBar.classList.toggle('breathing', br.breathing);
+          s.heatNum.textContent = `heat ${(ht / 100).toFixed(2)} / ${(br.tolerance).toFixed(2)}`;
+        }
       }
       let st = '';
       for (const x of f.statuses) st += x.id + x.stacks;

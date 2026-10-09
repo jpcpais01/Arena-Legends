@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.35.0',
+    date: '2026-10-09',
+    title: 'Heat meter (temporary debug)',
+    notes: [
+      'For now, each fighter shows a small heat bar under their energy. It fills during close exchanges, the white tick marks how much heat that fighter can take, and the bar turns blue while they back off and circle to catch their breath.',
+    ],
+  },
+  {
     version: '0.34.3',
     date: '2026-10-09',
     title: 'Full-screen UI on phones',
