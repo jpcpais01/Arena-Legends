@@ -198,6 +198,12 @@ export const SKINS: readonly SkinDef[] = [
   E('abyssal', 'iron_helm', 'leviathan', 'Leviathan Helm'),
   E('abyssal', 'mirror_mail', 'abyssal', 'Abyssal Scale'),
   E('abyssal', 'shadow_treads', 'tidewalkers', 'Tidewalkers'),
+  E('clockwork', 'warhammer', 'steamforge', 'Steamforge Hammer'),
+  E('clockwork', 'buckler', 'cogwheel', 'Cogwheel Aegis'),
+  E('clockwork', 'echo_stone', 'heart', 'Clockwork Heart'),
+  E('clockwork', 'berserker_mask', 'automaton', 'Automaton Visage'),
+  E('clockwork', 'plate_armor', 'titan', 'Titan Frame'),
+  E('clockwork', 'colossus_boots', 'piston', 'Piston Stompers'),
 ];
 
 export const SKIN_BY_ID: ReadonlyMap<string, SkinDef> = new Map(SKINS.map((s) => [s.id, s]));

@@ -16,7 +16,7 @@ export const SET_FX: Record<SkinSetId, SkinFx> = {
   foxfire: { spark: 0xd8f8ff, spark2: 0x2a5ae0, kind: 'flame' },
   wildwood: { spark: 0xfff07a, spark2: 0x2ec27a, kind: 'twinkle' },
   abyssal: { spark: 0xe0fff8, spark2: 0x2a8ab8, kind: 'twinkle' },
-  clockwork: { spark: 0xffe0a0, spark2: 0xd8a040, kind: 'twinkle' },
+  clockwork: { spark: 0xfff0c0, spark2: 0x3ab8e0, kind: 'twinkle' },
 };
 
 type Layer = 'back' | 'front';

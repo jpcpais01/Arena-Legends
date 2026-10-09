@@ -9,6 +9,7 @@ import { HELLFORGED } from './hellforged';
 import { SUNBORN } from './sunborn';
 import { WILDWOOD } from './wildwood';
 import { ABYSSAL } from './abyssal';
+import { CLOCKWORK } from './clockwork';
 import {
   geodeHeart, icicleScepter, kagutsuchi, krakenConch, lionheart, morningstar, skullcrusher, solarDisc, swordbreaker,
   frostreaver, voidfang, wintersHeart, wyrmRepeater,
@@ -333,4 +334,5 @@ export const SKIN_ART: Record<string, SkinArt> = {
   ...FOXFIRE,
   ...WILDWOOD,
   ...ABYSSAL,
+  ...CLOCKWORK,
 };

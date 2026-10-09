@@ -70,7 +70,7 @@ describe('item skins', () => {
   });
 
   it('epic sets have one piece for each gear slot', () => {
-    expect(SKIN_SETS.length).toBe(4);
+    expect(SKIN_SETS.length).toBe(6);
     for (const set of SKIN_SETS) {
       const slots = setPieces(set.id).map((p) => gearOf(p.gear).slot).sort();
       expect(slots, set.id).toEqual(['boots', 'chest', 'head', 'main', 'secondary', 'special']);
