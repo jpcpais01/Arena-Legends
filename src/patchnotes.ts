@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.18.0',
+    date: '2026-10-09',
+    title: 'Fights with a rhythm',
+    notes: [
+      'Fighters now feel each other out at the start: quick, safe pokes to test reactions before they commit to big moves. The better they read you, the bolder they get.',
+      'After a hot exchange, fighters break off and circle to catch their breath before the next clash. Hot-headed fighters barely pause and may chase you down, while patient ones take their time. They still punish any opening.',
+      'The clock now matters more and more as the end approaches: a fighter who is behind stops resting and pushes hard, and one who is ahead plays it safe.',
+      'A new "Circling" stance shows up on the battle HUD while a fighter is catching their breath.',
+    ],
+  },
+  {
     version: '0.17.0',
     date: '2026-10-09',
     title: 'Less health for every body',
