@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.32.2',
+    date: '2026-10-09',
+    title: 'Fighter boxes show everything',
+    notes: [
+      'The fighter boxes on the home screen are always open now, on phones and on PC. No more tapping to see the gear.',
+      'Gear sits two items to a row with bigger icons, and the fighter portrait at the top is bigger too.',
+    ],
+  },
+  {
     version: '0.32.1',
     date: '2026-10-09',
     title: 'Accounts work',
