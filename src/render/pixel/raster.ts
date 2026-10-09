@@ -112,6 +112,8 @@ export class Raster {
   phase = 0;
   /** Default space for textures when a fill doesn't name one (null = raster space). */
   space: LocalSpace | null = null;
+  /** Materials whose fills and dots are dropped (gear icons draw an item without the body under it). */
+  skip: ReadonlySet<Material> | null = null;
   private nextOrder = 1;
 
   constructor(w: number, h: number) {
@@ -134,6 +136,7 @@ export class Raster {
     this.materials.length = 0;
     this.nextOrder = 1;
     this.space = null;
+    this.skip = null;
   }
 
   /** Registers a material for this frame and returns its handle. */
@@ -146,6 +149,7 @@ export class Raster {
   fill(shape: Shape, m: number, o: FillOptions = {}): void {
     const { w, h } = this;
     const mt = this.materials[m - 1];
+    if (this.skip?.has(mt)) return;
     const x0 = Math.max(0, Math.floor(shape.box.x0) - 1), y0 = Math.max(0, Math.floor(shape.box.y0) - 1);
     const x1 = Math.min(w - 1, Math.ceil(shape.box.x1) + 1), y1 = Math.min(h - 1, Math.ceil(shape.box.y1) + 1);
     if (x0 > x1 || y0 > y1) return;
@@ -201,6 +205,7 @@ export class Raster {
     if (x < 0 || y < 0 || x >= this.w || y >= this.h) return;
     const i = y * this.w + x;
     const mt = this.materials[m - 1];
+    if (this.skip?.has(mt)) return;
     this.mat[i] = m;
     this.tone[i] = Math.max(0, Math.min(4, tone));
     if (group !== undefined || !this.group[i]) this.group[i] = group ?? 1;
