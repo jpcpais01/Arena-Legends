@@ -8,7 +8,7 @@ import type { GearId, GearSet } from '../sim/types';
  *  - mythic: also reshapes the item
  *  - legendary: reshaped, with animated surfaces and its own effects in battle
  *  - epic: the showpieces. Everything legendary has, more of it, and they come
- *    in sets of six (one per gear slot) that share one look; wearing a whole
+ *    in sets of seven (one per gear slot but the usable item) that share one look; wearing a whole
  *    set gives the fighter that set's aura
  */
 export type SkinRarity = 'rare' | 'mythic' | 'legendary' | 'epic';
@@ -18,7 +18,7 @@ export const RARITY_INFO: Record<SkinRarity, string> = {
   rare: 'New colours and finish.',
   mythic: 'Reshaped: a new silhouette.',
   legendary: 'Reshaped, animated, with its own battle effects.',
-  epic: 'Part of a set of six. Wear the whole set for its aura.',
+  epic: 'Part of a set of seven. Wear the whole set for its aura.',
 };
 
 export interface SkinDef {
@@ -179,66 +179,77 @@ export const SKINS: readonly SkinDef[] = [
   E('sunborn', 'chrono_circlet', 'nemes', 'Nemes of the Sun King'),
   E('sunborn', 'mage_robe', 'pharaoh', "Pharaoh's Regalia"),
   E('sunborn', 'leaping_boots', 'sunstride', 'Sandals of the Sun'),
+  E('sunborn', 'stonehide_tassets', 'shendyt', 'Shendyt of the Sun'),
   E('hellforged', 'greataxe', 'hellmaw', 'Hellmaw'),
   E('hellforged', 'throwing_knives', 'brimstone', 'Brimstone Fangs'),
   E('hellforged', 'meteor_sigil', 'doom', 'Doomcaller Sigil'),
   E('hellforged', 'storm_crown', 'brimstone', 'Crown of Brimstone'),
   E('hellforged', 'thornmail', 'hellforged', 'Hellforged Carapace'),
   E('hellforged', 'iron_greaves', 'hellstride', 'Hellstriders'),
+  E('hellforged', 'runed_leggings', 'magma', 'Magma-Seamed Cuisses'),
   E('foxfire', 'katana', 'kitsunebi', 'Kitsunebi'),
   E('foxfire', 'frost_wand', 'gohei', 'Shrine Gohei'),
   E('foxfire', 'wisp_lantern', 'foxfire', 'Foxfire Lantern'),
   E('foxfire', 'duelist_band', 'kitsune', 'Kitsune Mask'),
   E('foxfire', 'phase_cloak', 'ninetails', 'Nine-Tails Haori'),
   E('foxfire', 'leather_boots', 'geta', 'Foxfire Geta'),
+  E('foxfire', 'leather_leggings', 'hakama', 'Foxfire Hakama'),
   E('wildwood', 'longsword', 'elderheart', 'Elderheart'),
   E('wildwood', 'war_horn', 'wildhunt', 'Horn of the Wild Hunt'),
   E('wildwood', 'phantom_blade', 'dryad', "Dryad's Spirit Blade"),
   E('wildwood', 'executioner_hood', 'stag', 'Hood of the Stag King'),
   E('wildwood', 'leather_jerkin', 'wildwood', 'Wildwood Mantle'),
   E('wildwood', 'zephyr_boots', 'rootwalkers', 'Rootwalkers'),
+  E('wildwood', 'windrunner_leggings', 'vinebound', 'Vinebound Leggings'),
   E('abyssal', 'spear', 'trident', 'Trident of the Deep'),
   E('abyssal', 'wind_chakram', 'nautilus', 'Nautilus Disc'),
   E('abyssal', 'frost_core', 'pearl', 'Pearl of the Abyss'),
   E('abyssal', 'iron_helm', 'leviathan', 'Leviathan Helm'),
   E('abyssal', 'mirror_mail', 'abyssal', 'Abyssal Scale'),
   E('abyssal', 'shadow_treads', 'tidewalkers', 'Tidewalkers'),
+  E('abyssal', 'chain_leggings', 'coral', 'Coral Scale Leggings'),
   E('clockwork', 'warhammer', 'steamforge', 'Steamforge Hammer'),
   E('clockwork', 'buckler', 'cogwheel', 'Cogwheel Aegis'),
   E('clockwork', 'echo_stone', 'heart', 'Clockwork Heart'),
   E('clockwork', 'berserker_mask', 'automaton', 'Automaton Visage'),
   E('clockwork', 'plate_armor', 'titan', 'Titan Frame'),
   E('clockwork', 'colossus_boots', 'piston', 'Piston Stompers'),
+  E('clockwork', 'stonehide_tassets', 'piston', 'Piston Cuisses'),
   E('bloodmoon', 'dagger', 'sanguine', 'Sanguine Kiss'),
   E('bloodmoon', 'parrying_dagger', 'nightwing', 'Nightwing'),
   E('bloodmoon', 'vampiric_fang', 'bloodmoon', 'Fang of the Blood Moon'),
   E('bloodmoon', 'duelist_band', 'count', "The Count's Tricorn"),
   E('bloodmoon', 'phase_cloak', 'vampire', "Vampire Lord's Mantle"),
   E('bloodmoon', 'leather_boots', 'bloodmoon', 'Bloodmoon Riders'),
+  E('bloodmoon', 'bloodrite_wraps', 'bloodmoon', 'Bloodmoon Breeches'),
   E('starweaver', 'ember_wand', 'starfall', 'Starfall Wand'),
   E('starweaver', 'wind_chakram', 'crescent', 'Crescent Moon'),
   E('starweaver', 'meteor_sigil', 'comet', 'Comet Sigil'),
   E('starweaver', 'chrono_circlet', 'moon', 'Circlet of the Moon'),
   E('starweaver', 'mage_robe', 'nightsky', 'Robe of the Night Sky'),
   E('starweaver', 'leaping_boots', 'comet', 'Comet Striders'),
+  E('starweaver', 'runed_leggings', 'constellation', 'Constellation Leggings'),
   E('frostbound', 'mace', 'winterfist', 'Winterfist'),
   E('frostbound', 'buckler', 'rimeguard', 'Rimeguard'),
   E('frostbound', 'frost_core', 'winter', 'Heart of Winter'),
   E('frostbound', 'iron_helm', 'jarl', 'Helm of the Frost Jarl'),
   E('frostbound', 'plate_armor', 'frostbound', 'Frostbound Plate'),
   E('frostbound', 'iron_greaves', 'glacier', 'Glacier Greaves'),
+  E('frostbound', 'chain_leggings', 'frostbound', 'Frostbound Chausses'),
   E('stormcaller', 'longbow', 'thunderstring', 'Thunderstring'),
   E('stormcaller', 'kite_shield', 'tempest', 'Tempest Aegis'),
   E('stormcaller', 'ember_core', 'stormheart', 'Stormheart'),
   E('stormcaller', 'storm_crown', 'thunderking', 'Crown of the Thunder King'),
   E('stormcaller', 'mirror_mail', 'stormcaller', 'Stormcaller Mail'),
   E('stormcaller', 'zephyr_boots', 'galewalkers', 'Galewalkers'),
+  E('stormcaller', 'windrunner_leggings', 'thunderstride', 'Thunderstride Leggings'),
   E('voidborn', 'greataxe', 'voidreaver', 'Voidreaver'),
   E('voidborn', 'hand_crossbow', 'eldritch', 'Eldritch Repeater'),
   E('voidborn', 'wisp_lantern', 'watcher', 'The Watcher'),
   E('voidborn', 'executioner_hood', 'thousandeyes', 'Hood of a Thousand Eyes'),
   E('voidborn', 'thornmail', 'tendril', 'Tendril Carapace'),
   E('voidborn', 'shadow_treads', 'voidwalkers', 'Voidwalkers'),
+  E('voidborn', 'leather_leggings', 'chitin', 'Chitin Cuisses'),
 ];
 
 export const SKIN_BY_ID: ReadonlyMap<string, SkinDef> = new Map(SKINS.map((s) => [s.id, s]));
@@ -272,7 +283,7 @@ export function setPieces(set: SkinSetId): SkinDef[] {
   return SKINS.filter((s) => s.set === set);
 }
 
-/** The set a fighter wears in full (all six items equipped, each in its set skin), if any. */
+/** The set a fighter wears in full (every piece equipped, each in its set skin), if any. */
 export function fullSet(gear: GearSet, skins: SkinMap | undefined): SkinSetId | null {
   const first = skinOn(skins, gear.main)?.set;
   if (!first) return null;
