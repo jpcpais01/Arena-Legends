@@ -30,7 +30,7 @@ export interface SkinDef {
   set?: SkinSetId;
 }
 
-export type SkinSetId = 'sunborn' | 'hellforged' | 'foxfire';
+export type SkinSetId = 'sunborn' | 'hellforged' | 'foxfire' | 'wildwood' | 'abyssal' | 'clockwork';
 
 export interface SkinSet {
   id: SkinSetId;
@@ -43,6 +43,9 @@ export const SKIN_SETS: readonly SkinSet[] = [
   { id: 'sunborn', name: 'Sunborn Dynasty', blurb: 'Gold and lapis of a god-king, crowned by the sun.' },
   { id: 'hellforged', name: 'Hellforged', blurb: 'Black iron from the abyss, molten at every seam.' },
   { id: 'foxfire', name: 'Foxfire Shrine', blurb: 'White lacquer and vermilion, haunted by blue fox flames.' },
+  { id: 'wildwood', name: 'Wildwood', blurb: 'Living wood and emerald in bloom, with fireflies drifting about.' },
+  { id: 'abyssal', name: 'Abyssal Tide', blurb: 'Treasure of the deep: scale, coral and pearl, lit by glowing sea life.' },
+  { id: 'clockwork', name: 'Clockwork Titan', blurb: 'Brass and steam, gears turning and pistons pumping, an arcane core humming.' },
 ];
 export const SKIN_SET_BY_ID: ReadonlyMap<SkinSetId, SkinSet> = new Map(SKIN_SETS.map((s) => [s.id, s]));
 
@@ -183,6 +186,24 @@ export const SKINS: readonly SkinDef[] = [
   E('foxfire', 'duelist_band', 'kitsune', 'Kitsune Mask'),
   E('foxfire', 'phase_cloak', 'ninetails', 'Nine-Tails Haori'),
   E('foxfire', 'leather_boots', 'geta', 'Foxfire Geta'),
+  E('wildwood', 'longsword', 'elderheart', 'Elderheart'),
+  E('wildwood', 'war_horn', 'wildhunt', 'Horn of the Wild Hunt'),
+  E('wildwood', 'phantom_blade', 'dryad', "Dryad's Spirit Blade"),
+  E('wildwood', 'executioner_hood', 'stag', 'Hood of the Stag King'),
+  E('wildwood', 'leather_jerkin', 'wildwood', 'Wildwood Mantle'),
+  E('wildwood', 'zephyr_boots', 'rootwalkers', 'Rootwalkers'),
+  E('abyssal', 'spear', 'trident', 'Trident of the Deep'),
+  E('abyssal', 'wind_chakram', 'nautilus', 'Nautilus Disc'),
+  E('abyssal', 'frost_core', 'pearl', 'Pearl of the Abyss'),
+  E('abyssal', 'iron_helm', 'leviathan', 'Leviathan Helm'),
+  E('abyssal', 'mirror_mail', 'abyssal', 'Abyssal Scale'),
+  E('abyssal', 'shadow_treads', 'tidewalkers', 'Tidewalkers'),
+  E('clockwork', 'warhammer', 'steamforge', 'Steamforge Hammer'),
+  E('clockwork', 'buckler', 'cogwheel', 'Cogwheel Aegis'),
+  E('clockwork', 'echo_stone', 'heart', 'Clockwork Heart'),
+  E('clockwork', 'berserker_mask', 'automaton', 'Automaton Visage'),
+  E('clockwork', 'plate_armor', 'titan', 'Titan Frame'),
+  E('clockwork', 'colossus_boots', 'piston', 'Piston Stompers'),
 ];
 
 export const SKIN_BY_ID: ReadonlyMap<string, SkinDef> = new Map(SKINS.map((s) => [s.id, s]));

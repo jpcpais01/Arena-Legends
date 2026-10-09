@@ -45,6 +45,8 @@ export interface CharacterArt {
   specialSkinId: string | null;
   /** Reshaped headgear from a skin, drawn instead of the stock piece. */
   headDraw: HeadDraw | null;
+  /** Reshaped hood or mask that shows the face. */
+  headFace: boolean;
   /** The epic set worn in full, if any (its aura plays around the fighter). */
   set: SkinSetId | null;
 }
@@ -230,6 +232,7 @@ export function makeArt(build: CharacterBuild): CharacterArt {
   if (sec) for (const [k, v] of Object.entries(sec.mats)) mats['s.' + k] = v;
   // Armour skins recolour the body's armour materials; reshaped headgear brings its own.
   let headDraw: HeadDraw | null = null;
+  let headFace = false;
   const worn: Record<'head' | 'chest' | 'boots', SkinArt | null> = { head: null, chest: null, boots: null };
   for (const slot of ['head', 'chest', 'boots'] as const) {
     const [, art] = skinArt(build.gear[slot]);
@@ -240,6 +243,7 @@ export function makeArt(build: CharacterBuild): CharacterArt {
       const hs = art.head();
       Object.assign(mats, hs.mats);
       headDraw = hs.draw;
+      headFace = !!hs.face;
     }
   }
   // Special item skins only recolour what the body wears of them (feather, fang).
@@ -261,7 +265,7 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     chest: { ...tunicFor(build.gear.chest), ...worn.chest?.chest },
     headgear: build.gear.head ?? null,
     boots: { ...bootsFor(build.gear.boots), ...worn.boots?.boots },
-    skins, mainSkin, secSkin, headDraw,
+    skins, mainSkin, secSkin, headDraw, headFace,
     headSkin: worn.head, chestSkin: worn.chest, bootsSkin: worn.boots,
     specialSkin, specialSkinId,
     set: fullSet(build.gear, skins),

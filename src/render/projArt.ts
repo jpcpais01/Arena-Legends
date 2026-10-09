@@ -187,11 +187,14 @@ const ART: Record<ProjectileStyle | 'phantom' | 'sigil', ProjArt> = {
   },
 };
 
-/** Sprite ids: the stock ones, and `lantern` (the familiar), which only skins draw. */
-export type ProjArtId = keyof typeof ART | 'lantern';
+/**
+ * Sprite ids: the stock ones, plus two only skins draw: `lantern` (the
+ * familiar) and `core` (a special item floating at the shoulder).
+ */
+export type ProjArtId = keyof typeof ART | 'lantern' | 'core';
 
 /** The art for a sprite: the skin's reshaped one if it has it, else the stock one. */
-const artFor = (id: ProjArtId, skin?: string | null): ProjArt | undefined => (skin ? SKIN_ART[skin]?.proj?.[id] : undefined) ?? (id === 'lantern' ? undefined : ART[id]);
+const artFor = (id: ProjArtId, skin?: string | null): ProjArt | undefined => (skin ? SKIN_ART[skin]?.proj?.[id] : undefined) ?? (id === 'lantern' || id === 'core' ? undefined : ART[id]);
 
 /** Whether a skin reshapes this sprite. */
 export function skinDraws(id: ProjArtId, skin?: string | null): boolean {

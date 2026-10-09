@@ -14,6 +14,9 @@ export const SET_FX: Record<SkinSetId, SkinFx> = {
   sunborn: { spark: 0xfff4c0, spark2: 0x3a6ae0, kind: 'twinkle' },
   hellforged: { spark: 0xffd060, spark2: 0xc01a10, kind: 'flame' },
   foxfire: { spark: 0xd8f8ff, spark2: 0x2a5ae0, kind: 'flame' },
+  wildwood: { spark: 0xfff07a, spark2: 0x2ec27a, kind: 'twinkle' },
+  abyssal: { spark: 0xe0fff8, spark2: 0x2a8ab8, kind: 'twinkle' },
+  clockwork: { spark: 0xfff0c0, spark2: 0x3ab8e0, kind: 'twinkle' },
 };
 
 type Layer = 'back' | 'front';
@@ -23,6 +26,9 @@ const C = {
   gold: css(0xf0c040), goldHi: css(0xfff0a0), lapis: css(0x3a6ae0), sun: css(0xffd870),
   ember: css(0x8a1a10), fire: css(0xff6a1a), fireHi: css(0xffd060), crack: css(0x3a0c0a),
   fox: css(0x4aa8ff), foxHi: css(0xd8f8ff), foxDeep: css(0x2a5ae0),
+  sea: css(0x2a8ab8), seaHi: css(0x9af0ff), foam: css(0xe8fbff), bio: css(0x5affe0),
+  brass: css(0xd8a040), brassHi: css(0xffe0a0), brassDk: css(0x6a4a1a), steam: css(0xe8ecf0), core: css(0x6af0ff),
+  grass: css(0x4aa83a), grassHi: css(0x8ad860), bloom: css(0xf6a8c8), fly: css(0xfff07a), flyDim: css(0xa8c040),
 };
 
 /** Points of a ground ellipse, split into the half behind the feet and the half in front. */
@@ -99,7 +105,84 @@ function foxfire(g: G, x: number, y: number, t: number, layer: Layer): void {
   }
 }
 
-const DRAW: Record<SkinSetId, (g: G, x: number, y: number, t: number, layer: Layer) => void> = { sunborn, hellforged, foxfire };
+function wildwood(g: G, x: number, y: number, t: number, layer: Layer): void {
+  // A ring of grass and blossoms springs up around the feet, swaying.
+  ring(g, x, y, 15, 3.6, 22, layer, (g, px, py, i) => {
+    const lean = Math.sin(t * 2.4 + i * 0.8) > 0.3 ? 1 : 0;
+    const h = 2 + (i % 3);
+    g.fillStyle = C.grass; g.fillRect(px, py - h + 1, 1, h);
+    g.fillStyle = C.grassHi; g.fillRect(px + lean, py - h, 1, 1);
+    if (i % 5 === 1) { g.fillStyle = C.bloom; g.fillRect(px - 1 + lean, py - h - 1, 3, 1); g.fillRect(px + lean, py - h - 2, 1, 3); }
+  });
+  // Fireflies drifting in slow loops around the fighter, blinking.
+  for (let k = 0; k < 6; k++) {
+    const a = t * (0.6 + k * 0.09) + k * 1.9;
+    const s = Math.sin(a);
+    if ((s < 0) !== (layer === 'back')) continue;
+    const px = Math.round(x + Math.cos(a) * (12 + (k % 3) * 3)), py = Math.round(y - 10 - k * 6 + Math.sin(t * 1.3 + k) * 3 + s * 2);
+    const on = Math.sin(t * 3 + k * 2.3) > -0.3;
+    g.fillStyle = on ? C.fly : C.flyDim;
+    g.fillRect(px, py, 1, 1);
+    if (on) { g.globalAlpha = 0.5; g.fillRect(px - 1, py, 3, 1); g.fillRect(px, py - 1, 1, 3); g.globalAlpha = 1; }
+  }
+}
+
+function abyssal(g: G, x: number, y: number, t: number, layer: Layer): void {
+  // Two ripples of water spreading out from the feet and fading, one after the other.
+  for (let k = 0; k < 2; k++) {
+    const u = (t * 0.55 + k * 0.5) % 1;
+    g.globalAlpha = 0.85 * (1 - u);
+    g.fillStyle = u < 0.3 ? C.seaHi : C.sea;
+    const n = 30 + Math.round(u * 16);
+    ring(g, x, y, 9 + u * 10, 2.2 + u * 2.4, n, layer, (g, px, py, i) => { if (i % 3) g.fillRect(px, py, 1, 1); });
+  }
+  g.globalAlpha = 1;
+  // Bubbles rising around the fighter, wobbling, popping at the top.
+  for (let k = 0; k < 7; k++) {
+    const a = k * 2.4 + t * 0.3;
+    const s = Math.sin(a);
+    if ((s < 0) !== (layer === 'back')) continue;
+    const u = (t * (0.32 + (k % 3) * 0.06) + k * 0.37) % 1;
+    const px = Math.round(x + Math.cos(a) * (10 + (k % 3) * 3) + Math.sin(t * 4 + k) * 1.2), py = Math.round(y + s * 3 - u * 52);
+    if (u > 0.94) { g.fillStyle = C.foam; g.fillRect(px - 1, py, 1, 1); g.fillRect(px + 1, py, 1, 1); g.fillRect(px, py - 1, 1, 1); continue; }
+    g.fillStyle = k % 3 ? C.seaHi : C.bio;
+    if (k % 2) { g.fillRect(px - 1, py, 3, 1); g.fillRect(px, py - 1, 1, 3); g.fillStyle = C.foam; g.fillRect(px, py - 1, 1, 1); }
+    else g.fillRect(px, py, 1, 1);
+  }
+}
+
+function clockwork(g: G, x: number, y: number, t: number, layer: Layer): void {
+  // A brass gear-tooth ring turning under the feet, with an arcane core light on each spoke.
+  const step = Math.floor(t * 8);
+  ring(g, x, y, 16, 3.8, 48, layer, (g, px, py, i) => {
+    const tooth = (i + step) % 4 < 2;
+    g.fillStyle = tooth ? C.brass : C.brassDk;
+    g.fillRect(px, py, 1, 1);
+    if (tooth) { g.fillStyle = C.brassHi; g.fillRect(px, py - 1, 1, 1); }
+  });
+  for (let k = 0; k < 4; k++) {
+    const a = -t * 0.8 + (k * Math.PI) / 2, s = Math.sin(a);
+    if ((s < 0) !== (layer === 'back')) continue;
+    const px = Math.round(x + Math.cos(a) * 16), py = Math.round(y + s * 3.8);
+    g.fillStyle = C.brassDk; g.fillRect(px - 1, py - 1, 3, 3);
+    g.fillStyle = C.core; g.fillRect(px, py, 1, 1);
+  }
+  // Puffs of steam venting up off the ring, now on one side, now the other.
+  if (layer === 'front') {
+    for (let k = 0; k < 3; k++) {
+      const u = (t * 0.9 + k / 3) % 1;
+      const side = (Math.floor(t * 0.9 + k / 3) + k) % 2 ? 1 : -1;
+      const px = Math.round(x + side * (13 - k * 2) + u * side * 3), py = Math.round(y - 1 - u * 16);
+      g.globalAlpha = 0.7 * (1 - u);
+      g.fillStyle = C.steam;
+      const w = 1 + Math.round(u * 3);
+      g.fillRect(px - (w >> 1), py, w, 2); g.fillRect(px - (w >> 1) + 1, py - 1, Math.max(1, w - 2), 1);
+    }
+    g.globalAlpha = 1;
+  }
+}
+
+const DRAW: Record<SkinSetId, (g: G, x: number, y: number, t: number, layer: Layer) => void> = { sunborn, hellforged, foxfire, wildwood, abyssal, clockwork };
 
 /** Draws one layer of a set's aura around feet at (x, y) art pixels; `t` is seconds. */
 export function drawSetAura(g: G, set: SkinSetId, x: number, y: number, t: number, layer: Layer): void {

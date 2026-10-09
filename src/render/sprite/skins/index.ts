@@ -7,6 +7,9 @@ import type { Xf } from '../xform';
 import { FOXFIRE } from './foxfire';
 import { HELLFORGED } from './hellforged';
 import { SUNBORN } from './sunborn';
+import { WILDWOOD } from './wildwood';
+import { ABYSSAL } from './abyssal';
+import { CLOCKWORK } from './clockwork';
 import {
   geodeHeart, icicleScepter, kagutsuchi, krakenConch, lionheart, morningstar, skullcrusher, solarDisc, swordbreaker,
   frostreaver, voidfang, wintersHeart, wyrmRepeater,
@@ -51,7 +54,7 @@ export interface SkinArt {
   icon?: (r: Raster, t: Xf, m: (k: string) => number) => void;
   /**
    * Epic items: reshaped battle sprites, by sprite id (an item's projectiles,
-   * the meteor sigil, the familiar's `lantern`, thrown weapons). Each brings
+   * the meteor sigil, the familiar's `lantern`, a floating `core`, thrown weapons). Each brings
    * its own materials.
    */
   proj?: Partial<Record<string, ProjArt>>;
@@ -329,4 +332,7 @@ export const SKIN_ART: Record<string, SkinArt> = {
   ...SUNBORN,
   ...HELLFORGED,
   ...FOXFIRE,
+  ...WILDWOOD,
+  ...ABYSSAL,
+  ...CLOCKWORK,
 };
