@@ -5,7 +5,8 @@
  */
 export type Sfx =
   | 'swing' | 'swingHeavy' | 'hit' | 'hitHeavy' | 'crit' | 'block' | 'parry' | 'cast' | 'castBig'
-  | 'explosion' | 'lightning' | 'whoosh' | 'freeze' | 'ko' | 'revive' | 'shield' | 'roar' | 'ui' | 'start' | 'win';
+  | 'explosion' | 'lightning' | 'whoosh' | 'freeze' | 'ko' | 'revive' | 'shield' | 'roar' | 'ui' | 'start' | 'win'
+  | 'select' | 'back' | 'equip' | 'confirm';
 
 class AudioEngine {
   private ctx: AudioContext | null = null;
@@ -161,6 +162,21 @@ class AudioEngine {
         this.burst(t, 0.5, 0.35 * k, 'bandpass', 500, 300, 1.5, pan);
         break;
       case 'ui': this.tone('triangle', 660, 880, t, 0.06, 0.12); break;
+      // Menu picks: a two-note blip up, a soft step down, a metal clink, a little fanfare.
+      case 'select':
+        this.tone('square', 520, 520, t, 0.05, 0.05);
+        this.tone('square', 780, 780, t + 0.05, 0.07, 0.05);
+        break;
+      case 'back': this.tone('triangle', 520, 330, t, 0.09, 0.12); break;
+      case 'equip':
+        this.burst(t, 0.12, 0.18, 'highpass', 3000, 5000, 2);
+        this.tone('triangle', 1320, 990, t, 0.14, 0.08);
+        this.tone('square', 330, 300, t, 0.06, 0.04);
+        break;
+      case 'confirm':
+        [392, 523, 659].forEach((f, i) => this.tone('square', f, f, t + i * 0.06, 0.12, 0.05));
+        this.tone('triangle', 784, 784, t + 0.18, 0.3, 0.1);
+        break;
       case 'start':
         this.tone('sawtooth', 220, 110, t, 0.6, 0.15);
         this.burst(t, 0.6, 0.4, 'lowpass', 800, 100, 0.6);

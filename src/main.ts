@@ -14,6 +14,8 @@ import { hpRatio } from './sim/fighter';
 import { DEFAULT_BUILDS, sanitizeBuild } from './sim/loadout';
 import type { BattleEvent } from './sim/types';
 import { creatorSheet } from './ui/creator';
+import { installFrames } from './ui/frames';
+import { TitleScreen } from './ui/title';
 import { save, store } from './ui/dom';
 import { setupPhoneFullscreen } from './ui/fullscreen';
 import { gearSheet } from './ui/gear';
@@ -32,6 +34,7 @@ import { MATCH_TIME } from './sim/constants';
 
 type State = 'menu' | 'intro' | 'battle' | 'results';
 
+installFrames();
 const app = document.getElementById('app')!;
 const ui = document.getElementById('ui')!;
 const screen = new Screen(app);
@@ -70,8 +73,12 @@ save('al.rival', rival);
 // --- UI pieces ---------------------------------------------------------------------------
 let state: State = 'menu';
 let sheet: { el: HTMLElement; dispose(): void } | null = null;
-/** A full screen (creator, gear) hides the arena: skip drawing it until it closes. */
+/** A full screen (creator, gear) hides the arena: it stays frozen behind it, so skip drawing it until it closes. */
 let covered = false;
+/** The arena has been drawn at least once (so a full screen opened at boot has a backdrop). */
+let painted = false;
+/** The title screen is up (before the first tap). */
+let title: TitleScreen | null = null;
 let resultsEl: HTMLElement | null = null;
 
 const hud = new Hud({
@@ -170,7 +177,13 @@ function closeSheet(): void {
   sheet?.dispose();
   sheet?.el.remove();
   sheet = null;
-  covered = false;
+  setCovered(false);
+}
+
+/** A full screen is up: the arena freezes behind it and the menu and version label step aside. */
+function setCovered(on: boolean): void {
+  covered = on;
+  ui.classList.toggle('covered', on);
 }
 
 function openCreator(first = false): void {
@@ -188,7 +201,7 @@ function openCreator(first = false): void {
     onCancel: first ? undefined : () => closeSheet(),
   });
   ui.append(sheet.el);
-  covered = true;
+  setCovered(true);
 }
 
 function openGear(): void {
@@ -200,7 +213,7 @@ function openGear(): void {
     onClose: () => { closeSheet(); refreshMenu(); },
   });
   ui.append(sheet.el);
-  covered = true;
+  setCovered(true);
 }
 
 // --- Background duel behind the menu -------------------------------------------------------
@@ -465,7 +478,7 @@ function openDraftGear(): void {
     onClose: () => closeSheet(),
   }, { forms: true, title: `Round ${s.snap.round} build` });
   ui.append(sheet.el);
-  covered = true;
+  setCovered(true);
 }
 
 /** Both builds are in: play the round from the host's seed. */
@@ -523,7 +536,7 @@ function loop(now: number): void {
     if (session) pick.tick();
     if (demoWait > 0 && (demoWait -= dt) <= 0) startDemo();
   }
-  if (!covered) view.frame(dt);
+  if (!covered || !painted) { view.frame(dt); painted = true; }
   if (state !== 'menu') hud.update(view.paused ? 0 : dt * speed);
   if (state === 'battle' && battle) {
     const [a, b] = battle.fighters;
@@ -534,7 +547,7 @@ function loop(now: number): void {
 
 // --- Input -----------------------------------------------------------------------------------
 window.addEventListener('keydown', (e) => {
-  if (e.target instanceof HTMLInputElement || sheet) return;
+  if (e.target instanceof HTMLInputElement || sheet || title) return;
   if (state === 'menu' && e.key === 'Enter' && !session) startFight();
   else if (state === 'battle') {
     if (e.key === ' ') { e.preventDefault(); togglePause(); }
@@ -567,7 +580,23 @@ toMenu();
   }
   if (code.length === CODE_LENGTH) startOnline('guest', code);
   else if (saved && player) startOnline(saved.role, saved.code, saved);
-  else if (!player) openCreator(true);
+  else showTitle();
+}
+
+/** The title over the live arena; the first tap opens the menu, or character creation for a new player. */
+function showTitle(): void {
+  menu.el.hidden = true;
+  title = new TitleScreen(() => {
+    title = null;
+    sfx.unlock();
+    sfx.play('confirm');
+    if (!player) { openCreator(true); menu.el.hidden = false; return; }
+    menu.el.hidden = false;
+    menu.el.classList.remove('enter');
+    void menu.el.offsetWidth;
+    menu.el.classList.add('enter');
+  });
+  ui.append(title.el);
 }
 requestAnimationFrame((t) => {
   last = t;

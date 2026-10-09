@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.27.0',
+    date: '2026-10-09',
+    title: 'A real game menu',
+    notes: [
+      'New title screen: the Arena Legends logo over the live arena. Tap to start.',
+      'Creating your hero is now a four-step character select: Species, Body, Look and Name. Your fighter stands big under a spotlight, and the arrows beside them flip through species and bodies.',
+      'The gear screen is now the Armory, with item sockets and a gold cursor on what you have equipped.',
+      'Every menu got a new pixel-art look: gold and iron framed panels, red ribbon titles, chunky buttons that press down, new menu sounds and smooth transitions.',
+    ],
+  },
+  {
     version: '0.26.0',
     date: '2026-10-09',
     title: 'Three new epic sets',

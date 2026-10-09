@@ -56,7 +56,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
       const on = stage.classList.toggle('show-stats');
       statsBtn.classList.toggle('on', on);
       statsBtn.setAttribute('aria-pressed', String(on));
-      sfx.play('ui');
+      sfx.play('select');
     },
   }, icon('body'), 'Stats');
   const stage = h('section.scr-stage.doll-stage', null, stageBox, dollL, dollR, h('div.stage-tools', null, statsBtn), stats);
@@ -64,7 +64,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
   const forms = h('div.field.forms-row');
   const slotHead = h('div.slot-head');
   const list = h('div.items');
-  const panel = h('section.scr-panel', null, opts.forms ? forms : null, slotHead, list);
+  const panel = h('section.scr-panel.frame', null, opts.forms ? forms : null, slotHead, list);
 
   const skinOf = (id: GearId) => skinOn(c.skins, id);
   const iconOf = (id: GearId | null | undefined, px?: number) => {
@@ -75,7 +75,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
 
   function save(next: PlayerCharacter, move: boolean): void {
     c = next;
-    sfx.play('ui');
+    sfx.play(move ? 'equip' : 'select');
     cb.onChange(c);
     preview.set(c);
     if (move) preview.showcase();
@@ -127,7 +127,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
   function show(id: GearId | null, from?: Element): void {
     if (from) anchor = cellOf(from);
     open = open === id ? null : id;
-    sfx.play('ui');
+    sfx.play(open ? 'select' : 'back');
     render();
   }
 
@@ -135,7 +135,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     if (s === slot) return;
     slot = s;
     open = null;
-    sfx.play('ui');
+    sfx.play('select');
     panel.scrollTop = 0;
     render();
   }
@@ -145,7 +145,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     return h(`button.slot${s === slot ? '.on' : ''}${id ? '' : '.empty'}`, {
       title: id ? `${SLOT_NAMES[s]}: ${gearOf(id).name}` : SLOT_NAMES[s], 'aria-pressed': String(s === slot),
       onclick: () => pickSlot(s),
-    }, iconOf(id), h('small', null, SHORT[s]));
+    }, h('span.sock', null, iconOf(id)), h('small', null, SHORT[s]));
   }
 
   function tile(id: GearId | null): HTMLElement {
@@ -155,7 +155,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     return h(`button.itile.r-${g?.rarity ?? 'none'}${on ? '.on' : ''}`, {
       'aria-pressed': String(on), title: g ? g.name : 'Leave this slot empty',
       onclick: (e: MouseEvent) => (id ? show(id, e.currentTarget as Element) : equip(null)),
-    }, iconOf(id), h('b', null, g ? g.name : 'None'));
+    }, h('span.sock', null, iconOf(id)), h('b', null, g ? g.name : 'None'));
   }
 
   /** The item grid's resolved tracks (px), read from the live layout. */
@@ -219,7 +219,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
       onclick: (e: MouseEvent) => { if (!(e.target as Element).closest('button')) show(id); },
     },
       h('div.icard-head', null,
-        iconOf(id),
+        h('span.sock', null, iconOf(id)),
         h('div.icard-title', null,
           h('b', null, g.name),
           h('small', null, h(`span.r-${g.rarity}`, null, g.rarity), hands ? ` · ${hands}` : '', g.passive ? ` · Passive: ${g.passive}` : ''))),
@@ -252,14 +252,14 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     }
     dollL.replaceChildren(...LEFT.map(slotBtn));
     dollR.replaceChildren(...RIGHT.map(slotBtn));
-    slotHead.replaceChildren(h('h2', null, SLOT_NAMES[slot]), h('p', null, SLOT_INFO[slot]));
+    slotHead.replaceChildren(h('div.ribbon', null, h('span', null, SLOT_NAMES[slot])), h('p', null, SLOT_INFO[slot]));
     const ids = gearIdsFor(slot) as GearId[];
     list.replaceChildren(...(slot === 'main' ? [] : [tile(null)]), ...ids.map(tile));
     stats.replaceChildren(...statLines(c.form, c.gear));
   }
 
   render();
-  const close = () => { sfx.play('ui'); cb.onClose(); };
+  const close = () => { sfx.play('back'); cb.onClose(); };
   const onKey = (e: KeyboardEvent) => {
     if (e.key !== 'Escape') return;
     if (open) show(open);
@@ -269,9 +269,9 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
   // The column count changes with the window: keep an open card inside the grid.
   const onResize = () => { const card = list.querySelector<HTMLElement>('.icard'); if (card) place(card); };
   window.addEventListener('resize', onResize);
-  const el = h('div.scr.gear', { role: 'dialog', 'aria-label': opts.title ?? 'Gear' },
+  const el = h('div.scr.gear', { role: 'dialog', 'aria-label': opts.title ?? 'Armory' },
     h('header.scr-head', null,
-      h('div.scr-title', null, h('h1', null, opts.title ?? 'Gear'), h('small', null, 'Pick a slot, then tap an item. Changes save at once.')),
+      h('div.scr-title', null, h('h1', null, opts.title ?? 'Armory')),
       h('div.grow'),
       h('button.btn.primary.done', { onclick: close }, icon('check'), 'Done')),
     stage, panel,
