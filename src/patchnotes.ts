@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.18.0',
+    date: '2026-10-09',
+    title: 'Steadier screen shake',
+    notes: [
+      'Big hits now shake only the arena itself: the island, the fighters and the effects. The sky, the sun and the floating islands in the distance stay still, so heavy blows feel like they hit the ground instead of the whole screen.',
+      'The same goes for every arena: the stands and floor jolt, the sky and mountains behind them stay put.',
+    ],
+  },
+  {
     version: '0.17.0',
     date: '2026-10-09',
     title: 'Less health for every body',
