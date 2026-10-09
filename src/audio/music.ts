@@ -10,11 +10,11 @@ class Music {
   private score: Score | null = null;
   private timer = 0;
   private soundOn = true;
-  private musicOn = true;
   private paused = false;
-  readonly volume = 0.4;
+  /** Output gain: 0.4 at full sliders. */
+  private volume = 0.4;
 
-  private get on(): boolean { return this.soundOn && this.musicOn; }
+  private get on(): boolean { return this.soundOn && this.volume > 0; }
 
   private ensure(): Score | null {
     const ctx = sfx.context, noise = sfx.noiseBuffer;
@@ -38,9 +38,10 @@ class Music {
     pump();
   }
 
-  setEnabled(sound: boolean, music: boolean): void {
+  /** `level` 0..1 is master x music slider; 0 stops the music. */
+  setEnabled(sound: boolean, level: number): void {
     this.soundOn = sound;
-    this.musicOn = music;
+    this.volume = 0.4 * level;
     const ctx = sfx.context;
     if (this.score && ctx) this.score.out.gain.setTargetAtTime(this.on ? this.volume : 0, ctx.currentTime, 0.05);
     if (!this.on) this.score?.stop();
