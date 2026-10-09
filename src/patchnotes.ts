@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.32.1',
+    date: '2026-10-09',
+    title: 'Accounts work',
+    notes: [
+      'Creating an account no longer fails with "Accounts aren\'t switched on for this game yet".',
+    ],
+  },
+  {
     version: '0.32.0',
     date: '2026-10-09',
     title: 'Five new epic sets, and legs for every set',
