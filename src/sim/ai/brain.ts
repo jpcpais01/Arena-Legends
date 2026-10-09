@@ -873,7 +873,7 @@ export class Brain implements FighterBrain {
         }
         case 'armor': {
           if (t.tti < startup) return null;
-          val = t.danger * 0.55 + (c.cornered ? 0.03 : 0) + (t.heavy ? 0.02 : 0);
+          val = t.danger * 0.55 + (c.cornered ? 0.03 : 0) + (t.heavy ? 0.02 : 0) + this.cleanseValue(ab);
           why = `${ab.name} to tank it.`;
           break;
         }
@@ -896,6 +896,11 @@ export class Brain implements FighterBrain {
 
     // No incoming hit: proactive uses.
     const pressured = c.dist < this.m.engage + 0.8 && f.sinceHurt < 1;
+    const wash = this.cleanseValue(ab);
+    if (wash > 0.02 && !(c.threat && c.threat.tti < startup + 0.1)) {
+      val = wash;
+      why = `${ab.name} washes it off.`;
+    }
     if (info.defense === 'armor') {
       if (pressured && (this.plan === 'pressure' || this.plan === 'allin' || c.cornered)) {
         val = 0.03 + p.aggression * 0.02;
@@ -912,6 +917,21 @@ export class Brain implements FighterBrain {
       }
     }
     return val > 0 ? { val, why } : null;
+  }
+
+  /** Value of washing off what's on me now (stoneskin elixir). */
+  private cleanseValue(ab: AbilityInfo['ab']): number {
+    if (!ab.cleanse) return 0;
+    const f = this.f;
+    let v = 0;
+    for (const s of f.statuses) {
+      const fx = STATUS_FX[s.id];
+      if (!fx) continue;
+      if (fx.dot) v += fx.dot * s.stacks * s.remaining * 0.01;
+      if (fx.taken && fx.taken > 0) v += fx.taken * s.remaining * 0.02;
+      if (fx.move && fx.move < 0) v += -fx.move * s.stacks * s.remaining * 0.02;
+    }
+    return v;
   }
 
   private scoreBuff(info: AbilityInfo, c: Ctx): { val: number; why: string } | null {
@@ -934,9 +954,23 @@ export class Brain implements FighterBrain {
     }
     if (ab.heal) {
       const missing = 1 - c.myHp;
-      val += Math.min(ab.heal, missing) * f.stats.healMult * 0.8;
-      if (missing > 0.3) why = why || 'Catches a breath.';
+      // A potion is precious: drink it when it heals in full, or in an emergency.
+      const waste = ab.uses ? missing < ab.heal * 0.9 && c.myHp > 0.3 : false;
+      if (!waste) val += Math.min(ab.heal, missing) * f.stats.healMult * 0.8;
+      if (missing > 0.3) why = why || (ab.uses ? `${ab.name}!` : 'Catches a breath.');
     }
+    if (ab.energyGain) {
+      // Worth it when it brings a big move (an item ultimate or an expensive skill) within reach.
+      let want = 0;
+      for (const o of this.kit.info) if (o.ab.cost > 0 && o.idx !== info.idx) want = Math.max(want, o.ab.cost * (o.ultimate ? 1.6 : 1));
+      const gain = Math.min(ab.energyGain, Math.max(0, 100 - f.energy));
+      if (want > 0 && f.energy < want && gain >= ab.energyGain * 0.8) {
+        val += (gain / 100) * 0.05 * (want >= 100 ? 1.5 : 1);
+        why = why || `${ab.name} for the big one.`;
+      }
+    }
+    // Limited uses: don't spend them outside the fight.
+    if (ab.uses && !inFight && !ab.heal) val *= 0.5;
     if (val <= 0) return null;
     const lock = (ab.windup + ab.active) / f.stats.attackSpeed;
     if (c.threat && c.threat.tti < lock + 0.1) val *= 0.15;

@@ -3,13 +3,13 @@ import { clamp } from '../core/math';
 import type { Battle } from '../sim/battle';
 import { ARENA_HALF_WIDTH, DT, ROUND_TIME } from '../sim/constants';
 import { getStatus, type Fighter } from '../sim/fighter';
-import type { BattleEvent, FighterId, Projectile, ProjectileStyle } from '../sim/types';
+import type { ActionState, BattleEvent, FighterId, Projectile, ProjectileStyle, UsableId } from '../sim/types';
 import { ArenaView } from './arena';
 import { THEMES, type Theme } from './arenaArt';
 import { drawText } from './font';
 import { Fx, type View } from './fx';
 import { css, mix } from './pixel/color';
-import { projFrames, projSprite, skinDraws } from './projArt';
+import { bottleSprite, projFrames, projSprite, skinDraws } from './projArt';
 import { drawSetAura, SET_FX } from './setAura';
 import type { Screen } from './screen';
 import { Animator, PPM, type AnimOut } from './sprite/animator';
@@ -20,6 +20,7 @@ import type { SkinFx } from './sprite/skins';
 const STYLE_COLOR: Record<ProjectileStyle, number> = {
   arcane: 0xc58cff, hex: 0xa04aff, wave: 0xd8f4ff, groundwave: 0xc8a070, meteor: 0xff7a1a, arrow: 0xf0e0c0,
   knife: 0xd0d8e8, bolt: 0xd0d8e8, fire: 0xff9a3a, flamewave: 0xff7a2a, chakram: 0xb8e4f0, wisp: 0x7ae8ff,
+  flask: 0xff8a2a,
 };
 
 interface FighterView {
@@ -72,6 +73,10 @@ export class BattleView implements View {
   private fighters: FighterView[] = [];
   /** Skinned special item shots: their colours, for the burst when they end. */
   private projGlow = new Map<number, [number, number]>();
+  /** Sound and effect cues tied to a moment inside an action (the cork popping, the bottle tossed). */
+  private cues: { f: FighterId; action: ActionState; due: (a: ActionState) => boolean; run: () => void }[] = [];
+  /** Empty bottles flying away after a drink. */
+  private bottles: { id: UsableId; x: number; y: number; vx: number; vy: number; t: number }[] = [];
   private acc = 0;
   private alpha = 0;
   speed = 1;
@@ -125,6 +130,8 @@ export class BattleView implements View {
       };
     });
     this.fx.clear();
+    this.cues.length = 0;
+    this.bottles.length = 0;
     this.acc = 0;
     this.ended = false;
     this.slow = 1;
@@ -312,6 +319,8 @@ export class BattleView implements View {
     for (const id of order) this.drawFighter(g, b.fighters[id], this.fighters[id], dt, secOut(id));
     for (const f of b.fighters) this.drawItem(g, f);
     for (const p of b.projectiles) if (p.alive) this.drawProjectile(g, p);
+    this.runCues();
+    this.drawBottles(g, dt);
     this.arena!.light(g, cam, this.time);
     this.fx.draw(g, this);
     if (this.flashT > 0) {
@@ -328,7 +337,9 @@ export class BattleView implements View {
     this.lastDt = dt;
     const x = this.lx(f), y = this.ly(f);
     const over = b.over;
-    v.out = v.anim.update(f, x, dt, over, b.winner === f.id, secOut);
+    // The belt is empty once every use of the usable item is spent.
+    const useOut = f.uses.some((u, i) => u === 0 && f.abilities[i].from === 'usable');
+    v.out = v.anim.update(f, x, dt, over, b.winner === f.id, secOut, useOut);
     const o = v.out;
     const s = v.bank.get(o);
     const flip = f.facing < 0;
@@ -510,11 +521,42 @@ export class BattleView implements View {
     }
   }
 
+  /** Fires cues whose moment in the action has come; drops those whose action is over. */
+  private runCues(): void {
+    const b = this.battle!;
+    for (let i = this.cues.length - 1; i >= 0; i--) {
+      const c = this.cues[i];
+      const f = b.fighters[c.f];
+      if (f.action !== c.action) { this.cues.splice(i, 1); continue; }
+      if (c.due(c.action)) { c.run(); this.cues.splice(i, 1); }
+    }
+  }
+
+  /** Empty bottles tumbling over the shoulder, smashing where they land. */
+  private drawBottles(g: CanvasRenderingContext2D, dt: number): void {
+    for (let i = this.bottles.length - 1; i >= 0; i--) {
+      const o = this.bottles[i];
+      o.t += dt;
+      o.vy -= 22 * dt;
+      o.x += o.vx * dt;
+      o.y += o.vy * dt;
+      if (o.y <= 0.08) {
+        this.bottles.splice(i, 1);
+        this.fx.burst({ x: o.x, y: 0.12, count: 9, dir: Math.PI / 2, spread: 1.2, speed: [1.5, 4], life: [0.25, 0.5], color: 0xf0fbff, color2: 0x9ab8c8, gravity: 16, size: 1 });
+        this.play('glass', this.pan(o.x), 0.5);
+        continue;
+      }
+      const s = bottleSprite(o.id, Math.floor(o.t * 22) * Math.sign(o.vx || 1));
+      g.drawImage(s.img, Math.round(this.sx(o.x)) - s.ox, Math.round(this.sy(o.y)) - s.oy);
+    }
+  }
+
   private drawProjectile(g: CanvasRenderingContext2D, p: Projectile): void {
     const x = p.px + (p.x - p.px) * this.alpha, y = p.py + (p.y - p.py) * this.alpha;
     const style = p.style;
     let ang = Math.atan2(p.vy, p.vx);
     if (p.ground || style === 'chakram' || style === 'hex' || style === 'fire' || style === 'arcane' || style === 'wisp') ang = p.vx < 0 ? Math.PI : 0;
+    if (style === 'flask') ang = 0; // tumbles on its own
     if (style === 'flamewave' || style === 'groundwave') ang = p.vx < 0 ? Math.PI : 0;
     const thrower = this.fighters[p.owner]?.art;
     // Meteors and wisp shots come from the special item, in its skin's colours.
@@ -558,6 +600,37 @@ export class BattleView implements View {
     return clamp((x - this.camX) / 8, -0.8, 0.8);
   }
 
+  /** Cues for using an item: the cork pops as the flask comes up, the empty bottle flies off after. */
+  private useCues(id: FighterId, anim: string): void {
+    const f = this.battle!.fighters[id];
+    const a = f.action;
+    if (!a) return;
+    const art = this.fighters[id]?.art;
+    if (anim === 'drink') {
+      this.cues.push({ f: id, action: a, due: (x) => x.phase !== 'windup' || x.t >= x.draw + (x.windup - x.draw) * 0.3, run: () => this.play('cork', this.pan(f.x), 0.8) });
+      this.cues.push({
+        f: id, action: a,
+        due: (x) => x.phase === 'recovery' && x.t >= (x.recovery - x.stow) * 0.4,
+        run: () => {
+          if (!art?.useId) return;
+          this.bottles.push({ id: art.useId, x: f.x - f.facing * 0.1, y: 1.9, vx: -f.facing * (2.4 + Math.random()), vy: 4.5 + Math.random(), t: 0 });
+          this.play('whoosh', this.pan(f.x), 0.4);
+        },
+      });
+    } else this.play('whoosh', this.pan(f.x), 0.5);
+  }
+
+  /** The potion takes effect: its colour swirls up around the drinker. */
+  private drinkFx(id: FighterId): void {
+    const f = this.battle!.fighters[id];
+    const c = this.fighters[id]?.art.use?.glow ?? [0xffffff, 0xc0c0c0];
+    const fx = this.fx;
+    this.play('gulp', this.pan(f.x));
+    fx.pulse('ring', f.x, 1.1, 1.3, c[0], 0.4);
+    fx.burst({ x: f.x, y: 0.4, count: 22, jitter: 0.45, dir: Math.PI / 2, spread: 0.35, speed: [1.5, 3.5], life: [0.5, 0.9], color: c[0], color2: c[1], drag: 1.5, kind: 'twinkle' });
+    fx.burst({ x: f.x, y: 1.0, count: 10, jitter: 0.3, speed: [2, 4], life: [0.2, 0.4], color: 0xffffff, color2: c[0], drag: 3, kind: 'streak' });
+  }
+
   private handle(e: BattleEvent): void {
     this.listener?.onEvent?.(e);
     const b = this.battle!;
@@ -566,6 +639,10 @@ export class BattleView implements View {
       case 'actionStart': {
         const f = b.fighters[e.f];
         const ab = f.abilities[e.ability];
+        if (ab.from === 'usable') {
+          this.useCues(e.f, ab.anim);
+          break;
+        }
         if (ab.slot === 'evade') {
           fx.burst({ x: f.x, y: 0.1, count: 5, jitter: 0.3, dir: Math.PI / 2, spread: 1, speed: [0.5, 1.5], life: [0.3, 0.5], color: 0xc8b8a0, color2: 0x8a7a70, kind: 'smoke', size: 3 });
           this.play('whoosh', this.pan(f.x), 0.7);
@@ -585,7 +662,8 @@ export class BattleView implements View {
         const f = b.fighters[e.f];
         const ab = f.abilities[e.ability];
         if (ab.kind === 'melee' || (ab.kind === 'dash' && ab.slot !== 'evade')) this.play(ab.heavy ? 'swingHeavy' : 'swing', this.pan(f.x));
-        if (ab.kind === 'buff') {
+        if (ab.kind === 'buff' && ab.from === 'usable') this.drinkFx(e.f);
+        else if (ab.kind === 'buff') {
           const col = ab.id === 'war_cry' || ab.anim === 'horn' ? 0xff5030 : ab.anim === 'harden' ? 0xe8eef8 : 0xffd76b;
           fx.pulse('ring', f.x, 1.1, 1.6, col, 0.4);
           fx.burst({ x: f.x, y: 1.1, count: 18, speed: [3, 6], life: [0.25, 0.5], color: col, drag: 3, kind: 'streak' });
@@ -645,6 +723,29 @@ export class BattleView implements View {
         if (e.amount >= 15) fx.pop(`+${fmt(e.amount)}`, f.x, this.fighters[e.f].headY, { color: '#8aff9a', shade: '#3ac860' }, 0.8);
         break;
       }
+      case 'used':
+        break;
+      case 'cleanse': {
+        const f = b.fighters[e.f];
+        fx.burst({ x: f.x, y: 1.0, count: 16, jitter: 0.35, jitterY: 0.6, dir: Math.PI / 2, spread: 0.5, speed: [1, 3], life: [0.4, 0.7], color: 0xffffff, color2: 0xc8e8ff, kind: 'twinkle' });
+        fx.pop('CLEANSED', f.x, this.fighters[e.f].headY + 0.35, { color: '#e8f4ff' }, 0.9);
+        break;
+      }
+      case 'energy': {
+        const f = b.fighters[e.f];
+        fx.burst({ x: f.x, y: 1.0, count: 20, jitter: 0.3, dir: Math.PI / 2, spread: 0.35, speed: [2, 5], life: [0.3, 0.6], color: 0xfffbe0, color2: 0xffc020, drag: 2, kind: 'streak' });
+        if (e.amount > 0) fx.pop(`+${e.amount} ENERGY`, f.x, this.fighters[e.f].headY + 0.35, { color: '#ffe060', shade: '#c08a10' }, 0.9);
+        this.play('cast', this.pan(f.x), 0.6);
+        break;
+      }
+      case 'secondWind': {
+        const f = b.fighters[e.f];
+        fx.pulse('ring', f.x, 1.0, 1.4, 0xff3a4a, 0.4);
+        fx.burst({ x: f.x, y: 0.8, count: 30, jitter: 0.4, speed: [2, 6], life: [0.4, 0.8], color: 0xffb0b8, color2: 0xc0102a, gravity: -2, drag: 2, kind: 'ember' });
+        fx.pop('SECOND WIND!', f.x, this.fighters[e.f].headY + 0.4, { color: '#ff6a7a', scale: 2, shade: '#a01020' }, 1.1);
+        this.play('roar', this.pan(f.x), 0.7);
+        break;
+      }
       case 'shield':
         fx.pulse('ring', b.fighters[e.f].x, 1.0, 0.9, 0xffd76b, 0.35);
         this.play('shield', this.pan(b.fighters[e.f].x));
@@ -700,6 +801,17 @@ export class BattleView implements View {
         break;
       case 'shockwave': {
         const met = e.style === 'meteor' ? this.glow(e.f, 0xffe070, 0xc83a1a) : null;
+        if (e.style === 'flask') {
+          // Alchemist fire: the flask shatters into a splash of flame.
+          fx.pulse('groundRing', e.x, 0, e.radius * 1.1, 0xff8a2a, 0.45);
+          fx.pulse('star', e.x, 0.5, 0.7, 0xfff0a0, 0.15);
+          fx.burst({ x: e.x, y: 0.3, count: 34, jitter: e.radius * 0.5, dir: Math.PI / 2, spread: 1.0, speed: [2, 6], life: [0.35, 0.8], color: 0xfff0a0, color2: 0xd83a1a, gravity: 3, drag: 1.2, kind: 'flame' });
+          fx.burst({ x: e.x, y: 0.3, count: 10, dir: Math.PI / 2, spread: 1.3, speed: [2, 5], life: [0.2, 0.4], color: 0xf0fbff, color2: 0x8a7a70, gravity: 14 });
+          fx.burst({ x: e.x, y: 0.6, count: 6, jitter: 0.6, speed: [0.5, 1.5], life: [0.7, 1.2], color: 0x6a5a58, color2: 0x2a2028, kind: 'smoke', size: 5, drag: 1.5 });
+          this.play('firebomb', this.pan(e.x));
+          this.shake(0.35);
+          break;
+        }
         const col = e.style === 'nova' ? 0x9fe8ff : met ? (this.fighters[e.f]?.art.specialSkin?.glow ? mix(met[0], met[1], 0.5) : 0xff6a1a) : e.style === 'whirl' ? 0xe8f4ff : 0xd8a060;
         fx.pulse('groundRing', e.x, 0, e.radius * 1.2, col, 0.5);
         if (e.style !== 'nova') fx.pulse('crack', e.x, 0, e.radius * 0.8, mix(col, 0x2a1a20, 0.4), 1.6);

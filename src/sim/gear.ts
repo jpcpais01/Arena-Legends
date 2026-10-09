@@ -2,7 +2,7 @@ import { EVADE } from './abilities';
 import type { AbilityDef, GearId, GearSlot, GearSlotIds, Stats } from './types';
 
 /**
- * Gear catalog. Six slots, and everything a fighter can do comes from here:
+ * Gear catalog. Eight slots, and everything a fighter can do comes from here:
  *  - main weapon: basic attack + weapon skill, and the fighting distance.
  *    One-handed or two-handed.
  *  - secondary: a one-handed weapon or tool with one more skill. It is drawn
@@ -10,7 +10,9 @@ import type { AbilityDef, GearId, GearSlot, GearSlotIds, Stats } from './types';
  *    a two-handed main has to be put away first and taken back after.
  *  - special: an item that works on its own (aura, familiar, or an attack the
  *    item performs itself while the body keeps fighting).
- *  - head, chest: passives and stats; some chest pieces grant a defensive skill.
+ *  - usable: a potion or bomb on the belt, used a few times per battle. The
+ *    free hand grabs it; a two-handed main is held in one hand meanwhile.
+ *  - head, chest, legs: passives and stats; some chest pieces grant a defensive skill.
  *  - boots: movement and the evade itself.
  *
  * Passive effects are implemented in the sim by checking `fighter.has.has(id)`.
@@ -491,6 +493,63 @@ const SPECIAL: Catalog['special'] = {
 };
 
 // -----------------------------------------------------------------------------
+// Usable items: potions and bombs on the belt, a few uses per battle
+// -----------------------------------------------------------------------------
+
+/** Drinking: uncork, gulp, toss the empty bottle. Effects land as the gulp starts. */
+const DRINK = {
+  slot: 'usable', kind: 'buff', range: 0, cost: 0, power: 0, damageType: 'magic',
+  windup: 0.3, active: 0.22, recovery: 0.3, anim: 'drink',
+} as const;
+
+const USABLE: Catalog['usable'] = {
+  healing_potion: {
+    id: 'healing_potion', slot: 'usable', name: 'Healing Potion', rarity: 'common', color: 0xff4a5a,
+    desc: 'Two per battle. Drink to heal 12% of max HP.',
+    tags: ['sustain'],
+    abilities: [{ ...DRINK, id: 'healing_potion', name: 'Healing Potion', cooldown: 6, uses: 2, heal: 0.12, desc: 'Heal 12% of max HP. Two per battle.' }],
+  },
+  swiftness_draught: {
+    id: 'swiftness_draught', slot: 'usable', name: 'Swiftness Draught', rarity: 'rare', color: 0x5ef0e0,
+    desc: 'Two per battle. Drink for haste: +30% move speed and +20% attack speed for 6s.',
+    tags: ['fast', 'mobility'],
+    abilities: [{ ...DRINK, id: 'swiftness_draught', name: 'Swiftness Draught', cooldown: 10, uses: 2, buff: [{ status: 'haste', duration: 6 }], desc: 'Haste for 6s. Two per battle.' }],
+  },
+  fury_tonic: {
+    id: 'fury_tonic', slot: 'usable', name: 'Fury Tonic', rarity: 'rare', color: 0xff6a2a,
+    desc: 'Two per battle. Drink to enrage: +25% damage and +15% attack speed for 6s.',
+    tags: ['burst'],
+    abilities: [{ ...DRINK, id: 'fury_tonic', name: 'Fury Tonic', cooldown: 12, uses: 2, buff: [{ status: 'rage', duration: 6 }], desc: 'Enrage for 6s. Two per battle.' }],
+  },
+  stoneskin_elixir: {
+    id: 'stoneskin_elixir', slot: 'usable', name: 'Stoneskin Elixir', rarity: 'epic', color: 0xb0a890,
+    desc: 'Two per battle. Drink to wash off burns, poison, chill and marks, and harden: 50% less damage and unstoppable for 3s.',
+    tags: ['tank'],
+    abilities: [{ ...DRINK, id: 'stoneskin_elixir', name: 'Stoneskin Elixir', cooldown: 10, uses: 2, cleanse: true, buff: [{ status: 'ironskin', duration: 3 }], desc: 'Cleanse and harden for 3s. Two per battle.' }],
+  },
+  energy_tonic: {
+    id: 'energy_tonic', slot: 'usable', name: 'Energy Tonic', rarity: 'rare', color: 0xffd040,
+    desc: 'Two per battle. Drink to restore 60 energy: brings an item ultimate or a big skill much sooner.',
+    tags: ['magic'],
+    abilities: [{ ...DRINK, id: 'energy_tonic', name: 'Energy Tonic', cooldown: 8, uses: 2, energyGain: 60, desc: 'Restore 60 energy. Two per battle.' }],
+  },
+  fire_bomb: {
+    id: 'fire_bomb', slot: 'usable', name: 'Fire Bomb', rarity: 'epic', color: 0xff8a2a,
+    desc: 'Three per battle. Lob a flask of alchemist fire at where the enemy is heading; it bursts on impact and sets them ablaze.',
+    tags: ['magic', 'dot', 'ranged'],
+    abilities: [{
+      id: 'fire_bomb', name: 'Fire Bomb', slot: 'usable', kind: 'projectile',
+      range: 8, cost: 0, cooldown: 5, uses: 3,
+      windup: 0.3, active: 0.06, recovery: 0.3,
+      power: 1.2, damageType: 'magic', stagger: 0.25, knockback: 2.5,
+      applies: [{ status: 'burn', duration: 4, stacks: 3 }],
+      projectile: { speed: 11, radius: 0.3, style: 'flask', lob: 1.5 },
+      anim: 'toss', desc: 'Lobbed flask that bursts in flames. Three per battle.',
+    }],
+  },
+};
+
+// -----------------------------------------------------------------------------
 // Head
 // -----------------------------------------------------------------------------
 
@@ -606,6 +665,50 @@ const CHEST: Catalog['chest'] = {
 };
 
 // -----------------------------------------------------------------------------
+// Legs
+// -----------------------------------------------------------------------------
+
+const LEGS: Catalog['legs'] = {
+  leather_leggings: {
+    id: 'leather_leggings', slot: 'legs', name: 'Leather Leggings', rarity: 'common', color: 0x8a5a32,
+    desc: '+12 armor, +6% move speed. Supple and quiet.',
+    add: { armor: 12 }, mul: { moveSpeed: 1.06 },
+    tags: [],
+  },
+  chain_leggings: {
+    id: 'chain_leggings', slot: 'legs', name: 'Chain Leggings', rarity: 'rare', color: 0x9aa4b4,
+    desc: '+14 armor, +6 resist, +0.03 poise.',
+    add: { armor: 14, resist: 6, poise: 0.03 },
+    tags: ['tank'],
+  },
+  stonehide_tassets: {
+    id: 'stonehide_tassets', slot: 'legs', name: 'Stonehide Tassets', rarity: 'rare', color: 0x9a8a72,
+    desc: '+22 armor, +0.06 poise, 25% less knockback, −5% move speed.',
+    add: { armor: 22, poise: 0.06 }, mul: { knockbackTaken: 0.75, moveSpeed: 0.95 },
+    tags: ['tank'],
+  },
+  windrunner_leggings: {
+    id: 'windrunner_leggings', slot: 'legs', name: 'Windrunner Leggings', rarity: 'rare', color: 0x7ae8d0,
+    desc: '+4 armor, +12% move speed, +4% attack speed.',
+    add: { armor: 4 }, mul: { moveSpeed: 1.12, attackSpeed: 1.04 },
+    tags: ['fast', 'mobility'],
+  },
+  runed_leggings: {
+    id: 'runed_leggings', slot: 'legs', name: 'Runed Leggings', rarity: 'epic', color: 0x6a8aff,
+    desc: '+4 power, +16 resist, 8% cooldown reduction.',
+    add: { power: 4, resist: 16, cdr: 0.08 },
+    tags: ['magic'],
+  },
+  bloodrite_wraps: {
+    id: 'bloodrite_wraps', slot: 'legs', name: 'Bloodrite Wraps', rarity: 'epic', color: 0xd0203a,
+    desc: '+6 armor. Once per battle, dropping under 35% HP heals 15% of max HP and grants haste for 2s.',
+    passive: 'Second Wind',
+    add: { armor: 6 },
+    tags: ['sustain'],
+  },
+};
+
+// -----------------------------------------------------------------------------
 // Boots (each pair defines the evade)
 // -----------------------------------------------------------------------------
 
@@ -655,13 +758,14 @@ const BOOTS: Catalog['boots'] = {
 };
 
 export const GEAR: Catalog = {
-  main: MAIN, secondary: SECONDARY, special: SPECIAL, head: HEAD, chest: CHEST, boots: BOOTS,
+  main: MAIN, secondary: SECONDARY, special: SPECIAL, usable: USABLE, head: HEAD, chest: CHEST, legs: LEGS, boots: BOOTS,
 };
 
-export const GEAR_SLOTS: GearSlot[] = ['main', 'secondary', 'special', 'head', 'chest', 'boots'];
+export const GEAR_SLOTS: GearSlot[] = ['main', 'secondary', 'special', 'usable', 'head', 'chest', 'legs', 'boots'];
 
 export const SLOT_NAMES: Record<GearSlot, string> = {
-  main: 'Main weapon', secondary: 'Secondary', special: 'Special item', head: 'Head', chest: 'Chest', boots: 'Boots',
+  main: 'Main weapon', secondary: 'Secondary', special: 'Special item', usable: 'Usable item',
+  head: 'Head', chest: 'Chest', legs: 'Legs', boots: 'Boots',
 };
 
 /** Every gear piece, keyed by id. */
@@ -684,4 +788,13 @@ export function gearIdsFor<S extends GearSlot>(slot: S): GearSlotIds[S][] {
  */
 export function drawTimes(mainHands: 1 | 2): { draw: number; stow: number } {
   return mainHands === 1 ? { draw: 0.1, stow: 0.12 } : { draw: 0.3, stow: 0.34 };
+}
+
+/**
+ * Seconds to take a usable item off the belt and to get set again after.
+ * A two-handed main isn't put away: it drops to one hand, so this is quicker
+ * than drawing a secondary.
+ */
+export function useTimes(mainHands: 1 | 2): { draw: number; stow: number } {
+  return mainHands === 1 ? { draw: 0.12, stow: 0.1 } : { draw: 0.18, stow: 0.16 };
 }
