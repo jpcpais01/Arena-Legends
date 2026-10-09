@@ -499,6 +499,71 @@ function stowFrames(art: CharacterArt, gone: boolean): FrameDef[] {
 }
 
 // -----------------------------------------------------------------------------
+// Usable items: a potion or bomb taken off the front of the belt
+// -----------------------------------------------------------------------------
+
+/**
+ * Using an item from the belt. Like drawing a secondary, the off hand does
+ * the work, but nothing is put away: a one-handed main stays ready, a
+ * two-handed one drops to the near hand and rests point-down, and only a bow
+ * goes over the shoulder. Drinking: pull the flask, thumb the cork off, tip
+ * the head back for a long gulp, then flick the empty bottle away. Bombs are
+ * wound back over the shoulder and lobbed.
+ */
+function usableClip(art: CharacterArt, stance: Pose, anim: string, secOut: Hold['sec']): Clip {
+  const bow = art.family === 'bow';
+  const twoHand = art.hands === 2 && !bow;
+  const lowered: PoseKey = twoHand ? { hNx: 0.3, hNy: -0.74, elN: 1, wAng: -1.0 } : {};
+  const base: Pose = bow ? { ...stance, ...FREE_NEAR } : { ...stance, ...lowered };
+  const hold: Hold = { main: bow ? 'back' : 'hand', sec: secOut, use: 'belt', oneHand: twoHand };
+  const U = (p: PoseKey, face: Expression = 'fierce', h: Partial<Hold> = {}) => F(p, face, { hold: { use: 'hand', ...h } });
+  const done = (p: PoseKey, face: Expression = 'fierce') => F(p, face, { hold: { use: 'none' } });
+
+  const draw: FrameDef[] = [];
+  if (bow) draw.push(F({ hFx: 0.05, hFy: 0.3, elF: 1 }, 'calm', { hold: { main: 'hand' } }));
+  else if (twoHand) draw.push(F({ hFx: 0.36, hFy: -0.42 }, 'calm'));
+  draw.push(F({ hFx: 0.2, hFy: -0.8, elF: 1, lean: stance.lean + 0.06, head: -0.06 }, 'calm'));
+  draw.push(U({ hFx: 0.34, hFy: -0.42, sAng: 1.35 }, 'calm'));
+
+  const stow: FrameDef[] = [done({ hFx: 0.38, hFy: -0.4 }, 'calm')];
+  if (bow) stow.push(F({ hFx: 0.05, hFy: 0.3, elF: 1 }, 'calm', { hold: { use: 'none', main: 'hand' } }));
+  else if (twoHand) stow.push(F({}, 'calm', { hold: { use: 'none', oneHand: false } }));
+
+  let ph: Phases;
+  if (anim === 'toss') {
+    ph = {
+      w: [
+        U({ hFx: 0.12, hFy: 0.28, sAng: 2.0, lean: stance.lean - 0.04 }, 'fierce', { useBehind: true }),
+        U({ hFx: -0.3, hFy: 0.48, sAng: 2.7, lean: -0.12, head: 0.1, hipX: -0.04, toeF: 0.2 }, 'fierce', { useBehind: true }),
+      ],
+      a: [done({ hFx: 0.95, hFy: 0.38, lean: 0.24, hipX: 0.05, fFx: 0.42, head: 0.06 }, 'shout')],
+      r: [done({ hFx: 0.82, hFy: -0.08, lean: 0.22, hipX: 0.04, fFx: 0.42 }), done({ hFx: 0.5, hFy: -0.3, lean: 0.12 }, 'calm')],
+    };
+  } else {
+    ph = {
+      w: [
+        // Thumb pops the cork in front of the chest...
+        U({ hFx: 0.46, hFy: -0.12, sAng: 1.5, head: 0.04 }, 'calm'),
+        // ...and the flask comes up as the head tips back.
+        U({ hFx: 0.36, hFy: 0.16, sAng: 2.2, head: 0.24, lean: stance.lean - 0.12 }, 'calm', { uncorked: true }),
+      ],
+      a: [
+        U({ hFx: 0.3, hFy: 0.34, sAng: 2.55, head: 0.4, lean: -0.14, hipY: -0.09 }, 'blink', { uncorked: true }),
+        U({ hFx: 0.29, hFy: 0.38, sAng: 2.72, head: 0.46, lean: -0.17, hipY: -0.1 }, 'blink', { uncorked: true }),
+      ],
+      cycle: -1,
+      r: [
+        // A satisfied breath, flask lowered...
+        U({ hFx: 0.5, hFy: 0.02, sAng: 1.7, head: 0.08, lean: stance.lean + 0.04 }, 'shout', { uncorked: true }),
+        // ...then the empty bottle is flicked away over the shoulder.
+        done({ hFx: -0.12, hFy: 0.22, elF: 1, lean: stance.lean + 0.02, head: -0.04 }),
+      ],
+    };
+  }
+  return polish({ base, hold, draw, stow, ...ph });
+}
+
+// -----------------------------------------------------------------------------
 // Chest abilities, evades, reactions
 // -----------------------------------------------------------------------------
 
@@ -692,6 +757,10 @@ export function clipsFor(art: CharacterArt): ClipSet {
     if (art.secFamily === 'shield' || art.secFamily === 'parry') clips.set('sec.riposte', polish({ base, hold: secHold, draw: [], w: [], a: [], r: riposteFrames(art), stow: stowFrames(art, false) }));
   }
 
+  if (art.useId) {
+    for (const anim of new Set((gearOf(art.useId).abilities ?? []).map((a) => a.anim))) clips.set('use.' + anim, usableClip(art, stance, anim, secOut));
+  }
+
   // Reactions.
   const hurt: PoseKey = { lean: -0.22, head: -0.28, hipX: -0.06, hipY: -0.1, hNx: stance.hNx - 0.15, hNy: stance.hNy + 0.2, wAng: stance.wAng + 0.35, hFx: 0.1, hFy: -0.2, sway: 1 };
   clips.set('hurt', loop(stance, hold, [
@@ -747,9 +816,10 @@ export function clipLength(c: Clip): number {
 }
 
 /** Resolves a frame of a clip into everything `drawFigure` needs. */
-export function frameSpec(c: Clip, i: number, face: Expression | null, secOut: boolean): FrameSpec {
+export function frameSpec(c: Clip, i: number, face: Expression | null, secOut: boolean, useOut = false): FrameSpec {
   const d = clipFrame(c, i);
   const hold: Hold = { ...c.hold, ...d.hold };
   if (secOut && hold.sec !== 'gone') hold.sec = 'gone';
+  if (useOut && (hold.use ?? 'belt') === 'belt') hold.use = 'none';
   return { pose: { ...c.base, ...d.p }, hold, face: face ?? d.face ?? 'calm', smear: d.smear };
 }

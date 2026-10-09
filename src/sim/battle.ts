@@ -21,6 +21,10 @@ export const WISP_BOLT: AbilityDef = {
   anim: 'item', desc: 'The lantern spirit shoots a small bolt.',
 };
 const FAMILIAR_RANGE = 9;
+/** Gravity on lobbed flasks (m/s²): a lazy, readable arc. */
+const LOB_GRAVITY = 16;
+/** Statuses a cleanse washes off. */
+const HARMFUL: StatusId[] = ['burn', 'poison', 'chill', 'mark', 'vulnerable'];
 
 export interface BattleConfig {
   seed: number;
@@ -278,7 +282,7 @@ export class Battle {
     if (!f.alive) return false;
     // Item attacks run on their own: the body may be busy or even stunned.
     if (ab.slot === 'item') return !f.item && f.cooldowns[idx] <= 0 && f.energy >= ab.cost;
-    if (f.action || isDisabled(f)) return false;
+    if (f.action || isDisabled(f) || f.uses[idx] === 0) return false;
     return f.cooldowns[idx] <= 0 && f.energy >= ab.cost;
   }
 
@@ -294,6 +298,7 @@ export class Battle {
     const spd = f.stats.attackSpeed;
     f.cooldowns[idx] = this.cooldownOf(f, ab);
     f.energy -= ab.cost;
+    if (f.uses[idx] > 0) f.uses[idx]--;
 
     if (ab.slot === 'item') {
       const hx = f.x - f.facing * 0.5;
@@ -356,6 +361,7 @@ export class Battle {
     // Feinting refunds most of the cooldown so the real attack can follow.
     f.cooldowns[a.ability] = Math.min(f.cooldowns[a.ability], 0.6);
     f.energy = Math.min(MAX_ENERGY, f.energy + ab.cost);
+    if (ab.uses) f.uses[a.ability]++;
     f.totals.feints++;
     this.emit({ type: 'feint', f: f.id });
     return true;
@@ -431,6 +437,7 @@ export class Battle {
 
   private enterActive(f: Fighter, e: Fighter, ab: AbilityDef): void {
     const a = f.action!;
+    if (ab.uses) this.emit({ type: 'used', f: f.id, ability: a.ability, left: f.uses[a.ability] });
     switch (ab.kind) {
       case 'projectile':
         this.spawnProjectile(f, ab, a.ability);
@@ -447,7 +454,17 @@ export class Battle {
       }
       case 'buff':
         if (ab.buff) for (const b of ab.buff) this.applyStatus(f, f, b);
+        if (ab.cleanse) {
+          f.statuses = f.statuses.filter((s) => !HARMFUL.includes(s.id));
+          refreshStats(f);
+          this.emit({ type: 'cleanse', f: f.id });
+        }
         if (ab.heal) this.heal(f, f.stats.maxHp * ab.heal);
+        if (ab.energyGain) {
+          const gain = Math.min(MAX_ENERGY - f.energy, ab.energyGain);
+          f.energy += gain;
+          this.emit({ type: 'energy', f: f.id, amount: Math.round(gain) });
+        }
         if (ab.shieldGain) {
           const amount = Math.round(f.stats.maxHp * ab.shieldGain);
           f.shield = Math.max(f.shield, amount);
@@ -488,6 +505,7 @@ export class Battle {
 
   private spawnProjectile(f: Fighter, ab: AbilityDef, idx: number): void {
     const pr = ab.projectile!;
+    if (pr.lob) { this.spawnLob(f, ab, idx); return; }
     const ground = !!pr.ground;
     const y = ground ? 0.25 : 1.25;
     this.projectiles.push({
@@ -496,6 +514,44 @@ export class Battle {
       vx: f.facing * pr.speed, vy: 0, radius: pr.radius, life: pr.returns ? 4 : 2.2, ability: idx,
       power: f.stats.power, ground, reflected: false, targetX: 0, alive: true, back: false, hitOut: false, hitBack: false,
     });
+  }
+
+  /**
+   * Lobbed flask: aimed where the enemy will be when it comes down (they keep
+   * their current speed for the flight), in a fixed-speed arc.
+   */
+  private spawnLob(f: Fighter, ab: AbilityDef, idx: number): void {
+    const pr = ab.projectile!;
+    const e = this.other(f);
+    const x0 = f.x + f.facing * 0.4, y0 = 2.0;
+    const reach = clamp(Math.abs(e.x - x0), 1.2, ab.range);
+    let t = reach / pr.speed;
+    const lead = e.vx * t * 0.7;
+    const tx = clamp(x0 + f.facing * reach + lead, -ARENA_HALF_WIDTH + 0.5, ARENA_HALF_WIDTH - 0.5);
+    t = Math.max(0.25, Math.abs(tx - x0) / pr.speed);
+    const y1 = 0.3;
+    // y(t) = y0 + vy·t − g·t²/2 lands at y1.
+    const vy = (y1 - y0 + (LOB_GRAVITY * t * t) / 2) / t;
+    this.projectiles.push({
+      id: this.nextProjectileId++, owner: f.id, style: pr.style, def: ab,
+      x: x0, y: y0, px: x0, py: y0,
+      vx: (tx - x0) / t, vy, radius: pr.radius, life: t + 1, ability: idx,
+      power: f.stats.power, ground: false, reflected: false, targetX: tx, alive: true, back: false, hitOut: false, hitBack: false,
+    });
+  }
+
+  /** A lobbed flask bursts: everything within its splash is hit (no parries, but blocks soften it). */
+  private burstLob(p: Projectile, owner: Fighter, target: Fighter): void {
+    p.alive = false;
+    const radius = p.def.projectile!.lob!;
+    const y = Math.max(0.2, p.y);
+    this.emit({ type: 'shockwave', x: p.x, radius, f: owner.id, style: 'flask' });
+    const hit = !this.over && target.alive && target.invuln <= 0 && Math.abs(target.x - p.x) <= radius + 0.35 && target.y < 1.8;
+    if (hit) {
+      const g = target.action && target.abilities[target.action.ability].guard && target.action.phase === 'active';
+      this.abilityHit(owner, target, p.def, { fromProjectile: p, aoe: true }, !!g);
+    }
+    this.emit({ type: 'projectileEnd', id: p.id, x: p.x, y, style: p.style, hit });
   }
 
   private spawnMeteor(f: Fighter, ab: AbilityDef, idx: number, targetX: number): void {
@@ -538,6 +594,13 @@ export class Battle {
       p.x += p.vx * DT;
       p.y += p.vy * DT;
       p.life -= DT;
+
+      if (ab.projectile?.lob) {
+        p.vy -= LOB_GRAVITY * DT;
+        const touches = target.alive && Math.abs(target.x - p.x) < p.radius + 0.45 && p.y < target.y + 1.7 && p.y > target.y - 0.2;
+        if (p.y <= 0.3 || (touches && target.invuln <= 0) || p.life <= 0 || Math.abs(p.x) > ARENA_HALF_WIDTH + 1) this.burstLob(p, owner, target);
+        continue;
+      }
 
       if (p.style === 'meteor') {
         if (p.y <= 0.4) {
@@ -891,6 +954,15 @@ export class Battle {
     tgt.totals.damageTaken += dmg;
     att.energy = Math.min(MAX_ENERGY, att.energy + dmg * ENERGY_ON_DEAL);
     tgt.energy = Math.min(MAX_ENERGY, tgt.energy + dmg * ENERGY_ON_TAKE);
+
+    if (tgt.hp > 0 && !tgt.secondWind && tgt.has.has('bloodrite_wraps') && tgt.hp < tgt.stats.maxHp * 0.35) {
+      // Second wind: the wraps drink the blood spilled and give it back.
+      tgt.secondWind = true;
+      this.emit({ type: 'secondWind', f: tgt.id });
+      this.heal(tgt, tgt.stats.maxHp * 0.15);
+      this.applyStatus(tgt, tgt, { status: 'haste', duration: 2 });
+      this.emit({ type: 'thought', f: tgt.id, text: 'Second wind!' });
+    }
 
     if (tgt.hp <= 0) {
       if (tgt.has.has('phoenix_feather') && !tgt.phoenixUsed) {

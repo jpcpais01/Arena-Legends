@@ -3,7 +3,7 @@ import { sanitizeSkins, type SkinMap } from '../character/skins';
 import type { Rng } from '../core/rng';
 import { EVADE } from './abilities';
 import { FORMS, FORM_IDS, type Personality } from './forms';
-import { drawTimes, GEAR, GEAR_SLOTS, gearIdsFor, gearOf, type GearDef } from './gear';
+import { drawTimes, useTimes, GEAR, GEAR_SLOTS, gearIdsFor, gearOf, type GearDef } from './gear';
 import type { AbilityDef, FormId, GearId, GearSet, GearSlot, Stats } from './types';
 
 export type { Appearance };
@@ -51,18 +51,19 @@ export function mainHands(gear: GearSet): 1 | 2 {
 
 /**
  * Abilities a build can use, in a stable order: main weapon (basic, skill),
- * secondary weapon, chest, special item, and always the evade last.
- * Secondary abilities include the time to draw and stow the weapon.
+ * secondary weapon, chest, special item, usable item, and always the evade last.
+ * Secondary and usable abilities include the time to take the item out and put it away.
  */
 export function buildAbilities(gear: GearSet): AbilityDef[] {
   const out: AbilityDef[] = [];
-  const order: GearSlot[] = ['main', 'secondary', 'chest', 'special'];
-  const swap = drawTimes(mainHands(gear));
+  const order: GearSlot[] = ['main', 'secondary', 'chest', 'special', 'usable'];
+  const hands = mainHands(gear);
   for (const slot of order) {
     const id = gear[slot];
     if (!id) continue;
     for (const ab of gearOf(id).abilities ?? []) {
-      if (slot === 'secondary') {
+      if (slot === 'secondary' || slot === 'usable') {
+        const swap = slot === 'secondary' ? drawTimes(hands) : useTimes(hands);
         out.push({
           ...ab, from: slot, draw: swap.draw, stow: swap.stow,
           windup: ab.windup + swap.draw, recovery: ab.recovery + swap.stow,
@@ -115,12 +116,12 @@ export function buildProfile(form: FormId, gear: GearSet): CombatProfile {
 export const DEFAULT_BUILDS: [CharacterBuild, CharacterBuild] = [
   {
     name: 'Aren', form: 'balanced',
-    gear: { main: 'longsword', secondary: 'kite_shield', special: 'phantom_blade', head: 'storm_crown', chest: 'plate_armor', boots: 'leather_boots' },
+    gear: { main: 'longsword', secondary: 'kite_shield', special: 'phantom_blade', usable: 'healing_potion', head: 'storm_crown', chest: 'plate_armor', legs: 'chain_leggings', boots: 'leather_boots' },
     look: { species: 'kitsu', skin: 0, hair: 0, hairColor: 2, eyes: 1, outfit: 0, accent: 0 },
   },
   {
     name: 'Vesper', form: 'ethereal',
-    gear: { main: 'arcane_staff', secondary: 'frost_wand', special: 'meteor_sigil', head: 'chrono_circlet', chest: 'phase_cloak', boots: 'zephyr_boots' },
+    gear: { main: 'arcane_staff', secondary: 'frost_wand', special: 'meteor_sigil', usable: 'energy_tonic', head: 'chrono_circlet', chest: 'phase_cloak', legs: 'runed_leggings', boots: 'zephyr_boots' },
     look: { species: 'wisp', skin: 1, hair: 1, hairColor: 6, eyes: 6, outfit: 4, accent: 1 },
   },
 ];

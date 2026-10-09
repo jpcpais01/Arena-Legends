@@ -3,13 +3,15 @@ import {
 } from '../../character/appearance';
 import { fullSet, skinOn, type SkinMap, type SkinSetId } from '../../character/skins';
 import type { CharacterBuild } from '../../sim/loadout';
-import type { ChestId, FormId, GearId, GearSet, HeadId, BootsId, MainWeaponId, SecondaryId } from '../../sim/types';
+import type { ChestId, FormId, GearId, GearSet, HeadId, BootsId, LegsId, MainWeaponId, SecondaryId, UsableId } from '../../sim/types';
 import { mix, toHsl, fromHsl } from '../pixel/color';
+import { grain, lattice, speckle } from '../pixel/tex';
 import { material, type Material } from '../pixel/raster';
 import { bodyFor, type BodySpec } from './body';
 import { SKIN_ART, type SkinArt } from './skins';
-import type { BodyDraw, LegDraw, ShoulderDraw } from './skins/armour';
+import type { BodyDraw, LegDraw, ShoulderDraw, ThighDraw } from './skins/armour';
 import type { HeadDraw } from './skins/heads';
+import { usableArt, type UsableArt } from './usables';
 import { MAIN_FAMILY, SEC_FAMILY, weaponArt, type MainFamily, type SecFamily, type WeaponArt } from './weapons';
 
 /**
@@ -32,13 +34,18 @@ export interface CharacterArt {
   secFamily: SecFamily | null;
   chest: ChestLook;
   headgear: HeadId | null;
+  legs: LegsLook;
   boots: BootsLook;
+  /** Potion or bomb on the belt. */
+  useId: UsableId | null;
+  use: UsableArt | null;
   /** Item skins in use, and their art (null when the item is plain). */
   skins: SkinMap;
   mainSkin: SkinArt | null;
   secSkin: SkinArt | null;
   headSkin: SkinArt | null;
   chestSkin: SkinArt | null;
+  legsSkin: SkinArt | null;
   bootsSkin: SkinArt | null;
   /** Special item skin: recolours its icon, battle sprites and particles. */
   specialSkin: SkinArt | null;
@@ -73,6 +80,25 @@ export interface ChestLook {
   back?: BodyDraw | null;
   over?: BodyDraw | null;
   shoulder?: ShoulderDraw | null;
+}
+
+export interface LegsLook {
+  /** Thigh covering (null: the trousers show). */
+  mat: string | null;
+  /** A band below the hip and one above the knee. */
+  trim: string | null;
+  /** Knee guard. */
+  knee: string | null;
+  /** Plates hanging from the belt over the thigh. */
+  tasset: string | null;
+  /** Glowing lines down the thigh. */
+  rune: string | null;
+  /** Cloth strips wound around the thigh. */
+  wraps: string | null;
+  /** Extra width over the thigh. */
+  bulk: number;
+  /** Reshaped legs from a skin: extra shapes on each thigh. */
+  over?: ThighDraw | null;
 }
 
 export interface BootsLook {
@@ -111,6 +137,19 @@ const tunicFor = (chest: ChestId | undefined): ChestLook => {
   }
 };
 
+const legsFor = (l: LegsId | undefined): LegsLook => {
+  const base: LegsLook = { mat: null, trim: null, knee: null, tasset: null, rune: null, wraps: null, bulk: 0 };
+  switch (l) {
+    case 'leather_leggings': return { ...base, mat: 'legLeather', trim: 'legLeatherDark', bulk: 0.15 };
+    case 'chain_leggings': return { ...base, mat: 'chain', trim: 'chainDark', knee: 'chainPlate', bulk: 0.25 };
+    case 'stonehide_tassets': return { ...base, mat: 'stoneLeg', knee: 'stoneLeg', tasset: 'stoneLeg', trim: 'stoneDark', bulk: 0.45 };
+    case 'windrunner_leggings': return { ...base, mat: 'windLeg', trim: 'windTrim', wraps: 'windTrim', bulk: 0.1 };
+    case 'runed_leggings': return { ...base, mat: 'runeLeg', trim: 'runeDark', knee: 'runeDark', rune: 'runeGlow', bulk: 0.2 };
+    case 'bloodrite_wraps': return { ...base, mat: 'bloodLeg', wraps: 'bloodDark', rune: 'bloodGlow', bulk: 0.15 };
+    default: return base;
+  }
+};
+
 const bootsFor = (b: BootsId | undefined): BootsLook => {
   switch (b) {
     case 'leather_boots': return { mat: 'boot', height: 0.55, bulk: 0.3, trim: 'bootDark', wing: null, knee: null };
@@ -124,6 +163,8 @@ const bootsFor = (b: BootsId | undefined): BootsLook => {
 };
 
 /** A darker, slightly desaturated version of a colour (trousers under a tunic). */
+const grainTex = grain(-1);
+
 const shade = (hex: number, dl: number, ds = 0) => {
   const [h, s, l] = toHsl(hex);
   return fromHsl(h, Math.max(0, s + ds), Math.max(0.05, l + dl));
@@ -198,6 +239,22 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     leap: material({ base: 0xe0b040 }),
     leapTrim: material({ base: 0xfff0b0 }),
     feather: material({ base: 0xfff4d8 }),
+    // Legs
+    legLeather: material({ base: 0x7a5032, tex: grainTex }),
+    legLeatherDark: material({ base: 0x4a2e1c }),
+    chain: material({ base: 0x9aa4b4, shiny: true, step: 0.14, tex: lattice(2, -1) }),
+    chainDark: material({ base: 0x5a6274 }),
+    chainPlate: material({ base: 0xaab4c4, shiny: true, step: 0.15 }),
+    stoneLeg: material({ base: 0x9a8a72, step: 0.13, tex: speckle(0.14, -1) }),
+    stoneDark: material({ base: 0x5a4a3a }),
+    windLeg: material({ base: 0x4ab8a8 }),
+    windTrim: material({ base: 0xe8fff8 }),
+    runeLeg: material({ base: 0x3a3a7a }),
+    runeDark: material({ base: 0x23234a, shiny: true }),
+    runeGlow: material({ base: 0x7ad8ff, glow: true }),
+    bloodLeg: material({ base: 0x6a1a2a }),
+    bloodDark: material({ base: 0x3a0e18 }),
+    bloodGlow: material({ base: 0xff3a4a, glow: true }),
     // Headgear
     mask: material({ base: 0xb8282a, shiny: true }),
     maskHorn: material({ base: 0xf0e2c0 }),
@@ -229,12 +286,15 @@ export function makeArt(build: CharacterBuild): CharacterArt {
   const main = weaponArt(mainId, mainSkinId)!;
   const sec = secId ? weaponArt(secId, secSkinId) : null;
   for (const [k, v] of Object.entries(main.mats)) mats['w.' + k] = v;
+  const useId = build.gear.usable ?? null;
+  const use = useId ? usableArt(useId) : null;
+  if (use) for (const [k, v] of Object.entries(use.mats)) mats['u.' + k] = v;
   if (sec) for (const [k, v] of Object.entries(sec.mats)) mats['s.' + k] = v;
   // Armour skins recolour the body's armour materials; reshaped headgear brings its own.
   let headDraw: HeadDraw | null = null;
   let headFace = false;
-  const worn: Record<'head' | 'chest' | 'boots', SkinArt | null> = { head: null, chest: null, boots: null };
-  for (const slot of ['head', 'chest', 'boots'] as const) {
+  const worn: Record<'head' | 'chest' | 'legs' | 'boots', SkinArt | null> = { head: null, chest: null, legs: null, boots: null };
+  for (const slot of ['head', 'chest', 'legs', 'boots'] as const) {
     const [, art] = skinArt(build.gear[slot]);
     if (!art) continue;
     worn[slot] = art;
@@ -264,9 +324,11 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     secId, sec, secFamily: secId ? SEC_FAMILY[secId] : null,
     chest: { ...tunicFor(build.gear.chest), ...worn.chest?.chest },
     headgear: build.gear.head ?? null,
+    legs: { ...legsFor(build.gear.legs), ...worn.legs?.legs },
     boots: { ...bootsFor(build.gear.boots), ...worn.boots?.boots },
+    useId, use,
     skins, mainSkin, secSkin, headDraw, headFace,
-    headSkin: worn.head, chestSkin: worn.chest, bootsSkin: worn.boots,
+    headSkin: worn.head, chestSkin: worn.chest, legsSkin: worn.legs, bootsSkin: worn.boots,
     specialSkin, specialSkinId,
     set: fullSet(build.gear, skins),
   };

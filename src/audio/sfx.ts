@@ -6,7 +6,7 @@
 export type Sfx =
   | 'swing' | 'swingHeavy' | 'hit' | 'hitHeavy' | 'crit' | 'block' | 'parry' | 'cast' | 'castBig'
   | 'explosion' | 'lightning' | 'whoosh' | 'freeze' | 'ko' | 'revive' | 'shield' | 'roar' | 'ui' | 'start' | 'win'
-  | 'select' | 'back' | 'equip' | 'confirm';
+  | 'select' | 'back' | 'equip' | 'confirm' | 'cork' | 'gulp' | 'glass' | 'firebomb';
 
 class AudioEngine {
   private ctx: AudioContext | null = null;
@@ -156,6 +156,26 @@ class AudioEngine {
         break;
       case 'shield':
         this.tone('sine', 600, 900, t, 0.25, 0.12 * k, pan);
+        break;
+      // Potions: a thumb-popped cork, two gulps, a bottle breaking.
+      case 'cork':
+        this.tone('sine', 900, 380, t, 0.05, 0.3 * k, pan);
+        this.burst(t, 0.03, 0.2 * k, 'bandpass', 2400, 1600, 2, pan);
+        break;
+      case 'gulp':
+        this.tone('sine', 260, 150, t, 0.09, 0.32 * k, pan);
+        this.tone('sine', 240, 140, t + 0.16, 0.09, 0.28 * k, pan);
+        this.tone('triangle', 520, 900, t + 0.34, 0.12, 0.08 * k, pan);
+        break;
+      case 'glass':
+        this.burst(t, 0.18, 0.3 * k, 'highpass', 5000, 3000, 1.2, pan);
+        this.tone('triangle', 2400, 1900, t, 0.12, 0.08 * k, pan);
+        this.tone('triangle', 3100, 2600, t + 0.03, 0.1, 0.06 * k, pan);
+        break;
+      case 'firebomb':
+        this.burst(t, 0.12, 0.3 * k, 'highpass', 5000, 3000, 1.2, pan);
+        this.burst(t + 0.02, 0.6, 0.6 * k, 'lowpass', 2200, 200, 0.7, pan);
+        this.tone('sine', 140, 50, t, 0.4, 0.5 * k, pan);
         break;
       case 'roar':
         this.tone('sawtooth', 140, 80, t, 0.5, 0.2 * k, pan);

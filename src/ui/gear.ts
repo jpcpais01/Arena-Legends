@@ -17,10 +17,12 @@ export interface GearCallbacks {
   onClose(): void;
 }
 
-const SHORT: Record<GearSlot, string> = { main: 'Main', secondary: 'Second', special: 'Special', head: 'Head', chest: 'Chest', boots: 'Boots' };
-/** Paper-doll sides: what you hold on the left, what you wear on the right. */
-const LEFT: GearSlot[] = ['main', 'secondary', 'special'];
-const RIGHT: GearSlot[] = ['head', 'chest', 'boots'];
+const SHORT: Record<GearSlot, string> = {
+  main: 'Main', secondary: 'Second', special: 'Special', usable: 'Usable', head: 'Head', chest: 'Chest', legs: 'Legs', boots: 'Boots',
+};
+/** Paper-doll sides: what you hold and carry on the left, what you wear on the right. */
+const LEFT: GearSlot[] = ['main', 'secondary', 'special', 'usable'];
+const RIGHT: GearSlot[] = ['head', 'chest', 'legs', 'boots'];
 
 function emptyIcon(): HTMLCanvasElement {
   const c = document.createElement('canvas');
@@ -30,7 +32,7 @@ function emptyIcon(): HTMLCanvasElement {
 }
 
 /**
- * Gear screen: the fighter stands big in the middle with the six slots around
+ * Gear screen: the fighter stands big in the middle with the eight slots around
  * them like a paper doll; the items for the chosen slot are a grid of icons.
  * Tapping an item grows it in place into a 3x2 card with its text, skills,
  * stat changes and skins, and equips from there. Changes save at once (through `onChange`).
@@ -78,7 +80,9 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     sfx.play(move ? 'equip' : 'select');
     cb.onChange(c);
     preview.set(c);
-    if (move) preview.showcase();
+    // A new usable item is shown being used; anything else plays a random move.
+    const use = slot === 'usable' && c.gear.usable ? gearOf(c.gear.usable).abilities?.[0]?.anim : undefined;
+    if (move) preview.showcase(use ? `use.${use}` : undefined);
     render();
   }
 
@@ -121,7 +125,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
       h('div.sk-set-row', null,
         h(`span.sk-pips${worn === all ? '.full' : ''}`, { title: `${worn} of ${all} pieces worn` }, ...setPieces(set.id).map((_, i) => h(`i${i < worn ? '.on' : ''}`))),
         h('small', null, worn === all ? 'Full set: aura on' : `${worn}/${all} worn. Wear all ${all} for its aura.`),
-        worn < all ? h('button.btn.sm.ghost', { onclick: () => wearSet(set.id), title: 'Equips all six items of the set, in their set skins' }, 'Equip set') : null));
+        worn < all ? h('button.btn.sm.ghost', { onclick: () => wearSet(set.id), title: 'Equips every item of the set, in their set skins' }, 'Equip set') : null));
   }
 
   function show(id: GearId | null, from?: Element): void {
@@ -226,7 +230,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
       h('div.icard-body', null,
         h('p.desc', null, g.desc),
         ...abil.map((a) => h('p.ab', null, h('i', null, a.name),
-          a.slot !== 'basic' && a.cooldown ? h('small', null, ` ${a.cooldown}s`) : '', a.desc ? ` ${a.desc}` : '')),
+          a.slot !== 'basic' && a.cooldown ? h('small', null, a.uses ? ` ${a.uses} uses · ${a.cooldown}s` : ` ${a.cooldown}s`) : '', a.desc ? ` ${a.desc}` : '')),
         diff.length ? h('div.diff', null, ...diff) : null,
         mods ? h('p.mods', null, mods) : null),
       skins.length ? h('div.icard-skins', null,
@@ -283,7 +287,9 @@ const SLOT_INFO: Record<GearSlot, string> = {
   main: 'Basic attack, weapon skill and fighting distance. One- or two-handed.',
   secondary: 'A one-handed weapon or tool with one more skill. A two-handed main goes on the back while it is used.',
   special: 'Works on its own: auras, a familiar, or an attack the item makes by itself.',
+  usable: 'A potion or bomb on the belt, used a few times per battle. The free hand grabs it.',
   head: 'Passives and stats.',
   chest: 'Passives and stats; some grant a defensive skill.',
+  legs: 'Armour for the legs: stats, and sometimes a passive.',
   boots: 'Movement, and the evade itself.',
 };

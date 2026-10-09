@@ -1,12 +1,13 @@
 import { DEFAULT_LOOK } from '../character/appearance';
 import { gearOf } from '../sim/gear';
-import type { GearId, GearSet, SpecialId } from '../sim/types';
+import type { GearId, GearSet, SpecialId, UsableId } from '../sim/types';
 import { material, Raster, type Frame, type Material } from './pixel/raster';
 import { arc } from './pixel/sdf';
 import { STAND } from './sprite/pose';
 import { drawFigure } from './sprite/draw';
 import { makeArt } from './sprite/look';
 import { SKIN_ART, skinMaterials } from './sprite/skins';
+import { usableArt } from './sprite/usables';
 import { weaponArt } from './sprite/weapons';
 import { Xf } from './sprite/xform';
 
@@ -160,6 +161,14 @@ export function iconFrame(id: GearId, skin?: string | null): Frame {
   } else if (def.slot === 'special') {
     special(id as SpecialId, r, c, skin);
     f = r.compose(c, c);
+  } else if (def.slot === 'usable') {
+    // Potions and bombs stand upright at their own pixel size, like armour.
+    const a = usableArt(id as UsableId);
+    const h = handles(r);
+    a.draw(r, new Xf(c, c, Math.PI / 2 - 0.3), (k) => h(a.mats[k]), { group: 1 });
+    const full = r.compose(c, c);
+    const side = Math.max(16, full.w, full.h);
+    f = crop(full, (full.w - side) / 2, (full.h - side) / 2, side, side);
   } else {
     // Armour: drawn on an invisible body, so only the piece itself shows.
     const gear = { main: 'dagger', [def.slot]: id } as unknown as GearSet;
