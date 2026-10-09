@@ -363,7 +363,8 @@ h1, h2, h3, p { margin: 0; }
 .plate-tag .rec { color: var(--gold); letter-spacing: 0.06em; text-shadow: 0 var(--px) 0 var(--ink); }
 .plate-name { font: 700 1.25rem/1 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 var(--px) 0 var(--ink), var(--px) 0 0 var(--ink); }
 .plate-sub { font-size: 0.75rem; line-height: 1.1; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.plate-gear { grid-area: gear; display: grid; grid-template-columns: repeat(2, var(--sock)); gap: 3px; padding: 6px 0; align-self: center; }
+/* Filled column by column like the Armory: main, secondary, special, usable on the left; head, chest, legs, boots on the right. */
+.plate-gear { grid-area: gear; display: grid; grid-template-columns: repeat(2, var(--sock)); grid-template-rows: repeat(4, var(--sock)); grid-auto-flow: column; gap: 3px; padding: 6px 0; align-self: center; }
 .plate-gear .sock { width: var(--sock); height: var(--sock); }
 .plate-gear canvas { width: 100%; height: 100%; }
 
