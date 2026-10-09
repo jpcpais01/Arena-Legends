@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.19.0',
+    date: '2026-10-09',
+    title: 'A battle soundtrack that builds',
+    notes: [
+      'Fights now have music, and it reacts to the fight: the lower the weaker fighter\'s health, the more intense it gets. It starts with a calm groove, then drums, a driving bass, arpeggios and a full theme come in, the chords darken and the tempo speeds up.',
+      'When someone is one or two hits from defeat, a heartbeat, trembling strings and rising swells take over. Heals let the music settle back down.',
+      'Night overtime lifts the whole song a step higher and adds war drums. A knockout ends it on a final chord.',
+      'Pausing muffles the music. Turn it off any time with the new Music switch in Settings.',
+    ],
+  },
+  {
     version: '0.18.0',
     date: '2026-10-09',
     title: 'Steadier screen shake',

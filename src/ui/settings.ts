@@ -7,6 +7,8 @@ export interface Settings {
   /** Thought bubbles over the fighters during a battle. */
   quotes: boolean;
   sound: boolean;
+  /** The battle soundtrack (needs sound on). */
+  music: boolean;
   /** Arena id for every fight, or 'random'. */
   arena: string;
 }
@@ -20,7 +22,7 @@ export interface ArenaChoice {
 }
 
 interface Row {
-  key: 'quotes' | 'sound';
+  key: 'quotes' | 'sound' | 'music';
   icon: IconName;
   label: string;
   hint: string;
@@ -29,6 +31,7 @@ interface Row {
 const ROWS: Row[] = [
   { key: 'quotes', icon: 'quote', label: 'Battle quotes', hint: 'Speech bubbles with what each fighter is thinking.' },
   { key: 'sound', icon: 'soundOn', label: 'Sound', hint: 'Hits, spells, the crowd.' },
+  { key: 'music', icon: 'music', label: 'Music', hint: 'The battle soundtrack. It builds as a fighter gets closer to defeat.' },
 ];
 
 const swatch = (a: ArenaChoice) =>
