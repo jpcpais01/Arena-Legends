@@ -7,6 +7,8 @@ import { GEAR_SLOTS, gearOf, SLOT_NAMES } from '../sim/gear';
 import type { CharacterBuild } from '../sim/loadout';
 import { h } from './dom';
 import { icon } from './icons';
+import { logo } from './logo';
+import { fitPixels } from './pixelfit';
 import { Preview } from './preview';
 
 export interface MenuCallbacks {
@@ -25,8 +27,8 @@ export interface Record { w: number; l: number }
 export const CARD_ART: [number, number] = [64, 64];
 
 /**
- * Title screen over the background duel: the logo and tools on top, and a dock
- * along the bottom with your fighter, Fight and Online, and the rival.
+ * Main menu over the background duel: the logo and tools on top, and a dock
+ * along the bottom with your fighter, VS with Fight and Online, and the rival.
  */
 export class Menu {
   readonly el: HTMLElement;
@@ -38,11 +40,14 @@ export class Menu {
   constructor(private readonly cb: MenuCallbacks) {
     this.soundBtn = h<HTMLButtonElement>('button.btn.icon', { title: 'Sound', 'aria-label': 'Sound', onclick: () => cb.onSound() });
     this.actions = h('div.menu-actions', null,
-      h('button.btn.primary.big.fight', { onclick: () => cb.onFight() }, icon('swords'), 'Fight'),
-      h('button.btn', { onclick: () => cb.onOnline() }, icon('globe'), 'Online duel'));
+      h('div.vs', { 'aria-hidden': 'true' }, 'VS'),
+      h('button.btn.primary.big.fight', { onclick: () => cb.onFight() }, icon('swords'), h('span', null, 'Fight')),
+      h('button.btn.online', { onclick: () => cb.onOnline() }, icon('globe'), 'Online duel'));
+    const mark = h('div.menu-logo', { 'aria-label': 'Arena Legends' });
+    void logo().then((c) => { mark.append(c); fitPixels(c, mark); });
     this.el = h('div.menu', null,
       h('div.menu-top', null,
-        h('div.logo', null, 'ARENA ', h('em', null, 'LEGENDS'), h('small', null, '1V1 AUTO BATTLER')),
+        mark,
         h('div.menu-tools', null, this.soundBtn,
           h('button.btn.icon', { title: 'Settings', 'aria-label': 'Settings', onclick: () => cb.onSettings() }, icon('settings')))),
       this.dock,
@@ -61,8 +66,8 @@ export class Menu {
     this.previews = [a, b];
     this.dock.replaceChildren(
       fighterCard(player, a, 0, 'You', `${rec.w}W ${rec.l}L`, [
-        h('button.btn.sm', { onclick: () => this.cb.onGear() }, icon('bag'), 'Gear'),
-        h('button.btn.sm', { onclick: () => this.cb.onEditLook() }, icon('edit'), 'Edit'),
+        h('button.btn.sm', { onclick: () => this.cb.onGear() }, icon('bag'), 'Armory'),
+        h('button.btn.sm', { onclick: () => this.cb.onEditLook() }, icon('edit'), 'Hero'),
       ]),
       this.actions,
       fighterCard(rival, b, 1, 'Rival', '', [
@@ -98,10 +103,10 @@ export function fighterCard(c: CharacterBuild, p: Preview, side: 0 | 1, tag: str
   return h(`div.fcard${side ? '.rival' : '.you'}`, null,
     art,
     h('div.fcard-info', null,
-      h('div.fcard-tag', null, h('span', null, tag), extra ? h('span.rec', null, extra) : null),
+      h('div.fcard-tag', null, h('span.side-tag', null, tag), extra ? h('span.rec', null, extra) : null),
       h('div.fcard-name', null, c.name),
       h('div.fcard-sub', null, `${SPECIES[look.species].name} · ${FORMS[c.form].name}`),
-      h('div.fcard-gear', null, ...gear)),
+      h('div.fcard-gear', null, ...gear.map((g) => h('span.sock', null, g)))),
     btns.length ? h('div.fcard-btns', null, ...btns) : null,
   );
 }

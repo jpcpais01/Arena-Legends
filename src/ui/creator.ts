@@ -5,6 +5,7 @@ import {
 import { cleanName, NAME_MAX, randomName, type PlayerCharacter } from '../character/profile';
 import { css } from '../render/pixel/color';
 import { FORMS, FORM_IDS } from '../sim/forms';
+import { gearOf } from '../sim/gear';
 import type { CharacterBuild } from '../sim/loadout';
 import type { FormId, Stats } from '../sim/types';
 import { h, hex } from './dom';
@@ -18,10 +19,12 @@ export interface CreatorCallbacks {
 }
 
 const STEPS: { label: string; icon: IconName; title: string; sub: string }[] = [
-  { label: 'Species', icon: 'paw', title: 'Choose your species', sub: 'Looks only: every species fights the same. Pick the one you like.' },
-  { label: 'Body', icon: 'body', title: 'Pick a body form', sub: 'Your body sets your base stats and how your fighter moves. Each species has its own set of forms.' },
-  { label: 'Style', icon: 'palette', title: 'Make it yours', sub: 'A name, colours and hair. You can change all of this later.' },
+  { label: 'Species', icon: 'paw', title: 'Choose your species', sub: 'Looks only: every species fights the same.' },
+  { label: 'Body', icon: 'body', title: 'Choose your body', sub: 'Your body sets your stats and how you move.' },
+  { label: 'Look', icon: 'palette', title: 'Choose your look', sub: 'Colours and hair. Change them any time.' },
+  { label: 'Name', icon: 'edit', title: 'Name your legend', sub: 'The crowd will chant it.' },
 ];
+const LAST = STEPS.length - 1;
 
 /** Form stats shown as bars, scaled between the lowest and highest form. */
 const FORM_STATS: [keyof Stats, string, (v: number) => string][] = [
@@ -44,37 +47,43 @@ const SKIN_LABEL: Partial<Record<SpeciesId, string>> = { golem: 'Stone', wisp: '
 const bare = (c: CharacterBuild): CharacterBuild => ({ ...c, gear: { main: c.gear.main }, skins: {} });
 
 /**
- * Character creator, a full screen in three steps: species, then body form,
- * then name, colours and hair together. The fighter stands on a dais on the
- * left and updates live; picks play a move. Editing an existing fighter
- * unlocks every step and can save from any of them.
+ * Character creation, a full screen in four steps like a game's character
+ * select: species, body, look, then the name. The fighter stands big on a lit
+ * dais and updates live; arrows beside them flip through species or bodies.
+ * Editing an existing fighter unlocks every step and can save from any of them.
  */
 export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el: HTMLElement; dispose(): void } {
   const editing = !!cb.onCancel;
   let c: PlayerCharacter = { ...start, look: { ...start.look } };
   let step = 0;
-  let reached = editing ? 2 : 0;
+  let reached = editing ? LAST : 0;
   let showGear = false;
   let cards: Preview[] = [];
+  /** Updates the open step after a pick made outside it (stage arrows). */
+  let refresh: () => void = () => {};
 
   const stageBox = h('div.stage-box');
   const preview = new Preview(bare(c), 100, 90, { autoplay: true, pedestal: true, fit: stageBox });
-  const gearBtn = h<HTMLButtonElement>('button.btn.sm', {
+  const gearBtn = h<HTMLButtonElement>('button.btn.sm.icon', {
     title: 'Show gear', 'aria-label': 'Show gear', 'aria-pressed': 'false',
-    onclick: () => { showGear = !showGear; sfx.play('ui'); syncStage(); preview.showcase(); },
-  }, icon('bag'), 'Gear');
-  stageBox.append(preview.el, h('div.stage-tools', null, gearBtn), h('span.stage-hint', null, 'Tap for a move'));
+    onclick: () => { showGear = !showGear; sfx.play('select'); syncStage(); preview.showcase(); },
+  }, icon('bag'));
+  const prev = h<HTMLButtonElement>('button.arrow.l', { title: 'Previous', 'aria-label': 'Previous', onclick: () => cycle(-1) }, icon('play', 'flip'));
+  const nextPick = h<HTMLButtonElement>('button.arrow.r', { title: 'Next', 'aria-label': 'Next', onclick: () => cycle(1) }, icon('play'));
+  stageBox.append(preview.el, prev, nextPick, h('div.stage-tools', null, gearBtn));
 
   const plateName = h('b');
   const plateTags = h('div.tags');
   const stepsEl = h('nav.steps', { 'aria-label': 'Steps' });
-  const panel = h('section.scr-panel');
-  const back = h<HTMLButtonElement>('button.btn.ghost.back', { title: 'Back', 'aria-label': 'Back', onclick: () => go(step - 1) }, icon('back'), h('span.lbl', null, 'Back'));
-  const next = h<HTMLButtonElement>('button.btn.primary', { onclick: () => advance() });
+  const panelBody = h('div.panel-body');
+  const panelHead = h('div.step-head');
+  const panel = h('section.scr-panel.frame', null, panelHead, panelBody);
+  const back = h<HTMLButtonElement>('button.btn.back', { title: 'Back', 'aria-label': 'Back', onclick: () => { sfx.play('back'); go(step - 1); } }, icon('back'), h('span.lbl', null, 'Back'));
+  const next = h<HTMLButtonElement>('button.btn.primary.next', { onclick: () => advance() });
   const save = h<HTMLButtonElement>('button.btn.save', { title: 'Save', 'aria-label': 'Save', onclick: () => finish() }, icon('check'), h('span.lbl', null, 'Save'));
 
   const name = h<HTMLInputElement>('input.name', {
-    value: c.name, maxlength: String(NAME_MAX), placeholder: 'Name your fighter', autocomplete: 'off', spellcheck: 'false', enterkeyhint: 'done',
+    value: c.name, maxlength: String(NAME_MAX), placeholder: 'Your name', autocomplete: 'off', spellcheck: 'false', enterkeyhint: 'done',
     'aria-label': 'Name',
     oninput: () => { c.name = name.value; name.classList.remove('shake'); syncPlate(); },
     onkeydown: (e: KeyboardEvent) => { if (e.key === 'Enter') { e.preventDefault(); name.blur(); finish(); } },
@@ -89,7 +98,7 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
 
   function syncPlate(): void {
     const n = cleanName(c.name);
-    plateName.textContent = n || 'Your fighter';
+    plateName.textContent = n || '???';
     plateName.classList.toggle('empty', !n);
     plateTags.replaceChildren(
       h('span.chip', null, SPECIES[c.look.species].name),
@@ -100,27 +109,31 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     stepsEl.replaceChildren(...STEPS.flatMap((s, i) => [
       ...(i ? [h(`i.step-line${i <= reached ? '.done' : ''}`)] : []),
       h<HTMLButtonElement>(`button.step${i === step ? '.on' : i <= reached ? '.done' : ''}`, {
-        disabled: i > reached, 'aria-current': i === step ? 'step' : null,
-        onclick: () => go(i),
-      }, h('i', null, String(i + 1)), h('span', null, s.label)),
+        disabled: i > reached, 'aria-current': i === step ? 'step' : null, title: s.label,
+        onclick: () => { if (i !== step) sfx.play('select'); go(i); },
+      }, h('i', null, icon(i < step || (i <= reached && i !== step) ? 'check' : s.icon)), h('span', null, s.label)),
     ]));
     back.hidden = step === 0;
-    const last = step === STEPS.length - 1;
+    const last = step === LAST;
     next.replaceChildren(...(last
-      ? [icon(editing ? 'check' : 'swords'), editing ? 'Save' : 'Enter the arena']
-      : [`Next: ${STEPS[step + 1].label}`, icon('next')]));
+      ? [icon(editing ? 'check' : 'swords'), h('span', null, editing ? 'Save' : 'Enter the arena')]
+      : [h('span', null, 'Next'), icon('next')]));
+    next.classList.toggle('go', last && !editing);
     save.hidden = !editing || last;
+    const arrows = step < 2;
+    prev.hidden = nextPick.hidden = !arrows;
   }
 
   function go(i: number): void {
     if (i < 0 || i > reached || i === step) return;
-    sfx.play('ui');
+    const dir = i > step ? 1 : -1;
     step = i;
-    render();
+    render(dir);
   }
 
   function advance(): void {
-    if (step === STEPS.length - 1) { finish(); return; }
+    if (step === LAST) { finish(); return; }
+    sfx.play('select');
     reached = Math.max(reached, step + 1);
     go(step + 1);
   }
@@ -128,32 +141,54 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
   function finish(): void {
     const n = cleanName(name.value);
     if (!n) {
-      if (step !== 2) { reached = 2; step = 2; render(); }
+      if (step !== LAST) { reached = LAST; step = LAST; render(1); }
       name.classList.remove('shake');
       void name.offsetWidth;
       name.classList.add('shake');
       name.focus();
-      sfx.play('ui');
+      sfx.play('back');
       return;
     }
-    sfx.play('ui');
+    sfx.play('confirm');
     cb.onDone({ ...c, name: n });
+  }
+
+  /** Stage arrows: the previous or next species (step 1) or body (step 2). */
+  function cycle(dir: 1 | -1): void {
+    sfx.play('select');
+    if (step === 0) {
+      const i = SPECIES_IDS.indexOf(c.look.species);
+      const id = SPECIES_IDS[(i + dir + SPECIES_IDS.length) % SPECIES_IDS.length];
+      pickSpecies(id);
+    } else if (step === 1) {
+      const forms = SPECIES[c.look.species].forms;
+      const i = forms.indexOf(c.form);
+      pickForm(forms[(i + dir + forms.length) % forms.length]);
+    }
+    refresh();
   }
 
   const setLook = (patch: Partial<Appearance>, move = false) => {
     const look = { ...c.look, ...patch };
     // Switching species keeps the body form when it can, else takes the closest one it has.
     c = { ...c, look, form: fitForm(look.species, c.form) };
-    sfx.play('ui');
     syncStage();
     if (move) preview.showcase();
     syncPlate();
   };
 
-  const head = (i: number, tool?: HTMLElement) => h('div.step-head', null,
-    h('small', null, `Step ${i + 1} of ${STEPS.length}`),
-    h('div.step-title', null, h('h2', null, STEPS[i].title), tool ?? null),
-    h('p', null, STEPS[i].sub));
+  function pickSpecies(id: SpeciesId): void {
+    if (c.look.species === id) return;
+    setLook({ species: id, skin: Math.min(c.look.skin, SPECIES[id].skins.length - 1) }, true);
+  }
+
+  function pickForm(id: FormId): void {
+    if (c.form === id) return;
+    c = { ...c, form: id };
+    syncStage();
+    preview.showcase();
+    syncPlate();
+  }
 
   function clearCards(): void {
     for (const p of cards) p.dispose();
@@ -161,44 +196,76 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
   }
 
   /** A pick tile with a still portrait of the fighter. */
-  function tile(build: CharacterBuild, w: number, ht: number, ground: number, label: string, sub: string, on: boolean, pick: () => void): HTMLButtonElement {
+  function tile(build: CharacterBuild, w: number, ht: number, ground: number, label: string, sub: string, pick: () => void): HTMLButtonElement {
     const box = h('div.portrait');
     const p = new Preview(build, w, ht, { still: true, ground, fit: box });
     cards.push(p);
     box.append(p.el);
-    return h<HTMLButtonElement>(`button.card-tile${on ? '.on' : ''}`, { 'aria-pressed': String(on), onclick: pick },
+    return h<HTMLButtonElement>('button.card-tile', { onclick: pick },
       box, h('b', null, label), sub ? h('small', null, sub) : null);
   }
 
-  const select = (grid: HTMLElement, el: HTMLElement) => {
-    for (const t of grid.children) { t.classList.toggle('on', t === el); t.setAttribute('aria-pressed', String(t === el)); }
+  /** Scrolls the step body just enough to show `el` (never the page itself). */
+  const reveal = (el: HTMLElement) => {
+    const b = panelBody.getBoundingClientRect(), r = el.getBoundingClientRect();
+    if (r.top < b.top) panelBody.scrollTop -= b.top - r.top + 4;
+    else if (r.bottom > b.bottom) panelBody.scrollTop += r.bottom - b.bottom + 4;
+  };
+
+  /** Marks the picked tile in a grid. */
+  const mark = (tiles: Map<string, HTMLElement>, cur: string) => {
+    for (const [id, t] of tiles) {
+      const on = id === cur;
+      t.classList.toggle('on', on);
+      t.setAttribute('aria-pressed', String(on));
+      if (on) reveal(t);
+    }
   };
 
   function speciesStep(): HTMLElement[] {
-    const detail = h('div.detail');
-    const showDetail = (id: SpeciesId) => detail.replaceChildren(
-      h('div.detail-head', null, h('b', null, SPECIES[id].name)), h('p', null, SPECIES[id].blurb),
-      h('p.forms-of', null, h('span', null, 'Body forms: '), SPECIES[id].forms.map((f) => FORMS[f].name).join(', ')));
+    const detail = h('div.detail.frame.iron');
+    const tiles = new Map<string, HTMLElement>();
     const grid = h('div.card-grid.species');
     for (const id of SPECIES_IDS) {
-      const sp = SPECIES[id];
       const look: Appearance = { ...c.look, species: id, skin: id === c.look.species ? c.look.skin : 0 };
-      const t: HTMLButtonElement = tile({ ...bare(c), form: 'balanced', look }, 40, 38, -24, sp.name, '', id === c.look.species, () => {
+      const t = tile({ ...bare(c), form: 'balanced', look }, 40, 38, -24, SPECIES[id].name, '', () => {
         if (c.look.species === id) return;
-        select(grid, t);
-        showDetail(id);
-        setLook({ species: id, skin: Math.min(c.look.skin, sp.skins.length - 1) }, true);
+        sfx.play('select');
+        pickSpecies(id);
+        refresh();
       });
+      tiles.set(id, t);
       grid.append(t);
     }
-    showDetail(c.look.species);
-    return [head(0), grid, detail];
+    refresh = () => {
+      const sp = SPECIES[c.look.species];
+      mark(tiles, c.look.species);
+      detail.replaceChildren(
+        h('div.detail-head', null, h('b', null, sp.name)), h('p', null, sp.blurb),
+        h('p.forms-of', null, h('span', null, 'Bodies: '), sp.forms.map((f) => FORMS[f].name).join(', ')));
+    };
+    refresh();
+    return [grid, detail];
   }
 
   function formStep(): HTMLElement[] {
-    const detail = h('div.detail');
-    const showDetail = (id: FormId) => {
+    const detail = h('div.detail.frame.iron');
+    const tiles = new Map<string, HTMLElement>();
+    const grid = h('div.card-grid.forms');
+    for (const id of SPECIES[c.look.species].forms) {
       const f = FORMS[id];
+      const t = tile({ ...bare(c), form: id }, 44, 62, 2, f.name, f.title, () => {
+        if (c.form === id) return;
+        sfx.play('select');
+        pickForm(id);
+        refresh();
+      });
+      tiles.set(id, t);
+      grid.append(t);
+    }
+    refresh = () => {
+      const f = FORMS[c.form];
+      mark(tiles, c.form);
       detail.replaceChildren(
         h('div.detail-head', null, h('b', null, f.name), h('span', null, f.title)),
         h('p', null, f.blurb),
@@ -209,93 +276,103 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
           return [h('span', null, label), h('div.segs', null, ...Array.from({ length: 10 }, (_, i) => h(i < n ? 'i.on' : 'i'))), h('em', null, fmt(v))];
         })));
     };
-    const grid = h('div.card-grid.forms');
-    for (const id of SPECIES[c.look.species].forms) {
-      const f = FORMS[id];
-      const t: HTMLButtonElement = tile({ ...bare(c), form: id }, 44, 62, 2, f.name, f.title, id === c.form, () => {
-        if (c.form === id) return;
-        select(grid, t);
-        showDetail(id);
-        c = { ...c, form: id };
-        sfx.play('ui');
-        syncStage();
-        preview.showcase();
-        syncPlate();
-      });
-      grid.append(t);
-    }
-    showDetail(c.form);
-    return [head(1), grid, detail];
+    refresh();
+    return [grid, detail];
   }
 
-  function styleStep(): HTMLElement[] {
+  function lookStep(): HTMLElement[] {
     const body = h('div.style-grid');
     const swatches = (label: string, colors: number[], cur: () => number, pick: (i: number) => void) => {
       const row = h('div.swatches');
       const draw = () => row.replaceChildren(...colors.map((col, i) => h(`button.swatch${i === cur() ? '.on' : ''}`, {
-        style: { background: hex(col) }, title: `${label} ${i + 1}`, 'aria-label': `${label} ${i + 1}`, 'aria-pressed': String(i === cur()),
-        onclick: () => { if (i !== cur()) { pick(i); draw(); } },
+        style: { '--sw': hex(col) }, title: `${label} ${i + 1}`, 'aria-label': `${label} ${i + 1}`, 'aria-pressed': String(i === cur()),
+        onclick: () => { if (i !== cur()) { sfx.play('select'); pick(i); draw(); } },
       })));
       draw();
       return h('div.field', null, h('div.label', null, label), row);
     };
+    /** ◀ value ▶ picker for a list of names. */
+    const cycler = (label: string, names: readonly string[], cur: () => number, pick: (i: number) => void) => {
+      const val = h('b.cyc-val');
+      const draw = () => { val.textContent = names[cur()]; };
+      const step = (d: number) => { sfx.play('select'); pick((cur() + d + names.length) % names.length); draw(); };
+      draw();
+      return h('div.field', null, h('div.label', null, label), h('div.cycler', null,
+        h('button.arrow.sm', { 'aria-label': `Previous ${label}`, onclick: () => step(-1) }, icon('play', 'flip')),
+        val,
+        h('button.arrow.sm', { 'aria-label': `Next ${label}`, onclick: () => step(1) }, icon('play'))));
+    };
     const draw = () => {
       const L = c.look;
       const sp = SPECIES[L.species];
-      const hairOpts = h('div.opts');
-      const drawHair = () => hairOpts.replaceChildren(...HAIR_STYLES.map((s, i) => h(`button.opt${i === c.look.hair ? '.on' : ''}`, {
-        'aria-pressed': String(i === c.look.hair),
-        onclick: () => { if (i !== c.look.hair) { setLook({ hair: i }); drawHair(); } },
-      }, s)));
-      drawHair();
       body.replaceChildren(
-        h('div.field.wide', null,
-          h('div.label', null, 'Name'),
-          h('div.field-row', null, name,
-            h('button.btn.icon', { title: 'Random name', 'aria-label': 'Random name', onclick: () => {
-              name.value = randomName(); c.name = name.value; name.classList.remove('shake'); sfx.play('ui'); syncPlate();
-            } }, icon('dice')))),
         swatches(SKIN_LABEL[L.species] ?? 'Skin', sp.skins, () => c.look.skin, (i) => setLook({ skin: i })),
         swatches('Eyes', EYE_COLORS, () => c.look.eyes, (i) => setLook({ eyes: i })),
-        sp.hair ? h('div.field.wide', null, h('div.label', null, 'Hair'), hairOpts) : '',
+        sp.hair ? cycler('Hair', HAIR_STYLES, () => c.look.hair, (i) => setLook({ hair: i })) : '',
         swatches(sp.hair ? 'Hair colour' : L.species === 'saurin' ? 'Crest' : L.species === 'myco' ? 'Cap' : 'Crystals', HAIR_COLORS, () => c.look.hairColor, (i) => setLook({ hairColor: i })),
         swatches('Outfit', OUTFIT_COLORS, () => c.look.outfit, (i) => setLook({ outfit: i })),
         swatches('Accent', ACCENT_COLORS, () => c.look.accent, (i) => setLook({ accent: i })),
       );
     };
     draw();
-    const lucky = h('button.btn.sm', { title: 'Random colours and hair', onclick: () => {
+    const lucky = h('button.btn.sm.lucky', { title: 'Random colours and hair', onclick: () => {
       const r = randomAppearance();
+      sfx.play('select');
       setLook({ ...r, species: c.look.species, skin: Math.floor(Math.random() * SPECIES[c.look.species].skins.length) }, true);
       draw();
-    } }, icon('dice'), 'Random look');
-    return [head(2, lucky), body];
+    } }, icon('dice'), 'Surprise me');
+    return [body, h('div.panel-foot', null, lucky)];
   }
 
-  function render(): void {
+  function nameStep(): HTMLElement[] {
+    const dice = h('button.btn.icon.dice', { title: 'Random name', 'aria-label': 'Random name', onclick: () => {
+      name.value = randomName(); c.name = name.value; name.classList.remove('shake'); sfx.play('select'); syncPlate();
+    } }, icon('dice'));
+    const sp = SPECIES[c.look.species], f = FORMS[c.form];
+    return [h('div.name-step', null,
+      h('div.name-plate.frame', null, name, dice),
+      h('p.name-hint', null, `Up to ${NAME_MAX} letters, or roll the dice.`),
+      h('div.name-sum', null,
+        h('span', null, h('small', null, 'Species'), h('b', null, sp.name)),
+        h('span', null, h('small', null, 'Body'), h('b', { style: { color: css(f.color) } }, f.name)),
+        h('span', null, h('small', null, 'Fights with'), h('b', null, gearOf(c.gear.main).name)))),
+    ];
+  }
+
+  function render(dir = 0): void {
     clearCards();
-    panel.replaceChildren(...(step === 0 ? speciesStep() : step === 1 ? formStep() : styleStep()));
-    panel.scrollTop = 0;
+    refresh = () => {};
+    const s = STEPS[step];
+    panelHead.replaceChildren(
+      h('div.ribbon', null, h('span', null, s.title)),
+      h('p', null, s.sub));
+    panelBody.replaceChildren(...(step === 0 ? speciesStep() : step === 1 ? formStep() : step === 2 ? lookStep() : nameStep()));
+    panelBody.scrollTop = 0;
+    // Slide the new step in from the side it came from.
+    panel.classList.remove('in-l', 'in-r');
+    if (dir) { void panel.offsetWidth; panel.classList.add(dir > 0 ? 'in-r' : 'in-l'); }
     syncNav();
+    if (step === LAST && !matchMedia('(pointer: coarse)').matches) requestAnimationFrame(() => name.focus());
   }
 
   const onKey = (e: KeyboardEvent) => {
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLButtonElement) return;
+    if (e.target instanceof HTMLInputElement) return;
+    if (e.key === 'ArrowLeft' && step < 2) { e.preventDefault(); cycle(-1); return; }
+    if (e.key === 'ArrowRight' && step < 2) { e.preventDefault(); cycle(1); return; }
+    if (e.target instanceof HTMLButtonElement) return;
     if (e.key === 'Enter') { e.preventDefault(); advance(); }
-    else if (e.key === 'Escape' && cb.onCancel) { sfx.play('ui'); cb.onCancel(); }
+    else if (e.key === 'Escape' && cb.onCancel) { sfx.play('back'); cb.onCancel(); }
   };
   window.addEventListener('keydown', onKey);
 
   syncPlate();
   render();
-  const el = h('div.scr.creator', { role: 'dialog', 'aria-label': editing ? 'Edit your fighter' : 'Create your fighter' },
+  const el = h('div.scr.creator', { role: 'dialog', 'aria-label': editing ? 'Edit your hero' : 'Create your hero' },
     h('header.scr-head', null,
-      h('div.scr-title', null, h('h1', null, editing ? 'Edit fighter' : 'New fighter'), h('small', null, 'Species and colours are looks only')),
-      h('div.grow'),
+      h('div.scr-title', null, h('h1', null, editing ? 'Your hero' : 'New hero')),
       stepsEl,
-      h('div.grow'),
-      cb.onCancel ? h('button.btn.icon', { title: 'Close', 'aria-label': 'Close', onclick: () => { sfx.play('ui'); cb.onCancel!(); } }, icon('close')) : null),
-    h('section.scr-stage', null, stageBox, h('div.nameplate', null, plateName, plateTags)),
+      cb.onCancel ? h('button.btn.icon.close', { title: 'Close', 'aria-label': 'Close', onclick: () => { sfx.play('back'); cb.onCancel!(); } }, icon('close')) : h('i.close-pad')),
+    h('section.scr-stage', null, h('div.spot'), stageBox, h('div.nameplate', null, plateName, plateTags)),
     panel,
     h('footer.scr-nav', null, back, h('div.grow'), save, next),
   );
