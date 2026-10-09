@@ -266,7 +266,6 @@ h1, h2, h3, p { margin: 0; }
 @container (min-width: 760px) {
   .card-grid.species { grid-template-columns: repeat(10, minmax(0, 1fr)); }
 }
-@container (max-width: 17rem) { .icard { grid-column: 1 / -1; } }
 @container (min-width: 900px) { .card-grid.forms, .card-grid.species { width: min(100%, 60rem); } }
 .card-tile {
   --c: 4px; position: relative; display: grid; grid-template-rows: auto auto; justify-items: center; gap: 4px;

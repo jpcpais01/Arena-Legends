@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.25.1',
+    date: '2026-10-09',
+    title: 'Item cards open where you tap',
+    notes: [
+      'In the gear screen, an item card now grows from the tile you tapped and starts on that tile\'s row. Tap a tile in the middle and it grows one tile to each side. Tap the first tile in a row and it grows to the right, or the last one and it grows to the left.',
+    ],
+  },
+  {
     version: '0.25.0',
     date: '2026-10-09',
     title: 'Epic skins: three full sets',
