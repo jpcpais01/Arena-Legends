@@ -281,6 +281,48 @@ function rootwalkers(): SkinArt {
   };
 }
 
+function vinebound(): SkinArt {
+  // Bark-plated leggings wound with a living vine: leaves sprouting off it and swaying, a blossom
+  // opening on the bark knee plate, and sap rising through a glowing vein down the front.
+  return {
+    mats: {
+      'l.bark': plain(0x7a5434, bark), 'l.plate': plain(0x9a7048, bark),
+      'l.vine': plain(0x3a7a30), 'l.leaf': { base: LEAF, tex: veins }, 'l.leafD': { base: 0x2e7a2e, tex: veins },
+      'l.bloom': shiny(BLOSSOM, undefined, 0.13), 'l.heart': glow(FIREFLY),
+      'l.sap': glow(0x8affc0, sap(1.5, 6)),
+    },
+    legs: {
+      mat: 'l.bark', trim: null, knee: null, tasset: null, rune: null, wraps: null, bulk: 0.2,
+      over(r, t, m, c) {
+        const L = c.len, w = c.w, ph = r.phase % 4;
+        const o = { group: c.g, toneBias: c.bias };
+        // Plates are their own outline group so they stand off the bark beneath.
+        const po = { group: c.far ? 23 : 24, toneBias: c.bias };
+        const sw = [0, 0.25, 0.4, 0.2][ph];
+        // A bark plate over the hip, and one over the knee.
+        r.fill(t.poly([L + 1.4, -w - 0.5, L + 1.4, w + 1, L * 0.56, w + 1.4, L * 0.5, -w * 0.2, L * 0.6, -w - 0.4]), m('l.plate'), { ...po, bevel: 1.6, local: t });
+        r.fill(t.ell(0.4, 0.8, c.body.kneeR + 0.7, c.body.kneeR + 0.9), m('l.plate'), { ...po, bevel: 1.4, local: t });
+        // The vine winding around the thigh.
+        for (const at of [L * 0.3, L * 0.72]) r.fill(t.cap(at - 1.4, -w - 0.3, at + 1.4, w + 0.4, 0.5), m('l.vine'), { ...o, bevel: 0.6 });
+        // Sap rising through a vein down the front of the thigh, between the plates.
+        const vy = w * 0.5;
+        const vein: [number, number][] = [[L * 0.62, vy - 0.4], [L * 0.44, vy + 0.4], [2.4, vy - 0.2]];
+        for (let i = 0; i < vein.length - 1; i++) r.fill(t.cap(vein[i][0], vein[i][1], vein[i + 1][0], vein[i + 1][1], 0.42), m('l.sap'), { group: c.g, local: t });
+        if (c.far) return;
+        // Leaves sprouting off the vine at the front, swaying.
+        r.fill(leaf(t, L * 0.72 + 1.4, w + 0.4, 0.5 + sw, 2.8), m('l.leaf'), { ...o, bevel: 0.8, local: t });
+        r.fill(leaf(t, L * 0.3 + 1.4, w + 0.4, -0.2 + sw, 2.4), m('l.leafD'), { ...o, bevel: 0.8, local: t });
+        r.fill(leaf(t, L * 0.3 - 1.4, -w - 0.3, Math.PI + 0.4 - sw, 2.2), m('l.leaf'), { ...o, bevel: 0.8, local: t });
+        // The blossom on the knee plate opens a little and closes over the loop; its heart glows.
+        const br = [0.85, 0.95, 1.05, 0.95][ph];
+        r.fill(blossom(t, 0.6, w * 0.45 + 0.4, br), m('l.bloom'), { ...o, bevel: 0.6 });
+        r.dot(t.x(0.6, w * 0.45 + 0.4), t.y(0.6, w * 0.45 + 0.4), m('l.heart'), 3, c.g);
+      },
+    },
+    ...FX,
+  };
+}
+
 export const WILDWOOD: Record<string, SkinArt> = {
   'longsword.elderheart': { weapon: elderheart, ...FX },
   'war_horn.wildhunt': { weapon: wildHunt, ...FX },
@@ -288,4 +330,5 @@ export const WILDWOOD: Record<string, SkinArt> = {
   'executioner_hood.stag': stagHood(),
   'leather_jerkin.wildwood': mantle(),
   'zephyr_boots.rootwalkers': rootwalkers(),
+  'windrunner_leggings.vinebound': vinebound(),
 };

@@ -258,6 +258,62 @@ function sandals(): SkinArt {
   };
 }
 
+function shendyt(): SkinArt {
+  // A pleated white-linen kilt over bare legs: gold bands at waist and hem, and a gold-and-lapis
+  // apron down the front with a sun disc at its tip that glints as the hem sways.
+  const pleats: Tex = (_x, y) => (wrap(Math.floor(y * 1.15), 3) === 0 ? -1 : 0);
+  /** A glint sliding across a band, one step per frame. */
+  const sheen: Tex = (_x, y, ph) => (wrap(y - ph * 2.5, 9) < 1.4 ? 1 : 0);
+  return {
+    mats: {
+      'l.linen': plain(LINEN, pleats), 'l.gold': shiny(GOLD, sheen), 'l.apron': shiny(GOLD),
+      'l.lapis': plain(LAPIS), 'l.turq': shiny(TURQ),
+      'l.sun': { base: SUN[2], glow: true, ramp: SUN, tex: corona(0, 0) },
+      'l.ray': glow(0xfff4c0),
+    },
+    legs: {
+      mat: 'skin', trim: null, knee: null, tasset: null, rune: null, wraps: null, bulk: 0,
+      over(r, t, m, c) {
+        const o = { group: c.g, toneBias: c.bias };
+        const L = c.len, w = c.w, ph = r.phase % 4;
+        // Linen hangs: the kilt follows the thigh only a little, in a frame from the hip (x up, y to the front).
+        const d = Math.atan2(Math.sin(t.ang - Math.PI / 2), Math.cos(t.ang - Math.PI / 2));
+        const K = new Xf(t.x(L, 0), t.y(L, 0), Math.abs(d) < 1.3 ? Math.PI / 2 + d * 0.3 : t.ang, 1, -1);
+        const kx = K.ix(t.ox, t.oy), ky = K.iy(t.ox, t.oy);
+        // The hem swings out and back over the loop, wide enough to clear the knee.
+        const fl = [0, 0.5, 0.8, 0.4][ph];
+        const hem = kx + L * 0.2;
+        const front = Math.max(w + 2.2, ky + w + 0.8) + fl, back = Math.min(-w - 1.8, ky - w - 0.6) + fl * 0.6;
+        const kilt = K.poly([1.6, -w - 0.5, 1.6, w + 0.9, hem + 0.8, front, hem - 0.6, back]);
+        r.fill(kilt, m('l.linen'), { ...o, bevel: 1.6, softLight: true, local: K });
+        // Gold waistband, and a gold hem over a lapis stripe.
+        r.fill(intersect(kilt, K.rect(0.9, 0, 0.75, 20)), m('l.gold'), { ...o, bevel: 0.8, noLine: true, local: K });
+        const band = (lo: number, hi: number) => intersect(kilt, K.poly([hem + 0.8 + hi, front + 2, hem - 0.6 + hi, back - 2, hem - 0.6 + lo, back - 2, hem + 0.8 + lo, front + 2]));
+        r.fill(band(-1, 1.1), m('l.gold'), { ...o, bevel: 0.6, noLine: true, local: K });
+        r.fill(band(1.1, 1.9), m('l.lapis'), { ...o, flat: 1, noLine: true });
+        if (c.far) return;
+        // The apron hangs straight from the belt down the front, banded lapis and turquoise.
+        const ay = w * 0.55 + Math.max(0, ky) * 0.3, ab = hem - 2.8;
+        const apron = K.poly([1.4, ay - 1, 1.4, ay + 1.4, ab + 1.6, ay + 1.6 + fl * 0.4, ab + 1.6, ay - 1 + fl * 0.4]);
+        r.fill(apron, m('l.apron'), { ...o, bevel: 1 });
+        // A lapis inlay down its middle under a turquoise band at the belt.
+        r.fill(intersect(apron, K.rect(0, ay + 0.2, 20, 0.45)), m('l.lapis'), { ...o, flat: 1, noLine: true });
+        r.fill(intersect(apron, K.rect(-0.2, 0, 0.5, 10)), m('l.turq'), { ...o, flat: 2, noLine: true });
+        // The sun disc at its tip, rays flaring on the glint frames.
+        const sx = ab + 0.6, sy = ay + 0.3 + fl * 0.4;
+        if (ph === 1 || ph === 2) {
+          const k = ph === 1 ? 2.6 : 2;
+          r.line(K.x(sx, sy - k), K.y(sx, sy - k), K.x(sx, sy + k), K.y(sx, sy + k), m('l.ray'), 3, c.g);
+          r.line(K.x(sx - k, sy), K.y(sx - k, sy), K.x(sx + k, sy), K.y(sx + k, sy), m('l.ray'), 3, c.g);
+        }
+        r.fill(K.circ(sx, sy, 1.55), m('l.apron'), { ...o, bevel: 0.8 });
+        r.fill(K.circ(sx, sy, 1), m('l.sun'), { group: c.g, local: new Xf(K.x(sx, sy), K.y(sx, sy), 0) });
+      },
+    },
+    ...FX,
+  };
+}
+
 export const SUNBORN: Record<string, SkinArt> = {
   'arcane_staff.ra': { weapon: scepterOfRa, ...FX },
   'kite_shield.horus': { weapon: wingsOfHorus, ...FX },
@@ -265,4 +321,5 @@ export const SUNBORN: Record<string, SkinArt> = {
   'chrono_circlet.nemes': nemes(),
   'mage_robe.pharaoh': regalia(),
   'leaping_boots.sunstride': sandals(),
+  'stonehide_tassets.shendyt': shendyt(),
 };

@@ -278,6 +278,45 @@ function hellstriders(): SkinArt {
   };
 }
 
+function cuisses(): SkinArt {
+  // Black iron cuisses split by magma: a lame hanging from the hip over a molten seam, a horned
+  // knee cop with a burning eye, and hellfire licking up off the knee.
+  return {
+    mats: {
+      'l.iron': { base: IRON[2], ramp: [...IRON, 0xffa040], tex: magma(0.8) },
+      'l.plate': { base: IRON[2], ramp: [...IRON, 0xffa040] },
+      'l.dark': { base: 0x1a1216 }, 'l.horn': shiny(0xcabaa0, undefined, 0.14),
+      'l.seam': { base: LAVA[2], glow: true, ramp: LAVA, tex: (_x, _y, ph) => [0, 1, 1, 0][ph % 4] },
+      'l.eye': glow(0xfff070), 'l.flame': glow(0xff6a1a), 'l.hot': glow(0xffd870),
+    },
+    legs: {
+      mat: 'l.iron', trim: null, knee: null, tasset: null, rune: null, wraps: null, bulk: 0.35,
+      over(r, t, m, c) {
+        const L = c.len, w = c.w, ph = r.phase % 4;
+        // The plates are their own outline group, so they stand off the cracked iron beneath.
+        const o = { group: c.far ? 21 : 22, toneBias: c.bias };
+        // The lame over the hip, a molten seam glowing along its lower edge.
+        const x1 = L * 0.52;
+        const lame = t.poly([L + 1.4, -w - 0.5, L + 1.4, w + 1.2, x1 + 0.4, w + 1.6, x1 - 0.6, w * 0.2, x1 + 0.2, -w - 0.4]);
+        r.fill(lame, m('l.plate'), { ...o, bevel: 1.6, local: t });
+        r.line(t.x(x1 + 0.2, w + 1.2), t.y(x1 + 0.2, w + 1.2), t.x(x1 - 0.4, w * 0.2), t.y(x1 - 0.4, w * 0.2), m('l.seam'), 3, c.g);
+        // The knee cop: a pointed black plate with a burning eye, a pale horn curving up off its front.
+        const cop = t.poly([2.4, -w * 0.4, 2.6, w + 0.4, 0.6, w + 1.4, -1.6, w + 0.4, -1.8, -w * 0.2]);
+        r.fill(cop, m('l.plate'), { ...o, bevel: 1.3, local: t });
+        r.fill(t.poly([0.8, w + 0.2, 2.6, w + 2.4, 4, w + 4.6, 5.4, w + 5.2, 4.6, w + 3, 3.2, w + 0.8, 2, w - 0.6]), m('l.horn'), { ...o, bevel: 0.8 });
+        r.dot(t.x(0.4, w * 0.6), t.y(0.4, w * 0.6), m('l.eye'), 3, c.g);
+        if (c.far) return;
+        // Hellfire licking up off the knee cop and the back of the thigh, taller and shorter frame by frame.
+        const up = (x: number, y: number) => new Xf(t.x(x, y), t.y(x, y), 0);
+        const hs = [[3.4, 2.2], [2.6, 3.4], [4, 2.6], [2.8, 3]][ph];
+        flameTongue(r, up(-0.4, w + 1.6), 0, 0, 1.1, hs[0], ph % 2 ? 0.5 : -0.2, m('l.flame'), m('l.hot'), c.g);
+        flameTongue(r, up(L * 0.3, -w - 0.4), 0, 0, 1, hs[1], ph % 2 ? -0.3 : 0.3, m('l.flame'), m('l.hot'), c.g);
+      },
+    },
+    ...FX,
+  };
+}
+
 export const HELLFORGED: Record<string, SkinArt> = {
   'greataxe.hellmaw': { weapon: hellmaw, ...FX },
   'throwing_knives.brimstone': { weapon: brimstoneFangs, proj: { knife: knifeProj }, ...FX },
@@ -285,4 +324,5 @@ export const HELLFORGED: Record<string, SkinArt> = {
   'storm_crown.brimstone': brimstoneCrown(),
   'thornmail.hellforged': carapace(),
   'iron_greaves.hellstride': hellstriders(),
+  'runed_leggings.magma': cuisses(),
 };
