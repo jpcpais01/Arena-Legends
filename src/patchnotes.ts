@@ -12,12 +12,25 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.13.0',
+    version: '0.14.0',
     date: '2026-10-09',
     title: 'Double health for every body',
     notes: [
       'Every body form now starts with twice the health (Balanced goes from 1,520 to 3,040), so fights last longer and comebacks are more likely.',
       'Items that raise health by a percentage scale with the new totals. Shields and heals that are a share of max health grow with it too.',
+    ],
+  },
+  {
+    version: '0.13.0',
+    date: '2026-10-09',
+    title: 'Camera modes',
+    notes: [
+      'A new camera button sits next to the settings cog during battles. Tap it (or press C) to cycle through four cameras; your pick is remembered.',
+      'Classic shows the whole arena, as before.',
+      'Action frames the duel a little closer, punches in on crits, heavy hits, parries and wall splats, and goes in tight on the knockout.',
+      'Close-up stays as close as it can while keeping both fighters in view, and pulls back when they split apart.',
+      'Follow stays on your own fighter, leaning toward your rival.',
+      'Every camera zooms in whole pixel steps, so the pixel art stays sharp.',
     ],
   },
   {
