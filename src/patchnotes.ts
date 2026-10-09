@@ -12,7 +12,7 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.22.0',
+    version: '0.25.0',
     date: '2026-10-09',
     title: 'Epic skins: three full sets',
     notes: [
@@ -22,6 +22,39 @@ export const PATCH_NOTES: PatchNote[] = [
       'Foxfire Shrine: Kitsunebi, Shrine Gohei, Foxfire Lantern, Kitsune Mask, Nine-Tails Haori and Foxfire Geta. The lantern familiar and its shots become fox flames.',
       'Wear all six pieces of a set to get its aura: a turning sun ring, a ring of hellfire, or fox flames circling you.',
       'Epic skins have their own animated frame in the skin picker, which shows the set name and how many pieces you wear. Equip set puts on all six items in their set skins at once.',
+    ],
+  },
+  {
+    version: '0.24.0',
+    date: '2026-10-09',
+    title: 'New arena: Emberforge Caldera',
+    notes: [
+      'A brand new arena: duel on a platform of basalt columns standing in a lava lake, inside a volcano, in front of an ancient giants\' forge. Lavafalls pour down the cliffs, embers rise around the fighters and everything glows from the lava below.',
+      'The volcano gets angrier as the round goes on: more lava bombs, lightning in the ash plume, more embers. In overtime it erupts.',
+      'Sunset Colosseum, Moonlit Keep and Jade Temple are gone. The arena picker in Settings now offers Skygrove Isle, Emberforge Caldera and Random. If you had picked one of the removed arenas, you are back on Skygrove Isle.',
+    ],
+  },
+  {
+    version: '0.23.0',
+    date: '2026-10-09',
+    title: 'Fights with a rhythm',
+    notes: [
+      'Fighters now feel each other out at the start: quick, safe pokes to test reactions before they commit to big moves. The better they read you, the bolder they get.',
+      'After a hot exchange, fighters break off and circle to catch their breath before the next clash. Hot-headed fighters barely pause and may chase you down, while patient ones take their time. They still punish any opening.',
+      'The clock now matters more and more as the end approaches: a fighter who is behind stops resting and pushes hard, and one who is ahead plays it safe.',
+      'A new "Circling" stance shows up on the battle HUD while a fighter is catching their breath.',
+    ],
+  },
+  {
+    version: '0.22.0',
+    date: '2026-10-09',
+    title: 'Smoother, more natural fighters',
+    notes: [
+      'Attacks have extra in-between frames: weapons travel in smooth arcs, the wind-up holds a moment before the strike, and fighters ease back into their stance instead of snapping.',
+      'Capes, scarves, hair and tails now trail behind the body and keep swinging after a lunge or a dodge.',
+      'Smoother run and back-pedal cycles with arm pumping and a steadier head. Fighters catch their weight when they stop running and crouch to absorb a landing.',
+      'Idle fighters breathe and shift their weight, each on their own rhythm.',
+      'Hits knock the fighter back a touch, and knocked-out fighters bounce once when they hit the ground.',
     ],
   },
   {

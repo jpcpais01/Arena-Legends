@@ -90,22 +90,63 @@ const RUN_HIP = [-0.1, -0.075, -0.04, -0.06, -0.1, -0.075, -0.04, -0.06];
 /** Stride length (px of travel) covered by one full run cycle, per leg length. */
 export const RUN_CYCLE_LEGS = 2.9;
 export const BACK_CYCLE_LEGS = 1.6;
+/** Drawn frames per locomotion cycle, resampled from the 8 authored keys. */
+const RUN_FRAMES = 12;
 
-function runFrames(stance: Pose, twoHand: boolean, scale: number, lean: number): FrameDef[] {
+/** Periodic Catmull-Rom through evenly spaced keys, at fractional key index `u`. */
+function cyc(keys: number[], u: number): number {
+  const n = keys.length, i = Math.floor(u), t = u - i;
+  const p0 = keys[(i - 1 + n) % n], p1 = keys[i % n], p2 = keys[(i + 1) % n], p3 = keys[(i + 2) % n];
+  return 0.5 * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t);
+}
+
+/**
+ * The run cycle, smoothed through the authored keys. Cloth and hair stream
+ * behind (`trail`) and flap once per step, a beat after the foot lands.
+ */
+function runFrames(stance: Pose, twoHand: boolean, scale: number, lean: number, trail: number): FrameDef[] {
   const out: FrameDef[] = [];
-  for (let i = 0; i < 8; i++) {
-    const n = RUN_FOOT[i], f = RUN_FOOT[(i + 4) % 8];
-    const swing = Math.cos((i / 8) * Math.PI * 2); // + when the near foot is forward
+  const col = (k: number) => RUN_FOOT.map((f) => f[k]);
+  const fx = col(0), fy = col(1), ft = col(2);
+  for (let i = 0; i < RUN_FRAMES; i++) {
+    const u = (i / RUN_FRAMES) * 8, uf = (u + 4) % 8;
+    const ph = (i / RUN_FRAMES) * Math.PI * 2;
+    const swing = Math.cos(ph); // + when the near foot is forward
+    const y = (v: number) => -1 + (1 + v) * scale;
     const p: PoseKey = {
-      fNx: n[0] * scale, fNy: n[1] === -1 ? -1 : -1 + (1 + n[1]) * scale, toeN: n[2] * scale,
-      fFx: f[0] * scale + 0.04, fFy: f[1] === -1 ? -1 : -1 + (1 + f[1]) * scale, toeF: f[2] * scale,
-      hipY: RUN_HIP[i] * (0.6 + 0.4 * scale), lean: stance.lean + lean,
+      fNx: cyc(fx, u) * scale, fNy: y(cyc(fy, u)), toeN: cyc(ft, u) * scale,
+      fFx: cyc(fx, uf) * scale + 0.04, fFy: y(cyc(fy, uf)), toeF: cyc(ft, uf) * scale,
+      hipY: cyc(RUN_HIP, u) * (0.6 + 0.4 * scale),
+      // Leans into each push-off; the head steadies against the bounce.
+      lean: stance.lean + lean + 0.03 * scale * Math.cos(ph * 2),
+      head: -0.035 * scale * Math.cos(ph * 2),
       // The weapon hand bobs with the step; a free lead hand pumps opposite the near foot.
-      hNy: stance.hNy + (i % 4 === 0 ? -0.03 : 0.02), hNx: stance.hNx - swing * 0.04,
-      sway: -swing * 0.5,
+      hNy: stance.hNy - 0.03 * Math.cos(ph * 2), hNx: stance.hNx - swing * 0.05,
+      wAng: stance.wAng + 0.06 * Math.sin(ph * 2),
+      sway: trail + 0.25 * Math.sign(trail || 1) * Math.sin(ph * 2 - 1.2),
     };
-    if (!twoHand) { p.hFx = stance.hFx + swing * 0.14 * scale; p.hFy = stance.hFy + Math.abs(swing) * 0.04; }
+    if (!twoHand) { p.hFx = stance.hFx + swing * 0.16 * scale; p.hFy = stance.hFy + Math.abs(swing) * 0.05; }
     out.push({ p });
+  }
+  return out;
+}
+
+/** Breathing idle: chest rises, weight drifts between the feet, cloth stirs a beat behind. */
+function idleFrames(stance: Pose): FrameDef[] {
+  const out: FrameDef[] = [];
+  for (let i = 0; i < 6; i++) {
+    const ph = (i / 6) * Math.PI * 2;
+    const b = (1 - Math.cos(ph)) / 2;
+    out.push({
+      p: {
+        hipY: stance.hipY - 0.045 * b, hipX: 0.025 * Math.sin(ph),
+        lean: stance.lean + 0.02 * b, head: -0.045 * b + 0.015,
+        hNy: stance.hNy - 0.04 * b, hFy: stance.hFy - 0.04 * b,
+        wAng: stance.wAng + 0.05 * Math.sin(ph), sAng: stance.sAng + 0.04 * Math.sin(ph),
+        sway: 0.2 * Math.sin(ph - 1.1),
+      },
+      face: 'calm',
+    });
   }
   return out;
 }
@@ -518,6 +559,86 @@ function evadeClips(stance: Pose): Record<string, Phases> {
 // Assembly
 // -----------------------------------------------------------------------------
 
+/**
+ * Motion polish for one-shot clips, computed once per character:
+ * - in-between frames where two keys are far apart (eased arcs instead of pops),
+ *   in the windup (including the lift out of the stance) and the recovery;
+ * - a settle frame at the end of the recovery so the return to the stance is
+ *   eased rather than a snap;
+ * - follow-through on cloth, hair and tails: frames that don't set `sway`
+ *   get it from how the body moved since the previous frame, with lag.
+ * Strike (active) frames are left exactly as authored so impacts stay snappy.
+ */
+const SPAN: [keyof Pose, number][] = [
+  ['hNx', 0.24], ['hNy', 0.24], ['hFx', 0.24], ['hFy', 0.24], ['wAng', 0.6], ['sAng', 0.6],
+  ['lean', 0.14], ['hipX', 0.06], ['hipY', 0.06], ['head', 0.18], ['rot', 0.8],
+];
+
+function gap(base: Pose, a: PoseKey, b: PoseKey): number {
+  let d = 0;
+  for (const [k, s] of SPAN) d = Math.max(d, Math.abs((b[k] ?? base[k]) - (a[k] ?? base[k])) / s);
+  return d;
+}
+
+/** Holds match apart from the string pull, which tweens like the pose. */
+const sameHold = (a?: Partial<Hold>, b?: Partial<Hold>) =>
+  JSON.stringify({ ...a, pull: 0 }) === JSON.stringify({ ...b, pull: 0 });
+
+function between(base: Pose, a: FrameDef, b: FrameDef, t: number): FrameDef {
+  const pa = { ...base, ...a.p }, pb = { ...base, ...b.p };
+  const p: PoseKey = {};
+  for (const k of Object.keys(pa) as (keyof Pose)[]) {
+    if (a.p[k] === undefined && b.p[k] === undefined) continue;
+    p[k] = k === 'elN' || k === 'elF' ? (t < 0.5 ? pa[k] : pb[k]) : pa[k] + (pb[k] - pa[k]) * t;
+  }
+  const pull = a.hold?.pull !== undefined && b.hold?.pull !== undefined ? a.hold.pull + (b.hold.pull - a.hold.pull) * t : a.hold?.pull;
+  return { p, face: b.face ?? a.face, hold: a.hold && { ...a.hold, pull } };
+}
+
+/** Inserts an in-between wherever consecutive keys are far apart (never across a hold change). */
+function inbetween(base: Pose, frames: FrameDef[], from: FrameDef | null): FrameDef[] {
+  const out: FrameDef[] = [];
+  let prev = from;
+  for (const f of frames) {
+    // Whole-body turns (rolls) wrap around; tweening them would spin the wrong way.
+    const turn = Math.abs((f.p.rot ?? 0) - (prev?.p.rot ?? 0)) > 1;
+    if (prev && !prev.smear && !turn && sameHold(prev.hold, f.hold) && gap(base, prev.p, f.p) >= 1) out.push(between(base, prev, f, 0.5));
+    out.push(f);
+    prev = f;
+  }
+  return out;
+}
+
+function polish(c: Clip): Clip {
+  const base = c.base;
+  const rest: FrameDef = { p: {}, face: 'calm', hold: c.w[0]?.hold ?? c.r[0]?.hold };
+  const w = inbetween(base, c.w, c.draw.length ? c.draw[c.draw.length - 1] : rest);
+  let r = inbetween(base, c.r, c.a.length ? c.a[c.a.length - 1] : null);
+  const last = r[r.length - 1];
+  if (last && !c.stow.length && gap(base, last.p, {}) >= 0.8) {
+    // Settle: most of the way home, so the hand-off to idle is a small step.
+    const s = between(base, last, { p: {}, hold: last.hold }, 0.6);
+    r = [...r, { ...s, face: 'calm' }];
+  }
+  const out: Clip = { ...c, w, r };
+  // Follow-through: cloth trails the body's motion and keeps swinging after it stops.
+  let sway = 0;
+  let prev: PoseKey = {};
+  for (const part of [out.draw, out.w, out.a, out.r, out.stow]) {
+    for (let i = 0; i < part.length; i++) {
+      const f = part[i];
+      const at = (k: keyof Pose) => f.p[k] ?? base[k];
+      const was = (k: keyof Pose) => prev[k] ?? base[k];
+      const push = (at('hipX') - was('hipX')) * 5 + (at('lean') - was('lean')) * 1.2 - (at('hipY') - was('hipY')) * 2;
+      sway = Math.max(-1, Math.min(1, sway * 0.5 + push));
+      if (f.p.sway === undefined) part[i] = { ...f, p: { ...f.p, sway: Math.round(sway * 20) / 20 } };
+      else sway = f.p.sway;
+      prev = f.p;
+    }
+  }
+  return out;
+}
+
 export interface ClipSet {
   clips: Map<string, Clip>;
   /** Locomotion cycle lengths in px of travel. */
@@ -536,17 +657,24 @@ export function clipsFor(art: CharacterArt): ClipSet {
   const twoHand = art.hands === 2;
   const clips = new Map<string, Clip>();
   const add = (id: string, ph: Phases, extra: Partial<Clip> = {}) =>
-    clips.set(id, { draw: [], stow: [], base: stance, hold, ...ph, ...extra });
+    clips.set(id, polish({ draw: [], stow: [], base: stance, hold, ...ph, ...extra }));
 
-  // Idle: a one-pixel breath.
-  clips.set('idle', loop(stance, hold, [
-    { p: {}, face: 'calm' },
-    { p: { hipY: stance.hipY - 0.025, hNy: stance.hNy - 0.02, hFy: stance.hFy - 0.02 }, face: 'calm' },
-    { p: { hipY: stance.hipY - 0.045, hNy: stance.hNy - 0.04, hFy: stance.hFy - 0.04, head: -0.04 }, face: 'calm' },
-    { p: { hipY: stance.hipY - 0.025, hNy: stance.hNy - 0.02, hFy: stance.hFy - 0.02 }, face: 'calm' },
+  clips.set('idle', loop(stance, hold, idleFrames(stance)));
+  clips.set('run', loop(stance, hold, runFrames(stance, twoHand, 1, 0.12, 0.45).map((f) => ({ ...f, face: 'fierce' }))));
+  clips.set('back', loop(stance, hold, runFrames(stance, twoHand, 0.6, -0.06, -0.25).map((f) => ({ ...f, face: 'calm' }))));
+  // Transitions: catching the weight after a run, and absorbing a landing.
+  clips.set('stop', loop(stance, hold, [
+    { p: { hipY: stance.hipY - 0.06, lean: stance.lean - 0.07, fFx: 0.42, fNx: -0.34, toeF: 0.2, hNx: stance.hNx + 0.05, hFx: stance.hFx + 0.06, sway: -0.7 }, face: 'fierce' },
+    { p: { hipY: stance.hipY - 0.03, lean: stance.lean - 0.02, sway: -0.3 }, face: 'calm' },
   ]));
-  clips.set('run', loop(stance, hold, runFrames(stance, twoHand, 1, 0.12).map((f) => ({ ...f, face: 'fierce' }))));
-  clips.set('back', loop(stance, hold, runFrames(stance, twoHand, 0.6, -0.06).map((f) => ({ ...f, face: 'calm' }))));
+  clips.set('stopB', loop(stance, hold, [
+    { p: { hipY: stance.hipY - 0.06, lean: stance.lean + 0.09, fNx: -0.4, toeN: -0.15, hNx: stance.hNx - 0.04, sway: 0.6 }, face: 'calm' },
+    { p: { hipY: stance.hipY - 0.03, lean: stance.lean + 0.03, sway: 0.25 }, face: 'calm' },
+  ]));
+  clips.set('land', loop(stance, hold, [
+    { p: { hipY: stance.hipY - 0.13, lean: stance.lean + 0.2, head: -0.1, fNx: -0.38, fFx: 0.36, hNy: stance.hNy - 0.1, hFy: stance.hFy - 0.12, sway: -0.6 }, face: 'fierce' },
+    { p: { hipY: stance.hipY - 0.06, lean: stance.lean + 0.08, head: -0.03, sway: -0.25 }, face: 'calm' },
+  ]));
 
   for (const [id, ph] of Object.entries(FAMILY_CLIPS[art.family]())) add(id, ph);
   for (const [id, ph] of Object.entries(CHEST)) add(id, ph);
@@ -559,9 +687,9 @@ export function clipsFor(art: CharacterArt): ClipSet {
       const ph = secondaryClip(art, anim);
       if (!ph) continue;
       const gone = anim === 'throw';
-      clips.set('sec.' + anim, { base, hold: secHold, draw: drawFrames(art), stow: stowFrames(art, gone), ...ph });
+      clips.set('sec.' + anim, polish({ base, hold: secHold, draw: drawFrames(art), stow: stowFrames(art, gone), ...ph }));
     }
-    if (art.secFamily === 'shield' || art.secFamily === 'parry') clips.set('sec.riposte', { base, hold: secHold, draw: [], w: [], a: [], r: riposteFrames(art), stow: stowFrames(art, false) });
+    if (art.secFamily === 'shield' || art.secFamily === 'parry') clips.set('sec.riposte', polish({ base, hold: secHold, draw: [], w: [], a: [], r: riposteFrames(art), stow: stowFrames(art, false) }));
   }
 
   // Reactions.
@@ -587,6 +715,8 @@ export function clipsFor(art: CharacterArt): ClipSet {
     { p: { ...hurt, rot: 0.5, hipY: -0.28, lean: -0.15, fNx: -0.1, fFx: 0.35, fFy: -0.9 }, face: 'hurt' },
     { p: { ...lying, rot: 1.15, hipY: -0.6, head: 0.1, fNy: -0.85, fFy: -0.8 }, face: 'ko' },
     { p: lying, face: 'ko' },
+    // A small bounce as the body meets the floor.
+    { p: { ...lying, rot: Math.PI / 2 - 0.12, hipY: -0.7, head: 0.38, hFy: -0.72, toeN: 0.7 }, face: 'ko' },
   ]));
   const cheer: PoseKey = art.family === 'bow'
     ? { hFx: 0.3, hFy: 0.85, elF: 1, wAng: 0, hNx: 0.35, hNy: 0.3 }

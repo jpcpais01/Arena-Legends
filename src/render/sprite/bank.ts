@@ -89,8 +89,10 @@ export class SpriteBank {
     const c = this.set.clips.get(clip) ?? this.set.clips.get('idle')!;
     const r = (shared ??= new Raster(176, 150));
     r.clear();
-    // Animated skin surfaces step with the frame.
-    r.phase = frame;
+    // Animated skin surfaces step with the frame. Their loops are four steps
+    // long; the idle loop has more frames, so it is spread over them evenly
+    // (0,1,1,2,3,3 for six) to wrap seamlessly.
+    r.phase = clip === 'idle' ? Math.floor((frame * 4) / Math.max(4, c.w.length)) : frame;
     drawFigure(r, this.art, frameSpec(c, frame, face, secOut), OX, OY);
     const { tip, secTip } = figureMarks;
     const f = r.compose(OX, OY);
