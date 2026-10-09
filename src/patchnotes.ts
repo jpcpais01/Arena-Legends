@@ -12,6 +12,19 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.16.0',
+    date: '2026-10-09',
+    title: '30 more item skins, and skins for special items',
+    notes: [
+      'Special items get skins for the first time, and they change colour in battle too: Frostfall Sigil (an ice meteor), Crimson Phantom, Firefly Lantern, Bluefire Plume (revive in blue flames), Amber Echo, Moonsilver Fang, Soulfire Core and Amethyst Core.',
+      'Two more Rare skins: Royal Guard for the Longsword and Bone Mask for the Berserker Mask.',
+      '10 new Mythic skins that reshape the item: Raven Feathers, Lotus Chakram, Hourglass Crown, Thunderbird Crest, Musketeer Hat, Wraith Shroud, Rosethorn Mail, Ranger Mantle, Buccaneer Boots and Gothic Sabatons.',
+      '10 new Legendary skins with living animations and sparkles: Tidecaller, Everbloom (a blossom that turns), Venomspitter, Horn of the Aurora, Bloodfury Visage, Seraph Helm (beating wings and a halo), Soulbound Plate (skull pauldrons and climbing soul runes), Prism Mail (floating crystal shards), Earthshakers (glowing magma cracks) and Umbral Treads (shadow smoke).',
+      'Chest pieces and boots can now really change shape: capes, mantles, quivers, roses, cuffs, pointed sabatons and more.',
+      'Boot patterns now stay on the boot as the leg moves.',
+    ],
+  },
+  {
     version: '0.15.0',
     date: '2026-10-09',
     title: 'Night overtime',

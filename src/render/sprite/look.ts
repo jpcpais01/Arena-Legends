@@ -8,6 +8,7 @@ import { mix, toHsl, fromHsl } from '../pixel/color';
 import { material, type Material } from '../pixel/raster';
 import { bodyFor, type BodySpec } from './body';
 import { SKIN_ART, type SkinArt } from './skins';
+import type { BodyDraw, LegDraw, ShoulderDraw } from './skins/armour';
 import type { HeadDraw } from './skins/heads';
 import { MAIN_FAMILY, SEC_FAMILY, weaponArt, type MainFamily, type SecFamily, type WeaponArt } from './weapons';
 
@@ -39,6 +40,9 @@ export interface CharacterArt {
   headSkin: SkinArt | null;
   chestSkin: SkinArt | null;
   bootsSkin: SkinArt | null;
+  /** Special item skin: recolours its icon, battle sprites and particles. */
+  specialSkin: SkinArt | null;
+  specialSkinId: string | null;
   /** Reshaped headgear from a skin, drawn instead of the stock piece. */
   headDraw: HeadDraw | null;
 }
@@ -61,6 +65,10 @@ export interface ChestLook {
   belt: string;
   /** Plate seams and trims drawn on the torso. */
   trim: string | null;
+  /** Reshaped armour from a skin: extra shapes behind the body, over the torso, and on each shoulder. */
+  back?: BodyDraw | null;
+  over?: BodyDraw | null;
+  shoulder?: ShoulderDraw | null;
 }
 
 export interface BootsLook {
@@ -72,6 +80,8 @@ export interface BootsLook {
   trim: string | null;
   wing: string | null;
   knee: string | null;
+  /** Reshaped boots from a skin: extra shapes on each leg. */
+  over?: LegDraw | null;
 }
 
 const tunicFor = (chest: ChestId | undefined): ChestLook => {
@@ -190,6 +200,11 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     spark: material({ base: 0xc8f0ff, glow: true }),
     band: material({ base: 0xf0c040 }),
     bandTail: material({ base: 0xd8a030 }),
+    // Special items worn on the body (skins recolour these)
+    plume: material({ base: 0xb8282a, shiny: true }),
+    plumeTip: material({ base: 0xffd040, glow: true }),
+    fangTooth: material({ base: 0xf6f2ea }),
+    fangBlood: material({ base: 0xb8282a, shiny: true }),
   };
   const skins = build.skins ?? {};
   const skinArt = (id: GearId | undefined): [string | null, SkinArt | null] => {
@@ -218,6 +233,12 @@ export function makeArt(build: CharacterBuild): CharacterArt {
       headDraw = hs.draw;
     }
   }
+  // Special item skins only recolour what the body wears of them (feather, fang).
+  const [specialSkinId, specialSkin] = skinArt(build.gear.special);
+  for (const k of ['plume', 'plumeTip', 'fangTooth', 'fangBlood']) {
+    const spec = specialSkin?.mats?.[k];
+    if (spec) mats[k] = material(spec);
+  }
   return {
     build, look, form: build.form,
     body: bodyFor(build.form, look.species),
@@ -231,5 +252,6 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     boots: { ...bootsFor(build.gear.boots), ...worn.boots?.boots },
     skins, mainSkin, secSkin, headDraw,
     headSkin: worn.head, chestSkin: worn.chest, bootsSkin: worn.boots,
+    specialSkin, specialSkinId,
   };
 }

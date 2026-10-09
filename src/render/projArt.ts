@@ -2,6 +2,7 @@ import type { ProjectileStyle } from '../sim/types';
 import { material, Raster, type Material } from './pixel/raster';
 import { arc, union } from './pixel/sdf';
 import type { Sprite } from './sprite/bank';
+import { skinMaterials } from './sprite/skins';
 import { Xf } from './sprite/xform';
 
 /**
@@ -190,6 +191,8 @@ const ART: Record<ProjectileStyle | 'phantom' | 'sigil', { frames: number; draw:
 
 export type ProjArtId = keyof typeof ART;
 
+const M_NAME = new Map<Material, string>(Object.entries(M).map(([k, m]) => [m, k]));
+
 const cache = new Map<string, Sprite>();
 let raster: Raster | null = null;
 const STEPS = 32;
@@ -198,17 +201,19 @@ export function projFrames(id: ProjArtId): number {
   return ART[id].frames;
 }
 
-/** Sprite for a projectile flying at `angle` (world radians, y up). */
-export function projSprite(id: ProjArtId, frame: number, angle = 0): Sprite {
+/** Sprite for a projectile flying at `angle` (world radians, y up), optionally in a special item skin's colours. */
+export function projSprite(id: ProjArtId, frame: number, angle = 0, skin?: string | null): Sprite {
   const a = ((Math.round((angle / (Math.PI * 2)) * STEPS) % STEPS) + STEPS) % STEPS;
   const f = frame % ART[id].frames;
-  const key = `${id}.${f}.${a}`;
+  const key = `${id}.${f}.${a}.${skin ?? ''}`;
   let s = cache.get(key);
   if (s) return s;
   const r = (raster ??= new Raster(80, 80));
   r.clear();
   const mats = new Map<Material, number>();
+  const over = skin ? skinMaterials(skin) : null;
   const h = (m: Material) => {
+    if (over) m = over[M_NAME.get(m)!] ?? m;
     let k = mats.get(m);
     if (!k) { k = r.add(m); mats.set(m, k); }
     return k;

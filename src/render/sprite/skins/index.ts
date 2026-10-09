@@ -1,5 +1,5 @@
 import { mix } from '../../pixel/color';
-import type { MaterialSpec } from '../../pixel/raster';
+import { material, type Material, type MaterialSpec } from '../../pixel/raster';
 import { bands, damascus, glint, grain, hash, lattice, speckle } from '../../pixel/tex';
 import type { BootsLook, ChestLook } from '../look';
 import type { WeaponArt } from '../weaponKit';
@@ -7,7 +7,14 @@ import {
   geodeHeart, icicleScepter, kagutsuchi, krakenConch, lionheart, morningstar, skullcrusher, solarDisc, swordbreaker,
   frostreaver, voidfang, wintersHeart, wyrmRepeater,
 } from './arsenal';
-import { celestialCrown, eternityCirclet, hornedWarhelm, oniMask, phoenixBand, ravenHood, type HeadSkin } from './heads';
+import {
+  buccaneerBoots, earthshakers, gothicSabatons, prismMail, rangerMantle, rosethornMail, soulboundPlate, umbralTreads, wraithShroud,
+} from './armour';
+import { auroraHorn, everbloom, lotusChakram, ravenFeather, tidecaller, venomspitter } from './armory';
+import {
+  bloodfuryVisage, celestialCrown, eternityCirclet, hornedWarhelm, hourglassCrown, musketeerHat, oniMask, phoenixBand, ravenHood,
+  seraphHelm, thunderbirdCrest, type HeadSkin,
+} from './heads';
 import {
   aegis, boneTorch, cosmicStaff, dawnbreaker, dragonGlaive, dragonscaleShield, serpentKris, serpentStaff, starpiercer,
   sunstring, thunderfall, tsukuyomi, twinmoon, volcanoHeart, wyrmfang, wyvernRecurve,
@@ -34,6 +41,21 @@ export interface SkinArt {
    * where the item is: the weapon tip, the head, the body or the feet.
    */
   fx?: { spark: number; spark2: number };
+  /** Special items: particle colours in battle (bright, deep) for its aura, shots and bursts. */
+  glow?: [number, number];
+}
+
+const built = new Map<string, Record<string, Material>>();
+
+/** A skin's material overrides, built once (special item icons and battle sprites swap materials by name). */
+export function skinMaterials(id: string): Record<string, Material> {
+  let out = built.get(id);
+  if (!out) {
+    out = {};
+    for (const [k, spec] of Object.entries(SKIN_ART[id]?.mats ?? {})) out[k] = material(spec);
+    built.set(id, out);
+  }
+  return out;
 }
 
 const shiny = (base: number, tex?: MaterialSpec['tex'], step = 0.15): MaterialSpec => ({ base, shiny: true, step, tex });
@@ -214,4 +236,64 @@ export const SKIN_ART: Record<string, SkinArt> = {
     boots: { wing: 'k.wing', knee: 'k.knee', height: 0.75 },
     fx: { spark: 0xe8fbff, spark2: 0x5aa8ff },
   },
+
+  // --- Third wave: rare -------------------------------------------------------------------
+  'longsword.royal': {
+    mats: { blade: shiny(0xc8d6f0, damascus(3.2, 0.8), 0.16), guard: shiny(0xf0c040), grip: plain(0x1e3a8a, lattice(2.5, -1)), pommel: shiny(0xf0c040) },
+    trail: [0xeef4ff, 0x6a8ad8],
+  },
+  'berserker_mask.bone': { mats: { mask: shiny(0xe8dcc0, speckle(0.08, -1), 0.13), maskHorn: plain(0x3a2a30, bands(1.4, 1, 1)), maskEye: glow(0xff3a2a) } },
+  // Special items: their icon, battle sprites and particles change colour together.
+  'meteor_sigil.frostfall': {
+    mats: {
+      sigil: glow(0x8ad8ff), rock: shiny(0x5a7aa8, speckle(0.12, 1), 0.14), ember: glow(0xbff0ff),
+      lava: glow(0x6ad0ff), lavaHot: glow(0xf0ffff), fire: glow(0x9ae8ff),
+    },
+    glow: [0xe8fbff, 0x3a7ad8],
+  },
+  'phantom_blade.crimson': { mats: { phantom: glow(0xff5a6e), phantomHot: glow(0xffe0e4) }, glow: [0xffd0d8, 0xc02a3a] },
+  'wisp_lantern.firefly': {
+    mats: { lantern: shiny(0x6a8a3a), wisp: glow(0xd8ff6a), wispHot: glow(0xfaffe0) },
+    glow: [0xf0ffb0, 0x6ac83a],
+  },
+  'phoenix_feather.azure': {
+    mats: {
+      feather: plain(0x2a6ae0, bands(2.4, 1, 1)), featherTip: glow(0x9af0ff), gold: shiny(0xd8e4f0),
+      plume: shiny(0x2a6ae0), plumeTip: glow(0x9af0ff),
+    },
+    glow: [0xbff4ff, 0x2a6ae0],
+  },
+  'echo_stone.amber': { mats: { stone: plain(0xd08a2a, speckle(0.12, 1)), rune: glow(0xfff0a0) }, glow: [0xffd870, 0xc07a1a] },
+  'vampiric_fang.moonsilver': {
+    mats: {
+      fang: shiny(0xd8e0f0, undefined, 0.16), blood: shiny(0x8a3ad8), cord: plain(0x2a2a3a),
+      fangTooth: plain(0xdce4f4), fangBlood: shiny(0x8a3ad8),
+    },
+  },
+  'ember_core.soulfire': { mats: { ember: glow(0x5aff8a), emberHot: glow(0xe8fff0), emberDeep: glow(0x1a9a5a) }, glow: [0x9affc0, 0x1a8a4a] },
+  'frost_core.amethyst': { mats: { ice: shiny(0xb88aff, undefined, 0.16), iceGlow: glow(0xf4e8ff) }, glow: [0xf0e0ff, 0x9a5ae0] },
+
+  // --- Third wave: mythic -----------------------------------------------------------------
+  'throwing_knives.feathers': { weapon: ravenFeather },
+  'wind_chakram.lotus': { weapon: lotusChakram },
+  'chrono_circlet.hourglass': { head: hourglassCrown },
+  'storm_crown.thunderbird': { head: thunderbirdCrest },
+  'duelist_band.musketeer': { head: musketeerHat },
+  'phase_cloak.wraith': wraithShroud(),
+  'thornmail.rosethorn': rosethornMail(),
+  'leather_jerkin.ranger': rangerMantle(),
+  'leather_boots.buccaneer': buccaneerBoots(),
+  'iron_greaves.gothic': gothicSabatons(),
+
+  // --- Third wave: legendary --------------------------------------------------------------
+  'parrying_dagger.tidecaller': { weapon: tidecaller, ...legend(0xe0ffff, 0x2a8ad8) },
+  'buckler.everbloom': { weapon: everbloom, ...legend(0xffd8ea, 0xff5a9a) },
+  'hand_crossbow.venom': { weapon: venomspitter, ...legend(0xe8ff9a, 0x4aa020) },
+  'war_horn.aurora': { weapon: auroraHorn, ...legend(0xc8fff0, 0x8a5aff) },
+  'berserker_mask.bloodfury': { head: bloodfuryVisage, fx: { spark: 0xff8a6a, spark2: 0xa01020 } },
+  'iron_helm.seraph': { head: seraphHelm, fx: { spark: 0xfff6d0, spark2: 0xe0a830 } },
+  'plate_armor.soulbound': { ...soulboundPlate(), fx: { spark: 0xd8fff8, spark2: 0x2ab8b8 } },
+  'mirror_mail.prism': { ...prismMail(), fx: { spark: 0xffffff, spark2: 0xff7ad8 } },
+  'colossus_boots.earthshaker': { ...earthshakers(), fx: { spark: 0xffd060, spark2: 0xd83a1a } },
+  'shadow_treads.umbral': { ...umbralTreads(), fx: { spark: 0xe0c8ff, spark2: 0x6a2ad8 } },
 };

@@ -68,6 +68,8 @@ export class BattleView implements View {
   private theme: Theme = THEMES[0];
   readonly fx = new Fx();
   private fighters: FighterView[] = [];
+  /** Skinned special item shots: their colours, for the burst when they end. */
+  private projGlow = new Map<number, [number, number]>();
   private acc = 0;
   private alpha = 0;
   speed = 1;
@@ -378,8 +380,14 @@ export class BattleView implements View {
       if (getStatus(f, 'burn')) this.fx.burst({ x: bx, y: by, jitter: 0.35, jitterY: 0.6, count: 1, dir: Math.PI / 2, spread: 0.3, speed: [0.8, 1.6], life: [0.3, 0.6], color: 0xffd060, color2: 0xd83a1a, kind: 'ember' });
       if (getStatus(f, 'poison')) this.fx.burst({ x: bx, y: by, jitter: 0.3, jitterY: 0.6, count: 1, dir: Math.PI / 2, spread: 0.2, speed: [0.4, 0.8], life: [0.4, 0.7], color: 0x9cff4a, color2: 0x3a8a2a, size: 2 });
       if (getStatus(f, 'chill')) this.fx.burst({ x: bx, y: by + 0.6, jitter: 0.4, count: 1, dir: -Math.PI / 2, spread: 0.4, speed: [0.3, 0.7], life: [0.4, 0.8], color: 0xf0ffff, color2: 0x8ad8ff });
-      if (f.has.has('ember_core') && Math.random() < 0.35) this.fx.burst({ x: bx - f.facing * 0.2, y: by, jitter: 0.3, jitterY: 0.5, count: 1, dir: Math.PI / 2, spread: 0.3, speed: [0.6, 1.2], life: [0.3, 0.6], color: 0xffb040, color2: 0xc83a1a, kind: 'ember' });
-      if (f.has.has('frost_core') && Math.random() < 0.35) this.fx.burst({ x: bx, y: by + 0.4, jitter: 0.4, jitterY: 0.5, count: 1, dir: -Math.PI / 2, spread: 0.6, speed: [0.2, 0.5], life: [0.5, 0.9], color: 0xe8fbff, color2: 0x7ac8f0 });
+      if (f.has.has('ember_core') && Math.random() < 0.35) {
+        const c = this.glow(f.id, 0xffb040, 0xc83a1a);
+        this.fx.burst({ x: bx - f.facing * 0.2, y: by, jitter: 0.3, jitterY: 0.5, count: 1, dir: Math.PI / 2, spread: 0.3, speed: [0.6, 1.2], life: [0.3, 0.6], color: c[0], color2: c[1], kind: 'ember' });
+      }
+      if (f.has.has('frost_core') && Math.random() < 0.35) {
+        const c = this.glow(f.id, 0xe8fbff, 0x7ac8f0);
+        this.fx.burst({ x: bx, y: by + 0.4, jitter: 0.4, jitterY: 0.5, count: 1, dir: -Math.PI / 2, spread: 0.6, speed: [0.2, 0.5], life: [0.5, 0.9], color: c[0], color2: c[1] });
+      }
     }
     const hx = px, hy = Math.round(this.sy(y + 2.05)) - o.hop;
     if (getStatus(f, 'stun') && f.alive) {
@@ -413,11 +421,13 @@ export class BattleView implements View {
     if (f.familiar && f.alive) {
       const fx = Math.round(this.sx(x - f.facing * 0.5)), fy = Math.round(this.sy(y + 2.1) + Math.sin(this.time * 3) * 2);
       const charging = f.familiar.charge > 0;
-      g.fillStyle = '#c89a30'; g.fillRect(fx - 2, fy - 4, 5, 1); g.fillRect(fx - 2, fy + 3, 5, 1); g.fillRect(fx, fy - 6, 1, 2);
-      g.fillStyle = '#5a3a20'; g.fillRect(fx - 2, fy - 3, 1, 6); g.fillRect(fx + 2, fy - 3, 1, 6);
-      g.fillStyle = charging && Math.floor(this.time * 20) % 2 ? '#f0ffff' : '#7ae8ff';
+      const sk = v.art.specialSkin?.mats;
+      const metal = sk?.lantern?.base ?? 0xc89a30, light = sk?.wisp?.base ?? 0x7ae8ff, hot = sk?.wispHot?.base ?? 0xf0ffff;
+      g.fillStyle = css(metal); g.fillRect(fx - 2, fy - 4, 5, 1); g.fillRect(fx - 2, fy + 3, 5, 1); g.fillRect(fx, fy - 6, 1, 2);
+      g.fillStyle = css(mix(metal, 0x1a0c08, 0.6)); g.fillRect(fx - 2, fy - 3, 1, 6); g.fillRect(fx + 2, fy - 3, 1, 6);
+      g.fillStyle = css(charging && Math.floor(this.time * 20) % 2 ? hot : light);
       g.fillRect(fx - 1, fy - 3, 3, 6);
-      g.fillStyle = '#f0ffff'; g.fillRect(fx, fy - 1, 1, 2);
+      g.fillStyle = css(hot); g.fillRect(fx, fy - 1, 1, 2);
     }
   }
 
@@ -450,7 +460,7 @@ export class BattleView implements View {
     const ab = f.abilities[it.ability];
     if (ab.kind === 'meteor') {
       if (it.phase !== 'windup') return;
-      const s = projSprite('sigil', Math.floor(this.time * 10), 0);
+      const s = projSprite('sigil', Math.floor(this.time * 10), 0, this.fighters[f.id]?.art.specialSkinId);
       const x = Math.round(this.sx(this.lx(f))), y = Math.round(this.sy(this.ly(f) + 2.8));
       g.drawImage(s.img, x - s.ox, y - s.oy);
       return;
@@ -461,12 +471,15 @@ export class BattleView implements View {
     if (it.phase === 'travel') ang = Math.atan2(1.2 - it.y, e.x - it.x);
     else if (it.phase === 'active') ang = this.time * 14 * f.facing;
     else if (it.phase === 'return') ang = Math.atan2(f.y + 2 - it.y, f.x - it.x) + Math.PI;
-    const s = projSprite('phantom', 0, ang);
+    const s = projSprite('phantom', 0, ang, this.fighters[f.id]?.art.specialSkinId);
     const x = Math.round(this.sx(it.x)), y = Math.round(this.sy(it.y));
     g.globalAlpha = 0.85;
     g.drawImage(s.img, x - s.ox, y - s.oy);
     g.globalAlpha = 1;
-    if (Math.random() < 0.5) this.fx.burst({ x: it.x, y: it.y, count: 1, speed: [0.2, 0.6], life: [0.2, 0.4], color: 0xd8e8ff, color2: 0x6a8ad8 });
+    if (Math.random() < 0.5) {
+      const c = this.glow(f.id, 0xd8e8ff, 0x6a8ad8);
+      this.fx.burst({ x: it.x, y: it.y, count: 1, speed: [0.2, 0.6], life: [0.2, 0.4], color: c[0], color2: c[1] });
+    }
   }
 
   private drawProjectile(g: CanvasRenderingContext2D, p: Projectile): void {
@@ -476,11 +489,14 @@ export class BattleView implements View {
     if (p.ground || style === 'chakram' || style === 'hex' || style === 'fire' || style === 'arcane' || style === 'wisp') ang = p.vx < 0 ? Math.PI : 0;
     if (style === 'flamewave' || style === 'groundwave') ang = p.vx < 0 ? Math.PI : 0;
     const frame = Math.floor(this.time * (style === 'chakram' || style === 'knife' ? 24 : 12)) % projFrames(style);
-    let s = projSprite(style, frame, ang);
+    // Meteors and wisp shots come from the special item, in its skin's colours.
+    const fromItem = style === 'meteor' || style === 'wisp';
+    const skin = fromItem ? this.fighters[p.owner]?.art.specialSkinId : null;
+    let s = projSprite(style, frame, ang, skin);
     const sx = Math.round(this.sx(x)), sy = Math.round(this.sy(y));
     if ((style === 'flamewave' || style === 'groundwave') && p.vx < 0) {
       // Ground waves are drawn upright and mirrored rather than rotated.
-      s = projSprite(style, frame, 0);
+      s = projSprite(style, frame, 0, skin);
       blit(g, s, sx, sy, true);
     } else g.drawImage(s.img, sx - s.ox, sy - s.oy);
     // Legendary weapons leave sparkles behind their shots.
@@ -488,10 +504,14 @@ export class BattleView implements View {
     const legend = p.def.from === 'main' ? thrower?.mainSkin?.fx : p.def.from === 'secondary' ? thrower?.secSkin?.fx : undefined;
     if (legend && Math.random() < 0.6) this.fx.burst({ x, y, jitter: 0.05, count: 1, speed: [0, 0.3], life: [0.2, 0.4], color: legend.spark, color2: legend.spark2, kind: 'twinkle' });
     // Trails.
+    if (skin) this.projGlow.set(p.id, this.glow(p.owner, STYLE_COLOR[style], 0));
     if (Math.random() < (style === 'meteor' ? 1 : 0.5)) {
-      const col = STYLE_COLOR[style];
+      const col = skin ? this.glow(p.owner, STYLE_COLOR[style], 0)[0] : STYLE_COLOR[style];
       const back = Math.atan2(-p.vy, -p.vx);
-      if (style === 'meteor') this.fx.burst({ x, y, count: 2, dir: back, spread: 0.4, speed: [1, 3], life: [0.3, 0.6], color: 0xffd060, color2: 0x8a2a1a, kind: 'ember', jitter: 0.2 });
+      if (style === 'meteor') {
+        const c = this.glow(p.owner, 0xffd060, 0x8a2a1a);
+        this.fx.burst({ x, y, count: 2, dir: back, spread: 0.4, speed: [1, 3], life: [0.3, 0.6], color: c[0], color2: mix(c[1], 0x200a08, 0.4), kind: 'ember', jitter: 0.2 });
+      }
       else if (style === 'flamewave' || style === 'groundwave') this.fx.burst({ x, y: 0.1, count: 1, dir: Math.PI / 2, spread: 0.6, speed: [0.5, 1.5], life: [0.3, 0.5], color: col, color2: 0x5a4a50, kind: style === 'flamewave' ? 'ember' : 'smoke', size: 3 });
       else if (style !== 'arrow' && style !== 'bolt' && style !== 'knife') this.fx.burst({ x, y, count: 1, dir: back, spread: 0.3, speed: [0.5, 1.5], life: [0.15, 0.3], color: col, color2: mix(col, 0x202040, 0.6) });
     }
@@ -525,7 +545,7 @@ export class BattleView implements View {
         const f = b.fighters[e.f];
         const ab = f.abilities[e.ability];
         this.play('castBig', this.pan(f.x));
-        fx.pulse('ring', f.x, 2.4, 1.2, ab.kind === 'meteor' ? 0xff9a3a : 0xa8c8ff, 0.4);
+        fx.pulse('ring', f.x, 2.4, 1.2, this.glow(f.id, ab.kind === 'meteor' ? 0xff9a3a : 0xa8c8ff, 0)[0], 0.4);
         this.arena?.cheer(0.4);
         break;
       }
@@ -571,7 +591,7 @@ export class BattleView implements View {
         if (heavy && !e.blocked) this.punchIn(1, e.crit ? 0.5 : 0.35, e.x);
         if (heavy) { this.arena?.cheer(0.3); }
         const label = e.crit ? `${fmt(e.amount)}!` : fmt(e.amount);
-        const st = e.blocked ? { color: '#a8c8f0' } : e.crit ? { color: '#ffe040', scale: 2, shade: '#e08a20' } : e.echo ? { color: '#c0a8ff' } : e.dtype === 'magic' ? { color: '#d8a8ff', shade: '#9a5ae0' } : heavy ? { color: '#ffffff', scale: 2, shade: '#c8c8d8' } : { color: '#ffffff', shade: '#c8c8d8' };
+        const st = e.blocked ? { color: '#a8c8f0' } : e.crit ? { color: '#ffe040', scale: 2, shade: '#e08a20' } : e.echo ? { color: css(this.glow(e.attacker, 0xc0a8ff, 0)[0]) } : e.dtype === 'magic' ? { color: '#d8a8ff', shade: '#9a5ae0' } : heavy ? { color: '#ffffff', scale: 2, shade: '#c8c8d8' } : { color: '#ffffff', shade: '#c8c8d8' };
         fx.pop(label, e.x, e.y + 0.5, st, e.crit ? 1.1 : 0.85);
         if (e.ability === 'wall') fx.pop('WALL SPLAT!', e.x, e.y + 1.2, { color: '#ffb040', scale: 2 }, 1.1, 0.8);
         break;
@@ -624,11 +644,12 @@ export class BattleView implements View {
         break;
       case 'revive': {
         const f = b.fighters[e.f];
-        fx.pulse('pillar', f.x, 0, 0.5, 0xff8a2a, 0.8);
-        fx.pulse('groundRing', f.x, 0, 3, 0xff8a2a, 0.6);
-        fx.burst({ x: f.x, y: 1, count: 50, jitter: 0.5, speed: [2, 7], life: [0.5, 1.0], color: 0xffd060, color2: 0xc83a1a, gravity: -3, drag: 1.5, kind: 'ember' });
+        const c = this.glow(f.id, 0xffd060, 0xc83a1a), mid = mix(c[0], c[1], 0.5);
+        fx.pulse('pillar', f.x, 0, 0.5, mid, 0.8);
+        fx.pulse('groundRing', f.x, 0, 3, mid, 0.6);
+        fx.burst({ x: f.x, y: 1, count: 50, jitter: 0.5, speed: [2, 7], life: [0.5, 1.0], color: c[0], color2: c[1], gravity: -3, drag: 1.5, kind: 'ember' });
         this.play('revive', this.pan(f.x));
-        fx.pop('REVIVE!', f.x, this.fighters[e.f].headY + 0.4, { color: '#ffb040', scale: 2, shade: '#d84a1a' }, 1.3);
+        fx.pop('REVIVE!', f.x, this.fighters[e.f].headY + 0.4, { color: css(mix(c[0], c[1], 0.3)), scale: 2, shade: css(c[1]) }, 1.3);
         this.shake(0.4);
         this.arena?.cheer(0.9);
         this.slowmo(0.35, 0.6);
@@ -646,16 +667,17 @@ export class BattleView implements View {
         this.play('parry', this.pan(e.x), 0.7);
         break;
       case 'shockwave': {
-        const col = e.style === 'nova' ? 0x9fe8ff : e.style === 'meteor' ? 0xff6a1a : e.style === 'whirl' ? 0xe8f4ff : 0xd8a060;
+        const met = e.style === 'meteor' ? this.glow(e.f, 0xffe070, 0xc83a1a) : null;
+        const col = e.style === 'nova' ? 0x9fe8ff : met ? (this.fighters[e.f]?.art.specialSkin?.glow ? mix(met[0], met[1], 0.5) : 0xff6a1a) : e.style === 'whirl' ? 0xe8f4ff : 0xd8a060;
         fx.pulse('groundRing', e.x, 0, e.radius * 1.2, col, 0.5);
         if (e.style !== 'nova') fx.pulse('crack', e.x, 0, e.radius * 0.8, mix(col, 0x2a1a20, 0.4), 1.6);
         if (e.style === 'meteor') {
           fx.pulse('pillar', e.x, 0, e.radius * 0.25, col, 0.5);
-          fx.burst({ x: e.x, y: 0.3, count: 50, jitter: 0.6, dir: Math.PI / 2, spread: 1.1, speed: [4, 11], life: [0.4, 1.0], color: 0xffe070, color2: 0xc83a1a, gravity: 10, drag: 1, kind: 'ember' });
+          fx.burst({ x: e.x, y: 0.3, count: 50, jitter: 0.6, dir: Math.PI / 2, spread: 1.1, speed: [4, 11], life: [0.4, 1.0], color: met![0], color2: met![1], gravity: 10, drag: 1, kind: 'ember' });
           fx.burst({ x: e.x, y: 0.4, count: 12, jitter: 1, speed: [1, 3], life: [0.8, 1.4], color: 0x7a6a60, color2: 0x3a2a30, kind: 'smoke', size: 6, drag: 1.5 });
           this.play('explosion', this.pan(e.x));
           this.shake(0.9);
-          this.flash(0xffc070, 1);
+          this.flash(this.fighters[e.f]?.art.specialSkin?.glow ? mix(met![0], 0xffffff, 0.3) : 0xffc070, 1);
           this.arena?.cheer(0.8);
           this.punchIn(1, 0.5, e.x);
         } else if (e.style === 'nova') {
@@ -670,9 +692,12 @@ export class BattleView implements View {
         }
         break;
       }
-      case 'projectileEnd':
-        if (e.style !== 'meteor') fx.burst({ x: e.x, y: e.y, count: e.hit ? 14 : 6, speed: [1, e.hit ? 5 : 3], life: [0.2, 0.45], color: STYLE_COLOR[e.style], color2: mix(STYLE_COLOR[e.style], 0x202030, 0.6), drag: 2, size: e.hit ? 2 : 1 });
+      case 'projectileEnd': {
+        const col = this.projGlow.get(e.id)?.[0] ?? STYLE_COLOR[e.style];
+        this.projGlow.delete(e.id);
+        if (e.style !== 'meteor') fx.burst({ x: e.x, y: e.y, count: e.hit ? 14 : 6, speed: [1, e.hit ? 5 : 3], life: [0.2, 0.45], color: col, color2: mix(col, 0x202030, 0.6), drag: 2, size: e.hit ? 2 : 1 });
         break;
+      }
       case 'blink':
         for (const x of [e.from, e.to]) fx.burst({ x, y: 1, count: 22, jitter: 0.3, jitterY: 0.8, speed: [1, 4], life: [0.3, 0.6], color: 0xe0c8ff, color2: 0x8a4ae0, drag: 2 });
         fx.pulse('groundRing', e.to, 0, 1.2, 0xb07aff, 0.35);
@@ -680,7 +705,8 @@ export class BattleView implements View {
         break;
       case 'familiar': {
         const f = b.fighters[e.f];
-        fx.burst({ x: f.x - f.facing * 0.5, y: f.y + 2.1, count: 6, speed: [1, 2], life: [0.2, 0.4], color: 0xf0ffff, color2: 0x3ac8e8 });
+        const c = this.glow(f.id, 0xf0ffff, 0x3ac8e8);
+        fx.burst({ x: f.x - f.facing * 0.5, y: f.y + 2.1, count: 6, speed: [1, 2], life: [0.2, 0.4], color: c[0], color2: c[1] });
         break;
       }
       case 'feint': {
@@ -723,6 +749,11 @@ export class BattleView implements View {
   }
 
   /** Legendary skins: hits with the weapon burst in its colours; a legendary shield flares when it blocks. */
+  /** Particle colours for a fighter's special item: its skin's glow, or the stock pair. */
+  private glow(id: FighterId, a: number, b: number): [number, number] {
+    return this.fighters[id]?.art.specialSkin?.glow ?? [a, b];
+  }
+
   private legendHit(attacker: FighterId, target: FighterId, ability: string, blocked: boolean, heavy: boolean, x: number, y: number): void {
     const b = this.battle!;
     const art = this.fighters[attacker]?.art;

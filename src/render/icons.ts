@@ -6,6 +6,7 @@ import { arc } from './pixel/sdf';
 import { STAND } from './sprite/pose';
 import { drawFigure } from './sprite/draw';
 import { makeArt } from './sprite/look';
+import { skinMaterials } from './sprite/skins';
 import { weaponArt } from './sprite/weapons';
 import { Xf } from './sprite/xform';
 
@@ -51,8 +52,13 @@ const SM = {
   phantomHot: material({ base: 0xf0f8ff, glow: true }),
 };
 
-function special(id: SpecialId, r: Raster, c: number): void {
-  const h = handles(r);
+const SM_NAME = new Map<Material, string>(Object.entries(SM).map(([k, m]) => [m, k]));
+
+function special(id: SpecialId, r: Raster, c: number, skin?: string | null): void {
+  const base = handles(r);
+  // A skin swaps materials by name.
+  const over = skin ? skinMaterials(skin) : null;
+  const h = over ? (m: Material) => base(over[SM_NAME.get(m)!] ?? m) : base;
   const t = new Xf(c, c, 0);
   switch (id) {
     case 'meteor_sigil':
@@ -141,7 +147,7 @@ export function iconFrame(id: GearId, skin?: string | null): Frame {
     w.draw(r, t, (k) => mats[k], { group: 6 });
     f = r.compose(c, c);
   } else if (def.slot === 'special') {
-    special(id as SpecialId, r, c);
+    special(id as SpecialId, r, c, skin);
     f = r.compose(c, c);
   } else {
     // Armour: crop the relevant part of a body wearing only that piece.
