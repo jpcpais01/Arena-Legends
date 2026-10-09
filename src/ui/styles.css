@@ -1034,3 +1034,183 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
   .banner { font-size: 2.6rem; }
   .match-bar { gap: 10px; padding: 6px 10px; }
 }
+
+/* --- Skin chests (gacha) ---------------------------------------------------------------------------- */
+:root { --gem: #6fe8ff; --gem-lo: #2a7ab0; }
+.gem-tag { display: inline-flex; align-items: center; gap: 0.25em; font: 700 1em/1 var(--font); white-space: nowrap; }
+.gem-tag svg { color: var(--gem); width: 1.05em; height: 1.05em; filter: drop-shadow(0 var(--px) 0 var(--ink)); }
+.gem-tag b { font-weight: 700; }
+.gem-chip {
+  display: inline-flex; align-items: center; gap: 0.4rem; padding: calc(var(--px) * 2) 0.8rem calc(var(--px) * 3);
+  background: linear-gradient(180deg, #1a2a4a, #0e1426); border: var(--px) solid var(--ink);
+  box-shadow: inset 0 var(--px) 0 rgba(255, 255, 255, 0.12), inset 0 calc(var(--px) * -2) 0 rgba(0, 0, 0, 0.45), inset 0 0 0 calc(var(--px) * 2) rgba(111, 232, 255, 0.25);
+  font: 700 1.2rem/1 var(--font); color: var(--text); text-shadow: 0 var(--px) 0 var(--ink);
+}
+.gem-chip svg { color: var(--gem); width: 1.1em; height: 1.1em; }
+.gem-chip.bump { animation: gem-bump 300ms ease-out; }
+@keyframes gem-bump { 40% { transform: scale(1.12); } }
+
+/* Menu: the chest button with the gem count. */
+.btn.chest-btn { --face: #2a3f6e; --hi: #4a6aa8; --lo: #142242; gap: 0.6rem; }
+.btn.chest-btn > svg { color: var(--gold); }
+.btn.chest-btn .gem-tag { padding: 2px 6px 3px; background: rgba(0, 0, 0, 0.35); }
+
+/* Results: the gems a win paid. */
+.res-gems { display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 4px; font-size: 0.8125rem; color: var(--muted); }
+.res-gems .gem-tag { font-size: 1.25rem; color: var(--gem); text-shadow: 0 var(--px) 0 var(--ink); animation: pop-in 400ms 300ms cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+
+/* Armory: skins not pulled yet. */
+.sk { position: relative; }
+.sk.locked canvas { filter: grayscale(1) brightness(0.4); }
+.sk.locked .sk-lock { position: absolute; right: 1px; bottom: 1px; width: 0.75rem; height: 0.75rem; color: var(--gold); filter: drop-shadow(1px 1px 0 var(--ink)); }
+.sk-info .sk-locked { color: var(--gold); }
+
+/* The screen: chest on the left, the shop on the right, one canvas behind both for the light show. */
+.scr.gacha {
+  grid-template-columns: minmax(16rem, 50%) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "head head" "stage panel";
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 34% 46% at 25% 70%, rgba(150, 100, 230, 0.4), transparent 70%),
+    linear-gradient(180deg, rgba(14, 9, 26, 0.9), rgba(8, 5, 15, 0.96));
+}
+.scr.gacha > * { position: relative; z-index: 1; }
+.scr.gacha > canvas.chest-fx { position: absolute; left: 0; top: 0; z-index: 0; image-rendering: pixelated; image-rendering: crisp-edges; pointer-events: none; }
+.scr.gacha .scr-head { gap: 0.75rem; }
+.chest-stage { display: block; padding: 0; }
+.chest-spot { position: absolute; left: 50%; bottom: 22%; width: min(70%, 18rem); height: 52%; transform: translateX(-50%); cursor: pointer; }
+.chest-hint { position: absolute; left: 0; right: 0; bottom: 9%; text-align: center; pointer-events: none; }
+.chest-hint span { font: 700 0.875rem/1 var(--font); letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-hi); text-shadow: var(--outline); animation: blink 1.4s steps(1) infinite; }
+.chest-panel { display: grid; gap: 0.6rem; align-content: start; }
+.chest-panel .ribbon { justify-self: start; }
+.chest-blurb { font-size: 0.8125rem; color: var(--muted); }
+.chest-odds { display: grid; gap: 4px; }
+.odds-row {
+  display: grid; grid-template-columns: 6.2rem 3.2rem minmax(0, 1fr) 3.2rem; align-items: center; gap: 0.5rem;
+  padding: 4px 8px 5px; background: rgba(0, 0, 0, 0.3); border: var(--px) solid var(--ink); box-shadow: inset calc(var(--px) * 2) 0 0 var(--rc, var(--rare));
+}
+.odds-row.rare { --rc: var(--rare); } .odds-row.mythic { --rc: var(--mythic); } .odds-row.legendary { --rc: var(--legendary); } .odds-row.epic { --rc: var(--skin-epic); }
+.odds-row .tier { font: 700 0.9375rem/1 var(--font); text-transform: uppercase; letter-spacing: 0.06em; text-shadow: 0 var(--px) 0 var(--ink); }
+.r-mythic { color: var(--mythic); }
+.odds-row .tier.r-epic { background: var(--skin-epic-sweep) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; animation: epicSweep 3s linear infinite; }
+.odds-row .pct { font: 700 0.9375rem/1 var(--font); color: var(--text); text-align: right; }
+.odds-row small { font-size: 0.6875rem; color: var(--muted); text-align: right; }
+.own-bar { height: calc(var(--px) * 3); background: #120c20; box-shadow: 0 0 0 var(--px) var(--ink); }
+.own-bar i { display: block; height: 100%; background: var(--rc); }
+.chest-pity { display: flex; align-items: center; gap: 0.35em; font-size: 0.8125rem; color: var(--muted); }
+.chest-pity svg { color: var(--skin-epic); }
+.chest-pity b { color: var(--skin-epic); }
+.chest-buy { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.btn.buy { justify-content: space-between; gap: 0.8rem; min-height: 3.3rem; font-size: 1.05rem; }
+.btn.buy .buy-l { display: inline-flex; align-items: center; gap: 0.45em; }
+.btn.buy .gem-tag { padding: 3px 7px 4px; background: rgba(0, 0, 0, 0.35); }
+.btn.nope { animation: shake 300ms; }
+.chest-note { font-size: 0.75rem; color: var(--muted); line-height: 1.35; }
+.chest-note b { color: var(--text); }
+.chest-note.earn { display: flex; gap: 0.4em; align-items: flex-start; color: var(--text); }
+.chest-note.earn svg { color: var(--gold); margin-top: 0.1em; }
+
+/* Opening: the shop steps aside and the reveal layer takes the taps (a tap skips ahead). */
+.gacha .chest-stage > *, .gacha .chest-panel, .gacha .scr-head .done { transition: opacity 250ms, transform 250ms; }
+.gacha.opening .chest-stage > *, .gacha.opening .chest-panel, .gacha.opening .scr-head .done { opacity: 0; pointer-events: none; }
+.gacha.opening .chest-panel { transform: translateX(2rem); }
+.gacha-reveal { display: none; }
+.gacha.opening .gacha-reveal {
+  position: absolute; inset: 0; z-index: 3; display: grid; grid-template-rows: minmax(0, 1fr) auto; justify-items: center; align-items: center; gap: 0.6rem;
+  padding: calc(var(--safe-t) + 3.4rem) var(--safe-r) var(--safe-b) var(--safe-l); cursor: pointer;
+}
+.reveal-foot { display: flex; align-items: center; justify-content: center; gap: 0.6rem; flex-wrap: wrap; cursor: default; animation: rise-in 300ms 250ms ease-out both; }
+.reveal-foot:empty { display: none; }
+.reveal-foot .btn { min-height: 3rem; }
+.reveal-sum { display: flex; align-items: center; gap: 0.4em; font-size: 0.875rem; color: var(--muted); margin-right: 0.4rem; }
+.reveal-sum b { color: var(--text); }
+.reveal-sum .gem-tag { color: var(--gem); }
+.reveal-one { display: flex; align-items: center; justify-content: center; gap: 1.5rem; min-height: 0; }
+.reveal-fighter { width: 12rem; height: 12rem; display: grid; place-items: end center; animation: fade-in 500ms 350ms both; }
+
+/* Cards: back (chest emblem, glowing in its tier) and front (the skin). */
+.gcard { --rc: var(--rare); --rc-glow: rgba(90, 168, 255, 0.5); position: relative; width: 6.6rem; height: 8.8rem; perspective: 700px; }
+.gcard.r-mythic { --rc: var(--mythic); --rc-glow: rgba(255, 90, 154, 0.55); }
+.gcard.r-legendary { --rc: var(--legendary); --rc-glow: rgba(255, 176, 64, 0.6); }
+.gcard.r-epic { --rc: var(--skin-epic); --rc-glow: rgba(127, 240, 224, 0.7); }
+.gc-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transform: rotateY(180deg); transition: transform 420ms cubic-bezier(0.3, 1.5, 0.5, 1); }
+.gcard.flipped .gc-inner { transform: rotateY(0deg); }
+.gcard.tease .gc-inner { animation: tease 110ms steps(2) infinite; }
+@keyframes tease { 0% { transform: rotateY(180deg) translateX(calc(var(--px) * -1)) rotate(-2deg); } 100% { transform: rotateY(180deg) translateX(var(--px)) rotate(2deg); } }
+.gc-face {
+  position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  border: calc(var(--px) * 2) solid var(--ink);
+  clip-path: polygon(var(--px) 0, calc(100% - var(--px)) 0, 100% var(--px), 100% calc(100% - var(--px)), calc(100% - var(--px)) 100%, var(--px) 100%, 0 calc(100% - var(--px)), 0 var(--px));
+}
+.gc-back {
+  transform: rotateY(180deg); display: grid; place-items: center;
+  background: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.04) 0 calc(var(--px) * 2), transparent 0 calc(var(--px) * 4)), linear-gradient(180deg, #2a2050, #120c22);
+  box-shadow: inset 0 0 0 var(--px) var(--gold-lo), inset 0 0 0 calc(var(--px) * 3) #1a1230, inset 0 0 1.4rem var(--rc-glow);
+  color: var(--gold);
+}
+.gc-back svg { width: 45%; height: auto; filter: drop-shadow(0 var(--px) 0 var(--ink)); }
+.gcard.tease .gc-back { box-shadow: inset 0 0 0 var(--px) var(--rc), inset 0 0 0 calc(var(--px) * 3) #1a1230, inset 0 0 2.4rem var(--rc-glow); }
+.gc-front {
+  display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; justify-items: center; align-items: center; gap: 2px; padding: 0 4px 6px; text-align: center;
+  background: radial-gradient(ellipse 80% 50% at 50% 42%, var(--rc-glow), transparent 70%), linear-gradient(180deg, #241a3c, #0e0918);
+  box-shadow: inset 0 0 0 var(--px) var(--rc), inset 0 calc(var(--px) * -3) 0 rgba(0, 0, 0, 0.4);
+}
+.gcard.flipped { filter: drop-shadow(0 0 0.5rem var(--rc-glow)); }
+.gc-tier { justify-self: stretch; padding: 2px 0 3px; background: var(--rc); color: var(--ink); font: 700 0.625rem/1 var(--font); letter-spacing: 0.16em; text-transform: uppercase; }
+.gcard.r-epic .gc-tier { background: var(--skin-epic-sweep) 0 0 / 300% 100%; animation: epicSweep 3s linear infinite; }
+.gc-art { display: grid; place-items: center; min-height: 0; height: 100%; overflow: hidden; }
+.gc-art canvas { height: min(100%, 3.4rem); width: auto; aspect-ratio: 1; }
+.gc-name { font: 700 0.75rem/1.05 var(--font); color: var(--text); text-shadow: 0 var(--px) 0 var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.gc-item { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.5625rem; line-height: 1.1; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.gc-new {
+  padding: 2px 6px 3px; transform: rotate(-4deg);
+  background: var(--ribbon); color: #fff; border: var(--px) solid var(--ink); font: 700 0.625rem/1 var(--font); text-transform: uppercase; letter-spacing: 0.08em;
+}
+.gc-dupe { font-size: 0.625rem; color: var(--muted); display: inline-flex; align-items: center; gap: 2px; }
+.gc-dupe .gem-tag { color: var(--gem); }
+.gcard.flipped .gc-new { animation: stamp 350ms 250ms cubic-bezier(0.2, 1.8, 0.4, 1) both; }
+@keyframes stamp { from { opacity: 0; transform: rotate(-4deg) scale(2.4); } }
+/* Epic fronts: a frame of running colour. */
+.gcard.r-epic .gc-front { border-color: transparent; background: radial-gradient(ellipse 80% 50% at 50% 42%, var(--rc-glow), transparent 70%) padding-box, linear-gradient(180deg, #241a3c, #0e0918) padding-box, var(--skin-epic-sweep) border-box 0 0 / 300% 100%; animation: epicSweep 3s linear infinite; }
+
+/* The single reveal: one big card. */
+.gcard.big { width: 14rem; height: min(19rem, calc(100dvh - 9.5rem)); animation: card-rise 500ms cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+@keyframes card-rise { from { opacity: 0; transform: translateY(4rem) scale(0.3); } }
+.gcard.big .gc-front { padding: 0 10px 10px; gap: 5px; }
+.gcard.big .gc-tier { font-size: 0.875rem; padding: 4px 0 5px; }
+.gcard.big .gc-art canvas { height: min(100%, 7.5rem); }
+.gcard.big .gc-name { font-size: 1.25rem; }
+.gcard.big .gc-item { font-size: 0.6875rem; }
+.gcard.big .gc-new { font-size: 0.875rem; }
+.gcard.big .gc-dupe { font-size: 0.8125rem; }
+.gc-set { display: grid; justify-items: center; gap: 3px; font-size: 0.6875rem; color: var(--muted); }
+.gc-set > span:first-child { font: 700 0.8125rem/1 var(--font); background: var(--skin-epic-sweep) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* Ten at once: dealt out of the chest face down, then flipped in turn. */
+.reveal-ten { display: grid; grid-template-columns: repeat(5, auto); gap: 0.6rem 0.7rem; align-content: center; }
+.reveal-ten .gcard { opacity: 0; transform: translate(var(--dx, 0), var(--dy, 0)) scale(0.15) rotate(-20deg); transition: transform 460ms cubic-bezier(0.2, 1.2, 0.4, 1) var(--d), opacity 200ms var(--d); }
+.reveal-ten.dealt .gcard { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .gcard.tease .gc-inner, .chest-hint span, .gcard.r-epic .gc-front, .gc-tier { animation: none; } }
+
+@media (orientation: landscape) and (max-height: 560px) {
+  .scr.gacha { grid-template-columns: minmax(14rem, 46%) minmax(0, 1fr); }
+  .chest-panel { gap: 0.4rem; padding-top: 0.4rem; }
+  .chest-blurb { display: none; }
+  .btn.buy { min-height: 2.9rem; font-size: 0.95rem; }
+  .gem-chip { font-size: 1rem; }
+  .gcard { width: 5.8rem; height: 7.6rem; }
+  .gc-art canvas { height: min(100%, 2.9rem); }
+  .gacha.opening .gacha-reveal { padding-top: calc(var(--safe-t) + 2.6rem); gap: 0.4rem; }
+  .reveal-ten { gap: 0.4rem 0.55rem; }
+  .reveal-foot .btn { min-height: 2.6rem; }
+  .reveal-fighter { width: 9rem; height: 9rem; }
+  .gcard.big { width: 12rem; height: min(17rem, calc(100dvh - 7.6rem)); }
+  .gcard.big .gc-art canvas { height: min(100%, 6rem); }
+  .gcard.big .gc-name { font-size: 1.05rem; }
+}
+@media (orientation: portrait) and (max-width: 720px) {
+  .scr.gacha { grid-template-columns: 1fr; grid-template-rows: auto minmax(12rem, 40%) minmax(0, 1fr); grid-template-areas: "head" "stage" "panel"; }
+  .reveal-ten { grid-template-columns: repeat(3, auto); }
+  .gcard { width: 5.6rem; height: 7.4rem; }
+  .reveal-one { flex-direction: column; gap: 0.5rem; }
+  .reveal-fighter { width: 8rem; height: 8rem; }
+}

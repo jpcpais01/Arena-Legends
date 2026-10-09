@@ -6,6 +6,7 @@ import { FORMS } from '../sim/forms';
 import { GEAR_SLOTS, gearOf, SLOT_NAMES } from '../sim/gear';
 import type { CharacterBuild } from '../sim/loadout';
 import { h } from './dom';
+import { gemTag } from './gacha';
 import { icon } from './icons';
 import { logo } from './logo';
 import { fitPixels } from './pixelfit';
@@ -19,6 +20,7 @@ export interface MenuCallbacks {
   onSound(): void;
   onSettings(): void;
   onOnline(): void;
+  onChests(): void;
 }
 
 export interface Record { w: number; l: number }
@@ -36,6 +38,7 @@ export class Menu {
   private soundBtn: HTMLButtonElement;
   private dock = h('div.menu-dock');
   private actions: HTMLElement;
+  private chestBtn: HTMLButtonElement;
 
   constructor(private readonly cb: MenuCallbacks) {
     this.soundBtn = h<HTMLButtonElement>('button.btn.icon', { title: 'Sound', 'aria-label': 'Sound', onclick: () => cb.onSound() });
@@ -43,12 +46,13 @@ export class Menu {
       h('div.vs', { 'aria-hidden': 'true' }, 'VS'),
       h('button.btn.primary.big.fight', { onclick: () => cb.onFight() }, icon('swords'), h('span', null, 'Fight')),
       h('button.btn.online', { onclick: () => cb.onOnline() }, icon('globe'), 'Online duel'));
+    this.chestBtn = h<HTMLButtonElement>('button.btn.chest-btn', { title: 'Skin chests', onclick: () => cb.onChests() });
     const mark = h('div.menu-logo', { 'aria-label': 'Arena Legends' });
     void logo().then((c) => { mark.append(c); fitPixels(c, mark); });
     this.el = h('div.menu', null,
       h('div.menu-top', null,
         mark,
-        h('div.menu-tools', null, this.soundBtn,
+        h('div.menu-tools', null, this.chestBtn, this.soundBtn,
           h('button.btn.icon', { title: 'Settings', 'aria-label': 'Settings', onclick: () => cb.onSettings() }, icon('settings')))),
       this.dock,
     );
@@ -57,6 +61,12 @@ export class Menu {
   setSound(on: boolean): void {
     this.soundBtn.replaceChildren(icon(on ? 'soundOn' : 'soundOff'));
     this.soundBtn.title = on ? 'Sound on' : 'Sound off';
+  }
+
+  /** The chest button shows the gems, with a dot when a chest can be opened. */
+  setGems(n: number, canOpen: boolean): void {
+    this.chestBtn.replaceChildren(icon('chest'), h('span', null, 'Chests'), gemTag(n));
+    this.chestBtn.classList.toggle('unseen', canOpen);
   }
 
   set(player: PlayerCharacter, rival: PlayerCharacter, rec: Record): void {

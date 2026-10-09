@@ -6,7 +6,10 @@
 export type Sfx =
   | 'swing' | 'swingHeavy' | 'hit' | 'hitHeavy' | 'crit' | 'block' | 'parry' | 'cast' | 'castBig'
   | 'explosion' | 'lightning' | 'whoosh' | 'freeze' | 'ko' | 'revive' | 'shield' | 'roar' | 'ui' | 'start' | 'win'
-  | 'select' | 'back' | 'equip' | 'confirm';
+  | 'select' | 'back' | 'equip' | 'confirm'
+  // Skin chests
+  | 'rattle' | 'tierUp' | 'chestOpen' | 'flip' | 'gems'
+  | 'revealRare' | 'revealMythic' | 'revealLegendary' | 'revealEpic';
 
 class AudioEngine {
   private ctx: AudioContext | null = null;
@@ -184,6 +187,52 @@ class AudioEngine {
         break;
       case 'win':
         [523, 659, 784, 1046].forEach((f, i) => this.tone('triangle', f, f, t + i * 0.09, 0.35, 0.16));
+        break;
+      // Skin chests. `intensity` is the tier step for tierUp (1, 2, 3: each one higher).
+      case 'rattle':
+        this.burst(t, 0.07, 0.22, 'bandpass', 700, 500, 4, pan);
+        this.tone('square', 140, 110, t, 0.05, 0.05, pan);
+        break;
+      case 'tierUp': {
+        const f = 392 * Math.pow(2, (k - 1) * 4 / 12);
+        this.tone('square', f, f * 2, t, 0.22, 0.07);
+        this.tone('triangle', f * 1.5, f * 3, t + 0.03, 0.3, 0.1);
+        this.burst(t, 0.35, 0.18, 'highpass', 3000, 9000, 1);
+        break;
+      }
+      case 'chestOpen':
+        this.burst(t, 0.5, 0.6, 'lowpass', 2400, 120, 0.7);
+        this.tone('sine', 110, 40, t, 0.6, 0.7);
+        this.burst(t + 0.02, 0.4, 0.3, 'highpass', 4000, 9000, 0.8);
+        break;
+      case 'flip':
+        this.burst(t, 0.06, 0.2, 'bandpass', 2600, 1400, 2);
+        this.tone('triangle', 880, 1320, t, 0.05, 0.05);
+        break;
+      case 'gems':
+        [1568, 2093, 2637].forEach((f, i) => this.tone('square', f, f, t + i * 0.05, 0.08, 0.035));
+        this.tone('triangle', 3136, 3136, t + 0.15, 0.25, 0.05);
+        break;
+      case 'revealRare':
+        [523, 659, 784].forEach((f, i) => this.tone('triangle', f, f, t + i * 0.07, 0.3, 0.14));
+        break;
+      case 'revealMythic':
+        [587, 740, 880, 1175].forEach((f, i) => this.tone('square', f, f, t + i * 0.06, 0.28, 0.06));
+        this.tone('triangle', 1760, 1760, t + 0.24, 0.6, 0.1);
+        this.burst(t + 0.2, 0.5, 0.12, 'highpass', 5000, 9000, 1);
+        break;
+      case 'revealLegendary':
+        [392, 523, 659, 784, 1046].forEach((f, i) => this.tone('square', f, f, t + i * 0.07, 0.3, 0.06));
+        [784, 988, 1175].forEach((f) => this.tone('triangle', f, f, t + 0.35, 1.1, 0.08));
+        for (let i = 0; i < 6; i++) this.tone('sine', 2093 + i * 260, 2093 + i * 260, t + 0.35 + i * 0.07, 0.25, 0.04);
+        this.tone('sine', 98, 49, t + 0.35, 0.9, 0.4);
+        break;
+      case 'revealEpic':
+        this.tone('sine', 65, 33, t, 1.4, 0.8);
+        this.burst(t, 1.2, 0.5, 'lowpass', 1600, 80, 0.6);
+        [330, 415, 494, 659, 831, 988].forEach((f, i) => this.tone('square', f, f, t + 0.1 + i * 0.06, 0.4, 0.05));
+        [659, 831, 988, 1319].forEach((f) => this.tone('triangle', f, f * 1.003, t + 0.5, 1.8, 0.08));
+        for (let i = 0; i < 10; i++) this.tone('sine', 1760 + (i % 5) * 330, 1760 + (i % 5) * 330, t + 0.5 + i * 0.09, 0.3, 0.035);
         break;
     }
   }
