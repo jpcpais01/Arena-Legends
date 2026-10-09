@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.34.3',
+    date: '2026-10-09',
+    title: 'Full-screen UI on phones',
+    notes: [
+      'The menus and the battle HUD now use the top strip of the screen under the phone\'s status bar too, like the game already did.',
+      'The UI keeps an even margin of 3% of the screen width on the left and right.',
+    ],
+  },
+  {
     version: '0.34.2',
     date: '2026-10-09',
     title: 'Skin collection fixes',

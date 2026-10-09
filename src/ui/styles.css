@@ -47,10 +47,12 @@
   --outline: var(--px) 0 0 var(--ink), calc(var(--px) * -1) 0 0 var(--ink), 0 var(--px) 0 var(--ink), 0 calc(var(--px) * -1) 0 var(--ink),
     var(--px) var(--px) 0 var(--ink), calc(var(--px) * -1) var(--px) 0 var(--ink), var(--px) calc(var(--px) * -1) 0 var(--ink), calc(var(--px) * -1) calc(var(--px) * -1) 0 var(--ink),
     0 calc(var(--px) * 2) 0 var(--ink);
-  --safe-t: max(10px, env(safe-area-inset-top));
-  --safe-r: max(12px, env(safe-area-inset-right));
+  /* UI insets. The UI draws over the phone's status bar like the game does (no top inset),
+   * and keeps a 3% screen-width margin on each side. Only the gesture bar at the bottom is avoided. */
+  --safe-t: 10px;
+  --safe-r: 3vw;
   --safe-b: max(10px, env(safe-area-inset-bottom));
-  --safe-l: max(12px, env(safe-area-inset-left));
+  --safe-l: 3vw;
 }
 
 * { box-sizing: border-box; }
@@ -910,7 +912,7 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
   .menu-actions .btn:not(.fight) { min-height: 2.5rem; }
 
   .scr { grid-template-columns: minmax(13rem, 38%) minmax(0, 1fr); grid-template-areas: "head head" "stage panel" "nav panel"; }
-  .scr-head { gap: 0.6rem; padding-bottom: 0.2rem; padding-top: max(6px, env(safe-area-inset-top)); }
+  .scr-head { gap: 0.6rem; padding-bottom: 0.2rem; padding-top: 6px; }
   .scr-title h1 { font-size: 1.2rem; }
   .step i { width: 1.9rem; height: 1.9rem; }
   .step i svg { width: 0.85rem; height: 0.85rem; }
