@@ -1,7 +1,7 @@
 import {
   ACCENT_COLORS, DEFAULT_LOOK, EYE_COLORS, HAIR_COLORS, OUTFIT_COLORS, SPECIES, type Appearance,
 } from '../../character/appearance';
-import { skinOn, type SkinMap } from '../../character/skins';
+import { fullSet, skinOn, type SkinMap, type SkinSetId } from '../../character/skins';
 import type { CharacterBuild } from '../../sim/loadout';
 import type { ChestId, FormId, GearId, GearSet, HeadId, BootsId, MainWeaponId, SecondaryId } from '../../sim/types';
 import { mix, toHsl, fromHsl } from '../pixel/color';
@@ -45,6 +45,8 @@ export interface CharacterArt {
   specialSkinId: string | null;
   /** Reshaped headgear from a skin, drawn instead of the stock piece. */
   headDraw: HeadDraw | null;
+  /** The epic set worn in full, if any (its aura plays around the fighter). */
+  set: SkinSetId | null;
 }
 
 export interface ChestLook {
@@ -246,6 +248,8 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     const spec = specialSkin?.mats?.[k];
     if (spec) mats[k] = material(spec);
   }
+  // A reshaped plume brings its own materials (named `p.*`).
+  if (specialSkin?.plume) for (const [k, spec] of Object.entries(specialSkin.mats ?? {})) if (k.startsWith('p.')) mats[k] = material(spec);
   return {
     build, look, form: build.form,
     body: bodyFor(build.form, look.species),
@@ -260,5 +264,6 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     skins, mainSkin, secSkin, headDraw,
     headSkin: worn.head, chestSkin: worn.chest, bootsSkin: worn.boots,
     specialSkin, specialSkinId,
+    set: fullSet(build.gear, skins),
   };
 }

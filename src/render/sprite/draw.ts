@@ -759,8 +759,11 @@ function drawHeadgear(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => num
     }
   }
   if (art.gear.special === 'phoenix_feather' && art.headgear !== 'executioner_hood') {
-    r.fill(H.poly([-5, 4, -9.5, 9.5, -8.6, 10.4, -4.2, 5]), m('plume'), { group: g, bevel: 1 });
-    r.dot(H.x(-9, 10), H.y(-9, 10), m('plumeTip'), 3, g);
+    if (art.specialSkin?.plume) art.specialSkin.plume(r, H, m, g, sway);
+    else {
+      r.fill(H.poly([-5, 4, -9.5, 9.5, -8.6, 10.4, -4.2, 5]), m('plume'), { group: g, bevel: 1 });
+      r.dot(H.x(-9, 10), H.y(-9, 10), m('plumeTip'), 3, g);
+    }
   }
 }
 

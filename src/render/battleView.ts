@@ -9,11 +9,13 @@ import { THEMES, type Theme } from './arenaArt';
 import { drawText } from './font';
 import { Fx, type View } from './fx';
 import { css, mix } from './pixel/color';
-import { projFrames, projSprite } from './projArt';
+import { projFrames, projSprite, skinDraws } from './projArt';
+import { drawSetAura, SET_FX } from './setAura';
 import type { Screen } from './screen';
 import { Animator, PPM, type AnimOut } from './sprite/animator';
 import { SpriteBank, type Sprite } from './sprite/bank';
 import { makeArt, type CharacterArt } from './sprite/look';
+import type { SkinFx } from './sprite/skins';
 
 const STYLE_COLOR: Record<ProjectileStyle, number> = {
   arcane: 0xc58cff, hex: 0xa04aff, wave: 0xd8f4ff, groundwave: 0xc8a070, meteor: 0xff7a1a, arrow: 0xf0e0c0,
@@ -31,7 +33,7 @@ interface FighterView {
   ghostT: number;
   emberT: number;
   /** Legendary skin sparkle timers, per place they shed from. */
-  sparkT: { main: number; sec: number; head: number; body: number; feet: number };
+  sparkT: { main: number; sec: number; head: number; body: number; feet: number; set: number };
   headY: number;
 }
 
@@ -119,7 +121,7 @@ export class BattleView implements View {
       const anim = new Animator(art);
       return {
         art, anim, bank: new SpriteBank(art, anim.set), out: anim.update(f, f.x, 0, false, false, false),
-        flash: 0, ghosts: [], ghostT: 0, emberT: 0, sparkT: { main: 0, sec: 0, head: 0, body: 0, feet: 0 }, headY: 2,
+        flash: 0, ghosts: [], ghostT: 0, emberT: 0, sparkT: { main: 0, sec: 0, head: 0, body: 0, feet: 0, set: 0 }, headY: 2,
       };
     });
     this.fx.clear();
@@ -351,9 +353,12 @@ export class BattleView implements View {
     g.globalAlpha = 1;
 
     // Invulnerability frames blink.
+    const set = f.alive ? v.art.set : null;
+    if (set) drawSetAura(g, set, px, py + o.hop, this.time, 'back');
     if (f.invuln > 0 && f.alive && Math.floor(this.time * 30) % 2 === 0) g.globalAlpha = 0.55;
     blit(g, s, px, py, flip);
     g.globalAlpha = 1;
+    if (set) drawSetAura(g, set, px, py + o.hop, this.time, 'front');
 
     if (dt > 0 && f.alive) this.legendSparks(f, v, s, x, y, flip);
 
@@ -421,6 +426,13 @@ export class BattleView implements View {
     if (f.familiar && f.alive) {
       const fx = Math.round(this.sx(x - f.facing * 0.5)), fy = Math.round(this.sy(y + 2.1) + Math.sin(this.time * 3) * 2);
       const charging = f.familiar.charge > 0;
+      const skinId = v.art.specialSkinId;
+      if (skinDraws('lantern', skinId)) {
+        // An epic lantern brings its own sprite; it flickers faster while charging a shot.
+        const s = projSprite('lantern', Math.floor(this.time * (charging ? 16 : 6)), 0, skinId);
+        g.drawImage(s.img, fx - s.ox, fy - s.oy);
+        return;
+      }
       const sk = v.art.specialSkin?.mats;
       const metal = sk?.lantern?.base ?? 0xc89a30, light = sk?.wisp?.base ?? 0x7ae8ff, hot = sk?.wispHot?.base ?? 0xf0ffff;
       g.fillStyle = css(metal); g.fillRect(fx - 2, fy - 4, 5, 1); g.fillRect(fx - 2, fy + 3, 5, 1); g.fillRect(fx, fy - 6, 1, 2);
@@ -439,8 +451,13 @@ export class BattleView implements View {
   private legendSparks(f: Fighter, v: FighterView, s: Sprite, x: number, y: number, flip: boolean): void {
     const dt = this.lastDt, art = v.art, t = v.sparkT;
     const at = (p: [number, number]): [number, number] => [x + (flip ? -p[0] : p[0]) / PPM, y + (v.out.hop - p[1]) / PPM];
-    const emit = (fx: { spark: number; spark2: number }, px: number, py: number, jitter: number, life: [number, number], speed: [number, number] = [0.1, 0.5]) =>
-      this.fx.burst({ x: px, y: py, jitter, jitterY: jitter, count: 1, dir: Math.PI / 2, spread: 0.6, speed, life, color: fx.spark, color2: fx.spark2, kind: 'twinkle' });
+    const emit = (fx: SkinFx, px: number, py: number, jitter: number, life: [number, number], speed: [number, number] = [0.1, 0.5]) => {
+      const flame = fx.kind === 'flame';
+      this.fx.burst({
+        x: px, y: py, jitter, jitterY: jitter, count: 1, dir: Math.PI / 2, spread: flame ? 0.3 : 0.6,
+        speed: flame ? [speed[0] + 0.4, speed[1] + 0.8] : speed, life, color: fx.spark, color2: fx.spark2, kind: fx.kind ?? 'twinkle',
+      });
+    };
     const tick = (k: keyof FighterView['sparkT'], every: number) => (t[k] -= dt) <= 0 && ((t[k] = every), true);
     const main = art.mainSkin?.fx;
     if (main && s.tip && tick('main', f.action ? 0.03 : 0.12)) emit(main, ...at(s.tip), 0.06, [0.25, 0.55]);
@@ -452,6 +469,11 @@ export class BattleView implements View {
     if (body && tick('body', 0.22)) emit(body, x, y + 1.1, 0.4, [0.5, 0.9], [0.15, 0.4]);
     const feet = art.bootsSkin?.fx;
     if (feet && tick('feet', Math.abs(f.x - f.px) > 0.001 || f.y > 0.05 ? 0.05 : 0.4)) emit(feet, x, y + 0.08, 0.25, [0.3, 0.6], [0.2, 0.6]);
+    // A whole epic set: its aura sheds particles from the ring at the feet.
+    if (art.set && tick('set', 0.07)) {
+      const a = Math.random() * Math.PI * 2;
+      emit(SET_FX[art.set], x + Math.cos(a) * 0.55, y + 0.05 + Math.sin(a) * 0.1, 0.05, [0.5, 0.9], [0.5, 1.1]);
+    }
   }
 
   private drawItem(g: CanvasRenderingContext2D, f: Fighter): void {
@@ -488,21 +510,25 @@ export class BattleView implements View {
     let ang = Math.atan2(p.vy, p.vx);
     if (p.ground || style === 'chakram' || style === 'hex' || style === 'fire' || style === 'arcane' || style === 'wisp') ang = p.vx < 0 ? Math.PI : 0;
     if (style === 'flamewave' || style === 'groundwave') ang = p.vx < 0 ? Math.PI : 0;
-    const frame = Math.floor(this.time * (style === 'chakram' || style === 'knife' ? 24 : 12)) % projFrames(style);
+    const thrower = this.fighters[p.owner]?.art;
     // Meteors and wisp shots come from the special item, in its skin's colours.
     const fromItem = style === 'meteor' || style === 'wisp';
-    const skin = fromItem ? this.fighters[p.owner]?.art.specialSkinId : null;
-    let s = projSprite(style, frame, ang, skin);
+    const skin = fromItem ? thrower?.specialSkinId : null;
+    // Epic weapons can reshape what they throw.
+    const wid = p.def.from === 'main' ? thrower?.mainId : p.def.from === 'secondary' ? thrower?.secId : null;
+    const wskin = !fromItem && wid ? thrower?.skins[wid] ?? null : null;
+    const look = skin ?? (skinDraws(style, wskin) ? wskin : null);
+    const frame = Math.floor(this.time * (style === 'chakram' || style === 'knife' ? 24 : 12)) % projFrames(style, look);
+    let s = projSprite(style, frame, ang, look);
     const sx = Math.round(this.sx(x)), sy = Math.round(this.sy(y));
     if ((style === 'flamewave' || style === 'groundwave') && p.vx < 0) {
       // Ground waves are drawn upright and mirrored rather than rotated.
-      s = projSprite(style, frame, 0, skin);
+      s = projSprite(style, frame, 0, look);
       blit(g, s, sx, sy, true);
     } else g.drawImage(s.img, sx - s.ox, sy - s.oy);
     // Legendary weapons leave sparkles behind their shots.
-    const thrower = this.fighters[p.owner]?.art;
     const legend = p.def.from === 'main' ? thrower?.mainSkin?.fx : p.def.from === 'secondary' ? thrower?.secSkin?.fx : undefined;
-    if (legend && Math.random() < 0.6) this.fx.burst({ x, y, jitter: 0.05, count: 1, speed: [0, 0.3], life: [0.2, 0.4], color: legend.spark, color2: legend.spark2, kind: 'twinkle' });
+    if (legend && Math.random() < 0.6) this.fx.burst({ x, y, jitter: 0.05, count: 1, speed: [0, 0.3], life: [0.2, 0.4], color: legend.spark, color2: legend.spark2, kind: legend.kind ?? 'twinkle' });
     // Trails.
     if (skin) this.projGlow.set(p.id, this.glow(p.owner, STYLE_COLOR[style], 0));
     if (Math.random() < (style === 'meteor' ? 1 : 0.5)) {
@@ -762,11 +788,17 @@ export class BattleView implements View {
     if (fx && !blocked) {
       this.fx.burst({ x, y, count: heavy ? 14 : 8, speed: [2, 6], life: [0.25, 0.5], color: fx.spark, color2: fx.spark2, drag: 2.5, kind: 'twinkle' });
       this.fx.pulse('ring', x, y, heavy ? 0.75 : 0.5, fx.spark2, 0.22);
+      // Epic weapons hit harder to look at: a star flash and a spray of their own particles.
+      if (fx.kind) {
+        this.fx.pulse('star', x, y, heavy ? 0.9 : 0.6, fx.spark, 0.2);
+        this.fx.burst({ x, y, count: heavy ? 10 : 6, dir: Math.PI / 2, spread: 1.2, speed: [1.5, 4], life: [0.3, 0.6], color: fx.spark, color2: fx.spark2, kind: fx.kind });
+      }
     }
     const shield = this.fighters[target]?.art.secSkin?.fx;
     if (shield && blocked) {
       this.fx.burst({ x, y, count: 12, speed: [2, 5], life: [0.25, 0.5], color: shield.spark, color2: shield.spark2, drag: 2.5, kind: 'twinkle' });
       this.fx.pulse('ring', x, y, 0.6, shield.spark2, 0.25);
+      if (shield.kind) this.fx.pulse('star', x, y, 0.8, shield.spark, 0.22);
     }
   }
 

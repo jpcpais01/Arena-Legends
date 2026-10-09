@@ -15,7 +15,7 @@ interface Particle {
   color: number; color2: number;
   size: number;
   gravity: number; drag: number;
-  kind: 'dot' | 'streak' | 'smoke' | 'ember' | 'twinkle';
+  kind: 'dot' | 'streak' | 'smoke' | 'ember' | 'twinkle' | 'flame';
   ground: boolean;
 }
 
@@ -159,6 +159,10 @@ export class Fx {
         for (let i = 0; i < len; i++) g.fillRect(Math.round(x - ux * i), Math.round(y - uy * i), 1, 1);
       } else if (p.kind === 'ember') {
         if ((Math.floor(p.life * 20) & 1) === 0) g.fillRect(x, y, 1, 1);
+      } else if (p.kind === 'flame') {
+        // A flickering tongue of fire (epic skins): two pixels tall with a wide base, shrinking to one.
+        g.fillRect(x, y, 1, k < 0.55 ? 2 : 1);
+        if (k < 0.3 && (Math.floor(p.life * 24) & 1) === 0) g.fillRect(x - 1, y + 1, 3, 1);
       } else if (p.kind === 'twinkle') {
         // A little four-point star that shrinks to a dot (legendary skins).
         g.fillRect(x, y, 1, 1);

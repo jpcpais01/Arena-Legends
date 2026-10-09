@@ -11,7 +11,7 @@ import { gearOf } from '../sim/gear';
 import { DEFAULT_BUILDS, randomBuild, type CharacterBuild } from '../sim/loadout';
 import { Rng } from '../core/rng';
 import type { GearSet } from '../sim/types';
-import { randomSkins, sanitizeSkins, SKINS, skinsFor } from './skins';
+import { fullSet, randomSkins, sanitizeSkins, setPieces, SKIN_SETS, SKINS, skinsFor } from './skins';
 
 /** A default build wearing `gear` in its slot, with the given skins. */
 function wearing(skinId: string | null, gearId: string): CharacterBuild {
@@ -50,16 +50,41 @@ describe('item skins', () => {
   it('rarities follow their rules', () => {
     for (const s of SKINS) {
       const a = SKIN_ART[s.id];
-      const reshaped = !!(a.weapon || a.head || a.chest || a.boots);
+      const special = gearOf(s.gear).slot === 'special';
+      const reshaped = !!(a.weapon || a.head || a.chest || a.boots || (special && a.icon));
       if (s.rarity === 'rare') {
         expect(reshaped, s.id).toBe(false);
         expect(a.mats && Object.keys(a.mats).length, s.id).toBeTruthy();
       } else expect(reshaped, s.id).toBe(true);
-      if (s.rarity === 'legendary') expect(a.fx, s.id).toBeDefined();
+      // Effects: legendary and epic pieces you wear or wield; epic special items reshape their battle sprites instead.
+      if (s.rarity === 'legendary' || (s.rarity === 'epic' && !special)) expect(a.fx, s.id).toBeDefined();
       else expect(a.fx, s.id).toBeUndefined();
+      if (s.rarity === 'epic') {
+        expect(s.set, s.id).toBeDefined();
+        if (a.fx) expect(a.fx.kind, s.id).toBeDefined();
+        if (special) expect(a.icon && (a.proj || a.plume), s.id).toBeTruthy();
+      } else expect(s.set, s.id).toBeUndefined();
       // Special item skins colour their battle particles too.
-      if (gearOf(s.gear).slot === 'special' && s.gear !== 'vampiric_fang') expect(a.glow, s.id).toBeDefined();
+      if (special && s.gear !== 'vampiric_fang') expect(a.glow, s.id).toBeDefined();
     }
+  });
+
+  it('epic sets have one piece for each gear slot', () => {
+    expect(SKIN_SETS.length).toBe(3);
+    for (const set of SKIN_SETS) {
+      const slots = setPieces(set.id).map((p) => gearOf(p.gear).slot).sort();
+      expect(slots, set.id).toEqual(['boots', 'chest', 'head', 'main', 'secondary', 'special']);
+    }
+  });
+
+  it('a set counts only when all six pieces are worn in their set skins', () => {
+    const pieces = setPieces('foxfire');
+    const gear = Object.fromEntries(pieces.map((p) => [gearOf(p.gear).slot, p.gear])) as GearSet;
+    const skins = Object.fromEntries(pieces.map((p) => [p.gear, p.id]));
+    expect(fullSet(gear, skins)).toBe('foxfire');
+    expect(makeArt({ ...DEFAULT_BUILDS[0], gear, skins }).set).toBe('foxfire');
+    expect(fullSet({ ...gear, boots: undefined }, skins)).toBeNull();
+    expect(fullSet(gear, { ...skins, [pieces[5].gear]: undefined })).toBeNull();
   });
 
   it('every main weapon family has a skin of each rarity', () => {
@@ -72,7 +97,7 @@ describe('item skins', () => {
       families.get(fam)!.add(s.rarity);
     }
     for (const fam of ['sword', 'wand', 'heavy', 'polearm', 'staff', 'bow']) {
-      expect([...(families.get(fam) ?? [])].sort(), fam).toEqual(['legendary', 'mythic', 'rare']);
+      expect([...(families.get(fam) ?? [])].sort().filter((r) => r !== 'epic'), fam).toEqual(['legendary', 'mythic', 'rare']);
     }
   });
 
