@@ -136,6 +136,7 @@ h1, h2, h3, p { margin: 0; }
 .version { position: absolute; left: var(--safe-l); bottom: var(--safe-b); display: flex; align-items: center; gap: 6px; font: 600 0.75rem/1 var(--font); color: var(--text); opacity: 0.9; text-shadow: 1px 1px 0 var(--ink), 2px 2px 0 var(--ink); z-index: 5; }
 .version .btn { min-height: 26px; min-width: 26px; padding: 3px; }
 .version .btn svg { width: 14px; height: 14px; }
+.version .btn.spin svg { animation: spin-px 0.8s steps(8) infinite; }
 
 /* --- Title menu ------------------------------------------------------------------------------ */
 .menu {

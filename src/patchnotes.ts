@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.14.1',
+    date: '2026-10-09',
+    title: 'Refresh for updates',
+    notes: [
+      'A new refresh button sits next to the patch notes button. Tap it to grab the latest version of the game right away, even from the installed app.',
+    ],
+  },
+  {
     version: '0.14.0',
     date: '2026-10-09',
     title: 'Double health for every body',

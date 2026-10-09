@@ -19,7 +19,38 @@ export function versionBadge(label: string, parent: () => HTMLElement): HTMLElem
     },
   }, icon('notes'));
   if (store<string>(SEEN_KEY, '') !== latest) btn.classList.add('unseen');
-  return h('div.version', null, btn, h('span', null, label));
+  const refresh = h<HTMLButtonElement>('button.btn.icon', {
+    title: 'Check for updates', 'aria-label': 'Check for updates',
+    onclick: () => {
+      sfx.play('ui');
+      refresh.disabled = true;
+      refresh.classList.add('spin');
+      void reloadLatest();
+    },
+  }, icon('refresh'));
+  return h('div.version', null, btn, refresh, h('span', null, label));
+}
+
+/** Asks the service worker for the newest deploy, lets it take over, then reloads.
+ *  A plain reload of an installed PWA can be answered from the old cache. */
+async function reloadLatest(): Promise<void> {
+  try {
+    const reg = await withTimeout(navigator.serviceWorker?.getRegistration(), 2000);
+    if (reg) {
+      await withTimeout(reg.update(), 5000);
+      const fresh = reg.installing ?? reg.waiting;
+      if (fresh) {
+        const swapped = new Promise<void>((done) => navigator.serviceWorker.addEventListener('controllerchange', () => done(), { once: true }));
+        fresh.postMessage({ type: 'SKIP_WAITING' });
+        await withTimeout(swapped, 8000);
+      }
+    }
+  } catch { /* offline or no service worker: a plain reload still helps */ }
+  location.reload();
+}
+
+function withTimeout<T>(p: Promise<T> | undefined, ms: number): Promise<T | undefined> {
+  return Promise.race([p ?? Promise.resolve(undefined), new Promise<undefined>((r) => setTimeout(r, ms))]);
 }
 
 function formatDate(iso: string): string {
