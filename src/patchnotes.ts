@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.24.0',
+    date: '2026-10-09',
+    title: 'New arena: Emberforge Caldera',
+    notes: [
+      'A brand new arena: duel on a platform of basalt columns standing in a lava lake, inside a volcano, in front of an ancient giants\' forge. Lavafalls pour down the cliffs, embers rise around the fighters and everything glows from the lava below.',
+      'The volcano gets angrier as the round goes on: more lava bombs, lightning in the ash plume, more embers. In overtime it erupts.',
+      'Sunset Colosseum, Moonlit Keep and Jade Temple are gone. The arena picker in Settings now offers Skygrove Isle, Emberforge Caldera and Random. If you had picked one of the removed arenas, you are back on Skygrove Isle.',
+    ],
+  },
+  {
     version: '0.23.0',
     date: '2026-10-09',
     title: 'Fights with a rhythm',
