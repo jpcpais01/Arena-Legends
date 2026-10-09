@@ -408,6 +408,9 @@ h1, h2, h3, p { margin: 0; }
 @keyframes step-in-l { from { opacity: 0; transform: translateX(-2rem); } }
 .step-head { display: grid; gap: 6px; margin-bottom: 0.4rem; }
 .step-head p { font-size: 0.875rem; color: var(--muted); padding-left: 0.4rem; }
+.step-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.step-title .ribbon { flex: 0 1 auto; min-width: 0; }
+.step-title .btn { flex: none; margin-right: calc(var(--px) * 2); }
 .panel-foot { display: flex; justify-content: flex-start; margin-top: 0.9rem; }
 
 /* Big picks: species and body forms, like a fighting game's select grid. */
@@ -910,6 +913,38 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
   .clock { font-size: 1.4rem; min-width: 3rem; }
   .banner { font-size: 3rem; }
   .hud-ctrl .btn { min-height: 2.3rem; min-width: 2.6rem; }
+}
+/* Phone landscape is the main way to play: make every step fit the short screen without scrolling where possible. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .step-head p { display: none; }
+  .step-head { margin-bottom: 0.1rem; }
+  .panel-body { padding-top: calc(var(--px) * 4); }
+  .card-grid.species { gap: 7px; }
+  .card-grid.species .portrait { aspect-ratio: 1 / 0.72; }
+  .card-grid.species .card-tile b { padding: 0.2rem 0.2rem 0.25rem; }
+  .card-grid.forms { gap: 7px; }
+  .card-grid.forms .portrait { aspect-ratio: 44 / 50; }
+  .detail { margin-top: 7px; gap: 3px; }
+  .detail p { font-size: 0.75rem; line-height: 1.3; }
+  .detail p.forms-of { font-size: 0.6875rem; }
+  .detail-head b { font-size: 1rem; }
+  .bars { grid-template-columns: auto minmax(0, 1fr) auto auto minmax(0, 1fr) auto; gap: 3px 8px; margin-top: 2px; }
+  .bars span, .bars em { font-size: 0.6875rem; }
+  .segs { height: 0.6rem; }
+  .style-grid { gap: 8px 14px; }
+  .field { gap: 5px; }
+  .swatches { gap: 4px; }
+  .swatch { width: 1.65rem; height: 1.65rem; }
+  .cyc-val { height: 1.9rem; font-size: 0.875rem; }
+  .arrow.sm { width: 1.9rem; height: 1.9rem; }
+  .name-step { padding: 0; }
+  .name-sum { margin-top: 0.6rem; }
+  .name-sum span { min-width: 6rem; padding: 0.35rem 0.6rem 0.45rem; }
+  .settings-sheet { width: min(46rem, 100%) !important; }
+  .settings-body { grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); column-gap: 1.2rem; align-items: start; }
+  .settings-body .arena-field { grid-column: 2; grid-row: 1 / span 4; padding-top: 0.6rem; }
+  .settings-body .setting { padding: 0.5rem 0; }
+  .arena-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (orientation: landscape) and (max-height: 400px) {
   .creator .scr-title { display: none; }

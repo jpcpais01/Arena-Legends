@@ -61,6 +61,8 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
   let cards: Preview[] = [];
   /** Updates the open step after a pick made outside it (stage arrows). */
   let refresh: () => void = () => {};
+  /** A button the open step puts beside its title (Look: Surprise me). */
+  let headTool: HTMLElement | null = null;
 
   const stageBox = h('div.stage-box');
   const preview = new Preview(bare(c), 100, 90, { autoplay: true, pedestal: true, fit: stageBox });
@@ -321,7 +323,8 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
       setLook({ ...r, species: c.look.species, skin: Math.floor(Math.random() * SPECIES[c.look.species].skins.length) }, true);
       draw();
     } }, icon('dice'), 'Surprise me');
-    return [body, h('div.panel-foot', null, lucky)];
+    headTool = lucky;
+    return [body];
   }
 
   function nameStep(): HTMLElement[] {
@@ -343,10 +346,11 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     clearCards();
     refresh = () => {};
     const s = STEPS[step];
-    panelHead.replaceChildren(
-      h('div.ribbon', null, h('span', null, s.title)),
-      h('p', null, s.sub));
+    headTool = null;
     panelBody.replaceChildren(...(step === 0 ? speciesStep() : step === 1 ? formStep() : step === 2 ? lookStep() : nameStep()));
+    panelHead.replaceChildren(
+      h('div.step-title', null, h('div.ribbon', null, h('span', null, s.title)), headTool),
+      h('p', null, s.sub));
     panelBody.scrollTop = 0;
     // Slide the new step in from the side it came from.
     panel.classList.remove('in-l', 'in-r');

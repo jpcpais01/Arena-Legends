@@ -84,7 +84,7 @@ export function settingsSheet(start: Settings, arenas: ArenaChoice[], onChange: 
   const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopImmediatePropagation(); close(); } };
   window.addEventListener('keydown', onKey, true);
   const wrap: HTMLElement = h('div.sheet-wrap', { onclick: (e: Event) => { if (e.target === wrap) close(); } },
-    h('div.sheet.plate', { role: 'dialog', 'aria-label': 'Settings', style: { width: 'min(30rem, 100%)' } },
+    h('div.sheet.plate.settings-sheet', { role: 'dialog', 'aria-label': 'Settings', style: { width: 'min(30rem, 100%)' } },
       h('div.sheet-head', null, h('h2', null, 'Settings'),
         h('button.btn.icon', { title: 'Close', 'aria-label': 'Close', onclick: close }, icon('close'))),
       body,
