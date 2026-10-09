@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.32.4',
+    date: '2026-10-09',
+    title: 'Bigger chests button',
+    notes: [
+      'The Chests button on the home screen is now big and purple, with a hopping chest and your gems.',
+      'When you open one chest, your fighter wearing the new skin now stands as tall as the skin card.',
+    ],
+  },
+  {
     version: '0.32.3',
     date: '2026-10-09',
     title: 'Clearer account errors',

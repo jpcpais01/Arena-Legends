@@ -45,7 +45,7 @@ export class Menu {
   private chestBtn: HTMLButtonElement;
 
   constructor(cb: MenuCallbacks) {
-    this.chestBtn = h<HTMLButtonElement>('button.btn.sm.chest-btn', { title: 'Skin chests', onclick: () => cb.onChests() });
+    this.chestBtn = h<HTMLButtonElement>('button.btn.chest-btn.go', { title: 'Skin chests', onclick: () => cb.onChests() });
     this.soundBtn = h<HTMLButtonElement>('button.btn.icon.sm', { title: 'Sound', 'aria-label': 'Sound', onclick: () => cb.onSound() });
     const mark = h('div.menu-logo.home-logo', { 'aria-label': 'Arena Legends' });
     void logo().then((c) => { mark.append(c); fitPixels(c, mark); });
