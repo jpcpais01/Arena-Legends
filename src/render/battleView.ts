@@ -294,9 +294,9 @@ export class BattleView implements View {
   private draw(dt: number): void {
     const g = this.screen.g;
     const b = this.battle!;
-    const cam = this.camX * PPM - this.shakeX;
+    const cam = this.camX * PPM;
     this.arena!.setDay(b.time / ROUND_TIME);
-    this.arena!.draw(g, cam, this.time);
+    this.arena!.draw(g, cam, this.time, this.shakeX, this.shakeY);
     this.fx.drawUnder(g, this);
     // Shadows.
     for (const f of b.fighters) {
