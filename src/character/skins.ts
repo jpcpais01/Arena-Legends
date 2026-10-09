@@ -30,7 +30,7 @@ export interface SkinDef {
   set?: SkinSetId;
 }
 
-export type SkinSetId = 'sunborn' | 'hellforged' | 'foxfire' | 'wildwood' | 'abyssal' | 'clockwork';
+export type SkinSetId = 'sunborn' | 'hellforged' | 'foxfire' | 'wildwood' | 'abyssal' | 'clockwork' | 'bloodmoon' | 'starweaver' | 'frostbound' | 'stormcaller' | 'voidborn';
 
 export interface SkinSet {
   id: SkinSetId;
@@ -46,6 +46,11 @@ export const SKIN_SETS: readonly SkinSet[] = [
   { id: 'wildwood', name: 'Wildwood', blurb: 'Living wood and emerald in bloom, with fireflies drifting about.' },
   { id: 'abyssal', name: 'Abyssal Tide', blurb: 'Treasure of the deep: scale, coral and pearl, lit by glowing sea life.' },
   { id: 'clockwork', name: 'Clockwork Titan', blurb: 'Brass and steam, gears turning and pistons pumping, an arcane core humming.' },
+  { id: 'bloodmoon', name: 'Bloodmoon Court', blurb: "A vampire lord's finery: crimson, black and moonlit silver, with bats on the wing." },
+  { id: 'starweaver', name: 'Starweaver', blurb: 'The night sky worn as armour: deep indigo, silver moons and constellations that glitter.' },
+  { id: 'frostbound', name: 'Frostbound Jarl', blurb: "A northern warlord's gear: rimed iron, white fur and glacier ice, snow on the wind." },
+  { id: 'stormcaller', name: 'Stormcaller', blurb: 'Thunderheads and lightning: storm-grey steel, gold and crackling blue-white bolts.' },
+  { id: 'voidborn', name: 'Voidborn', blurb: 'Something from between the stars: black chitin, violet light, tendrils and too many eyes.' },
 ];
 export const SKIN_SET_BY_ID: ReadonlyMap<SkinSetId, SkinSet> = new Map(SKIN_SETS.map((s) => [s.id, s]));
 
@@ -204,6 +209,36 @@ export const SKINS: readonly SkinDef[] = [
   E('clockwork', 'berserker_mask', 'automaton', 'Automaton Visage'),
   E('clockwork', 'plate_armor', 'titan', 'Titan Frame'),
   E('clockwork', 'colossus_boots', 'piston', 'Piston Stompers'),
+  E('bloodmoon', 'dagger', 'sanguine', 'Sanguine Kiss'),
+  E('bloodmoon', 'parrying_dagger', 'nightwing', 'Nightwing'),
+  E('bloodmoon', 'vampiric_fang', 'bloodmoon', 'Fang of the Blood Moon'),
+  E('bloodmoon', 'duelist_band', 'count', "The Count's Tricorn"),
+  E('bloodmoon', 'phase_cloak', 'vampire', "Vampire Lord's Mantle"),
+  E('bloodmoon', 'leather_boots', 'bloodmoon', 'Bloodmoon Riders'),
+  E('starweaver', 'ember_wand', 'starfall', 'Starfall Wand'),
+  E('starweaver', 'wind_chakram', 'crescent', 'Crescent Moon'),
+  E('starweaver', 'meteor_sigil', 'comet', 'Comet Sigil'),
+  E('starweaver', 'chrono_circlet', 'moon', 'Circlet of the Moon'),
+  E('starweaver', 'mage_robe', 'nightsky', 'Robe of the Night Sky'),
+  E('starweaver', 'leaping_boots', 'comet', 'Comet Striders'),
+  E('frostbound', 'mace', 'winterfist', 'Winterfist'),
+  E('frostbound', 'buckler', 'rimeguard', 'Rimeguard'),
+  E('frostbound', 'frost_core', 'winter', 'Heart of Winter'),
+  E('frostbound', 'iron_helm', 'jarl', 'Helm of the Frost Jarl'),
+  E('frostbound', 'plate_armor', 'frostbound', 'Frostbound Plate'),
+  E('frostbound', 'iron_greaves', 'glacier', 'Glacier Greaves'),
+  E('stormcaller', 'longbow', 'thunderstring', 'Thunderstring'),
+  E('stormcaller', 'kite_shield', 'tempest', 'Tempest Aegis'),
+  E('stormcaller', 'ember_core', 'stormheart', 'Stormheart'),
+  E('stormcaller', 'storm_crown', 'thunderking', 'Crown of the Thunder King'),
+  E('stormcaller', 'mirror_mail', 'stormcaller', 'Stormcaller Mail'),
+  E('stormcaller', 'zephyr_boots', 'galewalkers', 'Galewalkers'),
+  E('voidborn', 'greataxe', 'voidreaver', 'Voidreaver'),
+  E('voidborn', 'hand_crossbow', 'eldritch', 'Eldritch Repeater'),
+  E('voidborn', 'wisp_lantern', 'watcher', 'The Watcher'),
+  E('voidborn', 'executioner_hood', 'thousandeyes', 'Hood of a Thousand Eyes'),
+  E('voidborn', 'thornmail', 'tendril', 'Tendril Carapace'),
+  E('voidborn', 'shadow_treads', 'voidwalkers', 'Voidwalkers'),
 ];
 
 export const SKIN_BY_ID: ReadonlyMap<string, SkinDef> = new Map(SKINS.map((s) => [s.id, s]));

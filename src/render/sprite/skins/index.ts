@@ -10,6 +10,11 @@ import { SUNBORN } from './sunborn';
 import { WILDWOOD } from './wildwood';
 import { ABYSSAL } from './abyssal';
 import { CLOCKWORK } from './clockwork';
+import { BLOODMOON } from './bloodmoon';
+import { STARWEAVER } from './starweaver';
+import { FROSTBOUND } from './frostbound';
+import { STORMCALLER } from './stormcaller';
+import { VOIDBORN } from './voidborn';
 import {
   geodeHeart, icicleScepter, kagutsuchi, krakenConch, lionheart, morningstar, skullcrusher, solarDisc, swordbreaker,
   frostreaver, voidfang, wintersHeart, wyrmRepeater,
@@ -335,4 +340,9 @@ export const SKIN_ART: Record<string, SkinArt> = {
   ...WILDWOOD,
   ...ABYSSAL,
   ...CLOCKWORK,
+  ...BLOODMOON,
+  ...STARWEAVER,
+  ...FROSTBOUND,
+  ...STORMCALLER,
+  ...VOIDBORN,
 };
