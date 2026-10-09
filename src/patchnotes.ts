@@ -12,7 +12,7 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.18.0',
+    version: '0.20.0',
     date: '2026-10-09',
     title: 'Three new bodies, three new species',
     notes: [
@@ -22,6 +22,37 @@ export const PATCH_NOTES: PatchNote[] = [
       'New species Saurin (lizard-folk with a snout, a spiny crest and a sweeping tail), Myco (mushroom-folk under a spotted cap that glows at night) and Ursin (bear-folk with round ears and a broad muzzle).',
       'Each species now has its own set of body forms: no Titan imps or Feral golems. The creator shows the forms each species can take.',
       'If your fighter had a form their species no longer takes, they moved to the closest one it does.',
+    ],
+  },
+  {
+    version: '0.19.1',
+    date: '2026-10-09',
+    title: 'Roomier item cards in the gear screen',
+    notes: [
+      'The item card in the gear screen is now three tiles wide and two tall, so everything fits comfortably.',
+      'Every item shows its full description and every skill\'s full text, never cut off. Item names wrap instead of being shortened.',
+      'Items with a passive now show its name, like "Passive: Echo".',
+      'Under the skin icons you can read the skin you picked, its rarity and what that rarity changes. With no skin picked, it tells you how many skins the item has.',
+    ],
+  },
+  {
+    version: '0.19.0',
+    date: '2026-10-09',
+    title: 'A battle soundtrack that builds',
+    notes: [
+      'Fights now have music, and it reacts to the fight: the lower the weaker fighter\'s health, the more intense it gets. It starts with a calm groove, then drums, a driving bass, arpeggios and a full theme come in, the chords darken and the tempo speeds up.',
+      'When someone is one or two hits from defeat, a heartbeat, trembling strings and rising swells take over. Heals let the music settle back down.',
+      'Night overtime lifts the whole song a step higher and adds war drums. A knockout ends it on a final chord.',
+      'Pausing muffles the music. Turn it off any time with the new Music switch in Settings.',
+    ],
+  },
+  {
+    version: '0.18.0',
+    date: '2026-10-09',
+    title: 'Steadier screen shake',
+    notes: [
+      'Big hits now shake only the arena itself: the island, the fighters and the effects. The sky, the sun and the floating islands in the distance stay still, so heavy blows feel like they hit the ground instead of the whole screen.',
+      'The same goes for every arena: the stands and floor jolt, the sky and mountains behind them stay put.',
     ],
   },
   {
