@@ -40,6 +40,7 @@ export interface HudCallbacks {
   onPause(): void;
   onExit(): void;
   onSettings(): void;
+  onCamera(): void;
 }
 
 /**
@@ -55,6 +56,9 @@ export class Hud {
   private speedBtn!: HTMLButtonElement;
   private pauseBtn!: HTMLButtonElement;
   private banner!: HTMLElement;
+  private camBtn!: HTMLButtonElement;
+  private camToast!: HTMLElement;
+  private camName = '';
   private bannerT = 0;
   private lastClock = -1;
   private battle: Battle | null = null;
@@ -96,13 +100,18 @@ export class Hud {
       title: 'Speed', onclick: () => this.cb.onSpeed(SPEEDS[(SPEEDS.indexOf(this.speedV) + 1) % SPEEDS.length]),
     });
     this.pauseBtn = h<HTMLButtonElement>('button.btn', { title: 'Pause', 'aria-label': 'Pause', onclick: () => this.cb.onPause() }, icon('pause'));
+    this.camBtn = h<HTMLButtonElement>('button.btn', { 'aria-label': 'Camera', onclick: () => this.cb.onCamera() }, icon('camera'));
+    this.camToast = h('div.cam-toast.plate', { hidden: true });
     const ctrl = h('div.hud-ctrl', null,
+      this.camToast,
       h('button.btn', { title: 'Settings', 'aria-label': 'Settings', onclick: () => this.cb.onSettings() }, icon('settings')),
+      this.camBtn,
       this.speedBtn, this.pauseBtn,
       h('button.btn', { title: 'Leave', 'aria-label': 'Leave', onclick: () => this.cb.onExit() }, icon('close')));
     this.banner = h('div.banner', { hidden: true });
     this.el.replaceChildren(top, ...bubbles, ctrl, this.banner);
     this.setSpeed(speed);
+    this.setCamera(this.camName);
     this.lastClock = -1;
     this.bannerT = 0;
     this.setMatch(this.match);
@@ -125,6 +134,20 @@ export class Hud {
     this.speedV = s;
     this.speedBtn?.replaceChildren(icon('fast'), `${s}x`);
     this.speedBtn?.classList.toggle('on', s > 1);
+  }
+
+  /** The camera mode's name on the button; `announce` flashes it over the controls. */
+  setCamera(name: string, announce = false): void {
+    this.camName = name;
+    if (!this.camBtn) return;
+    this.camBtn.title = `Camera: ${name}`;
+    if (!announce) return;
+    const t = this.camToast;
+    t.replaceChildren(icon('camera'), name);
+    t.hidden = false;
+    t.getAnimations().forEach((a) => a.cancel());
+    t.animate([{ opacity: 1 }, { opacity: 1, offset: 0.7 }, { opacity: 0 }], { duration: 1400, fill: 'forwards' })
+      .onfinish = () => { t.hidden = true; };
   }
 
   /** Shows or hides the fighters' thought bubbles (hiding clears any on screen). */

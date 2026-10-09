@@ -5,7 +5,7 @@ import './ui/styles.css';
 import { sfx } from './audio/sfx';
 import { sanitizeAppearance } from './character/appearance';
 import { generateRival, loadCharacter, newCharacter, saveCharacter, type PlayerCharacter } from './character/profile';
-import { BattleView } from './render/battleView';
+import { BattleView, CAM_MODES, type CamMode } from './render/battleView';
 import { THEMES, type Theme } from './render/arenaArt';
 import { Screen } from './render/screen';
 import { Battle } from './sim/battle';
@@ -42,6 +42,9 @@ let record = store<WinLoss>('al.record', { w: 0, l: 0 });
 let speed = [1, 2, 4].includes(store<number>('al.speed', 1)) ? store<number>('al.speed', 1) : 1;
 let soundOn = store<boolean>('al.sound', true);
 let quotesOn = store<boolean>('al.quotes', true) !== false;
+let camMode = store<string>('al.camera', 'classic') as CamMode;
+if (!CAM_MODES.some((m) => m.id === camMode)) camMode = 'classic';
+const camName = () => CAM_MODES.find((m) => m.id === camMode)!.name;
 // Arena for every fight and the menu backdrop: Skygrove Isle unless the player picks another (or random).
 let arenaPick = store<string>('al.arena', 'isle');
 if (arenaPick !== 'random' && !THEMES.some((t) => t.id === arenaPick)) arenaPick = 'isle';
@@ -72,8 +75,19 @@ const hud = new Hud({
   onPause: () => togglePause(),
   onExit: () => { sfx.play('ui'); if (session) askLeave(); else toMenu(); },
   onSettings: () => openSettings(),
+  onCamera: () => cycleCamera(),
 }, view);
 hud.show(false);
+hud.setCamera(camName());
+
+/** Next battle camera mode: applies at once and is remembered. */
+function cycleCamera(): void {
+  camMode = CAM_MODES[(CAM_MODES.findIndex((m) => m.id === camMode) + 1) % CAM_MODES.length].id;
+  save('al.camera', camMode);
+  if (view.battle && !view.quiet) view.camMode = camMode;
+  hud.setCamera(camName(), true);
+  sfx.play('ui');
+}
 hud.setBubbles(quotesOn);
 
 const menu = new Menu({
@@ -181,6 +195,7 @@ function startDemo(): void {
   const seed = (Math.random() * 2 ** 32) >>> 0;
   const battle = new Battle({ seed, fighters: [a, b] });
   view.quiet = true;
+  view.camMode = 'classic';
   view.hold = false;
   view.paused = false;
   view.speed = 1;
@@ -224,6 +239,8 @@ function beginBattle(seed: number, fighters: [CharacterBuild, CharacterBuild]): 
   battle = new Battle({ seed, fighters: [{ ...fighters[0] }, { ...fighters[1] }] });
   const theme = arenaFor(seed);
   view.quiet = false;
+  view.camMode = camMode;
+  view.focus = session?.you ?? 0;
   view.hold = true;
   view.paused = false;
   view.speed = speed;
@@ -495,6 +512,7 @@ window.addEventListener('keydown', (e) => {
   else if (state === 'battle') {
     if (e.key === ' ') { e.preventDefault(); togglePause(); }
     else if (e.key === 'Escape') { if (session) askLeave(); else toMenu(); }
+    else if (e.key === 'c' || e.key === 'C') cycleCamera();
     else if (e.key === '1' || e.key === '2' || e.key === '3') {
       speed = [1, 2, 4][Number(e.key) - 1];
       save('al.speed', speed);
