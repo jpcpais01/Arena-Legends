@@ -2,6 +2,7 @@ import '@fontsource/pixelify-sans/500.css';
 import '@fontsource/pixelify-sans/600.css';
 import '@fontsource/pixelify-sans/700.css';
 import './ui/styles.css';
+import { music } from './audio/music';
 import { sfx } from './audio/sfx';
 import { sanitizeAppearance } from './character/appearance';
 import { generateRival, loadCharacter, newCharacter, saveCharacter, type PlayerCharacter } from './character/profile';
@@ -9,6 +10,7 @@ import { BattleView, CAM_MODES, type CamMode } from './render/battleView';
 import { THEMES, type Theme } from './render/arenaArt';
 import { Screen } from './render/screen';
 import { Battle } from './sim/battle';
+import { hpRatio } from './sim/fighter';
 import { DEFAULT_BUILDS, sanitizeBuild } from './sim/loadout';
 import type { BattleEvent } from './sim/types';
 import { creatorSheet } from './ui/creator';
@@ -41,6 +43,7 @@ let rival: PlayerCharacter = loadRival() ?? generateRival(player?.name);
 let record = store<WinLoss>('al.record', { w: 0, l: 0 });
 let speed = [1, 2, 4].includes(store<number>('al.speed', 1)) ? store<number>('al.speed', 1) : 1;
 let soundOn = store<boolean>('al.sound', true);
+let musicOn = store<boolean>('al.music', true) !== false;
 let quotesOn = store<boolean>('al.quotes', true) !== false;
 let camMode = store<string>('al.camera', 'classic') as CamMode;
 if (!CAM_MODES.some((m) => m.id === camMode)) camMode = 'classic';
@@ -50,6 +53,7 @@ let arenaPick = store<string>('al.arena', 'isle');
 if (arenaPick !== 'random' && !THEMES.some((t) => t.id === arenaPick)) arenaPick = 'isle';
 const arenaFor = (seed: number): Theme => THEMES.find((t) => t.id === arenaPick) ?? THEMES[seed % THEMES.length];
 sfx.setMuted(!soundOn);
+music.setEnabled(soundOn, musicOn);
 
 function loadRival(): PlayerCharacter | null {
   const raw = store<Record<string, unknown> | null>('al.rival', null);
@@ -111,6 +115,7 @@ function setSound(on: boolean): void {
   soundOn = on;
   save('al.sound', on);
   sfx.setMuted(!on);
+  music.setEnabled(soundOn, musicOn);
   menu.setSound(on);
 }
 
@@ -118,13 +123,19 @@ function openSettings(): void {
   closeSheet();
   sfx.play('ui');
   const arenas = THEMES.map((t) => ({ id: t.id, name: t.name, sky: t.sky, floor: t.floor }));
-  sheet = settingsSheet({ quotes: quotesOn, sound: soundOn, arena: arenaPick }, arenas, (s) => {
+  sheet = settingsSheet({ quotes: quotesOn, sound: soundOn, music: musicOn, arena: arenaPick }, arenas, (s) => {
     if (s.quotes !== quotesOn) {
       quotesOn = s.quotes;
       save('al.quotes', quotesOn);
       hud.setBubbles(quotesOn);
     }
     if (s.sound !== soundOn) setSound(s.sound);
+    if (s.music !== musicOn) {
+      musicOn = s.music;
+      save('al.music', musicOn);
+      music.setEnabled(soundOn, musicOn);
+      if (musicOn && state === 'battle') { music.intro(); music.fight(); }
+    }
     if (s.arena !== arenaPick) {
       arenaPick = s.arena;
       save('al.arena', arenaPick);
@@ -205,6 +216,7 @@ function startDemo(): void {
 
 function toMenu(): void {
   state = 'menu';
+  music.stop();
   closeSheet();
   resultsEl?.remove();
   resultsEl = null;
@@ -253,10 +265,12 @@ function beginBattle(seed: number, fighters: [CharacterBuild, CharacterBuild]): 
   state = 'intro';
   introT = 0;
   countdown = -1;
+  music.intro();
 }
 
 function onBattleEvent(e: BattleEvent): void {
   hud.onEvent(e);
+  if (e.type === 'end') music.end();
 }
 
 function onBattleEnd(b: Battle): void {
@@ -305,6 +319,7 @@ function intro(dt: number): void {
     else {
       hud.showBanner('FIGHT!', '', 0.8);
       sfx.play('start');
+      music.fight();
       view.hold = false;
       state = 'battle';
     }
@@ -333,6 +348,7 @@ function startOnline(role: 'host' | 'guest', code = '', resume?: ReturnType<type
   const s: OnlineSession = role === 'host' ? new HostSession(me, resume ?? undefined) : new GuestSession(code, me, resume ?? undefined);
   session = s;
   netMatch = ''; netRound = 0; netPick = ''; resultsKey = '';
+  music.stop();
   s.onChange = () => { if (session === s) syncOnline(); };
   // The background duel keeps going behind the lobby and the pick screen.
   state = 'menu';
@@ -421,6 +437,7 @@ function pickInfo(s: OnlineSession, snap: Snapshot): PickInfo {
 function enterPick(s: OnlineSession, snap: Snapshot, key: string): void {
   netPick = key;
   state = 'menu';
+  music.stop();
   closeSheet();
   resultsEl?.remove();
   resultsEl = null;
@@ -502,6 +519,10 @@ function loop(now: number): void {
   }
   if (!covered) view.frame(dt);
   if (state !== 'menu') hud.update(view.paused ? 0 : dt * speed);
+  if (state === 'battle' && battle) {
+    const [a, b] = battle.fighters;
+    music.update(Math.min(hpRatio(a), hpRatio(b)), a.empowered, view.paused);
+  }
   requestAnimationFrame(loop);
 }
 

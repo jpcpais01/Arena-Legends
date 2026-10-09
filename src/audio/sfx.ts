@@ -15,6 +15,10 @@ class AudioEngine {
   muted = false;
   volume = 0.6;
 
+  /** The shared context and noise, once unlocked (the music plays on them too). */
+  get context(): AudioContext | null { return this.ctx; }
+  get noiseBuffer(): AudioBuffer | null { return this.noise; }
+
   /** Must be called from a user gesture. */
   unlock(): void {
     if (this.ctx) { if (this.ctx.state === 'suspended') void this.ctx.resume(); return; }
