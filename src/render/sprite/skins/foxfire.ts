@@ -292,6 +292,54 @@ function geta(): SkinArt {
   };
 }
 
+function hakama(): SkinArt {
+  // Wide vermilion shrine hakama hanging in pleats past the knee, white showing at the side slit,
+  // a gold cord knotted at the hip with swinging tassels, and a foxfire flame burning on the hem.
+  const pleats: Tex = (_x, y) => (wrap(y, 2.4) < 0.55 ? -1 : 0);
+  return {
+    mats: {
+      'l.hak': plain(VERMILION, (x) => (wrap(x, 3) < 0.45 ? -1 : 0)),
+      'l.pleat': plain(VERMILION, pleats),
+      'l.white': plain(WHITE), 'l.gold': shiny(GOLD), 'l.cord': shiny(GOLD, (x, y) => (wrap(x + y, 1.6) < 0.5 ? -1 : 0)),
+      'l.fire': { base: FOX[2], glow: true, ramp: FOX, tex: (x, y, ph) => (wrap(x + y * 0.5 - ph * 1.5, 5) < 1.4 ? 1 : 0) }, 'l.hot': glow(0xf0ffff),
+    },
+    legs: {
+      mat: 'l.hak', trim: null, knee: null, tasset: null, rune: null, wraps: null, bulk: 0.3,
+      over(r, t, m, c) {
+        const o = { group: c.g, toneBias: c.bias };
+        const L = c.len, w = c.w, ph = r.phase % 4;
+        // The cloth hangs: a frame from the hip that follows the thigh only a little (x up, y to the front).
+        const d = Math.atan2(Math.sin(t.ang - Math.PI / 2), Math.cos(t.ang - Math.PI / 2));
+        const K = new Xf(t.x(L, 0), t.y(L, 0), Math.abs(d) < 1.3 ? Math.PI / 2 + d * 0.45 : t.ang, 1, -1);
+        const kx = K.ix(t.ox, t.oy), ky = K.iy(t.ox, t.oy);
+        // Wide legs flaring past the knee; the hem swings a step behind the body.
+        const sw = [0, 0.5, 0.8, 0.3][ph];
+        const hem = kx - 3.2;
+        const front = Math.max(w + 1.6, ky + w + 1) + sw, back = Math.min(-w - 1.6, ky - w - 1) + sw * 0.6;
+        const leg = K.poly([1.4, -w - 0.4, 1.4, w + 0.6, hem + 0.6, front, hem, back]);
+        r.fill(leg, m('l.pleat'), { ...o, bevel: 1.8, local: K });
+        // A darker band at the hem.
+        r.fill(intersect(leg, K.poly([hem + 1.6, front + 2, hem + 1, back - 2, hem - 1, back - 2, hem - 0.4, front + 2])), m('l.pleat'), { ...o, toneBias: c.bias - 1, bevel: 1, noLine: true, local: K });
+        if (c.far) return;
+        // White kimono showing through the side slit at the hip.
+        r.fill(K.poly([-1.6, -w * 0.1, -L * 0.55, -w * 0.4, -1.6, -w + 0.4]), m('l.white'), { ...o, bevel: 0.8, noLine: true });
+        // A gold cord knotted at the front of the hip, its two tassels swinging.
+        const kxp = -2.8, kyp = w * 0.7;
+        for (const [dx, len] of [[-0.5, 3.8], [0.7, 2.8]] as const) {
+          const ty = kyp + dx + sw * 0.8, tx = kxp - len;
+          r.line(K.x(kxp, kyp), K.y(kxp, kyp), K.x(tx, ty), K.y(tx, ty), m('l.cord'), 2, c.g);
+          r.fill(K.cap(tx, ty, tx - 1.2, ty + sw * 0.3, 0.6, 0.45), m('l.gold'), { ...o, bevel: 0.6 });
+        }
+        r.fill(K.circ(kxp, kyp, 0.95), m('l.cord'), { ...o, bevel: 0.6 });
+        // A foxfire flame on the hem, flickering taller and shorter.
+        const fx = hem + 2.4, fy = (front + back) * 0.5 - 0.2;
+        flameTongue(r, new Xf(K.x(fx, fy), K.y(fx, fy), 0), 0, 0, 1.3, [3.2, 4, 3, 3.8][ph], ph % 2 ? 0.4 : -0.3, m('l.fire'), m('l.hot'), c.g);
+      },
+    },
+    ...FX,
+  };
+}
+
 export const FOXFIRE: Record<string, SkinArt> = {
   'katana.kitsunebi': { weapon: kitsunebi, ...FX },
   'frost_wand.gohei': { weapon: gohei, ...FX },
@@ -299,4 +347,5 @@ export const FOXFIRE: Record<string, SkinArt> = {
   'duelist_band.kitsune': kitsuneMask(),
   'phase_cloak.ninetails': nineTails(),
   'leather_boots.geta': geta(),
+  'leather_leggings.hakama': hakama(),
 };

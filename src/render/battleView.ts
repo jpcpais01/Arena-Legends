@@ -636,16 +636,18 @@ export class BattleView implements View {
     // Legendary weapons leave sparkles behind their shots.
     const legend = p.def.from === 'main' ? thrower?.mainSkin?.fx : p.def.from === 'secondary' ? thrower?.secSkin?.fx : undefined;
     if (legend && Math.random() < 0.6) this.fx.burst({ x, y, jitter: 0.05, count: 1, speed: [0, 0.3], life: [0.2, 0.4], color: legend.spark, color2: legend.spark2, kind: legend.kind ?? 'twinkle' });
-    // Trails.
+    // Trails, in the colours of the item skin that reshaped the shot.
+    const wfx = look && look === wskin ? legend : undefined;
     if (skin) this.projGlow.set(p.id, this.glow(p.owner, STYLE_COLOR[style], 0));
+    else if (wfx) this.projGlow.set(p.id, [wfx.spark, wfx.spark2]);
     if (Math.random() < (style === 'meteor' ? 1 : 0.5)) {
-      const col = skin ? this.glow(p.owner, STYLE_COLOR[style], 0)[0] : STYLE_COLOR[style];
+      const col = skin ? this.glow(p.owner, STYLE_COLOR[style], 0)[0] : wfx ? wfx.spark : STYLE_COLOR[style];
       const back = Math.atan2(-p.vy, -p.vx);
       if (style === 'meteor') {
         const c = this.glow(p.owner, 0xffd060, 0x8a2a1a);
         this.fx.burst({ x, y, count: 2, dir: back, spread: 0.4, speed: [1, 3], life: [0.3, 0.6], color: c[0], color2: mix(c[1], 0x200a08, 0.4), kind: 'ember', jitter: 0.2 });
       }
-      else if (style === 'flamewave' || style === 'groundwave') this.fx.burst({ x, y: 0.1, count: 1, dir: Math.PI / 2, spread: 0.6, speed: [0.5, 1.5], life: [0.3, 0.5], color: col, color2: 0x5a4a50, kind: style === 'flamewave' ? 'ember' : 'smoke', size: 3 });
+      else if (style === 'flamewave' || style === 'groundwave') this.fx.burst({ x, y: 0.1, count: 1, dir: Math.PI / 2, spread: 0.6, speed: [0.5, 1.5], life: [0.3, 0.5], color: col, color2: wfx ? wfx.spark2 : 0x5a4a50, kind: style === 'flamewave' ? wfx?.kind ?? 'ember' : 'smoke', size: 3 });
       else if (style !== 'arrow' && style !== 'bolt' && style !== 'knife') this.fx.burst({ x, y, count: 1, dir: back, spread: 0.3, speed: [0.5, 1.5], life: [0.15, 0.3], color: col, color2: mix(col, 0x202040, 0.6) });
     }
   }

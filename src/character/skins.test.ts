@@ -51,7 +51,7 @@ describe('item skins', () => {
     for (const s of SKINS) {
       const a = SKIN_ART[s.id];
       const special = gearOf(s.gear).slot === 'special';
-      const reshaped = !!(a.weapon || a.head || a.chest || a.boots || (special && a.icon));
+      const reshaped = !!(a.weapon || a.head || a.chest || a.legs || a.boots || (special && a.icon));
       if (s.rarity === 'rare') {
         expect(reshaped, s.id).toBe(false);
         expect(a.mats && Object.keys(a.mats).length, s.id).toBeTruthy();
@@ -70,14 +70,14 @@ describe('item skins', () => {
   });
 
   it('epic sets have one piece for each gear slot', () => {
-    expect(SKIN_SETS.length).toBe(6);
+    expect(SKIN_SETS.length).toBe(11);
     for (const set of SKIN_SETS) {
       const slots = setPieces(set.id).map((p) => gearOf(p.gear).slot).sort();
-      expect(slots, set.id).toEqual(['boots', 'chest', 'head', 'main', 'secondary', 'special']);
+      expect(slots, set.id).toEqual(['boots', 'chest', 'head', 'legs', 'main', 'secondary', 'special']);
     }
   });
 
-  it('a set counts only when all six pieces are worn in their set skins', () => {
+  it('a set counts only when every piece is worn in its set skin', () => {
     const pieces = setPieces('foxfire');
     const gear = Object.fromEntries(pieces.map((p) => [gearOf(p.gear).slot, p.gear])) as GearSet;
     const skins = Object.fromEntries(pieces.map((p) => [p.gear, p.id]));

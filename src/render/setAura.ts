@@ -1,6 +1,12 @@
 import type { SkinSetId } from '../character/skins';
 import { css } from './pixel/color';
 import type { SkinFx } from './sprite/skins';
+import { ring, type Layer } from './auraKit';
+import { BLOODMOON_FX, bloodmoonAura } from './sprite/skins/bloodmoon';
+import { STARWEAVER_FX, starweaverAura } from './sprite/skins/starweaver';
+import { FROSTBOUND_FX, frostboundAura } from './sprite/skins/frostbound';
+import { STORMCALLER_FX, stormcallerAura } from './sprite/skins/stormcaller';
+import { VOIDBORN_FX, voidbornAura } from './sprite/skins/voidborn';
 
 /**
  * Set auras: what a fighter wearing a whole epic set gets around them, in
@@ -17,9 +23,13 @@ export const SET_FX: Record<SkinSetId, SkinFx> = {
   wildwood: { spark: 0xfff07a, spark2: 0x2ec27a, kind: 'twinkle' },
   abyssal: { spark: 0xe0fff8, spark2: 0x2a8ab8, kind: 'twinkle' },
   clockwork: { spark: 0xfff0c0, spark2: 0x3ab8e0, kind: 'twinkle' },
+  bloodmoon: BLOODMOON_FX,
+  starweaver: STARWEAVER_FX,
+  frostbound: FROSTBOUND_FX,
+  stormcaller: STORMCALLER_FX,
+  voidborn: VOIDBORN_FX,
 };
 
-type Layer = 'back' | 'front';
 type G = CanvasRenderingContext2D;
 
 const C = {
@@ -30,16 +40,6 @@ const C = {
   brass: css(0xd8a040), brassHi: css(0xffe0a0), brassDk: css(0x6a4a1a), steam: css(0xe8ecf0), core: css(0x6af0ff),
   grass: css(0x4aa83a), grassHi: css(0x8ad860), bloom: css(0xf6a8c8), fly: css(0xfff07a), flyDim: css(0xa8c040),
 };
-
-/** Points of a ground ellipse, split into the half behind the feet and the half in front. */
-function ring(g: G, x: number, y: number, rx: number, ry: number, n: number, layer: Layer, dot: (g: G, px: number, py: number, i: number) => void): void {
-  for (let i = 0; i < n; i++) {
-    const a = (i / n) * Math.PI * 2;
-    const s = Math.sin(a);
-    if ((s < 0) !== (layer === 'back')) continue;
-    dot(g, Math.round(x + Math.cos(a) * rx), Math.round(y + s * ry), i);
-  }
-}
 
 function sunborn(g: G, x: number, y: number, t: number, layer: Layer): void {
   if (layer === 'back') {
@@ -182,7 +182,9 @@ function clockwork(g: G, x: number, y: number, t: number, layer: Layer): void {
   }
 }
 
-const DRAW: Record<SkinSetId, (g: G, x: number, y: number, t: number, layer: Layer) => void> = { sunborn, hellforged, foxfire, wildwood, abyssal, clockwork };
+const DRAW: Record<SkinSetId, (g: G, x: number, y: number, t: number, layer: Layer) => void> = { sunborn, hellforged, foxfire, wildwood, abyssal, clockwork,
+  bloodmoon: bloodmoonAura, starweaver: starweaverAura, frostbound: frostboundAura, stormcaller: stormcallerAura, voidborn: voidbornAura,
+};
 
 /** Draws one layer of a set's aura around feet at (x, y) art pixels; `t` is seconds. */
 export function drawSetAura(g: G, set: SkinSetId, x: number, y: number, t: number, layer: Layer): void {
