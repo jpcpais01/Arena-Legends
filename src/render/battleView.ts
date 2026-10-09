@@ -35,6 +35,23 @@ interface FighterView {
   headY: number;
 }
 
+/**
+ * Battle camera modes. Every mode zooms by whole device pixels per art pixel
+ * (crisp pixels) and only eases between those steps.
+ * - classic: the whole arena, as it has always been.
+ * - action: frames the duel a step closer, punches in on big hits, parries
+ *   and wall splats, and goes in tight on the knockout.
+ * - close: as tight as both fighters fit, stepping out only when they part.
+ * - follow: tight on your own fighter, leaning toward the rival.
+ */
+export type CamMode = 'classic' | 'action' | 'close' | 'follow';
+export const CAM_MODES: { id: CamMode; name: string }[] = [
+  { id: 'classic', name: 'Classic' },
+  { id: 'action', name: 'Action' },
+  { id: 'close', name: 'Close-up' },
+  { id: 'follow', name: 'Follow' },
+];
+
 export interface BattleListener {
   onEvent?(e: BattleEvent): void;
   onEnd?(b: Battle): void;
@@ -58,8 +75,21 @@ export class BattleView implements View {
   private slow = 1;
   private slowT = 0;
   private time = 0;
-  /** Camera centre in world metres, and shake. */
+  /** Camera centre in world metres (what the buffer is drawn around), and shake. */
   private camX = 0;
+  camMode: CamMode = 'classic';
+  /** The fighter the follow camera stays on (the local player). */
+  focus: FighterId = 0;
+  /** Where the view looks (may pass the arena-drawing clamp; the zoom crop covers the rest). */
+  private viewX = 0;
+  private viewY = 0;
+  /** Current zoom, and the steady zoom level in device px per art px. */
+  private zoom = 1;
+  private level = 0;
+  /** Action camera punch-in: extra zoom levels, time left, where it looks. */
+  private punchL = 0;
+  private punchT = 0;
+  private punchX = 0;
   private shakeT = 0;
   private shakeAmp = 0;
   private flashT = 0;
@@ -94,7 +124,11 @@ export class BattleView implements View {
     this.acc = 0;
     this.ended = false;
     this.slow = 1;
-    this.camX = (b.fighters[0].x + b.fighters[1].x) / 2;
+    this.camX = this.viewX = (b.fighters[0].x + b.fighters[1].x) / 2;
+    this.viewY = 0;
+    this.zoom = 1;
+    this.level = 0;
+    this.punchT = 0;
     this.layout();
   }
 
@@ -137,6 +171,15 @@ export class BattleView implements View {
   flash(color: number, amount: number): void {
     this.flashT = Math.max(this.flashT, amount * 0.12);
     this.flashCol = color;
+  }
+
+  /** Action camera: a quick zoom toward world x. */
+  private punchIn(levels: number, seconds: number, x: number): void {
+    if (this.camMode !== 'action' || this.quiet) return;
+    if (this.punchT > 0 && this.punchL > levels) return;
+    this.punchL = levels;
+    this.punchT = seconds;
+    this.punchX = x;
   }
 
   slowmo(scale: number, seconds: number): void {
@@ -185,12 +228,57 @@ export class BattleView implements View {
 
   private updateCamera(dt: number): void {
     const b = this.battle!;
+    const sc = this.screen;
     const [a, c] = b.fighters;
-    const mid = (this.lx(a) + this.lx(c)) / 2;
-    const half = this.screen.w / 2 / PPM;
+    const ax = this.lx(a), cx = this.lx(c);
+    const mid = (ax + cx) / 2;
+    const s = sc.scale;
+    // Zoom levels in device px per art px: s is the whole arena; `tight` aims
+    // for ~220 art px of height (~260 of width on portrait phones).
+    const W = sc.w * s, H = sc.h * s;
+    const tight = Math.max(s + 1, Math.min(Math.round(H / 220), Math.floor(W / 260)));
+    const mode = this.camMode;
+    let lo = s, hi = s, tx = mid, ty = Math.max(this.ly(a), this.ly(c));
+    if (mode === 'action') hi = Math.max(s + 1, tight - 1);
+    else if (mode === 'close') hi = tight;
+    else if (mode === 'follow') lo = hi = tight;
+    // Widest view (metres) at level L, and what the duel needs to stay in frame.
+    const span = (L: number) => W / L / PPM;
+    const need = Math.abs(ax - cx) + 3.2;
+    let L = clamp(this.level || hi, lo, hi);
+    while (L > lo && span(L) < need) L--;
+    while (L < hi && span(L + 1) >= need + 1.2) L++;
+    this.level = L;
+    if (mode === 'follow') {
+      // On you, leaning toward the rival: a two-shot when they're near, your side of it when they're not.
+      const you = b.fighters[this.focus], them = b.other(you);
+      const yx = this.lx(you), room = Math.max(0, span(L) / 2 - 1.6);
+      tx = yx + clamp((this.lx(them) - yx) / 2, -room, room);
+      ty = this.ly(you);
+    }
+    let zl = L;
+    if (this.punchT > 0) {
+      this.punchT -= dt;
+      zl = Math.min(L + this.punchL, tight + 1);
+      tx = mid + (this.punchX - mid) * 0.6;
+    }
+    const zt = mode === 'classic' ? 1 : zl / s;
+    // Never look past the arena's ends at the zoom we're heading for.
+    const edge = Math.max(0, ARENA_HALF_WIDTH + 1.8 - sc.w / zt / 2 / PPM);
+    tx = clamp(tx, -edge, edge);
+    const zoomIn = zt > this.zoom;
+    this.zoom += (zt - this.zoom) * Math.min(1, dt * (zoomIn ? (this.punchT > 0 ? 16 : 6) : 4));
+    if (Math.abs(zt - this.zoom) < 0.004) this.zoom = zt;
+    this.viewX += (tx - this.viewX) * Math.min(1, dt * (this.punchT > 0 ? 9 : 5));
+    this.viewY += (ty - this.viewY) * Math.min(1, dt * 4);
+    // The buffer is drawn as far as the arena art reaches; the zoom crop looks past that.
+    const half = sc.w / 2 / PPM;
     const lim = Math.max(0, ARENA_HALF_WIDTH + 1.8 - half);
-    const target = clamp(mid, -lim, lim);
-    this.camX += (target - this.camX) * Math.min(1, dt * 5);
+    this.camX = clamp(this.viewX, -lim, lim);
+    // Keep the ground at the same height on screen, lifting a little for jumps.
+    const vh = sc.h / this.zoom;
+    const cy = this.gy - (this.gy / sc.h - 0.5) * vh - Math.min(this.viewY, 2.5) * PPM * 0.5 * (1 - 1 / this.zoom);
+    sc.setView(this.zoom, sc.w / 2 + (this.viewX - this.camX) * PPM, cy);
     if (this.shakeT > 0) {
       this.shakeT -= dt;
       const a = this.shakeAmp * PPM * 0.12 * Math.max(0, this.shakeT * 3);
@@ -478,6 +566,7 @@ export class BattleView implements View {
         else this.play(heavy ? 'hitHeavy' : 'hit', pan, e.echo ? 0.5 : 1);
         if (e.crit) this.play('crit', pan);
         this.shake(e.blocked ? 0.1 : e.killing ? 1 : heavy ? 0.45 : 0.18);
+        if (heavy && !e.blocked) this.punchIn(1, e.crit ? 0.5 : 0.35, e.x);
         if (heavy) { this.arena?.cheer(0.3); }
         const label = e.crit ? `${fmt(e.amount)}!` : fmt(e.amount);
         const st = e.blocked ? { color: '#a8c8f0' } : e.crit ? { color: '#ffe040', scale: 2, shade: '#e08a20' } : e.echo ? { color: '#c0a8ff' } : e.dtype === 'magic' ? { color: '#d8a8ff', shade: '#9a5ae0' } : heavy ? { color: '#ffffff', scale: 2, shade: '#c8c8d8' } : { color: '#ffffff', shade: '#c8c8d8' };
@@ -494,6 +583,7 @@ export class BattleView implements View {
         this.shake(0.3);
         this.flash(0xffffff, 0.5);
         this.arena?.cheer(0.5);
+        this.punchIn(1, 0.45, e.x);
         break;
       case 'heal': {
         const f = b.fighters[e.f];
@@ -528,6 +618,7 @@ export class BattleView implements View {
         fx.burst({ x: e.x, y: 1, count: 10, jitter: 0.5, jitterY: 0.8, speed: [1, 3], life: [0.5, 0.9], color: 0xb0a090, color2: 0x6a5a60, kind: 'smoke', size: 4 });
         this.shake(0.55);
         this.arena?.cheer(0.5);
+        this.punchIn(1, 0.45, e.x);
         break;
       case 'revive': {
         const f = b.fighters[e.f];
@@ -539,6 +630,7 @@ export class BattleView implements View {
         this.shake(0.4);
         this.arena?.cheer(0.9);
         this.slowmo(0.35, 0.6);
+        this.punchIn(1, 0.8, f.x);
         break;
       }
       case 'lightning':
@@ -563,6 +655,7 @@ export class BattleView implements View {
           this.shake(0.9);
           this.flash(0xffc070, 1);
           this.arena?.cheer(0.8);
+          this.punchIn(1, 0.5, e.x);
         } else if (e.style === 'nova') {
           fx.burst({ x: e.x, y: 1, count: 36, speed: [4, 9], life: [0.3, 0.6], color: 0xffffff, color2: col, drag: 3, kind: 'streak' });
           this.play('freeze', this.pan(e.x));
@@ -603,6 +696,7 @@ export class BattleView implements View {
         this.flash(0xffffff, 1.4);
         this.arena?.cheer(1);
         this.slowmo(0.25, 1.3);
+        this.punchIn(2, 2.2, f.x);
         break;
       }
       case 'end':
