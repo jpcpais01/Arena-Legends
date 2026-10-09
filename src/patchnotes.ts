@@ -12,6 +12,19 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.31.0',
+    date: '2026-10-09',
+    title: 'Skin chests and gems',
+    notes: [
+      'Skins are now collectibles. Open skin chests to get them: one chest costs 100 gems, and ten cost 900 and always hold a mythic or better.',
+      'Everyone starts with 1000 gems. Skins you were already wearing stay yours.',
+      'Win fights to earn gems: 25 for the win, plus up to 75 more for the health you have left. Online round wins pay too.',
+      'Opening a chest is a show: it rattles, its light climbs from rare to mythic to legendary to epic, the lid blows off and your skins flip out on cards. Tap to skip ahead.',
+      'Odds: rare 70%, mythic 22%, legendary 7%, epic 1%. An epic is guaranteed within 60 chests, and skins you already own give gems back.',
+      'In the Armory, skins you have not found yet show a lock. Tap one to see where to get it.',
+    ],
+  },
+  {
     version: '0.30.0',
     date: '2026-10-09',
     title: 'Accounts',

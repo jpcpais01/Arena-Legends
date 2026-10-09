@@ -6,6 +6,7 @@ import { FORMS } from '../sim/forms';
 import { GEAR_SLOTS, gearOf, SLOT_NAMES } from '../sim/gear';
 import type { CharacterBuild } from '../sim/loadout';
 import { h } from './dom';
+import { gemTag } from './gacha';
 import { icon } from './icons';
 import { logo } from './logo';
 import { fitPixels } from './pixelfit';
@@ -19,6 +20,7 @@ export interface MenuCallbacks {
   onSound(): void;
   onSettings(): void;
   onOnline(): void;
+  onChests(): void;
   /** Account button (only when accounts are switched on). */
   onAccount?(): void;
 }
@@ -41,8 +43,10 @@ export class Menu {
   private you = h('div.home-slot.you');
   private rival = h('div.home-slot.rival');
   private open: [boolean, boolean] = [false, false];
+  private chestBtn: HTMLButtonElement;
 
   constructor(cb: MenuCallbacks) {
+    this.chestBtn = h<HTMLButtonElement>('button.btn.sm.chest-btn', { title: 'Skin chests', onclick: () => cb.onChests() });
     this.soundBtn = h<HTMLButtonElement>('button.btn.icon.sm', { title: 'Sound', 'aria-label': 'Sound', onclick: () => cb.onSound() });
     const mark = h('div.menu-logo.home-logo', { 'aria-label': 'Arena Legends' });
     void logo().then((c) => { mark.append(c); fitPixels(c, mark); });
@@ -55,6 +59,7 @@ export class Menu {
         this.soundBtn,
         h('button.btn.icon.sm', { title: 'Settings', 'aria-label': 'Settings', onclick: () => cb.onSettings() }, icon('settings'))),
       h('div.home-actions', null,
+        h('div.home-row', null, this.chestBtn),
         h('div.home-row', null,
           side('bag', 'Armory', () => cb.onGear()),
           side('edit', 'Hero', () => cb.onEditLook()),
@@ -68,6 +73,12 @@ export class Menu {
   setSound(on: boolean): void {
     this.soundBtn.replaceChildren(icon(on ? 'soundOn' : 'soundOff'));
     this.soundBtn.title = on ? 'Sound on' : 'Sound off';
+  }
+
+  /** The chest button shows the gems, with a dot when a chest can be opened. */
+  setGems(n: number, canOpen: boolean): void {
+    this.chestBtn.replaceChildren(icon('chest'), h('span', null, 'Chests'), gemTag(n));
+    this.chestBtn.classList.toggle('unseen', canOpen);
   }
 
   set(player: PlayerCharacter, rival: PlayerCharacter, rec: Record): void {

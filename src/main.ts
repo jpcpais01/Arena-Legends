@@ -5,6 +5,7 @@ import './ui/styles.css';
 import { music } from './audio/music';
 import { sfx } from './audio/sfx';
 import { sanitizeAppearance } from './character/appearance';
+import { addGems, gems, loadCollection, onCollection, payRound, PULL_COST, winGems } from './character/collection';
 import { generateRival, loadCharacter, newCharacter, saveCharacter, type PlayerCharacter } from './character/profile';
 import { BattleView, CAM_MODES, type CamMode } from './render/battleView';
 import { THEMES, type Theme } from './render/arenaArt';
@@ -19,19 +20,22 @@ import { TitleScreen } from './ui/title';
 import { h, save, store } from './ui/dom';
 import { icon } from './ui/icons';
 import { setupPhoneFullscreen } from './ui/fullscreen';
+import { chestScreen } from './ui/gacha';
 import { gearSheet } from './ui/gear';
 import { Hud } from './ui/hud';
 import { Menu, type Record as WinLoss } from './ui/menu';
 import { versionBadge } from './ui/patchNotes';
-import { resultsSheet } from './ui/results';
+import { resultsSheet, type WinReward } from './ui/results';
 import { settingsSheet, type Volume } from './ui/settings';
 import { GuestSession, HostSession, savedMatch, type OnlineSession } from './net/session';
 import { matchWinner, normalizeCode, scoreOf, CODE_LENGTH, type RoundResult, type Snapshot } from './net/protocol';
 import { confirmLeave, Lobby, NetBanner, openOnlineSheet } from './ui/online';
 import { PickScreen, type PickInfo } from './ui/pick';
 import { onlineResultsSheet, type OnlineOutcome } from './ui/results';
-import type { CharacterBuild } from './sim/loadout';
+import { withGear, type CharacterBuild } from './sim/loadout';
 import { MATCH_TIME } from './sim/constants';
+import { gearOf } from './sim/gear';
+import type { SkinDef } from './character/skins';
 import { accountStatus, accountsEnabled, consumeResume, onAccount, poke, restoreAccount, setReloadGate } from './account/account';
 import { accountSheet } from './ui/account';
 
@@ -46,6 +50,8 @@ const view = new BattleView(screen);
 // --- Saved state -------------------------------------------------------------------
 let player: PlayerCharacter | null = loadCharacter();
 let rival: PlayerCharacter = loadRival() ?? generateRival(player?.name);
+// Gems and owned skins. Whatever the hero already wears stays owned.
+loadCollection(player?.skins);
 let record = store<WinLoss>('al.record', { w: 0, l: 0 });
 let speed = [1, 2, 4].includes(store<number>('al.speed', 1)) ? store<number>('al.speed', 1) : 1;
 let soundOn = store<boolean>('al.sound', true);
@@ -114,6 +120,7 @@ const menu = new Menu({
     sfx.play('ui');
   },
   onSettings: () => openSettings(),
+  onChests: () => openChests(),
   onOnline: () => {
     sfx.play('ui');
     if (!player) { openCreator(true); return; }
@@ -225,10 +232,37 @@ function openGear(): void {
   sheet = gearSheet(player, {
     onChange: (c) => { player = c; saveCharacter(c); },
     onClose: () => { closeSheet(); refreshMenu(); },
+    onChests: () => openChests(),
   });
   ui.append(sheet.el);
   setCovered(true);
 }
+
+/** Skin chests: spend gems on skins. */
+function openChests(): void {
+  closeSheet();
+  sfx.unlock();
+  sfx.play('ui');
+  sheet = chestScreen({
+    onClose: () => { closeSheet(); refreshMenu(); },
+    onEquip: (s: SkinDef) => wearPulled(s),
+    player: () => player,
+  });
+  ui.append(sheet.el);
+  setCovered(true);
+}
+
+/** Wears a skin fresh out of a chest, equipping its item in its slot. */
+function wearPulled(s: SkinDef): void {
+  if (!player) return;
+  const next = { ...player, ...withGear(player, gearOf(s.gear).slot, s.gear), skins: { ...player.skins, [s.gear]: s.id } } as PlayerCharacter;
+  player = next;
+  saveCharacter(next);
+}
+
+const showGems = () => menu.setGems(gems(), gems() >= PULL_COST);
+onCollection(showGems);
+showGems();
 
 // --- Background duel behind the menu -------------------------------------------------------
 let demoWait = 0;
@@ -320,13 +354,21 @@ function onBattleEnd(b: Battle): void {
   if (b.winner === 0) record = { ...record, w: record.w + 1 };
   else if (b.winner === 1) record = { ...record, l: record.l + 1 };
   save('al.record', record);
-  if (b.winner === 0) sfx.play('win');
+  let reward: WinReward | null = null;
+  if (b.winner === 0) {
+    sfx.play('win');
+    // Gems for the win: more the more health was kept.
+    const hp = Math.max(0, hpRatio(b.fighters[0]));
+    reward = { gems: winGems(hp), hp };
+    addGems(reward.gems);
+    setTimeout(() => sfx.play('gems'), 450);
+  }
   const reason = b.fighters.some((f) => !f.alive) ? 'ko' : 'time';
   resultsEl = resultsSheet(b, reason, true, {
     onRematch: () => startFight(),
     onNewRival: () => { setRival(generateRival(player?.name)); startFight(); },
     onMenu: () => { sfx.play('ui'); toMenu(); },
-  });
+  }, reward);
   ui.append(resultsEl);
 }
 
@@ -373,6 +415,8 @@ let netMatch = '';
 let netRound = 0;
 let netPick = '';
 let resultsKey = '';
+/** Gems paid for the round on screen (paid once, when the host's result says you won it). */
+let netReward: { key: string; r: WinReward } | null = null;
 
 function startOnline(role: 'host' | 'guest', code = '', resume?: ReturnType<typeof savedMatch>): void {
   if (!player) { pendingRoom = role === 'guest' ? code : ''; openCreator(true); return; }
@@ -528,7 +572,16 @@ function showOnlineResults(): void {
   const s = session;
   if (!s?.snap || !battle) return;
   const o = onlineOutcome(s, s.snap);
-  const key = JSON.stringify(o);
+  const official = s.snap.results.find((r) => r.round === netRound);
+  const roundKey = `${netMatch}:${netRound}`;
+  if (official && official.winner === s.you && netReward?.key !== roundKey) {
+    const hp = Math.max(0, hpRatio(battle.fighters[s.you]));
+    const paid = payRound(roundKey, winGems(hp));
+    netReward = { key: roundKey, r: { gems: paid, hp } };
+    if (paid) setTimeout(() => sfx.play('gems'), 450);
+  }
+  const reward = netReward?.key === roundKey ? netReward.r : null;
+  const key = JSON.stringify(o) + (reward?.gems ?? 0);
   if (key === resultsKey && resultsEl) return;
   resultsKey = key;
   resultsEl?.remove();
@@ -536,7 +589,7 @@ function showOnlineResults(): void {
     onNext: () => { sfx.play('ui'); s.finishedWatching(netRound); },
     onRematch: () => { sfx.play('ui'); s.rematch(); },
     onLeave: () => { sfx.play('ui'); askLeave(); },
-  });
+  }, reward);
   ui.append(resultsEl);
 }
 

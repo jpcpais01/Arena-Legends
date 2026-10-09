@@ -40,6 +40,19 @@ const MERGERS: Record<string, (local: unknown, cloud: unknown) => unknown> = {
     const n = (o: unknown, k: string) => Math.max(0, Number((o as Record<string, unknown>)?.[k]) || 0);
     return { w: Math.max(n(a, 'w'), n(b, 'w')), l: Math.max(n(a, 'l'), n(b, 'l')) };
   },
+  // Skins pulled on either side are kept; the bigger gem purse wins.
+  'al.collection': (a, b) => {
+    const o = (x: unknown) => (x && typeof x === 'object' ? x as Record<string, unknown> : {});
+    const num = (x: unknown) => Math.max(0, Number(x) || 0);
+    const list = (x: unknown) => (Array.isArray(x) ? x.filter((v) => typeof v === 'string') : []);
+    const A = o(a), B = o(b);
+    return {
+      gems: Math.max(num(A.gems), num(B.gems)),
+      owned: [...new Set([...list(B.owned), ...list(A.owned)])],
+      pity: Math.max(num(A.pity), num(B.pity)),
+      paid: [...new Set([...list(B.paid), ...list(A.paid)])].slice(-40),
+    };
+  },
 };
 
 /**
