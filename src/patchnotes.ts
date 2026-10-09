@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.30.0',
+    date: '2026-10-09',
+    title: 'Accounts',
+    notes: [
+      'Make an account with just a name and a password, from the new Account button next to sound and settings or Sign in on the title screen.',
+      'Your hero, gear, item skins, wins and settings are saved to your account and come with you to any device.',
+      'Signing in for the first time keeps what you already have on this device. Playing without an account works like before.',
+    ],
+  },
+  {
     version: '0.29.1',
     date: '2026-10-09',
     title: 'A cleaner home screen',
