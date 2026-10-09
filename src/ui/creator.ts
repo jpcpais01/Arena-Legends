@@ -1,6 +1,6 @@
 import { sfx } from '../audio/sfx';
 import {
-  ACCENT_COLORS, EYE_COLORS, HAIR_COLORS, HAIR_STYLES, OUTFIT_COLORS, randomAppearance, SPECIES, SPECIES_IDS, type Appearance, type SpeciesId,
+  ACCENT_COLORS, EYE_COLORS, fitForm, HAIR_COLORS, HAIR_STYLES, OUTFIT_COLORS, randomAppearance, SPECIES, SPECIES_IDS, type Appearance, type SpeciesId,
 } from '../character/appearance';
 import { cleanName, NAME_MAX, randomName, type PlayerCharacter } from '../character/profile';
 import { css } from '../render/pixel/color';
@@ -19,7 +19,7 @@ export interface CreatorCallbacks {
 
 const STEPS: { label: string; icon: IconName; title: string; sub: string }[] = [
   { label: 'Species', icon: 'paw', title: 'Choose your species', sub: 'Looks only: every species fights the same. Pick the one you like.' },
-  { label: 'Body', icon: 'body', title: 'Pick a body form', sub: 'Your body sets your base stats and how your fighter moves.' },
+  { label: 'Body', icon: 'body', title: 'Pick a body form', sub: 'Your body sets your base stats and how your fighter moves. Each species has its own set of forms.' },
   { label: 'Style', icon: 'palette', title: 'Make it yours', sub: 'A name, colours and hair. You can change all of this later.' },
 ];
 
@@ -37,6 +37,8 @@ const RANGE = new Map(FORM_STATS.map(([k]) => {
   const vs = FORM_IDS.map((id) => FORMS[id].base[k] as number);
   return [k, [Math.min(...vs), Math.max(...vs)]] as const;
 }));
+
+const SKIN_LABEL: Partial<Record<SpeciesId, string>> = { golem: 'Stone', wisp: 'Spirit', saurin: 'Scales', ursin: 'Fur' };
 
 /** The character in plain clothes with just their weapon, so species and colours read clearly. */
 const bare = (c: CharacterBuild): CharacterBuild => ({ ...c, gear: { main: c.gear.main }, skins: {} });
@@ -139,7 +141,9 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
   }
 
   const setLook = (patch: Partial<Appearance>, move = false) => {
-    c = { ...c, look: { ...c.look, ...patch } };
+    const look = { ...c.look, ...patch };
+    // Switching species keeps the body form when it can, else takes the closest one it has.
+    c = { ...c, look, form: fitForm(look.species, c.form) };
     sfx.play('ui');
     syncStage();
     if (move) preview.showcase();
@@ -173,7 +177,8 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
   function speciesStep(): HTMLElement[] {
     const detail = h('div.detail');
     const showDetail = (id: SpeciesId) => detail.replaceChildren(
-      h('div.detail-head', null, h('b', null, SPECIES[id].name)), h('p', null, SPECIES[id].blurb));
+      h('div.detail-head', null, h('b', null, SPECIES[id].name)), h('p', null, SPECIES[id].blurb),
+      h('p.forms-of', null, h('span', null, 'Body forms: '), SPECIES[id].forms.map((f) => FORMS[f].name).join(', ')));
     const grid = h('div.card-grid.species');
     for (const id of SPECIES_IDS) {
       const sp = SPECIES[id];
@@ -205,7 +210,7 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
         })));
     };
     const grid = h('div.card-grid.forms');
-    for (const id of FORM_IDS) {
+    for (const id of SPECIES[c.look.species].forms) {
       const f = FORMS[id];
       const t: HTMLButtonElement = tile({ ...bare(c), form: id }, 44, 62, 2, f.name, f.title, id === c.form, () => {
         if (c.form === id) return;
@@ -250,10 +255,10 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
             h('button.btn.icon', { title: 'Random name', 'aria-label': 'Random name', onclick: () => {
               name.value = randomName(); c.name = name.value; name.classList.remove('shake'); sfx.play('ui'); syncPlate();
             } }, icon('dice')))),
-        swatches(L.species === 'golem' ? 'Stone' : L.species === 'wisp' ? 'Spirit' : 'Skin', sp.skins, () => c.look.skin, (i) => setLook({ skin: i })),
+        swatches(SKIN_LABEL[L.species] ?? 'Skin', sp.skins, () => c.look.skin, (i) => setLook({ skin: i })),
         swatches('Eyes', EYE_COLORS, () => c.look.eyes, (i) => setLook({ eyes: i })),
         sp.hair ? h('div.field.wide', null, h('div.label', null, 'Hair'), hairOpts) : '',
-        swatches(sp.hair ? 'Hair colour' : 'Crystals', HAIR_COLORS, () => c.look.hairColor, (i) => setLook({ hairColor: i })),
+        swatches(sp.hair ? 'Hair colour' : L.species === 'saurin' ? 'Crest' : L.species === 'myco' ? 'Cap' : 'Crystals', HAIR_COLORS, () => c.look.hairColor, (i) => setLook({ hairColor: i })),
         swatches('Outfit', OUTFIT_COLORS, () => c.look.outfit, (i) => setLook({ outfit: i })),
         swatches('Accent', ACCENT_COLORS, () => c.look.accent, (i) => setLook({ accent: i })),
       );

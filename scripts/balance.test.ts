@@ -62,4 +62,4 @@ it('balance report', () => {
     }
   }
   process.stdout.write(lines.join('\n') + '\n');
-}, 300000);
+}, 900000);

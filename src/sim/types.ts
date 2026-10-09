@@ -5,7 +5,7 @@ export type DamageType = 'physical' | 'magic' | 'true';
  * Body forms. A form is only a body: size, build and base attributes. What a
  * fighter can *do* comes entirely from the gear it carries.
  */
-export type FormId = 'robust' | 'agile' | 'balanced' | 'slender' | 'mighty' | 'ethereal';
+export type FormId = 'robust' | 'agile' | 'balanced' | 'slender' | 'mighty' | 'ethereal' | 'stout' | 'feral' | 'titan';
 
 /**
  * The six equipment slots every character has:
