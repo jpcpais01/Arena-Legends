@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.13.0',
+    date: '2026-10-09',
+    title: 'Double health for every body',
+    notes: [
+      'Every body form now starts with twice the health (Balanced goes from 1,520 to 3,040), so fights last longer and comebacks are more likely.',
+      'Items that raise health by a percentage scale with the new totals. Shields and heals that are a share of max health grow with it too.',
+    ],
+  },
+  {
     version: '0.12.0',
     date: '2026-10-08',
     title: 'Faster rounds: 60 seconds',
