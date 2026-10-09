@@ -47,6 +47,19 @@ export interface LegCtx {
 /** Drawn per leg: `shin` runs up from the ankle (y toward the front), `foot` runs to the toe (y up). */
 export type LegDraw = (r: Raster, shin: Xf, foot: Xf, m: (k: string) => number, c: LegCtx) => void;
 
+export interface ThighCtx {
+  g: number;
+  bias: number;
+  far: boolean;
+  body: BodySpec;
+  /** Knee to hip. */
+  len: number;
+  /** Half width of the legging over the thigh. */
+  w: number;
+}
+/** Leg armour drawn per leg: `thigh` runs up from the knee to the hip (y toward the front). */
+export type ThighDraw = (r: Raster, thigh: Xf, m: (k: string) => number, c: ThighCtx) => void;
+
 // -----------------------------------------------------------------------------
 // Skins
 // -----------------------------------------------------------------------------

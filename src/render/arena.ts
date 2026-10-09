@@ -140,6 +140,11 @@ export class ArenaView {
     this.excite = Math.min(1, Math.max(this.excite, amount));
   }
 
+  /** How far night has fallen (0..1) on arenas with a day cycle; 0 elsewhere. */
+  night(): number {
+    return this.art.cycle ? smooth(0.64, 0.9, this.day) : 0;
+  }
+
   /** Day progress for the live sky (0..1); arenas without one ignore it. */
   setDay(p: number): void {
     this.day = Math.min(1, Math.max(0, p));

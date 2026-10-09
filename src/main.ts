@@ -17,7 +17,8 @@ import type { BattleEvent } from './sim/types';
 import { creatorSheet } from './ui/creator';
 import { installFrames } from './ui/frames';
 import { TitleScreen } from './ui/title';
-import { save, store } from './ui/dom';
+import { h, save, store } from './ui/dom';
+import { icon } from './ui/icons';
 import { setupPhoneFullscreen } from './ui/fullscreen';
 import { chestScreen } from './ui/gacha';
 import { gearSheet } from './ui/gear';
@@ -35,6 +36,8 @@ import { withGear, type CharacterBuild } from './sim/loadout';
 import { MATCH_TIME } from './sim/constants';
 import { gearOf } from './sim/gear';
 import type { SkinDef } from './character/skins';
+import { accountStatus, accountsEnabled, consumeResume, onAccount, poke, restoreAccount, setReloadGate } from './account/account';
+import { accountSheet } from './ui/account';
 
 type State = 'menu' | 'intro' | 'battle' | 'results';
 
@@ -123,7 +126,17 @@ const menu = new Menu({
     if (!player) { openCreator(true); return; }
     openOnlineSheet(ui, { onHost: () => startOnline('host'), onJoin: (code) => startOnline('guest', code) });
   },
+  onAccount: accountsEnabled ? () => openAccount() : undefined,
 });
+
+function openAccount(): void {
+  closeSheet();
+  sfx.play('ui');
+  sheet = accountSheet(() => closeSheet());
+  ui.append(sheet.el);
+}
+// A save pulled from the account reloads the game, so only on the menu, outside online matches.
+setReloadGate(() => state === 'menu' && !session && !covered);
 
 function applyVolume(): void {
   sfx.setVolume(volume.master * volume.sfx);
@@ -185,6 +198,7 @@ function closeSheet(): void {
   sheet?.el.remove();
   sheet = null;
   setCovered(false);
+  poke();
 }
 
 /** A full screen is up: the arena freezes behind it and the menu and version label step aside. */
@@ -278,6 +292,7 @@ function toMenu(): void {
   badge.hidden = false;
   refreshMenu();
   startDemo();
+  poke();
 }
 
 // --- A fight -----------------------------------------------------------------------------------
@@ -633,7 +648,10 @@ toMenu();
   }
   if (code.length === CODE_LENGTH) startOnline('guest', code);
   else if (saved && player) startOnline(saved.role, saved.code, saved);
+  // Back from a reload after signing in: straight to the menu.
+  else if (consumeResume()) { if (!player) openCreator(true); }
   else showTitle();
+  restoreAccount();
 }
 
 /** The title over the live arena; the first tap opens the menu, or character creation for a new player. */
@@ -650,6 +668,14 @@ function showTitle(): void {
     menu.el.classList.add('enter');
   });
   ui.append(title.el);
+  // Players coming back on a new device sign in before making a hero.
+  if (accountsEnabled && !accountStatus().name) {
+    const btn = h('button.btn.sm.title-acct', {
+      onclick: (e: Event) => { e.stopPropagation(); openAccount(); },
+    }, icon('user'), 'Sign in');
+    const off = onAccount((s) => { if (s.name) { btn.remove(); off(); } });
+    title.el.append(btn);
+  }
 }
 requestAnimationFrame((t) => {
   last = t;
