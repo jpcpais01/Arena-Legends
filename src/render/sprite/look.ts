@@ -1,7 +1,7 @@
 import {
   ACCENT_COLORS, DEFAULT_LOOK, EYE_COLORS, HAIR_COLORS, OUTFIT_COLORS, SPECIES, type Appearance,
 } from '../../character/appearance';
-import { fullSet, skinOn, type SkinMap, type SkinSetId } from '../../character/skins';
+import { fullSet, SKIN_RARITIES, skinOn, type SkinMap, type SkinRarity, type SkinSetId } from '../../character/skins';
 import type { CharacterBuild } from '../../sim/loadout';
 import type { ChestId, FormId, GearId, GearSet, HeadId, BootsId, LegsId, MainWeaponId, SecondaryId, UsableId } from '../../sim/types';
 import { mix, toHsl, fromHsl } from '../pixel/color';
@@ -170,6 +170,61 @@ const shade = (hex: number, dl: number, ds = 0) => {
   return fromHsl(h, Math.max(0, s + ds), Math.max(0.05, l + dl));
 };
 
+// --- Night accents ----------------------------------------------------------------
+
+/**
+ * How much of an item lights up at night, by tier. `shine` is for its
+ * self-lit parts (gems, runes, embers) and the hot veins its textures paint;
+ * `gleam` for the glints on polished metal. Plain gear barely glints, and
+ * legendary and epic pieces also twinkle.
+ */
+const NIGHT: Record<'stock' | SkinRarity, { shine: number; gleam: number; sparkle: boolean }> = {
+  stock: { shine: 0.5, gleam: 0.12, sparkle: false },
+  rare: { shine: 0.6, gleam: 0.22, sparkle: false },
+  mythic: { shine: 0.75, gleam: 0.32, sparkle: false },
+  legendary: { shine: 0.9, gleam: 0.42, sparkle: true },
+  epic: { shine: 1, gleam: 0.5, sparkle: true },
+};
+const TIER_ORDER = ['stock', ...SKIN_RARITIES] as const;
+
+/** Body materials stay dark at night: only gear has night accents. */
+const BODY_KEYS = new Set([
+  'skin', 'hair', 'hairGlow', 'iris', 'eyeGlow', 'white', 'lash', 'mouth', 'inner', 'outfit', 'pants', 'accent', 'scarf', 'brow',
+  'shoe', 'fur', 'furTip', 'horn', 'tusk', 'crystal', 'stoneCrack', 'muzzle', 'nose', 'scale', 'crest', 'cap', 'capSpot', 'gill',
+]);
+const HEAD_KEYS = ['mask', 'maskHorn', 'maskEye', 'helm', 'helmDark', 'gold', 'gemPurple', 'hood', 'hoodEye', 'spark', 'band', 'bandTail'];
+const SPECIAL_KEYS = ['plume', 'plumeTip', 'fangTooth', 'fangBlood'];
+
+/** A slot's material keys: the stock piece's, plus whatever its skin brings. */
+const keysOf = (stock: (string | null)[], skin: SkinArt | null) => {
+  const set = new Set([...stock.filter((k): k is string => !!k), ...Object.keys(skin?.mats ?? {})]);
+  return (k: string) => set.has(k);
+};
+
+/**
+ * Gives every gear material its night accents by the tier of the item it
+ * belongs to (a skin's rarity, or plain). Materials are copied, never
+ * changed in place: weapon art is shared between fighters.
+ */
+function nightAccents(
+  mats: Record<string, Material>, build: CharacterBuild, skins: SkinMap,
+  slots: [GearId | null | undefined, (k: string) => boolean][], headMats: string[],
+): void {
+  const tierOf = (id: GearId | null | undefined) => (id ? skinOn(skins, id)?.rarity ?? 'stock' : null);
+  const headTier = tierOf(build.gear.head);
+  for (const k of Object.keys(mats)) {
+    if (BODY_KEYS.has(k)) continue;
+    let best = -1;
+    for (const [id, has] of slots) {
+      const t = tierOf(id);
+      if (t && has(k)) best = Math.max(best, TIER_ORDER.indexOf(t));
+    }
+    if (headTier && headMats.includes(k)) best = Math.max(best, TIER_ORDER.indexOf(headTier));
+    if (best < 0) continue;
+    mats[k] = { ...mats[k], ...NIGHT[TIER_ORDER[best]] };
+  }
+}
+
 export function makeArt(build: CharacterBuild): CharacterArt {
   const look = build.look ?? DEFAULT_LOOK;
   const sp = SPECIES[look.species];
@@ -293,6 +348,7 @@ export function makeArt(build: CharacterBuild): CharacterArt {
   // Armour skins recolour the body's armour materials; reshaped headgear brings its own.
   let headDraw: HeadDraw | null = null;
   let headFace = false;
+  let headMats: string[] = [];
   const worn: Record<'head' | 'chest' | 'legs' | 'boots', SkinArt | null> = { head: null, chest: null, legs: null, boots: null };
   for (const slot of ['head', 'chest', 'legs', 'boots'] as const) {
     const [, art] = skinArt(build.gear[slot]);
@@ -302,6 +358,7 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     if (art.head) {
       const hs = art.head();
       Object.assign(mats, hs.mats);
+      headMats = Object.keys(hs.mats);
       headDraw = hs.draw;
       headFace = !!hs.face;
     }
@@ -314,6 +371,19 @@ export function makeArt(build: CharacterBuild): CharacterArt {
   }
   // A reshaped plume brings its own materials (named `p.*`).
   if (specialSkin?.plume) for (const [k, spec] of Object.entries(specialSkin.mats ?? {})) if (k.startsWith('p.')) mats[k] = material(spec);
+  const chest = { ...tunicFor(build.gear.chest), ...worn.chest?.chest };
+  const legs = { ...legsFor(build.gear.legs), ...worn.legs?.legs };
+  const boots = { ...bootsFor(build.gear.boots), ...worn.boots?.boots };
+  nightAccents(mats, build, skins, [
+    [build.gear.main, (k) => k.startsWith('w.')],
+    [secId, (k) => k.startsWith('s.')],
+    [useId, (k) => k.startsWith('u.')],
+    [build.gear.head, keysOf(HEAD_KEYS, worn.head)],
+    [build.gear.chest, keysOf([chest.torso, chest.sleeve, chest.forearm, chest.pauldron, chest.cape, chest.hood, chest.spikes, chest.trim, chest.skirtMat, chest.belt], worn.chest)],
+    [build.gear.legs, keysOf([legs.mat, legs.trim, legs.knee, legs.tasset, legs.rune, legs.wraps], worn.legs)],
+    [build.gear.boots, keysOf([boots.mat, boots.trim, boots.wing, boots.knee], worn.boots)],
+    [build.gear.special, (k) => SPECIAL_KEYS.includes(k) || k.startsWith('p.')],
+  ], headMats);
   return {
     build, look, form: build.form,
     body: bodyFor(build.form, look.species),
@@ -322,10 +392,10 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     mainId, main, family: MAIN_FAMILY[mainId],
     hands: MAIN_FAMILY[mainId] === 'sword' || MAIN_FAMILY[mainId] === 'wand' ? 1 : 2,
     secId, sec, secFamily: secId ? SEC_FAMILY[secId] : null,
-    chest: { ...tunicFor(build.gear.chest), ...worn.chest?.chest },
+    chest,
     headgear: build.gear.head ?? null,
-    legs: { ...legsFor(build.gear.legs), ...worn.legs?.legs },
-    boots: { ...bootsFor(build.gear.boots), ...worn.boots?.boots },
+    legs,
+    boots,
     useId, use,
     skins, mainSkin, secSkin, headDraw, headFace,
     headSkin: worn.head, chestSkin: worn.chest, legsSkin: worn.legs, bootsSkin: worn.boots,

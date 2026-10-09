@@ -14,17 +14,21 @@ export interface Sprite {
   /** Main and secondary weapon tips relative to the feet, when in hand. */
   tip?: [number, number];
   secTip?: [number, number];
+  /** Night accents: the parts of the gear that shine after dark (additive layer, same frame). */
+  glow?: HTMLCanvasElement;
+  /** Spots in the frame where night sparkles may twinkle (x, y pairs). */
+  sparks?: number[];
 }
 
 const OX = 88, OY = 126;
 let shared: Raster | null = null;
 
-function toCanvas(f: Frame): HTMLCanvasElement {
+function toCanvas(f: Frame, data = f.data): HTMLCanvasElement {
   const c = document.createElement('canvas');
   c.width = Math.max(1, f.w);
   c.height = Math.max(1, f.h);
   if (f.w && f.h) {
-    const img = new ImageData(new Uint8ClampedArray(f.data.buffer as ArrayBuffer, f.data.byteOffset, f.w * f.h * 4), f.w, f.h);
+    const img = new ImageData(new Uint8ClampedArray(data.buffer as ArrayBuffer, data.byteOffset, f.w * f.h * 4), f.w, f.h);
     c.getContext('2d')!.putImageData(img, 0, 0);
   }
   return c;
@@ -95,9 +99,10 @@ export class SpriteBank {
     r.phase = clip === 'idle' ? Math.floor((frame * 4) / Math.max(4, c.w.length)) : frame;
     drawFigure(r, this.art, frameSpec(c, frame, face, secOut, useOut), OX, OY);
     const { tip, secTip } = figureMarks;
-    const f = r.compose(OX, OY);
+    const f = r.compose(OX, OY, true, true);
     const s: Sprite = { img: toCanvas(f), ox: f.ox, oy: f.oy, w: f.w, h: f.h, tip: tip ? [tip[0] - OX, tip[1] - OY] : undefined,
       secTip: secTip ? [secTip[0] - OX, secTip[1] - OY] : undefined,
+      glow: f.glow && toCanvas(f, f.glow), sparks: f.sparks,
     };
     this.sprites.set(key, s);
     return s;
