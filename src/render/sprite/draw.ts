@@ -29,6 +29,14 @@ export interface Hold {
   pull?: number;
   /** Main weapon length scale: foreshortened while it swings past the viewer (negative points it back). */
   mainScale?: number;
+  /** Usable item: on the belt (default when one is carried), in the far hand, or used up. */
+  use?: 'belt' | 'hand' | 'none';
+  /** The item in hand is uncorked (drinking). */
+  uncorked?: boolean;
+  /** The item in hand is behind the head and body (wound back for a throw). */
+  useBehind?: boolean;
+  /** A two-handed main held in the near hand only (the far hand is busy with an item). */
+  oneHand?: boolean;
 }
 
 export interface Smear {
@@ -71,7 +79,7 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
   // the whole skeleton turns for rolls and falls.
   const upright = pose.rot ? { ...pose, rot: 0 } : pose;
   let sk = solve(body, upright);
-  const twoHanded = hold.main === 'hand' && art.main.grip2 !== undefined && art.family !== 'bow';
+  const twoHanded = hold.main === 'hand' && !hold.oneHand && art.main.grip2 !== undefined && art.family !== 'bow';
   if (twoHanded) {
     const g2 = alongWeapon(sk.handN, pose.wAng, art.main.grip2!);
     sk = solve(body, upright, { far: backFromHand(sk.elF, g2, body.hand) });
@@ -103,6 +111,7 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
   // --- Far side -------------------------------------------------------------------
   if (hold.sec === 'hand' && !hold.secFront) drawSec(r, art, sk, pose, hold, OX, OY, m, -1);
   drawArm(r, art, sk, 'F', X, Y, m, T.ang);
+  if (art.use && hold.use === 'hand' && hold.useBehind) drawUseHand(r, art, sk, pose, hold, OX, OY, m);
   if (art.family === 'bow' && hold.main === 'hand') drawMain(r, art, sk, pose, hold, OX, OY, m, 0);
   drawLeg(r, art, sk, 'F', X, Y, m);
 
@@ -114,6 +123,7 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
   if (chest.skirt > 0) drawSkirt(r, art, T, sk, m(chest.skirtMat), sway, m(chest.trim ?? chest.skirtMat));
   else drawHem(r, art, T, m);
   chest.over?.(r, T, m, { top: body.torso, sway, body, g: G.cape });
+  if (art.use && (hold.use ?? 'belt') === 'belt') drawUseBelt(r, art, T, m);
 
   // --- Head -------------------------------------------------------------------------
   r.space = H;
@@ -129,6 +139,7 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
   if (hold.sec === 'hand' && hold.secFront) drawSec(r, art, sk, pose, hold, OX, OY, m, 0);
   if (spec.smear && hold.main === 'hand') drawSmear(r, art, sk, { ...spec.smear, from: spec.smear.from + pose.rot, to: spec.smear.to + pose.rot }, OX, OY);
   if (hold.main === 'hand' && !hold.mainBehind && art.family !== 'bow') drawMain(r, art, sk, pose, hold, OX, OY, m, 0);
+  if (art.use && hold.use === 'hand' && !hold.useBehind) drawUseHand(r, art, sk, pose, hold, OX, OY, m);
   drawArm(r, art, sk, 'N', X, Y, m, T.ang);
   r.space = null;
   return sk;
@@ -152,14 +163,20 @@ function drawLeg(r: Raster, art: CharacterArt, sk: Skeleton, side: 'N' | 'F', X:
   const hip = far ? sk.hipF : sk.hipN, knee = far ? sk.kneeF : sk.kneeN, ankle = far ? sk.ankleF : sk.ankleN;
   const toe = far ? sk.toeTipF : sk.toeTipN;
   const cap = (a: P, b: P, ra: number, rb: number) => capsuleR(X(a), Y(a), X(b), Y(b), ra, rb);
-  const pants = art.chest.skirt > 0.5 ? m('pants') : m('pants');
-  r.fill(cap(hip, knee, body.thighR, body.kneeR), pants, { group: g, bevel: 2.6, toneBias: bias });
+  const L = art.legs;
+  const pants = m(L.mat ?? 'pants');
+  const lb = L.mat ? L.bulk : 0;
+  // Leg armour textures follow the thigh: x up from the knee, y toward the front.
+  const torsoSpace = r.space;
+  const thigh = new Xf(X(knee), Y(knee), Math.atan2(hip.y - knee.y, hip.x - knee.x), 1, -1);
+  if (L.mat) r.space = thigh;
+  r.fill(cap(hip, knee, body.thighR + lb, body.kneeR + lb * 0.7), pants, { group: g, bevel: 2.6, toneBias: bias });
   const bt = { x: ankle.x + (knee.x - ankle.x) * boots.height, y: ankle.y + (knee.y - ankle.y) * boots.height };
-  if (boots.height < 0.98) r.fill(cap(knee, bt, body.kneeR * 0.95, body.shinR), pants, { group: g, bevel: 2.2, toneBias: bias });
+  if (boots.height < 0.98) r.fill(cap(knee, bt, body.kneeR * 0.95 + lb * 0.5, body.shinR + lb * 0.4), pants, { group: g, bevel: 2.2, toneBias: bias });
+  if (L.mat) drawLegArmour(r, art, thigh, Math.hypot(hip.x - knee.x, hip.y - knee.y), far, g, bias, m);
   const bulk = boots.bulk;
   // Boot textures follow the shin: x up from the ankle, y toward the front.
   const shin = new Xf(X(ankle), Y(ankle), Math.atan2(knee.y - ankle.y, knee.x - ankle.x), 1, -1);
-  const torsoSpace = r.space;
   r.space = shin;
   r.fill(cap(bt, ankle, body.shinR + bulk, body.ankleR + bulk * 0.8), m(boots.mat), { group: g, bevel: 2, toneBias: bias });
   // Foot: heel to toe.
@@ -296,6 +313,47 @@ function drawTorso(r: Raster, art: CharacterArt, sk: Skeleton, T: Xf, X: (p: P) 
     r.dot(px, py, m('fangTooth'), 2, G.torso);
     r.dot(px, py + 1, m('fangBlood'), 3, G.torso);
   }
+}
+
+/** Leg armour over one thigh, in thigh space (x up from the knee to the hip, y toward the front). */
+function drawLegArmour(r: Raster, art: CharacterArt, t: Xf, len: number, far: boolean, g: number, bias: number, m: (k: string) => number): void {
+  const { body, legs: L } = art;
+  const w = body.thighR + L.bulk;
+  const o = { group: g, toneBias: bias };
+  const band = (at: number, mat: string, slant = 0, rad = 0.65) =>
+    r.fill(t.cap(at - slant, -w - 0.2, at + slant, w + 0.2, rad), m(mat), { ...o, bevel: 0.8 });
+  if (L.wraps) for (const k of [0.3, 0.52, 0.74]) band(len * k, L.wraps, 0.9, 0.5);
+  if (L.trim) { band(len * 0.84, L.trim); band(len * 0.22, L.trim, 0, 0.55); }
+  if (L.rune) {
+    // A glowing seam down the front of the thigh, with a notch.
+    const y = w * 0.45;
+    const pts = [[len * 0.82, y], [len * 0.6, y - 0.6], [len * 0.45, y + 0.4], [len * 0.28, y]];
+    for (let i = 0; i < pts.length - 1; i++) r.line(t.x(pts[i][0], pts[i][1]), t.y(pts[i][0], pts[i][1]), t.x(pts[i + 1][0], pts[i + 1][1]), t.y(pts[i + 1][0], pts[i + 1][1]), m(L.rune), 3, g);
+  }
+  if (L.tasset) {
+    // A plate hanging from the belt over the top of the thigh.
+    r.fill(t.poly([len + 1.2, -w - 0.4, len + 1.2, w + 1.2, len * 0.5, w + 1.4, len * 0.42, -w + 0.4], 0.4), m(L.tasset), { ...o, bevel: 1.8 });
+    if (L.trim) r.fill(intersect(t.poly([len + 1.2, -w - 0.4, len + 1.2, w + 1.2, len * 0.5, w + 1.4, len * 0.42, -w + 0.4]), t.rect(len * 0.5, 0, 0.5, w + 2)), m(L.trim), { ...o, flat: 1, noLine: true });
+  }
+  if (L.knee) r.fill(t.ell(0.2, 0.6, body.kneeR + L.bulk + 0.6, body.kneeR + L.bulk + 0.9), m(L.knee), { ...o, bevel: 1.6 });
+  L.over?.(r, t, m, { g, bias, far, body, len, w });
+}
+
+/** The usable item hanging at the front of the belt. */
+function drawUseBelt(r: Raster, art: CharacterArt, T: Xf, m: (k: string) => number): void {
+  const um = (k: string) => m('u.' + k);
+  const x = art.body.waistW * 0.35, y = 0.6;
+  // Hangs neck up, tipped a little forward, a touch smaller than in hand.
+  art.use!.draw(r, new Xf(T.x(x, y), T.y(x, y), T.ang + Math.PI / 2 - 0.25, 0.85, 0.85), um, { group: G.skirt, frame: r.phase });
+}
+
+/** The usable item in the far hand. */
+function drawUseHand(r: Raster, art: CharacterArt, sk: Skeleton, pose: Pose, hold: Hold, OX: number, OY: number, m: (k: string) => number): void {
+  const um = (k: string) => m('u.' + k);
+  const t = frameAt(OX, OY, sk.handF, pose.sAng + pose.rot);
+  art.use!.draw(r, t, um, { group: G.sec, frame: r.phase, open: hold.uncorked });
+  // The fingers wrap over the bottle.
+  r.fill(circleR(OX + sk.handF.x, OY - sk.handF.y, art.body.hand * 0.75), m(art.chest.hands), { group: G.sec, bevel: 1.2 });
 }
 
 /** A short tunic hem over the hips (when no robe). */

@@ -1,7 +1,7 @@
 import { mix } from '../../pixel/color';
 import { material, type Material, type MaterialSpec, type Raster } from '../../pixel/raster';
 import { bands, damascus, glint, grain, hash, lattice, speckle } from '../../pixel/tex';
-import type { BootsLook, ChestLook } from '../look';
+import type { BootsLook, ChestLook, LegsLook } from '../look';
 import type { WeaponArt } from '../weaponKit';
 import type { Xf } from '../xform';
 import { FOXFIRE } from './foxfire';
@@ -43,8 +43,9 @@ export interface SkinArt {
   mats?: Record<string, MaterialSpec>;
   weapon?: () => WeaponArt;
   head?: () => HeadSkin;
-  /** Reshaped armour: changes to how the chest piece or boots are built (capes, spikes, wings...). */
+  /** Reshaped armour: changes to how the chest piece, legs or boots are built (capes, spikes, wings...). */
   chest?: Partial<ChestLook>;
+  legs?: Partial<LegsLook>;
   boots?: Partial<BootsLook>;
   /** Swing trail colours (bright, dim). */
   trail?: [number, number];

@@ -1,8 +1,9 @@
-import type { ProjectileStyle } from '../sim/types';
+import type { ProjectileStyle, UsableId } from '../sim/types';
 import { material, Raster, type Material } from './pixel/raster';
 import { arc, union } from './pixel/sdf';
 import type { Sprite } from './sprite/bank';
 import { SKIN_ART, skinMaterials, type ProjArt } from './sprite/skins';
+import { usableArt } from './sprite/usables';
 import { Xf } from './sprite/xform';
 
 /**
@@ -161,6 +162,14 @@ const ART: Record<ProjectileStyle | 'phantom' | 'sigil', ProjArt> = {
       r.fill(t.circ(1.4, 0, 1.4), h(M.wispHot), { group: 1 });
     },
   },
+  // Fire bomb: the flask tumbling end over end, fuse burning.
+  flask: {
+    frames: 6, outline: true,
+    draw(r, t, f, h) {
+      const a = usableArt('fire_bomb');
+      a.draw(r, new Xf(t.ox, t.oy, -f * (Math.PI / 3)), (k) => h(a.mats[k]), { group: 1, frame: f });
+    },
+  },
   // Phantom blade (special item): a ghostly greatsword.
   phantom: {
     frames: 1,
@@ -236,5 +245,33 @@ export function projSprite(id: ProjArtId, frame: number, angle = 0, skin?: strin
   c.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(fr.data.buffer as ArrayBuffer), fr.w, fr.h), 0, 0);
   s = { img: c, ox: fr.ox, oy: fr.oy, w: fr.w, h: fr.h };
   cache.set(key, s);
+  return s;
+}
+
+const bottles = new Map<string, Sprite>();
+
+/** An empty bottle tumbling through the air (tossed away after drinking), 8 frames per turn. */
+export function bottleSprite(id: UsableId, frame: number): Sprite {
+  const f = ((frame % 8) + 8) % 8;
+  const key = `${id}.${f}`;
+  let s = bottles.get(key);
+  if (s) return s;
+  const r = (raster ??= new Raster(80, 80));
+  r.clear();
+  const a = usableArt(id);
+  const mats = new Map<Material, number>();
+  const h = (k: string) => {
+    const m = a.mats[k];
+    let i = mats.get(m);
+    if (!i) { i = r.add(m); mats.set(m, i); }
+    return i;
+  };
+  a.draw(r, new Xf(40, 40, f * (Math.PI / 4)), h, { group: 1, open: true });
+  const fr = r.compose(40, 40, true);
+  const c = document.createElement('canvas');
+  c.width = fr.w; c.height = fr.h;
+  c.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(fr.data.buffer as ArrayBuffer), fr.w, fr.h), 0, 0);
+  s = { img: c, ox: fr.ox, oy: fr.oy, w: fr.w, h: fr.h };
+  bottles.set(key, s);
   return s;
 }

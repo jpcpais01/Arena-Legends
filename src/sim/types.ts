@@ -8,13 +8,14 @@ export type DamageType = 'physical' | 'magic' | 'true';
 export type FormId = 'robust' | 'agile' | 'balanced' | 'slender' | 'mighty' | 'ethereal' | 'stout' | 'feral' | 'titan';
 
 /**
- * The six equipment slots every character has:
+ * The eight equipment slots every character has:
  *  - main: the main weapon, one- or two-handed
  *  - secondary: a one-handed weapon or tool, drawn when used
  *  - special: an item that works on its own (auras, familiars, item ultimates)
- *  - head, chest, boots: armour pieces
+ *  - usable: a potion or bomb taken from the belt, a few times per battle
+ *  - head, chest, legs, boots: armour pieces
  */
-export type GearSlot = 'main' | 'secondary' | 'special' | 'head' | 'chest' | 'boots';
+export type GearSlot = 'main' | 'secondary' | 'special' | 'usable' | 'head' | 'chest' | 'legs' | 'boots';
 
 export type MainWeaponId =
   | 'longsword' | 'katana' | 'mace' | 'dagger' | 'ember_wand'
@@ -29,18 +30,24 @@ export type HeadId =
   | 'berserker_mask' | 'iron_helm' | 'chrono_circlet' | 'executioner_hood' | 'storm_crown' | 'duelist_band';
 export type ChestId =
   | 'plate_armor' | 'phase_cloak' | 'thornmail' | 'mirror_mail' | 'leather_jerkin' | 'mage_robe';
+export type UsableId =
+  | 'healing_potion' | 'swiftness_draught' | 'fury_tonic' | 'stoneskin_elixir' | 'energy_tonic' | 'fire_bomb';
+export type LegsId =
+  | 'leather_leggings' | 'chain_leggings' | 'stonehide_tassets' | 'windrunner_leggings' | 'runed_leggings' | 'bloodrite_wraps';
 export type BootsId =
   | 'leather_boots' | 'zephyr_boots' | 'iron_greaves' | 'shadow_treads' | 'colossus_boots' | 'leaping_boots';
 
-export type GearId = MainWeaponId | SecondaryId | SpecialId | HeadId | ChestId | BootsId;
+export type GearId = MainWeaponId | SecondaryId | SpecialId | UsableId | HeadId | ChestId | LegsId | BootsId;
 
 /** Gear id type allowed in each slot. */
 export interface GearSlotIds {
   main: MainWeaponId;
   secondary: SecondaryId;
   special: SpecialId;
+  usable: UsableId;
   head: HeadId;
   chest: ChestId;
+  legs: LegsId;
   boots: BootsId;
 }
 
@@ -58,10 +65,12 @@ export type StatusId =
 export type AnimKey =
   | 'slash' | 'thrust' | 'overhead' | 'bash' | 'spin' | 'cast' | 'castBig'
   | 'guard' | 'counter' | 'dash' | 'evade' | 'roll' | 'blink' | 'leap' | 'roar'
-  | 'flurry' | 'slam' | 'throw' | 'shoot' | 'crossbow' | 'horn' | 'harden' | 'barrier' | 'item';
+  | 'flurry' | 'slam' | 'throw' | 'shoot' | 'crossbow' | 'horn' | 'harden' | 'barrier' | 'item'
+  | 'drink' | 'toss';
 
 export type ProjectileStyle =
-  | 'arcane' | 'hex' | 'wave' | 'groundwave' | 'meteor' | 'arrow' | 'knife' | 'bolt' | 'fire' | 'flamewave' | 'chakram' | 'wisp';
+  | 'arcane' | 'hex' | 'wave' | 'groundwave' | 'meteor' | 'arrow' | 'knife' | 'bolt' | 'fire' | 'flamewave' | 'chakram' | 'wisp'
+  | 'flask';
 
 export interface Stats {
   maxHp: number;
@@ -104,9 +113,10 @@ export interface StatusApply {
 
 /**
  * `item` abilities belong to the special item: the item performs them on its
- * own, so the fighter's body stays free to keep fighting.
+ * own, so the fighter's body stays free to keep fighting. `usable` ones come
+ * from the usable slot and can only be used a few times per battle.
  */
-export type AbilitySlot = 'basic' | 'skill' | 'secondary' | 'defense' | 'item' | 'evade';
+export type AbilitySlot = 'basic' | 'skill' | 'secondary' | 'defense' | 'item' | 'usable' | 'evade';
 export type AbilityKind =
   | 'melee' | 'projectile' | 'guard' | 'dash' | 'buff' | 'blink' | 'aoe' | 'meteor' | 'blade';
 
@@ -144,6 +154,12 @@ export interface AbilityDef {
     speed: number; radius: number; style: ProjectileStyle; ground?: boolean;
     /** Flies out and comes back to the thrower, able to hit on the way back. */
     returns?: boolean;
+    /**
+     * Lobbed in an arc at where the enemy will be, bursting on whatever it
+     * touches first (the enemy or the ground) and hitting everything within
+     * `lob` metres of the burst.
+     */
+    lob?: number;
   };
   guard?: { reduction: number; parryWindow: number; counterPower?: number; reflectProjectiles?: boolean };
   /**
@@ -155,6 +171,12 @@ export interface AbilityDef {
   heal?: number;
   /** Shield granted on activation, as a fraction of max HP. */
   shieldGain?: number;
+  /** Energy restored on activation. */
+  energyGain?: number;
+  /** Removes harmful statuses (burn, poison, chill, mark, vulnerable) on activation. */
+  cleanse?: boolean;
+  /** Times it can be used per battle (usable items). Unlimited when absent. */
+  uses?: number;
   /** Seconds of invulnerability starting with the active phase. */
   iframes?: number;
   /** Airborne during the windup (leaping attacks) or the dash itself (leaping evades). */
@@ -165,7 +187,7 @@ export interface AbilityDef {
   /** Gear slot the ability comes from (set when a build's abilities are assembled). */
   from?: GearSlot;
   /**
-   * Secondary weapons only: seconds at the start of the windup spent getting
+   * Secondary weapons and usable items: seconds at the start of the windup spent getting
    * the weapon out (stowing a two-handed main first), and at the end of the
    * recovery putting it away again. Already included in windup/recovery.
    */
@@ -292,6 +314,12 @@ export type BattleEvent =
   | { type: 'parry'; defender: FighterId; attacker: FighterId; x: number; y: number }
   | { type: 'evade'; f: FighterId }
   | { type: 'heal'; f: FighterId; amount: number }
+  /** A usable item was used up (drunk or thrown). */
+  | { type: 'used'; f: FighterId; ability: number; left: number }
+  | { type: 'cleanse'; f: FighterId }
+  | { type: 'energy'; f: FighterId; amount: number }
+  /** Second wind (Bloodrite Wraps): a burst of health when nearly beaten. */
+  | { type: 'secondWind'; f: FighterId }
   | { type: 'shield'; f: FighterId; amount: number }
   | { type: 'shieldBreak'; f: FighterId }
   | { type: 'status'; f: FighterId; status: StatusId; stacks: number }
@@ -299,7 +327,7 @@ export type BattleEvent =
   | { type: 'revive'; f: FighterId }
   | { type: 'lightning'; f: FighterId; x: number }
   | { type: 'reflect'; f: FighterId; x: number; y: number }
-  | { type: 'shockwave'; x: number; radius: number; f: FighterId; style: 'slam' | 'nova' | 'meteor' | 'whirl' }
+  | { type: 'shockwave'; x: number; radius: number; f: FighterId; style: 'slam' | 'nova' | 'meteor' | 'whirl' | 'flask' }
   | { type: 'projectileEnd'; id: number; x: number; y: number; style: ProjectileStyle; hit: boolean }
   | { type: 'blink'; f: FighterId; from: number; to: number }
   | { type: 'familiar'; f: FighterId }

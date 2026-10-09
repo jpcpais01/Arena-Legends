@@ -13,6 +13,8 @@ export interface AnimOut {
   frame: number;
   face: Expression | null;
   secOut: boolean;
+  /** No usable items left: the belt is empty. */
+  useOut: boolean;
   /** Heavy-windup tremble (px). */
   jitter: number;
   /** Visual hop for ground evades (px, up). */
@@ -44,20 +46,20 @@ export class Animator {
   private gait: 'still' | 'run' | 'back' | 'air' = 'still';
   private ranFor = 0;
   private settle: { clip: string; t: number; len: number } | null = null;
-  private out: AnimOut = { clip: 'idle', frame: 0, face: null, secOut: false, jitter: 0, hop: 0, key: '' };
+  private out: AnimOut = { clip: 'idle', frame: 0, face: null, secOut: false, useOut: false, jitter: 0, hop: 0, key: '' };
 
   constructor(readonly art: CharacterArt) {
     this.set = clipsFor(art);
   }
 
   /** `x` is the interpolated world position, `dt` real seconds since the last call. */
-  update(f: Fighter, x: number, dt: number, over: boolean, winner: boolean, secOut: boolean): AnimOut {
+  update(f: Fighter, x: number, dt: number, over: boolean, winner: boolean, secOut: boolean, useOut = false): AnimOut {
     this.time += dt;
     const dx = this.lastX === null ? 0 : x - this.lastX;
     this.lastX = x;
     if (getStatus(f, 'frozen') && f.alive) return this.out; // frozen solid: hold the frame
     const o = this.out;
-    o.face = null; o.jitter = 0; o.hop = 0; o.secOut = secOut;
+    o.face = null; o.jitter = 0; o.hop = 0; o.secOut = secOut; o.useOut = useOut;
 
     if (!f.alive) {
       this.koT += dt;
@@ -82,7 +84,7 @@ export class Animator {
     // Knock-back: the sprite gives a couple of pixels on a real hit.
     if (f.alive && f.stagger > 0 && f.sinceHurt < 0.1) o.jitter -= f.facing * (f.sinceHurt < 0.05 ? 2 : 1);
     if (f.alive && f.action && f.sinceHurt < 0.16) o.face = 'hurt';
-    o.key = `${o.clip}.${o.frame}.${o.face ?? ''}${o.secOut ? '.o' : ''}`;
+    o.key = `${o.clip}.${o.frame}.${o.face ?? ''}${o.secOut ? '.o' : ''}${o.useOut ? '.u' : ''}`;
     return o;
   }
 
@@ -179,6 +181,7 @@ export class Animator {
     if (ab.slot === 'evade') return ab.dash?.through ? 'roll' : ab.airborne ? 'leap' : 'evade';
     if (ab.from === 'secondary') return isCounter && has('sec.riposte') ? 'sec.riposte' : 'sec.' + ab.anim;
     if (ab.from === 'chest') return ab.anim;
+    if (ab.from === 'usable') return 'use.' + ab.anim;
     if (this.alt && ab.slot === 'basic' && has(ab.anim + '2')) return ab.anim + '2';
     if (has(ab.anim)) return ab.anim;
     return [...this.set.clips.keys()].find((k) => k === 'slash' || k === 'thrust' || k === 'cast' || k === 'shoot') ?? 'idle';

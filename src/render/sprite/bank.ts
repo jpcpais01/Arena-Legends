@@ -64,7 +64,7 @@ export class SpriteBank {
   }
 
   get(o: AnimOut): Sprite {
-    return this.sprites.get(o.key) ?? this.draw(o.key, o.clip, o.frame, o.face, o.secOut);
+    return this.sprites.get(o.key) ?? this.draw(o.key, o.clip, o.frame, o.face, o.secOut, o.useOut);
   }
 
   flash(o: AnimOut, color = '#fff'): Sprite {
@@ -85,7 +85,7 @@ export class SpriteBank {
     return !this.queue.length;
   }
 
-  private draw(key: string, clip: string, frame: number, face: AnimOut['face'], secOut: boolean): Sprite {
+  private draw(key: string, clip: string, frame: number, face: AnimOut['face'], secOut: boolean, useOut = false): Sprite {
     const c = this.set.clips.get(clip) ?? this.set.clips.get('idle')!;
     const r = (shared ??= new Raster(176, 150));
     r.clear();
@@ -93,7 +93,7 @@ export class SpriteBank {
     // long; the idle loop has more frames, so it is spread over them evenly
     // (0,1,1,2,3,3 for six) to wrap seamlessly.
     r.phase = clip === 'idle' ? Math.floor((frame * 4) / Math.max(4, c.w.length)) : frame;
-    drawFigure(r, this.art, frameSpec(c, frame, face, secOut), OX, OY);
+    drawFigure(r, this.art, frameSpec(c, frame, face, secOut, useOut), OX, OY);
     const { tip, secTip } = figureMarks;
     const f = r.compose(OX, OY);
     const s: Sprite = { img: toCanvas(f), ox: f.ox, oy: f.oy, w: f.w, h: f.h, tip: tip ? [tip[0] - OX, tip[1] - OY] : undefined,
