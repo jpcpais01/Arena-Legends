@@ -7,6 +7,7 @@ import type { Xf } from '../xform';
 import { FOXFIRE } from './foxfire';
 import { HELLFORGED } from './hellforged';
 import { SUNBORN } from './sunborn';
+import { WILDWOOD } from './wildwood';
 import {
   geodeHeart, icicleScepter, kagutsuchi, krakenConch, lionheart, morningstar, skullcrusher, solarDisc, swordbreaker,
   frostreaver, voidfang, wintersHeart, wyrmRepeater,
@@ -329,4 +330,5 @@ export const SKIN_ART: Record<string, SkinArt> = {
   ...SUNBORN,
   ...HELLFORGED,
   ...FOXFIRE,
+  ...WILDWOOD,
 };

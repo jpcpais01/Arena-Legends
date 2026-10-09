@@ -14,6 +14,7 @@ export const SET_FX: Record<SkinSetId, SkinFx> = {
   sunborn: { spark: 0xfff4c0, spark2: 0x3a6ae0, kind: 'twinkle' },
   hellforged: { spark: 0xffd060, spark2: 0xc01a10, kind: 'flame' },
   foxfire: { spark: 0xd8f8ff, spark2: 0x2a5ae0, kind: 'flame' },
+  wildwood: { spark: 0xfff07a, spark2: 0x2ec27a, kind: 'twinkle' },
 };
 
 type Layer = 'back' | 'front';
@@ -23,6 +24,7 @@ const C = {
   gold: css(0xf0c040), goldHi: css(0xfff0a0), lapis: css(0x3a6ae0), sun: css(0xffd870),
   ember: css(0x8a1a10), fire: css(0xff6a1a), fireHi: css(0xffd060), crack: css(0x3a0c0a),
   fox: css(0x4aa8ff), foxHi: css(0xd8f8ff), foxDeep: css(0x2a5ae0),
+  grass: css(0x4aa83a), grassHi: css(0x8ad860), bloom: css(0xf6a8c8), fly: css(0xfff07a), flyDim: css(0xa8c040),
 };
 
 /** Points of a ground ellipse, split into the half behind the feet and the half in front. */
@@ -99,7 +101,29 @@ function foxfire(g: G, x: number, y: number, t: number, layer: Layer): void {
   }
 }
 
-const DRAW: Record<SkinSetId, (g: G, x: number, y: number, t: number, layer: Layer) => void> = { sunborn, hellforged, foxfire };
+function wildwood(g: G, x: number, y: number, t: number, layer: Layer): void {
+  // A ring of grass and blossoms springs up around the feet, swaying.
+  ring(g, x, y, 15, 3.6, 22, layer, (g, px, py, i) => {
+    const lean = Math.sin(t * 2.4 + i * 0.8) > 0.3 ? 1 : 0;
+    const h = 2 + (i % 3);
+    g.fillStyle = C.grass; g.fillRect(px, py - h + 1, 1, h);
+    g.fillStyle = C.grassHi; g.fillRect(px + lean, py - h, 1, 1);
+    if (i % 5 === 1) { g.fillStyle = C.bloom; g.fillRect(px - 1 + lean, py - h - 1, 3, 1); g.fillRect(px + lean, py - h - 2, 1, 3); }
+  });
+  // Fireflies drifting in slow loops around the fighter, blinking.
+  for (let k = 0; k < 6; k++) {
+    const a = t * (0.6 + k * 0.09) + k * 1.9;
+    const s = Math.sin(a);
+    if ((s < 0) !== (layer === 'back')) continue;
+    const px = Math.round(x + Math.cos(a) * (12 + (k % 3) * 3)), py = Math.round(y - 10 - k * 6 + Math.sin(t * 1.3 + k) * 3 + s * 2);
+    const on = Math.sin(t * 3 + k * 2.3) > -0.3;
+    g.fillStyle = on ? C.fly : C.flyDim;
+    g.fillRect(px, py, 1, 1);
+    if (on) { g.globalAlpha = 0.5; g.fillRect(px - 1, py, 3, 1); g.fillRect(px, py - 1, 1, 3); g.globalAlpha = 1; }
+  }
+}
+
+const DRAW: Record<SkinSetId, (g: G, x: number, y: number, t: number, layer: Layer) => void> = { sunborn, hellforged, foxfire, wildwood };
 
 /** Draws one layer of a set's aura around feet at (x, y) art pixels; `t` is seconds. */
 export function drawSetAura(g: G, set: SkinSetId, x: number, y: number, t: number, layer: Layer): void {

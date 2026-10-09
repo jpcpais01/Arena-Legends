@@ -493,7 +493,7 @@ export class BattleView implements View {
     if (it.phase === 'travel') ang = Math.atan2(1.2 - it.y, e.x - it.x);
     else if (it.phase === 'active') ang = this.time * 14 * f.facing;
     else if (it.phase === 'return') ang = Math.atan2(f.y + 2 - it.y, f.x - it.x) + Math.PI;
-    const s = projSprite('phantom', 0, ang, this.fighters[f.id]?.art.specialSkinId);
+    const s = projSprite('phantom', Math.floor(this.time * 8), ang, this.fighters[f.id]?.art.specialSkinId);
     const x = Math.round(this.sx(it.x)), y = Math.round(this.sy(it.y));
     g.globalAlpha = 0.85;
     g.drawImage(s.img, x - s.ox, y - s.oy);
