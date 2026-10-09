@@ -7,14 +7,18 @@ import type { GearId, GearSet } from '../sim/types';
  *  - rare: new colours and surface finish
  *  - mythic: also reshapes the item
  *  - legendary: reshaped, with animated surfaces and its own effects in battle
+ *  - epic: the showpieces. Everything legendary has, more of it, and they come
+ *    in sets of six (one per gear slot) that share one look; wearing a whole
+ *    set gives the fighter that set's aura
  */
-export type SkinRarity = 'rare' | 'mythic' | 'legendary';
-export const SKIN_RARITIES: readonly SkinRarity[] = ['rare', 'mythic', 'legendary'];
+export type SkinRarity = 'rare' | 'mythic' | 'legendary' | 'epic';
+export const SKIN_RARITIES: readonly SkinRarity[] = ['rare', 'mythic', 'legendary', 'epic'];
 
 export const RARITY_INFO: Record<SkinRarity, string> = {
   rare: 'New colours and finish.',
   mythic: 'Reshaped: a new silhouette.',
   legendary: 'Reshaped, animated, with its own battle effects.',
+  epic: 'Part of a set of six. Wear the whole set for its aura.',
 };
 
 export interface SkinDef {
@@ -22,12 +26,31 @@ export interface SkinDef {
   gear: GearId;
   name: string;
   rarity: SkinRarity;
+  /** Epic skins: the set this piece belongs to. */
+  set?: SkinSetId;
 }
+
+export type SkinSetId = 'sunborn' | 'hellforged' | 'foxfire';
+
+export interface SkinSet {
+  id: SkinSetId;
+  name: string;
+  blurb: string;
+}
+
+/** Epic sets: one piece per gear slot, all in one look. */
+export const SKIN_SETS: readonly SkinSet[] = [
+  { id: 'sunborn', name: 'Sunborn Dynasty', blurb: 'Gold and lapis of a god-king, crowned by the sun.' },
+  { id: 'hellforged', name: 'Hellforged', blurb: 'Black iron from the abyss, molten at every seam.' },
+  { id: 'foxfire', name: 'Foxfire Shrine', blurb: 'White lacquer and vermilion, haunted by blue fox flames.' },
+];
+export const SKIN_SET_BY_ID: ReadonlyMap<SkinSetId, SkinSet> = new Map(SKIN_SETS.map((s) => [s.id, s]));
 
 /** The skin picked for each item (kept per item, so swapping gear back restores it). */
 export type SkinMap = Partial<Record<GearId, string>>;
 
 const S = (gear: GearId, rarity: SkinRarity, id: string, name: string): SkinDef => ({ id: `${gear}.${id}`, gear, name, rarity });
+const E = (set: SkinSetId, gear: GearId, id: string, name: string): SkinDef => ({ id: `${gear}.${id}`, gear, name, rarity: 'epic', set });
 
 export const SKINS: readonly SkinDef[] = [
   // Main weapons
@@ -141,6 +164,25 @@ export const SKINS: readonly SkinDef[] = [
   S('mirror_mail', 'legendary', 'prism', 'Prism Mail'),
   S('colossus_boots', 'legendary', 'earthshaker', 'Earthshakers'),
   S('shadow_treads', 'legendary', 'umbral', 'Umbral Treads'),
+  // Epic sets
+  E('sunborn', 'arcane_staff', 'ra', 'Scepter of Ra'),
+  E('sunborn', 'kite_shield', 'horus', 'Wings of Horus'),
+  E('sunborn', 'phoenix_feather', 'maat', "Feather of Ma'at"),
+  E('sunborn', 'chrono_circlet', 'nemes', 'Nemes of the Sun King'),
+  E('sunborn', 'mage_robe', 'pharaoh', "Pharaoh's Regalia"),
+  E('sunborn', 'leaping_boots', 'sunstride', 'Sandals of the Sun'),
+  E('hellforged', 'greataxe', 'hellmaw', 'Hellmaw'),
+  E('hellforged', 'throwing_knives', 'brimstone', 'Brimstone Fangs'),
+  E('hellforged', 'meteor_sigil', 'doom', 'Doomcaller Sigil'),
+  E('hellforged', 'storm_crown', 'brimstone', 'Crown of Brimstone'),
+  E('hellforged', 'thornmail', 'hellforged', 'Hellforged Carapace'),
+  E('hellforged', 'iron_greaves', 'hellstride', 'Hellstriders'),
+  E('foxfire', 'katana', 'kitsunebi', 'Kitsunebi'),
+  E('foxfire', 'frost_wand', 'gohei', 'Shrine Gohei'),
+  E('foxfire', 'wisp_lantern', 'foxfire', 'Foxfire Lantern'),
+  E('foxfire', 'duelist_band', 'kitsune', 'Kitsune Mask'),
+  E('foxfire', 'phase_cloak', 'ninetails', 'Nine-Tails Haori'),
+  E('foxfire', 'leather_boots', 'geta', 'Foxfire Geta'),
 ];
 
 export const SKIN_BY_ID: ReadonlyMap<string, SkinDef> = new Map(SKINS.map((s) => [s.id, s]));
@@ -169,7 +211,22 @@ export function sanitizeSkins(raw: unknown): SkinMap {
   return out;
 }
 
-const WEIGHT: Record<SkinRarity, number> = { rare: 6, mythic: 3, legendary: 1.2 };
+/** The pieces of a set, in gear slot order. */
+export function setPieces(set: SkinSetId): SkinDef[] {
+  return SKINS.filter((s) => s.set === set);
+}
+
+/** The set a fighter wears in full (all six items equipped, each in its set skin), if any. */
+export function fullSet(gear: GearSet, skins: SkinMap | undefined): SkinSetId | null {
+  const first = skinOn(skins, gear.main)?.set;
+  if (!first) return null;
+  for (const p of setPieces(first)) {
+    if ((Object.values(gear) as GearId[]).indexOf(p.gear) < 0 || skins?.[p.gear] !== p.id) return null;
+  }
+  return first;
+}
+
+const WEIGHT: Record<SkinRarity, number> = { rare: 6, mythic: 3, legendary: 1.2, epic: 0.6 };
 
 /** Random skins for a generated rival: some items plain, rarer skins less often. */
 export function randomSkins(gear: GearSet, r: () => number = Math.random): SkinMap {

@@ -2,7 +2,7 @@ import type { ProjectileStyle } from '../sim/types';
 import { material, Raster, type Material } from './pixel/raster';
 import { arc, union } from './pixel/sdf';
 import type { Sprite } from './sprite/bank';
-import { skinMaterials } from './sprite/skins';
+import { SKIN_ART, skinMaterials, type ProjArt } from './sprite/skins';
 import { Xf } from './sprite/xform';
 
 /**
@@ -41,9 +41,7 @@ const M = {
   sigil: material({ base: 0xff9a3a, glow: true }),
 };
 
-type Draw = (r: Raster, t: Xf, f: number, h: (m: Material) => number) => void;
-
-const ART: Record<ProjectileStyle | 'phantom' | 'sigil', { frames: number; draw: Draw; outline?: boolean }> = {
+const ART: Record<ProjectileStyle | 'phantom' | 'sigil', ProjArt> = {
   arrow: {
     frames: 1, outline: true,
     draw(r, t, _f, h) {
@@ -189,7 +187,16 @@ const ART: Record<ProjectileStyle | 'phantom' | 'sigil', { frames: number; draw:
   },
 };
 
-export type ProjArtId = keyof typeof ART;
+/** Sprite ids: the stock ones, and `lantern` (the familiar), which only skins draw. */
+export type ProjArtId = keyof typeof ART | 'lantern';
+
+/** The art for a sprite: the skin's reshaped one if it has it, else the stock one. */
+const artFor = (id: ProjArtId, skin?: string | null): ProjArt | undefined => (skin ? SKIN_ART[skin]?.proj?.[id] : undefined) ?? (id === 'lantern' ? undefined : ART[id]);
+
+/** Whether a skin reshapes this sprite. */
+export function skinDraws(id: ProjArtId, skin?: string | null): boolean {
+  return !!skin && !!SKIN_ART[skin]?.proj?.[id];
+}
 
 const M_NAME = new Map<Material, string>(Object.entries(M).map(([k, m]) => [m, k]));
 
@@ -197,14 +204,15 @@ const cache = new Map<string, Sprite>();
 let raster: Raster | null = null;
 const STEPS = 32;
 
-export function projFrames(id: ProjArtId): number {
-  return ART[id].frames;
+export function projFrames(id: ProjArtId, skin?: string | null): number {
+  return artFor(id, skin)?.frames ?? 1;
 }
 
 /** Sprite for a projectile flying at `angle` (world radians, y up), optionally in a special item skin's colours. */
 export function projSprite(id: ProjArtId, frame: number, angle = 0, skin?: string | null): Sprite {
   const a = ((Math.round((angle / (Math.PI * 2)) * STEPS) % STEPS) + STEPS) % STEPS;
-  const f = frame % ART[id].frames;
+  const art = artFor(id, skin)!;
+  const f = frame % art.frames;
   const key = `${id}.${f}.${a}.${skin ?? ''}`;
   let s = cache.get(key);
   if (s) return s;
@@ -218,7 +226,6 @@ export function projSprite(id: ProjArtId, frame: number, angle = 0, skin?: strin
     if (!k) { k = r.add(m); mats.set(m, k); }
     return k;
   };
-  const art = ART[id];
   art.draw(r, new Xf(40, 40, (a / STEPS) * Math.PI * 2), f, h);
   const fr = r.compose(40, 40, art.outline ?? false);
   const c = document.createElement('canvas');

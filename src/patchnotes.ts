@@ -12,6 +12,19 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.22.0',
+    date: '2026-10-09',
+    title: 'Epic skins: three full sets',
+    notes: [
+      'A new top skin tier, Epic, above Legendary. Epic skins are the most detailed versions of their items, with animated parts and their own particles and hit effects in battle.',
+      'They come in sets of six, one for each gear slot. Sunborn Dynasty: Scepter of Ra, Wings of Horus, Feather of Ma\'at, Nemes of the Sun King, Pharaoh\'s Regalia and Sandals of the Sun.',
+      'Hellforged: Hellmaw, Brimstone Fangs, Doomcaller Sigil, Crown of Brimstone, Hellforged Carapace and Hellstriders. The sigil calls down a burning skull, and the fangs fly as hellfire.',
+      'Foxfire Shrine: Kitsunebi, Shrine Gohei, Foxfire Lantern, Kitsune Mask, Nine-Tails Haori and Foxfire Geta. The lantern familiar and its shots become fox flames.',
+      'Wear all six pieces of a set to get its aura: a turning sun ring, a ring of hellfire, or fox flames circling you.',
+      'Epic skins have their own animated frame in the skin picker, which shows the set name and how many pieces you wear. Equip set puts on all six items in their set skins at once.',
+    ],
+  },
+  {
     version: '0.21.1',
     date: '2026-10-09',
     title: 'Tap an item card again to close it',

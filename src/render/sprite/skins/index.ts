@@ -1,8 +1,12 @@
 import { mix } from '../../pixel/color';
-import { material, type Material, type MaterialSpec } from '../../pixel/raster';
+import { material, type Material, type MaterialSpec, type Raster } from '../../pixel/raster';
 import { bands, damascus, glint, grain, hash, lattice, speckle } from '../../pixel/tex';
 import type { BootsLook, ChestLook } from '../look';
 import type { WeaponArt } from '../weaponKit';
+import type { Xf } from '../xform';
+import { FOXFIRE } from './foxfire';
+import { HELLFORGED } from './hellforged';
+import { SUNBORN } from './sunborn';
 import {
   geodeHeart, icicleScepter, kagutsuchi, krakenConch, lionheart, morningstar, skullcrusher, solarDisc, swordbreaker,
   frostreaver, voidfang, wintersHeart, wyrmRepeater,
@@ -40,9 +44,33 @@ export interface SkinArt {
    * Legendary sparkles and impact colours (bright, fading to). They rise from
    * where the item is: the weapon tip, the head, the body or the feet.
    */
-  fx?: { spark: number; spark2: number };
+  fx?: SkinFx;
   /** Special items: particle colours in battle (bright, deep) for its aura, shots and bursts. */
   glow?: [number, number];
+  /** Epic special items: a reshaped icon, drawn around the frame's origin (about 13 units across each way). */
+  icon?: (r: Raster, t: Xf, m: (k: string) => number) => void;
+  /**
+   * Epic items: reshaped battle sprites, by sprite id (an item's projectiles,
+   * the meteor sigil, the familiar's `lantern`, thrown weapons). Each brings
+   * its own materials.
+   */
+  proj?: Partial<Record<string, ProjArt>>;
+  /** Phoenix feather worn in the hair: drawn in head space instead of the stock plume. */
+  plume?: (r: Raster, H: Xf, m: (k: string) => number, g: number, sway: number) => void;
+}
+
+export interface SkinFx {
+  spark: number;
+  spark2: number;
+  /** Particle shape: twinkling stars (the default) or flickering flames. */
+  kind?: 'twinkle' | 'flame';
+}
+
+/** A battle sprite drawn pointing +x around the frame origin; `f` is the animation frame. */
+export interface ProjArt {
+  frames: number;
+  outline?: boolean;
+  draw(r: Raster, t: Xf, f: number, h: (m: Material) => number): void;
 }
 
 const built = new Map<string, Record<string, Material>>();
@@ -296,4 +324,9 @@ export const SKIN_ART: Record<string, SkinArt> = {
   'mirror_mail.prism': { ...prismMail(), fx: { spark: 0xffffff, spark2: 0xff7ad8 } },
   'colossus_boots.earthshaker': { ...earthshakers(), fx: { spark: 0xffd060, spark2: 0xd83a1a } },
   'shadow_treads.umbral': { ...umbralTreads(), fx: { spark: 0xe0c8ff, spark2: 0x6a2ad8 } },
+
+  // --- Epic sets ---------------------------------------------------------------------------
+  ...SUNBORN,
+  ...HELLFORGED,
+  ...FOXFIRE,
 };

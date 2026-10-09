@@ -6,7 +6,7 @@ import { arc } from './pixel/sdf';
 import { STAND } from './sprite/pose';
 import { drawFigure } from './sprite/draw';
 import { makeArt } from './sprite/look';
-import { skinMaterials } from './sprite/skins';
+import { SKIN_ART, skinMaterials } from './sprite/skins';
 import { weaponArt } from './sprite/weapons';
 import { Xf } from './sprite/xform';
 
@@ -60,6 +60,12 @@ function special(id: SpecialId, r: Raster, c: number, skin?: string | null): voi
   const over = skin ? skinMaterials(skin) : null;
   const h = over ? (m: Material) => base(over[SM_NAME.get(m)!] ?? m) : base;
   const t = new Xf(c, c, 0);
+  // Epic skins reshape the item: drawn by the skin, from its own materials.
+  const draw = skin ? SKIN_ART[skin]?.icon : undefined;
+  if (draw && over) {
+    draw(r, t, (k) => base(over[k]));
+    return;
+  }
   switch (id) {
     case 'meteor_sigil':
       r.fill(arc(c, c, 11, 13, -Math.PI, Math.PI), h(SM.sigil), { group: 1 });

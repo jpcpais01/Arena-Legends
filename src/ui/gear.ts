@@ -1,7 +1,7 @@
 import { sfx } from '../audio/sfx';
 import type { PlayerCharacter } from '../character/profile';
 import { SPECIES } from '../character/appearance';
-import { RARITY_INFO, skinOn, skinsFor, type SkinDef } from '../character/skins';
+import { RARITY_INFO, setPieces, SKIN_SET_BY_ID, skinOn, skinsFor, type SkinDef, type SkinSetId } from '../character/skins';
 import { iconCanvas } from '../render/icons';
 import { gearIdsFor, gearOf, SLOT_NAMES } from '../sim/gear';
 import { FORMS } from '../sim/forms';
@@ -94,6 +94,34 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     save({ ...c, skins: next }, c.gear[slot] === id);
   }
 
+  /** Equips every piece of an epic set, each in its set skin. */
+  function wearSet(set: SkinSetId): void {
+    let next = c;
+    const skins = { ...c.skins };
+    for (const p of setPieces(set)) {
+      next = { ...next, ...withGear(next, gearOf(p.gear).slot, p.gear) } as PlayerCharacter;
+      skins[p.gear] = p.id;
+    }
+    save({ ...next, skins }, true);
+  }
+
+  /** Pieces of a set equipped and wearing their set skin. */
+  const setWorn = (set: SkinSetId) => setPieces(set).filter((p) => c.gear[gearOf(p.gear).slot] === p.gear && c.skins?.[p.gear] === p.id).length;
+
+  /** The info line under the skins: the picked skin, or for an epic one its set and how much of it is worn. */
+  function skinInfo(cur: SkinDef | null, count: number): HTMLElement {
+    if (!cur) return h('p.sk-info', null, h('b', null, 'Default look'), ` ${count} skin${count > 1 ? 's' : ''} to pick from. Looks only.`);
+    if (!cur.set) return h('p.sk-info', null, h(`b.${cur.rarity}`, null, `${cur.name} · ${cur.rarity}`), ` ${RARITY_INFO[cur.rarity]}`);
+    const set = SKIN_SET_BY_ID.get(cur.set)!;
+    const worn = setWorn(set.id), all = setPieces(set.id).length;
+    return h('div.sk-set', null,
+      h('p.sk-info', null, h('b.epic', null, `${cur.name} · epic`), ` Part of the `, h('b.set', null, set.name), ` set. ${set.blurb}`),
+      h('div.sk-set-row', null,
+        h(`span.sk-pips${worn === all ? '.full' : ''}`, { title: `${worn} of ${all} pieces worn` }, ...setPieces(set.id).map((_, i) => h(`i${i < worn ? '.on' : ''}`))),
+        h('small', null, worn === all ? 'Full set: aura on' : `${worn}/${all} worn. Wear all ${all} for its aura.`),
+        worn < all ? h('button.btn.sm.ghost', { onclick: () => wearSet(set.id), title: 'Equips all six items of the set, in their set skins' }, 'Equip set') : null));
+  }
+
   function show(id: GearId | null): void {
     open = open === id ? null : id;
     sfx.play('ui');
@@ -142,7 +170,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
       ic.className = 'icon';
       const sel = (cur?.id ?? null) === (sk?.id ?? null);
       return h(`button.sk.${sk ? sk.rarity : 'plain'}${sel ? '.on' : ''}`, {
-        title: sk ? `${sk.name} (${sk.rarity}): ${RARITY_INFO[sk.rarity]}` : 'Default: the plain item',
+        title: sk ? `${sk.name} (${sk.rarity}${sk.set ? `, ${SKIN_SET_BY_ID.get(sk.set)!.name} set` : ''}): ${RARITY_INFO[sk.rarity]}` : 'Default: the plain item',
         'aria-label': sk ? sk.name : 'Default', 'aria-pressed': String(sel),
         onclick: () => wear(id, sk),
       }, ic);
@@ -166,9 +194,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
         mods ? h('p.mods', null, mods) : null),
       skins.length ? h('div.icard-skins', null,
         h('div.sk-row', null, icon('star'), chip(null), ...skins.map(chip)),
-        h('p.sk-info', null, ...(cur
-          ? [h(`b.${cur.rarity}`, null, `${cur.name} · ${cur.rarity}`), ` ${RARITY_INFO[cur.rarity]}`]
-          : [h('b', null, 'Default look'), ` ${skins.length} skin${skins.length > 1 ? 's' : ''} to pick from. Looks only.`]))) : null,
+        skinInfo(cur, skins.length)) : null,
       h('div.icard-foot', null,
         on
           ? (slot !== 'main' ? h('button.btn.sm.ghost', { onclick: () => equip(null) }, 'Unequip') : h('span.eq', null, icon('check'), 'Equipped'))

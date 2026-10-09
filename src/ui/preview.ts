@@ -4,6 +4,8 @@ import type { AnimOut } from '../render/sprite/animator';
 import { SpriteBank, type Sprite } from '../render/sprite/bank';
 import { makeArt } from '../render/sprite/look';
 import { css } from '../render/pixel/color';
+import { drawSetAura, SET_FX } from '../render/setAura';
+import type { SkinFx } from '../render/sprite/skins';
 import { fitPixels } from './pixelfit';
 
 export interface PreviewOptions {
@@ -54,8 +56,10 @@ export class Preview {
   private flip = false;
   private out: AnimOut = { clip: 'idle', frame: 0, face: null, secOut: false, jitter: 0, hop: 0, key: '' };
   /** Legendary skin sparkles: position (canvas px), age and colours. */
-  private sparks: { x: number; y: number; t: number; a: number; b: number }[] = [];
+  private sparks: { x: number; y: number; t: number; a: number; b: number; flame: boolean }[] = [];
   private sparkT = 0;
+  /** Seconds since the preview started (set auras). */
+  private clock = 0;
 
   private still: boolean;
   private ground: number;
@@ -127,6 +131,7 @@ export class Preview {
 
   private tick(dt: number): void {
     this.t += dt;
+    this.clock += dt;
     const o = this.out;
     if (this.playing) {
       const c = this.bank.set.clips.get(this.playing)!;
@@ -154,11 +159,14 @@ export class Preview {
     // Ground shadow.
     g.fillStyle = 'rgba(0,0,0,0.3)';
     g.fillRect(gx - 11, gy - 1, 22, 3);
+    const set = this.bank.art.set;
+    if (set) drawSetAura(g, set, gx, gy, this.clock, 'back');
     if (this.flip) {
       g.save(); g.translate(gx + 1, 0); g.scale(-1, 1);
       g.drawImage(s.img, -s.ox, gy - s.oy);
       g.restore();
     } else g.drawImage(s.img, gx - s.ox, gy - s.oy);
+    if (set) drawSetAura(g, set, gx, gy, this.clock, 'front');
     return [gx, gy];
   }
 
@@ -167,18 +175,19 @@ export class Preview {
     const art = this.bank.art;
     const fl = (p: [number, number]): [number, number] => [gx + (this.flip ? -p[0] : p[0]), gy + p[1]];
     const top = gy - s.oy;
-    const spots: [{ spark: number; spark2: number } | undefined, [number, number] | null, number][] = [
+    const spots: [SkinFx | undefined, [number, number] | null, number][] = [
       [art.mainSkin?.fx, s.tip ? fl(s.tip) : null, 4],
       [art.secSkin?.fx, s.secTip ? fl(s.secTip) : null, 4],
       [art.headSkin?.fx, [gx, top + 4], 8],
       [art.chestSkin?.fx, [gx, gy - 30], 14],
       [art.bootsSkin?.fx, [gx, gy - 1], 12],
+      [art.set ? SET_FX[art.set] : undefined, [gx, gy - 1], 30],
     ];
     if ((this.sparkT -= dt) <= 0) {
       this.sparkT = this.playing ? 0.05 : 0.14;
       for (const [fx, p, spread] of spots) {
         if (!fx || !p) continue;
-        this.sparks.push({ x: Math.round(p[0] + (Math.random() - 0.5) * spread), y: Math.round(p[1] + (Math.random() - 0.5) * spread * 0.6), t: 0, a: fx.spark, b: fx.spark2 });
+        this.sparks.push({ x: Math.round(p[0] + (Math.random() - 0.5) * spread), y: Math.round(p[1] + (Math.random() - 0.5) * spread * 0.6), t: 0, a: fx.spark, b: fx.spark2, flame: fx.kind === 'flame' });
       }
     }
     const g = this.g;
@@ -186,8 +195,14 @@ export class Preview {
       const p = this.sparks[i];
       p.t += dt;
       if (p.t > 0.5) { this.sparks.splice(i, 1); continue; }
-      const y = Math.round(p.y - p.t * 8);
+      const y = Math.round(p.y - p.t * (p.flame ? 16 : 8));
       g.fillStyle = css(p.t < 0.25 ? p.a : p.b);
+      if (p.flame) {
+        // Flames: a flickering tongue, two pixels tall while young.
+        g.fillRect(p.x, y, 1, p.t < 0.28 ? 2 : 1);
+        if (p.t < 0.15) g.fillRect(p.x - 1, y + 1, 3, 1);
+        continue;
+      }
       g.fillRect(p.x, y, 1, 1);
       if (p.t < 0.2) { g.fillRect(p.x - 1, y, 3, 1); g.fillRect(p.x, y - 1, 1, 3); }
     }
