@@ -5,7 +5,7 @@ import {
   createUserWithEmailAndPassword, indexedDBLocalPersistence, browserLocalPersistence, initializeAuth,
   signInWithEmailAndPassword, signOut as fbSignOut, type User,
 } from 'firebase/auth';
-import { doc, getDoc, getFirestore, runTransaction, setDoc } from 'firebase/firestore/lite';
+import { doc, getDoc, getFirestore, setDoc, writeBatch } from 'firebase/firestore/lite';
 import { emailFor, firebaseConfig } from './config';
 import type { SaveMap } from './sync';
 
@@ -55,17 +55,22 @@ export async function signIn(name: string, password: string): Promise<User> {
 
 export const signOut = () => fbSignOut(auth);
 
-/** Claims usernames/{name} for this user and creates their player doc, in one transaction. */
+/**
+ * Claims usernames/{name} for this user and creates their player doc in one
+ * atomic batch. No transaction: Firestore refuses client transactions on this
+ * project, and the rules already make a name claimable only once (create only,
+ * and only by the account whose sign-in address carries it).
+ */
 async function reserve(user: User, name: string): Promise<void> {
   const nameRef = doc(db, 'usernames', name.toLowerCase());
   const playerRef = doc(db, 'players', user.uid);
-  await runTransaction(db, async (t) => {
-    const taken = await t.get(nameRef);
-    if (taken.exists() && taken.data().uid !== user.uid) throw Object.assign(new Error('taken'), { code: 'taken' });
-    const player = await t.get(playerRef);
-    if (!taken.exists()) t.set(nameRef, { uid: user.uid, name });
-    if (!player.exists()) t.set(playerRef, { name, save: {}, at: 0, v: 1 });
-  });
+  const [taken, player] = await Promise.all([getDoc(nameRef), getDoc(playerRef)]);
+  if (taken.exists() && taken.data().uid !== user.uid) throw Object.assign(new Error('taken'), { code: 'taken' });
+  if (taken.exists() && player.exists()) return;
+  const batch = writeBatch(db);
+  if (!taken.exists()) batch.set(nameRef, { uid: user.uid, name });
+  if (!player.exists()) batch.set(playerRef, { name, save: {}, at: 0, v: 1 });
+  await batch.commit();
 }
 
 export async function load(uid: string): Promise<CloudSave | null> {
