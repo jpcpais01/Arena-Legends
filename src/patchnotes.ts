@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.36.0',
+    date: '2026-10-09',
+    title: 'Circling fighters still fight',
+    notes: [
+      'A fighter catching their breath now backs off and won\'t chase you, but anything in reach still gets hit. No more standing right next to the enemy without swinging.',
+      'Heat also cools down during quiet moments up close, not only when the fighters are far apart, so a standoff ends the breather naturally.',
+    ],
+  },
+  {
     version: '0.35.1',
     date: '2026-10-09',
     title: 'Fighter box gear in Armory order',

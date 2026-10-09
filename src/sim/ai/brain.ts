@@ -85,7 +85,6 @@ const HEAT_PER_GUARD = 0.035;
 const HEAT_PER_DAMAGE = 0.8;
 const HEAT_BRAWL = 0.1;
 const HEAT_COOL = 0.32;
-const HEAT_IDLE = 0.04;
 /** Seconds before the end of the match when the clock starts to weigh on decisions. */
 const CLOCK_WINDOW = 35;
 
@@ -221,8 +220,6 @@ export class Brain implements FighterBrain {
   private winded = false;
   /** Catching a breath (heat went past tolerance and hasn't cooled yet). */
   get breathing(): boolean { return this.winded; }
-  /** Seconds the enemy has kept on me while I was trying to breathe. */
-  private chased = 0;
   private restDist = 4;
   private seenHits = 0;
   private seenGuards = 0;
@@ -520,7 +517,8 @@ export class Brain implements FighterBrain {
     const engaged = dist < reach + 1;
     // Shots from afar heat things up only when they land (counted above).
     const busy = !!f.action || !!e.action;
-    heat += !engaged ? -HEAT_COOL * DT : busy ? HEAT_BRAWL * DT : -HEAT_IDLE * DT;
+    // Trading up close heats it; any quiet moment cools it, faster with space between them.
+    heat += (!engaged ? -HEAT_COOL : busy ? HEAT_BRAWL : -HEAT_COOL * 0.5) * DT;
     this.heat = clamp(heat, 0, 1);
 
     // Stakes: the clock only matters near the end, and more the further behind (or ahead) I am.
@@ -539,16 +537,9 @@ export class Brain implements FighterBrain {
     const was = this.winded;
     if (!this.winded && this.heat > tolerance) {
       this.winded = true;
-      this.chased = 0;
       this.restDist = clamp(Math.max(liveReach(e, this.ek, 0.4), this.m.engage) + 2.2, 4.2, 6.5);
-    } else if (this.winded) {
-      // They won't let me breathe: if they keep on me, fight back.
-      const onMe = dist < liveReach(e, this.ek, 0.4) + 0.4 && (b.brains[e.id] as Partial<Brain>).plan !== 'breathe';
-      this.chased = onMe ? this.chased + DT : Math.max(0, this.chased - DT * 0.5);
-      if (this.heat < tolerance * 0.55 || this.chased > 1.1 || this.behind > 0.5) {
-        this.winded = false;
-        if (this.chased > 1.1) this.heat = Math.min(this.heat, tolerance * 0.75);
-      }
+    } else if (this.winded && (this.heat < tolerance * 0.55 || this.behind > 0.5)) {
+      this.winded = false;
     }
     if (was !== this.winded) this.planTimer = 0;
   }
@@ -654,13 +645,11 @@ export class Brain implements FighterBrain {
       else r = null;
       if (!r) continue;
       if (r.wait) waiting = true;
-      // Catching a breath: no new attacks, only answers and punishes.
-      if (plan === 'breathe' && info.offensive && c.open < 0.15 && !(info.ab.knockback && c.dist < 2)) continue;
       if (r.val > 0) options.push({ choice: { kind: 'ability', idx: info.idx }, prior: r.val, why: r.why });
       if (r.val > bestVal) { bestVal = r.val; bestIdx = info.idx; bestWhy = r.why; }
     }
 
-    // Catching a breath with nothing coming and nothing to punish: just keep the distance.
+    // Catching a breath with nothing coming and nothing worth swinging at: just keep the distance.
     if (plan === 'breathe' && !c.threat && c.open <= 0.15 && bestIdx < 0) {
       this.heldMove = 0;
       this.moveDecision(b, c, waiting);
@@ -1142,7 +1131,9 @@ export class Brain implements FighterBrain {
     if (plan === 'turtle' && !punishing) val *= 0.7;
     if (plan === 'bait' && !punishing) val *= 0.75;
     if (plan === 'recover' && !punishing) val *= 0.6;
-    if (plan === 'breathe' && !punishing) val *= info.ranged ? 0.6 : 0.4;
+    // Catching a breath shapes where I stand, not whether I fight: anything in
+    // reach is fair game, but I won't step in to chase a hit.
+    if (plan === 'breathe' && !punishing && dist > info.maxReach) val *= 0.5;
     val *= 0.8 + p.aggression * 0.4;
 
     // Little read on them yet: test with quick, safe pokes before committing big.
