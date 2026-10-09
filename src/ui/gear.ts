@@ -1,9 +1,10 @@
 import { sfx } from '../audio/sfx';
 import type { PlayerCharacter } from '../character/profile';
+import { SPECIES } from '../character/appearance';
 import { RARITY_INFO, skinOn, skinsFor, type SkinDef } from '../character/skins';
 import { iconCanvas } from '../render/icons';
 import { gearIdsFor, gearOf, SLOT_NAMES } from '../sim/gear';
-import { FORMS, FORM_IDS } from '../sim/forms';
+import { FORMS } from '../sim/forms';
 import { withGear } from '../sim/loadout';
 import type { GearId, GearSlot } from '../sim/types';
 import { h } from './dom';
@@ -177,7 +178,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
   function render(): void {
     if (opts.forms) {
       forms.replaceChildren(h('div.label', null, icon('body'), 'Body form'),
-        h('div.opts', null, ...FORM_IDS.map((id) => h(`button.opt${id === c.form ? '.on' : ''}`, {
+        h('div.opts', null, ...SPECIES[c.look.species].forms.map((id) => h(`button.opt${id === c.form ? '.on' : ''}`, {
           title: FORMS[id].blurb,
           onclick: () => { if (id !== c.form) save({ ...c, form: id }, false); },
         }, FORMS[id].name))));

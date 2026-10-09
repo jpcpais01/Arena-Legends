@@ -32,6 +32,11 @@ export interface BodySpec {
   hipSpread: number;
   /** Chest depth that pushes forward (pecs, plate). */
   chestPush: number;
+  /** Round belly over the waist (0 = none). */
+  belly: number;
+  /** Extra forward lean of the spine (radians) and how far the hips sink (leg units). */
+  hunch: number;
+  crouch: number;
 }
 
 interface Shape {
@@ -40,6 +45,9 @@ interface Shape {
   shoulders: number;
   limbs: number;
   head: number;
+  belly?: number;
+  hunch?: number;
+  crouch?: number;
 }
 
 /** Proportions per body form (relative to Balanced). */
@@ -50,6 +58,11 @@ export const FORM_SHAPE: Record<FormId, Shape> = {
   slender: { height: 1.12, bulk: 0.82, shoulders: 0.95, limbs: 1.12, head: 0.95 },
   mighty: { height: 1.04, bulk: 1.18, shoulders: 1.32, limbs: 1.02, head: 0.92 },
   ethereal: { height: 1.03, bulk: 0.8, shoulders: 0.9, limbs: 1.05, head: 1.0 },
+  // Short legs under a normal torso, a big round middle.
+  stout: { height: 0.8, bulk: 1.45, shoulders: 1.06, limbs: 0.82, head: 1.12, belly: 1 },
+  // Coiled forward on bent knees, long arms.
+  feral: { height: 0.98, bulk: 0.96, shoulders: 1.1, limbs: 1.1, head: 1.0, hunch: 0.45, crouch: 0.08 },
+  titan: { height: 1.24, bulk: 1.36, shoulders: 1.3, limbs: 1.02, head: 0.88 },
 };
 
 /** Species tweak the build a little on top of the form (looks only). */
@@ -61,6 +74,9 @@ const SPECIES_SHAPE: Record<SpeciesId, Shape> = {
   ogrin: { height: 1.02, bulk: 1.14, shoulders: 1.1, limbs: 0.98, head: 0.98 },
   wisp: { height: 1.02, bulk: 0.9, shoulders: 0.95, limbs: 1.04, head: 1 },
   golem: { height: 1.04, bulk: 1.18, shoulders: 1.16, limbs: 0.97, head: 0.94 },
+  saurin: { height: 1.02, bulk: 1, shoulders: 1, limbs: 1.03, head: 0.96 },
+  myco: { height: 0.94, bulk: 1.02, shoulders: 0.94, limbs: 0.96, head: 1.1 },
+  ursin: { height: 1.02, bulk: 1.16, shoulders: 1.08, limbs: 0.96, head: 1, belly: 0.35 },
 };
 
 export function bodyFor(form: FormId, species: SpeciesId): BodySpec {
@@ -76,7 +92,7 @@ export function bodyFor(form: FormId, species: SpeciesId): BodySpec {
     shin: 11.5 * H * L,
     thigh: 11.5 * H * L,
     footLen: 5.5 * (0.8 + 0.2 * B),
-    torso: 17 * H * (2 - L) ,
+    torso: 17 * H * (2 - L),
     neck: 2.5 * H,
     headRx: 6.2 * hd * (0.9 + 0.1 * B),
     headRy: 6.4 * hd,
@@ -96,5 +112,8 @@ export function bodyFor(form: FormId, species: SpeciesId): BodySpec {
     shoulderSpread: 2.2 * S,
     hipSpread: 1.2 * B,
     chestPush: 1 + 0.6 * (B - 1),
+    belly: Math.min(1.2, (f.belly ?? 0) + (s.belly ?? 0)),
+    hunch: f.hunch ?? 0,
+    crouch: f.crouch ?? 0,
   };
 }

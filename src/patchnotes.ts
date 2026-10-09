@@ -12,12 +12,25 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.20.0',
+    version: '0.21.0',
     date: '2026-10-09',
     title: 'Volume sliders',
     notes: [
       'Settings now has three volume sliders instead of on/off switches: Master, Music and Sound effects. Changes apply while you drag.',
       'Setting Music to 0 turns the battle soundtrack off. If you had turned Music off before, it stays off. The sound button on the menu still mutes everything at once.',
+    ],
+  },
+  {
+    version: '0.20.0',
+    date: '2026-10-09',
+    title: 'Three new bodies, three new species',
+    notes: [
+      'New body form Stout: short legs and a big round belly. Hard to knock over and heals more, but slow with short reach.',
+      'New body form Feral: hunched and coiled with long arms. Fast, relentless strikes that drink a little life, but thin hide.',
+      'New body form Titan: a towering giant with huge health, long reach and crushing force, but the slowest swings in the arena.',
+      'New species Saurin (lizard-folk with a snout, a spiny crest and a sweeping tail), Myco (mushroom-folk under a spotted cap that glows at night) and Ursin (bear-folk with round ears and a broad muzzle).',
+      'Each species now has its own set of body forms: no Titan imps or Feral golems. The creator shows the forms each species can take.',
+      'If your fighter had a form their species no longer takes, they moved to the closest one it does.',
     ],
   },
   {

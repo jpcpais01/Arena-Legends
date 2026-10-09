@@ -1,5 +1,5 @@
 import { DEFAULT_BUILDS, randomBuild, sanitizeBuild, type CharacterBuild } from '../sim/loadout';
-import { randomAppearance, sanitizeAppearance, type Appearance } from './appearance';
+import { fitForm, randomAppearance, sanitizeAppearance, type Appearance } from './appearance';
 import { randomSkins } from './skins';
 
 /**
@@ -27,7 +27,8 @@ export function loadCharacter(): PlayerCharacter | null {
     const name = typeof o?.name === 'string' ? cleanName(o.name) : '';
     if (!name) return null;
     const b = sanitizeBuild(o, { ...DEFAULT_BUILDS[0], name });
-    return { ...b, name, look: sanitizeAppearance(o.look) };
+    const look = sanitizeAppearance(o.look);
+    return { ...b, name, form: fitForm(look.species, b.form), look };
   } catch {
     return null;
   }
@@ -39,7 +40,8 @@ export function saveCharacter(c: PlayerCharacter): void {
 
 export function newCharacter(): PlayerCharacter {
   const base = DEFAULT_BUILDS[0];
-  return { name: '', form: 'balanced', gear: { ...base.gear }, look: randomAppearance(), skins: {} };
+  const look = randomAppearance();
+  return { name: '', form: fitForm(look.species, 'balanced'), gear: { ...base.gear }, look, skins: {} };
 }
 
 const FIRST = [
@@ -58,5 +60,5 @@ export function generateRival(avoidName?: string): PlayerCharacter {
   let name = randomName();
   for (let i = 0; i < 4 && name === avoidName; i++) name = randomName();
   const build = randomBuild();
-  return { ...build, name, look: randomAppearance(), skins: randomSkins(build.gear) };
+  return { ...build, name, look: build.look ?? randomAppearance(Math.random, build.form), skins: randomSkins(build.gear) };
 }
