@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.26.0',
+    date: '2026-10-09',
+    title: 'Three new epic sets',
+    notes: [
+      'Wildwood, a set of living wood and emerald with fireflies drifting around it. Elderheart is a longsword with an emerald blade and a crossguard of branches in bloom. The rest of the set is the Horn of the Wild Hunt, Dryad\'s Spirit Blade, Hood of the Stag King, Wildwood Mantle and Rootwalkers. Its aura is a ring of grass and blossoms with fireflies blinking around you.',
+      'Abyssal Tide, a set of scale, coral and pearl lit by glowing sea life. It has the Trident of the Deep, the Nautilus Disc, the Leviathan Helm, Abyssal Scale, Tidewalkers and the Pearl of the Abyss, a little clam that floats at your shoulder and opens around a glowing pearl. Its aura is water ripples and rising bubbles.',
+      'Clockwork Titan, a set of brass and steam with turning gears, pumping pistons and an arcane core. It has the Steamforge Hammer, Cogwheel Aegis, Automaton Visage, Titan Frame, Piston Stompers and the Clockwork Heart, which floats at your shoulder and beats. Its aura is a turning gear ring that vents steam.',
+    ],
+  },
+  {
     version: '0.25.1',
     date: '2026-10-09',
     title: 'Item cards open where you tap',
