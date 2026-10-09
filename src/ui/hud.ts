@@ -1,6 +1,6 @@
 import { PLAN_LABELS, type Plan } from '../sim/ai/brain';
 import type { Battle } from '../sim/battle';
-import { MAX_ENERGY, ROUND_TIME } from '../sim/constants';
+import { MATCH_TIME, MAX_ENERGY, ROUND_TIME } from '../sim/constants';
 import { FORMS } from '../sim/forms';
 import type { BattleEvent, StatusId } from '../sim/types';
 import type { BattleView } from '../render/battleView';
@@ -180,6 +180,8 @@ export class Hud {
       s.bubbleT = 1.4 + Math.min(1.4, e.text.length * 0.035);
     } else if (e.type === 'plan') {
       this.sides[e.f].plan.textContent = PLAN_LABELS[e.plan as Plan];
+    } else if (e.type === 'overtime') {
+      this.showBanner('OVERTIME!', 'Night falls: double damage', 2.2);
     } else if (e.type === 'ko') {
       this.showBanner('K.O.!', '', 2);
     } else if (e.type === 'end' && e.reason === 'time') {
@@ -234,10 +236,14 @@ export class Hud {
         }
       }
     }
-    const left = Math.max(0, Math.ceil(ROUND_TIME - b.time));
-    if (left !== this.lastClock) {
-      this.lastClock = left;
+    // Regular time counts down to 0, then overtime counts down its own 30s.
+    const ot = b.time >= ROUND_TIME;
+    const left = Math.max(0, Math.ceil((ot ? MATCH_TIME : ROUND_TIME) - b.time));
+    const key = ot ? 1000 + left : left;
+    if (key !== this.lastClock) {
+      this.lastClock = key;
       this.clock.textContent = String(left);
+      this.clock.classList.toggle('ot', ot);
       this.clock.classList.toggle('low', left <= 10);
     }
     if (this.bannerT > 0) {

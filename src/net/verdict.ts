@@ -1,5 +1,5 @@
 import { Battle } from '../sim/battle';
-import { DT, ROUND_TIME } from '../sim/constants';
+import { DT, MATCH_TIME } from '../sim/constants';
 import type { CharacterBuild } from '../sim/loadout';
 
 /** How a round ended, computed without rendering. Both players compute it and compare hashes. */
@@ -39,7 +39,7 @@ export function stateHash(b: Battle): string {
 export function judge(seed: number, builds: [CharacterBuild, CharacterBuild]): Verdict {
   const b = new Battle({ seed, fighters: [{ ...builds[0] }, { ...builds[1] }] });
   const checks: string[] = [];
-  const maxSteps = Math.ceil((ROUND_TIME + 30) / DT);
+  const maxSteps = Math.ceil((MATCH_TIME + 30) / DT);
   let lastCheck = 0;
   for (let i = 0; i < maxSteps && !b.over; i++) {
     b.step();
@@ -48,7 +48,7 @@ export function judge(seed: number, builds: [CharacterBuild, CharacterBuild]): V
   }
   return {
     winner: b.winner,
-    reason: b.time >= ROUND_TIME ? 'time' : 'ko',
+    reason: b.time >= MATCH_TIME ? 'time' : 'ko',
     time: b.time,
     hash: stateHash(b),
     checks,

@@ -1,6 +1,6 @@
 import { clamp, dsin, lerp } from '../../core/math';
 import type { Battle } from '../battle';
-import { ARENA_HALF_WIDTH, DT, ROUND_TIME } from '../constants';
+import { ARENA_HALF_WIDTH, DT, MATCH_TIME, ROUND_TIME } from '../constants';
 import { getStatus, isDisabled, stacksOf, type Fighter } from '../fighter';
 import {
   analyzeKit, analyzeMatchup, ccValue, dpsAt, estDamage, fastestAnswer, liveReach, readyDefenses, STATUS_FX,
@@ -482,7 +482,8 @@ export class Brain implements FighterBrain {
     const enemyDots = stacksOf(e, 'burn') + stacksOf(e, 'poison');
     const myUlt = this.kit.info.some((a) => a.ultimate && f.energy >= a.ab.cost);
     const theirUlt = this.ek.info.some((a) => a.ultimate && e.energy >= a.ab.cost);
-    const late = b.time > ROUND_TIME * 0.82;
+    // Play the clock over the last stretch of overtime (same window as before overtime existed).
+    const late = b.time > MATCH_TIME - ROUND_TIME * 0.18;
     const losingOnTime = late && myHp <= enHp;
     const winningOnTime = late && myHp > enHp + 0.12;
     const theirDef = readyDefenses(e, this.ek, 0.3);

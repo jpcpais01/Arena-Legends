@@ -3,7 +3,7 @@ import { Rng } from '../src/core/rng';
 import { FORM_IDS } from '../src/sim/forms';
 import { GEAR_SLOTS } from '../src/sim/gear';
 import { randomBuild, type CharacterBuild } from '../src/sim/loadout';
-import { ROUND_TIME } from '../src/sim/constants';
+import { MATCH_TIME, ROUND_TIME } from '../src/sim/constants';
 import { runHeadless } from '../src/sim/headless';
 import type { FormId } from '../src/sim/types';
 
@@ -17,7 +17,7 @@ it('balance report', () => {
   const rng = new Rng(42);
   const wins: Record<string, number> = {};
   const gearWins: Record<string, [number, number]> = {};
-  let totalTime = 0, games = 0, timeouts = 0;
+  let totalTime = 0, games = 0, timeouts = 0, overtimes = 0;
   const stats = { parries: 0, feints: 0, evades: 0 };
   const count = (b: CharacterBuild, won: boolean) => {
     for (const s of GEAR_SLOTS) {
@@ -40,7 +40,8 @@ it('balance report', () => {
       const bWon = r.winner === (side ? 0 : 1);
       if (aWon) w++;
       totalTime += r.time; games++;
-      if (r.time >= ROUND_TIME) timeouts++;
+      if (r.time >= MATCH_TIME) timeouts++;
+      if (r.time >= ROUND_TIME) overtimes++;
       for (const f of r.fighters) { stats.parries += f.totals.parries; stats.feints += f.totals.feints; stats.evades += f.totals.evades; }
       count(fa, aWon);
       count(fb, bWon);
@@ -51,7 +52,7 @@ it('balance report', () => {
   for (const a of FORM_IDS) {
     lines.push(a.padEnd(12) + FORM_IDS.map((b) => (wins[`${a} vs ${b}`] * 100).toFixed(0).padStart(8) + '%').join(''));
   }
-  lines.push('', `avg battle ${(totalTime / games).toFixed(1)}s, timeouts ${timeouts}/${games}`);
+  lines.push('', `avg battle ${(totalTime / games).toFixed(1)}s, timeouts ${timeouts}/${games}, reached overtime ${overtimes}/${games}`);
   lines.push(`per game: parries ${(stats.parries / games).toFixed(2)}, feints ${(stats.feints / games).toFixed(2)}, evades ${(stats.evades / games).toFixed(2)}`);
   for (const slot of GEAR_SLOTS) {
     lines.push('', `${slot} win rates:`);

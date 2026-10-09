@@ -3,7 +3,7 @@ import { clamp, dsin } from '../core/math';
 import { Brain, type FighterBrain } from './ai/brain';
 import {
   ARENA_HALF_WIDTH, BASE_ENERGY_REGEN, BODY_GAP, DT, ENERGY_ON_DEAL, ENERGY_ON_TAKE, MAX_ENERGY,
-  ROUND_TIME, START_GAP, WALL_SPLAT_SPEED,
+  MATCH_TIME, OVERTIME_DAMAGE, ROUND_TIME, START_GAP, WALL_SPLAT_SPEED,
 } from './constants';
 import {
   createFighter, getStatus, isDisabled, reachOf, refreshStats, type Fighter, type FighterConfig,
@@ -140,6 +140,10 @@ export class Battle {
 
     this.time += DT;
     const [a, b] = this.fighters;
+    if (this.time >= ROUND_TIME && !a.empowered) {
+      a.empowered = b.empowered = true;
+      this.emit({ type: 'overtime' });
+    }
 
     for (const f of this.fighters) {
       this.updateTimers(f);
@@ -864,7 +868,7 @@ export class Battle {
   /** Applies mitigation, shields, death and revive. Returns HP damage dealt. */
   applyDamage(att: Fighter, tgt: Fighter, raw: number, dtype: DamageType): number {
     if (!tgt.alive || raw <= 0) return 0;
-    let dmg = raw;
+    let dmg = att.empowered && att !== tgt ? raw * OVERTIME_DAMAGE : raw;
     if (dtype === 'physical') dmg *= 100 / (100 + Math.max(0, tgt.stats.armor));
     else if (dtype === 'magic') dmg *= 100 / (100 + Math.max(0, tgt.stats.resist));
     dmg *= tgt.stats.damageTakenMult;
@@ -1012,7 +1016,7 @@ export class Battle {
       this.emit({ type: 'end', winner: this.winner, reason: 'ko' });
       return;
     }
-    if (this.time >= ROUND_TIME) {
+    if (this.time >= MATCH_TIME) {
       this.over = true;
       const ra = a.hp / a.stats.maxHp, rb = b.hp / b.stats.maxHp;
       this.winner = Math.abs(ra - rb) < 1e-6 ? -1 : ra > rb ? 0 : 1;

@@ -545,6 +545,9 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
 .hud-top .mid { display: grid; justify-items: center; gap: 4px; pointer-events: none; }
 .clock { --c: 4px; min-width: 3.6rem; text-align: center; padding: 0.3rem 0.5rem 0.4rem; font: 700 1.75rem/1 var(--font); pointer-events: none; }
 .clock.low { color: var(--red); }
+.clock.ot { color: #c8b0ff; }
+.clock.ot.low { color: #ff7ad0; }
+.clock.ot::before { content: 'OT'; display: block; font-size: 0.5em; letter-spacing: 0.08em; color: #a888f0; margin-bottom: 2px; }
 .match-chip { display: grid; justify-items: center; gap: 3px; padding: 3px 8px; }
 .match-chip small { font: 700 0.6875rem/1 var(--font); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
 .match-chip .score { font-size: 0.95rem; }
