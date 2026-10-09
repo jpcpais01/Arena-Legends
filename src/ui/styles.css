@@ -387,15 +387,14 @@ input.name.shake { animation: shake 0.3s steps(4); border-color: var(--red); }
   display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; align-content: start;
   background: var(--panel2); border: 2px solid var(--ink);
   box-shadow: inset 0 0 0 2px var(--text), inset 0 -4px 0 var(--rc);
-  animation: card-in 120ms steps(2);
+  cursor: pointer; animation: card-in 120ms steps(2);
 }
 @keyframes card-in { from { opacity: 0.4; transform: scale(0.96); } }
 @media (prefers-reduced-motion: reduce) { .icard { animation: none; } }
 .icard.r-rare { --rc: var(--rare); } .icard.r-epic { --rc: var(--epic); } .icard.r-legendary { --rc: var(--legendary); }
 .icard.on { background: #2a2112; box-shadow: inset 0 0 0 2px var(--gold), inset 0 -4px 0 var(--rc); }
-.icard-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; width: 100%; padding: 8px 8px 5px; background: none; border: 0; cursor: pointer; text-align: left; }
+.icard-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; padding: 8px 8px 5px; }
 .icard-head canvas { width: 2.5rem; height: 2.5rem; background: #0d0917; box-shadow: inset 0 0 0 2px var(--rc); }
-.icard-head > svg { width: 0.85rem; height: 0.85rem; align-self: start; color: var(--muted); }
 .icard-title { display: grid; gap: 4px; min-width: 0; }
 .icard-title b { font: 700 1rem/1.05 var(--font); }
 .icard.on .icard-title b { color: var(--gold); }

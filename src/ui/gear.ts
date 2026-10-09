@@ -148,13 +148,16 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
       }, ic);
     };
     const hands = g.weapon ? `${g.weapon.hands === 2 ? '2' : '1'}-handed${g.weapon.ranged ? ', ranged' : ''}` : '';
-    const el = h(`div.icard.r-${g.rarity}${on ? '.on' : ''}`, { role: 'group', 'aria-label': g.name },
-      h('button.icard-head', { title: 'Close', onclick: () => show(id) },
+    // Tapping the card again closes it; its own buttons (skins, Equip) keep their job.
+    const el = h(`div.icard.r-${g.rarity}${on ? '.on' : ''}`, {
+      role: 'group', 'aria-label': g.name,
+      onclick: (e: MouseEvent) => { if (!(e.target as Element).closest('button')) show(id); },
+    },
+      h('div.icard-head', null,
         iconOf(id),
         h('div.icard-title', null,
           h('b', null, g.name),
-          h('small', null, h(`span.r-${g.rarity}`, null, g.rarity), hands ? ` · ${hands}` : '', g.passive ? ` · Passive: ${g.passive}` : '')),
-        icon('close')),
+          h('small', null, h(`span.r-${g.rarity}`, null, g.rarity), hands ? ` · ${hands}` : '', g.passive ? ` · Passive: ${g.passive}` : ''))),
       h('div.icard-body', null,
         h('p.desc', null, g.desc),
         ...abil.map((a) => h('p.ab', null, h('i', null, a.name),

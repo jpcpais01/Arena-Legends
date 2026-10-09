@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.21.1',
+    date: '2026-10-09',
+    title: 'Tap an item card again to close it',
+    notes: [
+      'In the gear screen, tapping an open item card anywhere closes it. The skin icons and the Equip button still work as before.',
+      'The X button on the item card is gone.',
+    ],
+  },
+  {
     version: '0.21.0',
     date: '2026-10-09',
     title: 'Volume sliders',
