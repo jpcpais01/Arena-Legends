@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.34.1',
+    date: '2026-10-09',
+    title: 'Accounts are on',
+    notes: [
+      'Creating an account and signing in now work for everyone.',
+    ],
+  },
+  {
     version: '0.34.0',
     date: '2026-10-09',
     title: 'Portrait backdrops',
