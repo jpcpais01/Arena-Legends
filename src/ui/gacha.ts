@@ -334,15 +334,16 @@ function card(p: Pull, big: boolean): HTMLElement {
   const art = iconCanvas(s.gear, big ? 96 : 48, s.id);
   art.className = 'icon';
   const set = s.set ? SKIN_SET_BY_ID.get(s.set)! : null;
-  const setOwned = set ? setPieces(set.id).filter((x) => owns(x.id)).length : 0;
+  const pieces = set ? setPieces(set.id) : [];
+  const setOwned = pieces.filter((x) => owns(x.id)).length;
   const front = h('div.gc-face.gc-front', null,
     h('div.gc-tier', null, h('span', null, TIER_NAME[s.rarity])),
     h('div.gc-art', null, art),
     h('b.gc-name', null, s.name),
     h('small.gc-item', null, big ? `${g.name} · ${SLOT_NAMES[g.slot]}` : g.name),
     big && set ? h('div.gc-set', null, h('span', null, set.name),
-      h(`span.sk-pips${setOwned === 6 ? '.full' : ''}`, { title: `${setOwned} of 6 pieces owned` }, ...setPieces(set.id).map((x) => h(`i${owns(x.id) ? '.on' : ''}`))),
-      h('small', null, setOwned === 6 ? 'Set complete!' : `${setOwned}/6 owned`)) : null,
+      h(`span.sk-pips${setOwned === pieces.length ? '.full' : ''}`, { title: `${setOwned} of ${pieces.length} pieces owned` }, ...pieces.map((x) => h(`i${owns(x.id) ? '.on' : ''}`))),
+      h('small', null, setOwned === pieces.length ? 'Set complete!' : `${setOwned}/${pieces.length} owned`)) : null,
     p.fresh ? h('span.gc-new', null, 'New!') : h('span.gc-dupe', null, big ? 'Owned · ' : '', gemTag(`+${p.refund}`)),
   );
   const backFace = h('div.gc-face.gc-back', null, icon('chest'));

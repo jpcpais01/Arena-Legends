@@ -12,6 +12,20 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.32.0',
+    date: '2026-10-09',
+    title: 'Five new epic sets, and legs for every set',
+    notes: [
+      'Bloodmoon Court is a vampire lord in crimson, black and moonlit silver: Sanguine Kiss, Nightwing, the Fang of the Blood Moon (a little bat flies at your shoulder), The Count\'s Tricorn, Vampire Lord\'s Mantle, Bloodmoon Breeches and Bloodmoon Riders. Its aura is crimson mist with bats circling.',
+      'Starweaver wears the night sky: the Starfall Wand shoots falling stars, the Crescent Moon spins through the air, and the Comet Sigil calls down a comet. The rest is the Circlet of the Moon, Robe of the Night Sky, Constellation Leggings and Comet Striders, with a ring of twinkling stars and an orbiting moon for its aura.',
+      'Frostbound Jarl is a northern warlord in rimed iron, white fur and glacier ice: Winterfist, Rimeguard, the Heart of Winter (a cluster of ice shards turning at your shoulder), Helm of the Frost Jarl, Frostbound Plate, Frostbound Chausses and Glacier Greaves. Snow falls around you when you wear it all.',
+      'Stormcaller is thunder and lightning: Thunderstring (a bow strung with a lightning bolt), Tempest Aegis, the Stormheart (ball lightning in a gold cage), Crown of the Thunder King, Stormcaller Mail, Thunderstride Leggings and Galewalkers. Lightning arcs crackle round your feet.',
+      'Voidborn comes from between the stars, all black chitin, violet light and far too many eyes: Voidreaver, the Eldritch Repeater, The Watcher (your familiar becomes a floating eyeball), Hood of a Thousand Eyes, Tendril Carapace, Chitin Cuisses and Voidwalkers. A void rift opens under you, with tendrils rising out of it.',
+      'Every epic set now has a legs piece, the six older sets too: Shendyt of the Sun, Magma-Seamed Cuisses, Foxfire Hakama, Vinebound Leggings, Coral Scale Leggings and Piston Cuisses. A full set is now seven pieces, so you need the legs piece too to get its aura.',
+      'Shots from epic weapons now trail and burst in their skin\'s colours instead of the stock ones.',
+    ],
+  },
+  {
     version: '0.31.0',
     date: '2026-10-09',
     title: 'Skin chests and gems',
