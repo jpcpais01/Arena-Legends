@@ -255,10 +255,13 @@ h1, h2, h3, p { margin: 0; }
 /* Big picks: species and body forms. */
 .scr-panel { container-type: inline-size; }
 .card-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.card-grid.species { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .card-grid.forms { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @container (min-width: 500px) {
-  .card-grid.species { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
   .card-grid.forms { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+}
+@container (min-width: 760px) {
+  .card-grid.species { grid-template-columns: repeat(10, minmax(0, 1fr)); }
 }
 @container (min-width: 900px) { .card-grid.forms, .card-grid.species { width: min(100%, 60rem); } }
 .card-tile {
@@ -282,6 +285,8 @@ h1, h2, h3, p { margin: 0; }
 .detail-head b { font: 700 1.15rem/1 var(--font); color: var(--gold); }
 .detail-head span { font-size: 0.8125rem; color: var(--muted); }
 .detail p { font-size: 0.875rem; line-height: 1.35; }
+.detail p.forms-of { color: var(--muted); font-size: 0.8125rem; }
+.detail p.forms-of span { color: var(--gold); font-weight: 700; }
 
 /* Segmented stat bars. */
 .bars { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 5px 10px; align-items: center; margin-top: 4px; }

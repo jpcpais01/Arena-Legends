@@ -158,6 +158,13 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     tusk: material({ base: 0xf2ead2 }),
     crystal: material({ base: 0x7ae8ff, glow: true }),
     stoneCrack: material({ base: shade(skin, -0.25) }),
+    muzzle: material({ base: mix(skin, 0xf2e2c8, 0.55) }),
+    nose: material({ base: 0x241a1e, shiny: true }),
+    scale: material({ base: shade(skin, -0.14, 0.05) }),
+    crest: material({ base: hair, shiny: true, step: 0.13 }),
+    cap: material({ base: hair, step: 0.13 }),
+    capSpot: material({ base: mix(hair, 0xfff8e0, 0.75), glow: true }),
+    gill: material({ base: mix(skin, 0xe8d8c0, 0.4) }),
     // Chest pieces
     plate: material({ base: 0x9aa6ba, shiny: true, step: 0.15 }),
     plateDark: material({ base: 0x5e687c, shiny: true }),

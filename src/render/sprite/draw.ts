@@ -3,6 +3,7 @@ import { material, type Material, type Raster } from '../pixel/raster';
 import {
   arc, capsule as capsuleR, circle as circleR, ellipse as ellipseR, intersect, polygon as polyR, union, type Shape,
 } from '../pixel/sdf';
+import { SPECIES } from '../../character/appearance';
 import type { CharacterArt } from './look';
 import { alongWeapon, rotateSkeleton, rotPivot, solve, type P, type Pose, type Skeleton } from './pose';
 import { frameAt, Xf } from './xform';
@@ -57,7 +58,10 @@ export const figureMarks: { tip: [number, number] | null; secTip: [number, numbe
 
 export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: number, OY: number): Skeleton {
   const { body, chest } = art;
-  const pose = spec.pose;
+  // Feral bodies stay coiled: the spine tips forward and the hips sink, the head stays level.
+  const pose = body.hunch || body.crouch
+    ? { ...spec.pose, lean: spec.pose.lean + body.hunch, head: spec.pose.head + body.hunch * 0.75, hipY: spec.pose.hipY - body.crouch }
+    : spec.pose;
   const hold = spec.hold;
   const h: Record<string, number> = {};
   for (const [k, v] of Object.entries(art.mats)) h[k] = r.add(v);
@@ -221,13 +225,16 @@ function drawArm(r: Raster, art: CharacterArt, sk: Skeleton, side: 'N' | 'F', X:
 function torsoShape(art: CharacterArt, T: Xf): Shape {
   const b = art.body;
   const top = b.torso;
-  return blendShapes(3, [
+  const parts = [
     T.ell(0.3, 0.6, b.hipW, 3.6),
     T.ell(0.5, top * 0.46, b.waistW, top * 0.28),
     T.ell(b.chestPush * 0.7, top - 3.4, b.chestW, 5.4),
     T.circ(-b.shoulderSpread, top - 1.6, b.armR + 0.6),
     T.circ(b.shoulderSpread, top - 1.6, b.armR + 0.6),
-  ]);
+  ];
+  // A round belly pushing out over the belt.
+  if (b.belly > 0) parts.push(T.ell(b.chestPush * 0.7 + 0.6 + 2 * b.belly, top * 0.4, b.waistW + 1.2 * b.belly, top * 0.3 + b.belly));
+  return blendShapes(3, parts);
 }
 
 function blendShapes(k: number, s: Shape[]): Shape {
@@ -337,6 +344,19 @@ function drawTail(r: Raster, art: CharacterArt, T: Xf, m: (k: string) => number,
     r.fill(T.cap(-14 - s * 1.4, 11.5, -13.5 - s * 1.6, 14.5, 2.4, 1.6), m('furTip'), { group: G.tail, bevel: 2 });
   } else if (sp === 'lop') {
     r.fill(T.circ(-art.body.hipW - 0.6, 1.5, 2.6), m('furTip'), { group: G.tail, bevel: 2 });
+  } else if (sp === 'ursin') {
+    r.fill(T.circ(-art.body.hipW - 0.3, 2, 1.9), m('skin'), { group: G.tail, bevel: 1.6 });
+  } else if (sp === 'saurin') {
+    // Heavy tail sweeping low behind, spines along the top.
+    const pts: [number, number, number][] = [[-2.5, 2, 2.8], [-8, 0.2, 2.5], [-13 - s, -2.6, 1.9], [-17.5 - s * 1.4, -5, 1.1], [-20.5 - s * 1.7, -5.8, 0.4]];
+    const shapes: Shape[] = [];
+    for (let i = 1; i < pts.length; i++) shapes.push(T.cap(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1], pts[i - 1][2], pts[i][2]));
+    r.fill(union(...shapes), m('skin'), { group: G.tail, bevel: 2.6 });
+    const crest = m('crest');
+    for (const [x, y, k] of [[-7, 2.6, 1], [-11.5, 0.6, 0.85], [-15.5, -1.8, 0.65]] as const) {
+      const xs = x - s * (0.3 + 0.25 * (-x / 8));
+      r.fill(T.poly([xs + 1.4 * k, y, xs - 0.4 * k, y + 2.6 * k, xs - 1.6 * k, y - 0.2]), crest, { group: G.tail, bevel: 0.8 });
+    }
   } else if (sp === 'imp') {
     const pts: [number, number][] = [[-3, 1.5], [-7.5, -1.5], [-11 - s, 1], [-12.5 - s * 1.3, 5.5]];
     const shapes: Shape[] = [];
@@ -389,7 +409,9 @@ function drawCape(r: Raster, T: Xf, top: number, mat: number, sway: number): voi
 
 function headShape(art: CharacterArt, H: Xf): Shape {
   const sp = art.look.species;
-  const jaw = sp === 'ogrin' || sp === 'golem' ? H.ell(2.2, -2.8, 4.8, 3.6) : H.ell(1.9, -2.4, 4.1, 3.3);
+  // Saurin: a long snout reaching past the face.
+  const jaw = sp === 'saurin' ? H.ell(3.6, -2.3, 5.6, 2.9)
+    : sp === 'ogrin' || sp === 'golem' || sp === 'ursin' ? H.ell(2.2, -2.8, 4.8, 3.6) : H.ell(1.9, -2.4, 4.1, 3.3);
   return blendShapes(2.2, [H.ell(0, 0.5, 6.2, 6.1), jaw]);
 }
 
@@ -400,6 +422,17 @@ function drawHead(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => number)
     const c = m('stoneCrack');
     r.line(H.x(-3, 4), H.y(-3, 4), H.x(-1, 1.5), H.y(-1, 1.5), c, 0, G.head);
     r.line(H.x(-1, 1.5), H.y(-1, 1.5), H.x(-2, -1.5), H.y(-2, -1.5), c, 0, G.head);
+  } else if (sp === 'ursin') {
+    // Pale muzzle with a dark button nose.
+    r.fill(H.ell(4.8, -2.4, 3, 2.3), m('muzzle'), { group: G.head, bevel: 1.6, noLine: true });
+    const [qx, qy] = px(H, 7.1, -1.3);
+    r.dot(qx, qy, m('nose'), 2, G.head); r.dot(qx - 1, qy, m('nose'), 1, G.head);
+  } else if (sp === 'saurin') {
+    // A few darker scales on the crown and cheek, and a nostril at the tip of the snout.
+    const sc = m('scale');
+    for (const [x, y] of [[-2.4, 3.4], [-0.6, 4.4], [-3.8, 1.2], [-1.6, -2.2]]) r.dot(H.x(x, y), H.y(x, y), sc, 1, G.head);
+    const [qx, qy] = px(H, 8.4, -1.2);
+    r.dot(qx, qy, m('mouth'), 0, G.head);
   }
 }
 
@@ -473,6 +506,17 @@ function drawFace(r: Raster, art: CharacterArt, H: Xf, face: Expression, m: (k: 
     const [qx, qy] = px(H, 5.9, -1.5);
     r.dot(qx, qy, m('mouth'), 1, g);
   }
+  if (sp === 'saurin' && face !== 'shout' && face !== 'hurt') {
+    // The long mouth line of the snout.
+    r.line(H.x(3.2, -3.6), H.y(3.2, -3.6), H.x(7.8, -3), H.y(7.8, -3), m('mouth'), 1, g);
+  }
+  if (sp === 'myco') {
+    // Rosy cheeks under the eyes.
+    const [ax, ay] = px(H, 1.6, -1.4);
+    r.dot(ax, ay, m('inner'), 2, g);
+    const [bx, by] = px(H, 5.4, -1.6);
+    r.dot(bx, by, m('inner'), 2, g);
+  }
 }
 
 /** Hair cap: everything of an enlarged head above the brow-to-nape line. */
@@ -532,19 +576,50 @@ function drawHairBack(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => num
 }
 
 function hasHair(art: CharacterArt): boolean {
-  return art.look.species !== 'golem';
+  return SPECIES[art.look.species].hair;
 }
 
-function drawHairFront(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => number): void {
-  if (!hasHair(art)) {
-    // Golem crystals instead of hair.
-    if (art.headgear === 'iron_helm' || art.headgear === 'executioner_hood') return;
+/** Head-space half plane above the line through (−10, back) and (10, front). */
+function above(H: Xf, front: number, back: number, box: Shape['box']): Shape {
+  const a = H.p(10, front), b = H.p(-10, back);
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  let nx = -dy, ny = dx;
+  const crown = H.p(0, front + 10);
+  if ((crown[0] - a[0]) * nx + (crown[1] - a[1]) * ny > 0) { nx = -nx; ny = -ny; }
+  const l = Math.hypot(nx, ny) || 1;
+  const ux = nx / l, uy = ny / l;
+  return { sdf: (x, y) => (x - a[0]) * ux + (y - a[1]) * uy, box };
+}
+
+/** What grows on a hairless head: golem crystals, a saurin crest or a myco cap. */
+function drawCrown(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => number): void {
+  if (hidesHair(art)) return;
+  const sp = art.look.species;
+  if (sp === 'saurin') {
+    const c = m('crest');
+    r.fill(H.poly([0.4, 5.6, -1.6, 10.2, -2.8, 5.4]), c, { group: G.hair, bevel: 1 });
+    r.fill(H.poly([-2.6, 5.2, -5.8, 8.8, -5.6, 3.8]), c, { group: G.hair, bevel: 1 });
+    r.fill(H.poly([-5.2, 3.6, -8.8, 4.6, -6.2, 0.6]), c, { group: G.hair, bevel: 1 });
+    r.fill(H.poly([-6, 0.4, -8.6, -0.8, -5.8, -2.4]), c, { group: G.hair, bevel: 1, toneBias: -1 });
+  } else if (sp === 'myco') {
+    // Gills under a broad, spotted dome that glows faintly.
+    r.fill(H.ell(-0.4, 2.7, 8.4, 1.3), m('gill'), { group: G.hair, bevel: 1, toneBias: -1 });
+    const dome = H.ell(-0.4, 2.6, 9.2, 7.6);
+    r.fill(intersect(dome, above(H, 3.2, 2.2, dome.box)), m('cap'), { group: G.hair, bevel: 3, softLight: true });
+    for (const [x, y, rad] of [[1.6, 6.6, 1.4], [-3.6, 7.4, 1.1], [5.4, 4.6, 0.9], [-6.8, 4.2, 1], [-1, 9.1, 0.8]]) {
+      r.fill(H.circ(x, y, rad), m('capSpot'), { group: G.hair, flat: 2, noLine: true });
+    }
+  } else {
+    // Golem crystals.
     const c = m('crystal');
     r.fill(H.poly([-4, 4.5, -5.5, 9.5, -2, 6]), c, { group: G.hair });
     r.fill(H.poly([-1.5, 6, -0.5, 11, 1.8, 6.2]), c, { group: G.hair });
     r.fill(H.poly([1.5, 5.8, 4, 8.6, 4, 5]), c, { group: G.hair });
-    return;
   }
+}
+
+function drawHairFront(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => number): void {
+  if (!hasHair(art)) { drawCrown(r, art, H, m); return; }
   if (hidesHair(art)) return;
   const style = art.look.hair;
   const hm = m('hair');
@@ -595,6 +670,8 @@ function drawEarsBehind(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => n
     r.fill(union(H.cap(1.2, 5.6, -1.6, 3.2, 1.8, 2.2), H.cap(-1.6, 3.2, -2.8, -1, 2.2, 2)), m('skin'), { group: G.ears, bevel: 1.6, toneBias: -1 });
   } else if (sp === 'imp') {
     r.fill(H.poly([3.6, 4.5, 5.5, 8.6, 2.6, 11, 4.2, 8, 2, 5.2]), m('horn'), { group: G.ears, bevel: 1, toneBias: -1 });
+  } else if (sp === 'ursin') {
+    r.fill(H.circ(1.6, 6.4, 2.1), m('skin'), { group: G.ears, bevel: 1.4, toneBias: -1 });
   }
 }
 
@@ -614,6 +691,10 @@ function drawEarsFront(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => nu
   } else if (sp === 'imp') {
     if (!helm) r.fill(H.poly([1.6, 4.6, 0, 8.8, -3.4, 11, -0.8, 8, -0.2, 4.8]), m('horn'), { group: G.ears, bevel: 1.2 });
     r.fill(H.poly([-1.6, 0.2, -6.4, 2.8, -1.8, -1.6]), m('skin'), { group: G.ears, bevel: 1.4 });
+  } else if (sp === 'ursin') {
+    // Round bear ears on top of the head.
+    r.fill(H.circ(-2.4, 6.2, 2.4), m('skin'), { group: G.ears, bevel: 1.6 });
+    r.fill(H.circ(-2.2, 6.3, 1.2), m('inner'), { group: G.ears, flat: 2, noLine: true });
   } else if (sp === 'ogrin' || sp === 'wisp') {
     r.fill(H.poly([-1.4, 0.6, -7.2, 3.2, -1.6, -1.8]), m('skin'), { group: G.ears, bevel: 1.4 });
   } else if (sp === 'human' && !helm) {
