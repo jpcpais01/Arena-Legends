@@ -438,6 +438,49 @@ function bloodmoonRiders(): SkinArt {
 }
 
 // -----------------------------------------------------------------------------
+// The breeches
+// -----------------------------------------------------------------------------
+
+function bloodmoonBreeches(): SkinArt {
+  // Black-plum velvet riding breeches, a crimson stripe down the outer seam, silver buttons at the knee
+  // band, and on each knee a silver bat whose wings stir round a ruby that beats like a heart.
+  return {
+    mats: {
+      bloodLeg: { base: PLUM[2], ramp: PLUM, tex: velvet }, bloodDark: { base: BLACK[2], ramp: BLACK, shiny: true }, bloodGlow: { base: RUBY[2], glow: true, ramp: RUBY, tex: beat },
+      'l.stripe': { base: VELVET[3], ramp: VELVET, tex: damask },
+      'l.band': { base: VELVET[2], ramp: VELVET },
+      'l.silver': { base: SILVER[2], ramp: SILVER, shiny: true, tex: gleam(6) },
+      'l.ruby': { base: RUBY[2], glow: true, ramp: RUBY, tex: beat },
+    },
+    legs: {
+      mat: 'bloodLeg', trim: null, knee: null, tasset: null, rune: null, wraps: null, bulk: 0.3,
+      over(r, t, m, c) {
+        const part = { group: c.g, toneBias: c.bias };
+        const ph = r.phase % 4, L = c.len, w = c.w;
+        // The crimson stripe down the outer seam, from the waistband to the knee band.
+        r.fill(t.cap(L + 0.6, -0.5, 1.8, -0.3, 0.75, 0.65), m('l.stripe'), { ...part, bevel: 0.6 });
+        // The knee band: crimson velvet gathered just above the knee, two silver buttons on its outer edge.
+        r.fill(t.cap(1.6, -w - 0.3, 1.6, w + 0.3, 0.8), m('l.band'), { ...part, group: c.g + 20, bevel: 0.8 });
+        for (const y of [-w * 0.6, -w * 0.1]) r.dot(t.x(1.6, y), t.y(1.6, y), m('l.silver'), c.far ? 2 : 4, c.g + 20);
+        // The silver bat on the knee, upright along the thigh, wings stirring, the ruby beating at its heart.
+        const kx = -0.3, ky = w * 0.35, flap = [0, 0.18, 0.3, 0.14][ph], s = 1.05;
+        const B = new Xf(t.x(kx, ky), t.y(kx, ky), t.ang - Math.PI / 2);
+        const bat = union(
+          wing(B, 0.4 * s, 0.2 * s, 0.45 + flap, s * 0.55),
+          wing(B, -0.4 * s, 0.2 * s, Math.PI - 0.45 - flap, s * 0.55, -s * 0.55),
+          B.ell(0, 0, 0.75 * s, 1.1 * s),
+          B.poly([-0.7 * s, 0.6 * s, -0.6 * s, 1.9 * s, -0.1 * s, 0.9 * s, 0.1 * s, 0.9 * s, 0.6 * s, 1.9 * s, 0.7 * s, 0.6 * s]),
+        );
+        r.fill(bat, m('l.silver'), { ...part, group: c.g + 21, bevel: 0.8 });
+        r.dot(B.x(0, 0), B.y(0, 0), m('l.ruby'), 3, c.g + 21);
+        r.dot(B.x(0, -0.9), B.y(0, -0.9), m('l.ruby'), 2, c.g + 21);
+      },
+    },
+    ...FX,
+  };
+}
+
+// -----------------------------------------------------------------------------
 // The aura
 // -----------------------------------------------------------------------------
 
@@ -488,5 +531,6 @@ export const BLOODMOON: Record<string, SkinArt> = {
   'duelist_band.count': countsTricorn(),
   'phase_cloak.vampire': vampireMantle(),
   'leather_boots.bloodmoon': bloodmoonRiders(),
+  'bloodrite_wraps.bloodmoon': bloodmoonBreeches(),
 };
 

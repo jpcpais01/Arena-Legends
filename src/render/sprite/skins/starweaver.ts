@@ -447,6 +447,44 @@ function cometStriders(): SkinArt {
 }
 
 // -----------------------------------------------------------------------------
+// Constellation Leggings
+// -----------------------------------------------------------------------------
+
+function constellationLeggings(): SkinArt {
+  // Indigo starfield leggings banded in silver, a constellation traced down the thigh whose stars flare
+  // one after another, and a silver crescent moon cupping the knee with a gold star in its arms.
+  return {
+    mats: {
+      runeLeg: veined(NIGHT, 0xf4f0ff, starfield(2.8, 0.2, 7)), runeDark: shiny(SILVER[2], gleam(8)), runeGlow: glow(STAR),
+      'l.line': plain(0x8a84d8), 'l.star': glow(STAR), 'l.hot': glow(0xffffff),
+      'l.moon': { base: SILVER[2], ramp: SILVER, shiny: true, step: 0.16 },
+    },
+    legs: {
+      mat: 'runeLeg', trim: 'runeDark', knee: null, tasset: null, rune: null, wraps: null, bulk: 0.2,
+      over(r, t, m, c) {
+        const ph = r.phase % 4, L = c.len, w = c.w;
+        // The constellation down the front of the thigh: faint lines, gold stars, one flaring each frame.
+        const pts = [[L * 0.8, w * 0.15], [L * 0.62, w * 0.55], [L * 0.46, -w * 0.1], [L * 0.3, w * 0.45]] as const;
+        for (let i = 1; i < pts.length; i++) {
+          const [ax, ay] = pts[i - 1], [bx, by] = pts[i];
+          r.line(t.x(ax, ay), t.y(ax, ay), t.x(bx, by), t.y(bx, by), m('l.line'), c.far ? 1 : 2, c.g);
+        }
+        for (const [i, [x, y]] of pts.entries()) {
+          const flare = (i + ph) % 4 === 0;
+          if (flare && !c.far) r.fill(sparkle(t, x, y, 1.6, 0), m('l.hot'), { group: c.g });
+          else r.dot(t.x(x, y), t.y(x, y), m(flare ? 'l.hot' : 'l.star'), 3, c.g);
+        }
+        // The crescent knee guard, horns up the thigh, a gold star in its arms.
+        const kx = 0.1, ky = w * 0.3, R = c.body.kneeR + 1;
+        r.fill(crescent(t, kx, ky, R, 0, 0.5, 0.8), m('l.moon'), { group: c.g + 20, toneBias: c.bias, bevel: 0.8 });
+        r.dot(t.x(kx + R * 0.55, ky), t.y(kx + R * 0.55, ky), m(ph % 2 ? 'l.star' : 'l.hot'), 3, c.g + 20);
+      },
+    },
+    ...FX,
+  };
+}
+
+// -----------------------------------------------------------------------------
 // Set FX and aura
 // -----------------------------------------------------------------------------
 
@@ -508,4 +546,5 @@ export const STARWEAVER: Record<string, SkinArt> = {
   'chrono_circlet.moon': moonCirclet(),
   'mage_robe.nightsky': nightRobe(),
   'leaping_boots.comet': cometStriders(),
+  'runed_leggings.constellation': constellationLeggings(),
 };

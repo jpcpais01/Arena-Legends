@@ -36,7 +36,7 @@ const wave = (speed = 1.5, period = 6): Tex => (x, y, ph) => (wrap(x + Math.sin(
 const FX = epicFx(0xe0fff8, 0x2a8ab8, 'twinkle', 0x9afff0);
 
 /** A strand of kelp from (x, y) in frame F, waving with `ph`; `dir` is its general heading. */
-function kelp(F: Xf, x: number, y: number, dir: number, len: number, ph: number, k = 0): Shape {
+function kelp(F: Xf, x: number, y: number, dir: number, len: number, ph: number, k = 0, wd = 1): Shape {
   const parts: Shape[] = [];
   let px = x, py = y;
   const n = 5;
@@ -44,7 +44,7 @@ function kelp(F: Xf, x: number, y: number, dir: number, len: number, ph: number,
     const u = i / n;
     const a = dir + Math.sin(ph * Q + u * 3 + k) * 0.35 * u;
     const nx = px + Math.cos(a) * (len / n), ny = py + Math.sin(a) * (len / n);
-    parts.push(F.cap(px, py, nx, ny, 0.7 - u * 0.25, 0.65 - u * 0.3));
+    parts.push(F.cap(px, py, nx, ny, (0.7 - u * 0.25) * wd, (0.65 - u * 0.3) * wd));
     px = nx; py = ny;
   }
   return union(...parts);
@@ -274,6 +274,59 @@ function tidewalkers(): SkinArt {
   };
 }
 
+function coralScaleLeggings(): SkinArt {
+  // Iridescent dark scale lit by blinking biolights, a scallop shell over the knee, a branch of coral
+  // grown at the hip with a pearl at its root, and kelp hanging from the belt that sways down the thigh.
+  // The biolights are single points here (the thigh is only a few pixels wide).
+  const lights: Tex = (x, y, ph) => (wrap(x, 2.4) < 1 && wrap(y, 2.4) < 1 ? biolum(x, y, ph) : 0);
+  const shimmer: Tex = (x, y, ph) => scales(x, y, ph) + (lights(x, y, ph) === 4 ? 2 : lights(x, y, ph) ? 1 : 0);
+  return {
+    mats: {
+      chain: { base: 0x1e6a7a, ramp: [0x0e2a3a, 0x16404e, 0x1e6a7a, 0x3a9aa8, BIO], shiny: true, step: 0.14, tex: shimmer },
+      chainDark: { base: 0x8a5ab8, ramp: [0x2a1a4a, 0x4a2a7a, 0x8a5ab8, 0xc89ae8, BIO], shiny: true, tex: wave(1.5, 5) },
+      chainPlate: shiny(0xf2dcc0, undefined, 0.14),
+      'l.shell': { base: 0xf2dcc0, ramp: [0x8a4a4a, 0xd08a78, 0xf2d0b0, 0xfff0dc, 0xffffff], shiny: true, step: 0.14 },
+      'l.coral': shiny(CORAL, undefined, 0.14),
+      'l.kelp': plain(0x4aa86a, (x) => (wrap(x, 2) < 0.5 ? -1 : 0)), 'l.kelpD': plain(KELP, (x) => (wrap(x, 2) < 0.5 ? -1 : 0)),
+      'l.pearl': { base: PEARL, ramp: PEARL_RAMP, shiny: true, tex: (_x, _y, ph) => (ph % 2 ? 1 : 0) },
+    },
+    legs: {
+      mat: 'chain', trim: 'chainDark', knee: null, tasset: null, rune: null, wraps: null, bulk: 0.3,
+      over(r, t, m, c) {
+        const part = { group: c.g + 20, toneBias: c.bias };
+        const ph = r.phase % 4, L = c.len, w = c.w;
+        // Kelp hanging from the belt: a long frond down the back of the thigh, a short one at the front.
+        const strands = c.far ? [[-w + 0.2, 7, 0, -0.16]] as const : [[-w + 0.1, 9, 0, -0.18], [w - 0.6, 6, 1.7, 0.1]] as const;
+        for (const [y, len, k, lean] of strands) {
+          r.fill(kelp(t, L + 0.6, y, Math.PI - lean, len, ph, k, 1.15), m(k ? 'l.kelp' : 'l.kelpD'), { ...part, bevel: 0.8, local: t });
+        }
+        // Coral grown at the back of the hip, branching back and up, a pearl at its root.
+        const cx = L * 0.58, cy = -w + 0.6;
+        r.fill(union(
+          t.cap(cx, cy, cx + 1, cy - 2.6, 0.85, 0.55),
+          t.cap(cx + 1, cy - 2.6, cx + 3, cy - 3.6, 0.55, 0.35),
+          t.cap(cx + 0.5, cy - 1.4, cx - 1, cy - 3.4, 0.55, 0.35),
+          t.cap(cx + 1, cy - 2.6, cx + 0.8, cy - 4.8, 0.5, 0.3),
+        ), m('l.coral'), { ...part, bevel: 0.8 });
+        r.fill(t.circ(cx - 0.4, cy + 0.6, 0.95), m('l.pearl'), { ...part, bevel: 0.7 });
+        // The scallop shell over the knee: hinged below the kneecap, fanning up the thigh, its rim scalloped.
+        const hx = -1, hy = w * 0.35, R = 4;
+        const fan: number[] = [hx + 0.6, hy - 1];
+        for (let i = 0; i <= 8; i++) {
+          const a = -1 + (i / 8) * 2;
+          const rr = i % 2 ? R - 0.5 : R;
+          fan.push(hx + Math.cos(a) * rr, hy + Math.sin(a) * rr);
+        }
+        fan.push(hx + 0.6, hy + 1);
+        r.fill(union(t.poly(fan), t.rect(hx + 0.3, hy, 0.8, 1.4, 0.3)), m('l.shell'), { ...part, bevel: 1.2 });
+        // Ribs fanning out from the hinge.
+        for (const a of [-0.5, 0, 0.5]) r.line(t.x(hx + 1.2, hy + a * 1.2), t.y(hx + 1.2, hy + a * 1.2), t.x(hx + Math.cos(a) * (R - 0.9), hy + Math.sin(a) * (R - 0.9)), t.y(hx + Math.cos(a) * (R - 0.9), hy + Math.sin(a) * (R - 0.9)), m('l.shell'), c.far ? 0 : 1, c.g + 20);
+      },
+    },
+    ...FX,
+  };
+}
+
 export const ABYSSAL: Record<string, SkinArt> = {
   'spear.trident': { weapon: trident, ...FX },
   'wind_chakram.nautilus': { weapon: nautilusDisc, proj: { chakram: chakramProj }, ...FX },
@@ -281,4 +334,5 @@ export const ABYSSAL: Record<string, SkinArt> = {
   'iron_helm.leviathan': leviathanHelm(),
   'mirror_mail.abyssal': abyssalScale(),
   'shadow_treads.tidewalkers': tidewalkers(),
+  'chain_leggings.coral': coralScaleLeggings(),
 };

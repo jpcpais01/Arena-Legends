@@ -1,5 +1,5 @@
 import { material, type Raster, type Tex } from '../../pixel/raster';
-import { subtract, union, type Shape } from '../../pixel/sdf';
+import { intersect, subtract, union, type Shape } from '../../pixel/sdf';
 import { hash } from '../../pixel/tex';
 import { fillAll, type WeaponArt } from '../weaponKit';
 import { Xf } from '../xform';
@@ -293,6 +293,47 @@ function pistonStompers(): SkinArt {
   };
 }
 
+function pistonCuisses(): SkinArt {
+  // Riveted brass tassets over dark-steel thighs traced with arcane circuits, a cog turning on the plate
+  // at the hip, a brass knee cop round a beating cyan core, and a copper piston behind the knee that pumps
+  // as the leg works, venting a breath of steam.
+  return {
+    mats: {
+      stoneLeg: veined(STEEL, CORE, circuit), stoneDark: { base: STEEL[3], ramp: [...STEEL, 0x8a96a4], shiny: true },
+      'l.plate': { base: PLATE[2], ramp: PLATE, shiny: true, step: 0.12, tex: (x, y, ph) => rivets(2.8, 1)(x, y, ph) + gleam(9)(x, y, ph) },
+      'l.brass': { base: BRASS[2], ramp: BRASS, shiny: true },
+      'l.cog': shiny(COPPER, undefined, 0.14), 'l.cyl': shiny(COPPER, undefined, 0.14), 'l.rod': shiny(0xc8d0dc, undefined, 0.15),
+      'l.core': { base: CORE, glow: true, ramp: [0x1a6a8a, 0x2ab8e0, CORE, 0xb8fcff, CORE_HOT], tex: beat }, 'l.steam': plain(STEAM),
+    },
+    legs: {
+      mat: 'stoneLeg', trim: 'stoneDark', knee: null, tasset: null, rune: null, wraps: null, bulk: 0.4,
+      over(r, t, m, c) {
+        const part = { group: c.g + 20, toneBias: c.bias };
+        const ph = r.phase % 4, L = c.len, w = c.w, pump = [0, 0.6, 1.1, 0.6][ph];
+        // A cog at the back of the hip, half out of the plate, turning; the core winks at its hub.
+        const gx = L * 0.68, gy = -w + 0.1;
+        r.fill(gear(t, gx, gy, 1.8, 8, turn(8, ph), 0.85, 0.6), m('l.cog'), { ...part, group: c.g + 19, bevel: 0.8, local: t });
+        r.dot(t.x(gx, gy), t.y(gx, gy), m('l.core'), 3, c.g + 19);
+        // The piston up the back of the thigh: a copper cylinder, its steel rod driving down into the knee.
+        const py = -w + 0.1, top = L * 0.56 - pump * 0.5;
+        r.fill(t.cap(0.4, py + 0.3, top - 2.6, py, 0.42), m('l.rod'), { ...part, bevel: 0.5 });
+        r.fill(t.rect(top - 1.3, py, 1.4, 0.85, 0.3), m('l.cyl'), { ...part, bevel: 0.8, local: t });
+        r.fill(t.rect(top - 2.8, py, 0.35, 1.05, 0.2), m('l.brass'), { ...part, bevel: 0.5 });
+        if (!c.far) steam(r, t, top, py - 0.4, Math.PI - 0.9, ph, m('l.steam'), c.g + 20, 0.55);
+        // The tasset: a riveted brass plate hanging from the belt over the top of the thigh, a brass rim at its foot.
+        const tas = [L + 1.4, -w - 0.5, L + 1.4, w + 1.3, L * 0.5, w + 1.5, L * 0.56, -w + 0.4];
+        r.fill(t.poly(tas, 0.3), m('l.plate'), { ...part, group: c.g + 21, bevel: 1.6, local: t });
+        r.fill(intersect(t.poly(tas), t.rect(L * 0.5, 0, 0.55, w + 2)), m('l.brass'), { ...part, group: c.g + 21, flat: 3, noLine: true });
+        // The knee cop: a brass disc round a beating arcane core.
+        const kx = 0.3, ky = w * 0.3;
+        r.fill(disc(t, kx, ky, c.body.kneeR + 0.2), m('l.brass'), { ...part, bevel: 1.2 });
+        r.fill(t.circ(kx + 0.2, ky + 0.2, 0.75), m('l.core'), { group: c.g + 20 });
+      },
+    },
+    ...FX,
+  };
+}
+
 export const CLOCKWORK: Record<string, SkinArt> = {
   'warhammer.steamforge': { weapon: steamforge, ...FX },
   'buckler.cogwheel': { weapon: cogwheelAegis, ...FX },
@@ -300,4 +341,5 @@ export const CLOCKWORK: Record<string, SkinArt> = {
   'berserker_mask.automaton': automaton(),
   'plate_armor.titan': titanFrame(),
   'colossus_boots.piston': pistonStompers(),
+  'stonehide_tassets.piston': pistonCuisses(),
 };
