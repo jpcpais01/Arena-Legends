@@ -216,7 +216,11 @@ export class Brain implements FighterBrain {
   // Tempo
   /** How hot the exchange is (see HEAT_*). Both fighters measure the same fight. */
   heat = 0;
+  /** Heat this fighter takes before wanting a breather (recomputed every tick). */
+  tolerance = 1;
   private winded = false;
+  /** Catching a breath (heat went past tolerance and hasn't cooled yet). */
+  get breathing(): boolean { return this.winded; }
   /** Seconds the enemy has kept on me while I was trying to breathe. */
   private chased = 0;
   private restDist = 4;
@@ -531,6 +535,7 @@ export class Brain implements FighterBrain {
     const p = this.p;
     const tolerance = 0.5 + p.aggression * 0.45 - p.caution * 0.1 + this.behind * 1.2 + pull * 0.25
       + (enHp < 0.25 ? 0.3 : 0) + (isDisabled(e) ? 0.5 : 0);
+    this.tolerance = tolerance;
     const was = this.winded;
     if (!this.winded && this.heat > tolerance) {
       this.winded = true;
