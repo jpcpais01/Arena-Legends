@@ -5,7 +5,7 @@ import './ui/styles.css';
 import { music } from './audio/music';
 import { sfx } from './audio/sfx';
 import { sanitizeAppearance } from './character/appearance';
-import { addGems, gems, loadCollection, onCollection, payRound, PULL_COST, winGems } from './character/collection';
+import { setAllSkins, addGems, gems, loadCollection, onCollection, payRound, PULL_COST, winGems } from './character/collection';
 import { generateRival, loadCharacter, newCharacter, saveCharacter, type PlayerCharacter } from './character/profile';
 import { BattleView, CAM_MODES, type CamMode } from './render/battleView';
 import { THEMES, type Theme } from './render/arenaArt';
@@ -52,6 +52,9 @@ let player: PlayerCharacter | null = loadCharacter();
 let rival: PlayerCharacter = loadRival() ?? generateRival(player?.name);
 // Gems and owned skins. Whatever the hero already wears stays owned.
 loadCollection(player?.skins);
+// João's own account always has every skin, including ones added later.
+setAllSkins(() => /^joao$/i.test(accountStatus().name ?? ''));
+onAccount(() => setAllSkins(() => /^joao$/i.test(accountStatus().name ?? '')));
 let record = store<WinLoss>('al.record', { w: 0, l: 0 });
 let speed = [1, 2, 4].includes(store<number>('al.speed', 1)) ? store<number>('al.speed', 1) : 1;
 let soundOn = store<boolean>('al.sound', true);

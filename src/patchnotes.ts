@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.34.2',
+    date: '2026-10-09',
+    title: 'Skin collection fixes',
+    notes: [
+      'Skin ownership now updates right away when you sign in or out of an account.',
+    ],
+  },
+  {
     version: '0.34.1',
     date: '2026-10-09',
     title: 'Accounts are on',

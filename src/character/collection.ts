@@ -82,7 +82,14 @@ export function onCollection(f: () => void): () => void {
 }
 
 export const gems = (): number => get().gems;
-export const owns = (id: string): boolean => get().owned.includes(id);
+/** Accounts that own every skin, now and later (checked live, never written into the save). */
+let allSkins: () => boolean = () => false;
+export function setAllSkins(f: () => boolean): void {
+  allSkins = f;
+  for (const l of listeners) l();
+}
+
+export const owns = (id: string): boolean => allSkins() || get().owned.includes(id);
 export const pity = (): number => get().pity;
 
 export function addGems(n: number): void {
@@ -103,12 +110,11 @@ export function payRound(key: string, n: number): number {
 
 /** Owned and total skins per tier. */
 export function progress(): Record<SkinRarity, [number, number]> {
-  const c = get();
   const out = {} as Record<SkinRarity, [number, number]>;
   for (const r of SKIN_RARITIES) out[r] = [0, 0];
   for (const s of SKINS) {
     out[s.rarity][1]++;
-    if (c.owned.includes(s.id)) out[s.rarity][0]++;
+    if (owns(s.id)) out[s.rarity][0]++;
   }
   return out;
 }
@@ -153,7 +159,7 @@ export function openChest(count: 1 | 10, r: () => number = Math.random): Pull[] 
     if (tier === 'epic') c.pity = 0;
     const pool = SKINS.filter((s) => s.rarity === tier);
     const skin = pool[Math.floor(r() * pool.length) % pool.length];
-    const fresh = !c.owned.includes(skin.id);
+    const fresh = !owns(skin.id);
     const refund = fresh ? 0 : DUPE_GEMS[tier];
     if (fresh) c.owned.push(skin.id);
     c.gems += refund;
