@@ -15,6 +15,11 @@ import { STARWEAVER } from './starweaver';
 import { FROSTBOUND } from './frostbound';
 import { STORMCALLER } from './stormcaller';
 import { VOIDBORN } from './voidborn';
+import { JADEDRAGON } from './jadedragon';
+import { SERAPH } from './seraph';
+import { LICHBORNE } from './lichborne';
+import { QUETZAL } from './quetzal';
+import { PRISMHEART } from './prismheart';
 import {
   geodeHeart, icicleScepter, kagutsuchi, krakenConch, lionheart, morningstar, skullcrusher, solarDisc, swordbreaker,
   frostreaver, voidfang, wintersHeart, wyrmRepeater,
@@ -346,4 +351,9 @@ export const SKIN_ART: Record<string, SkinArt> = {
   ...FROSTBOUND,
   ...STORMCALLER,
   ...VOIDBORN,
+  ...JADEDRAGON,
+  ...SERAPH,
+  ...LICHBORNE,
+  ...QUETZAL,
+  ...PRISMHEART,
 };
