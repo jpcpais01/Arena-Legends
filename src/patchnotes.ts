@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.32.3',
+    date: '2026-10-09',
+    title: 'Clearer account errors',
+    notes: [
+      'When signing in or creating an account fails, the message now also shows the exact reason, so problems are easy to report.',
+    ],
+  },
+  {
     version: '0.32.2',
     date: '2026-10-09',
     title: 'Fighter boxes show everything',
