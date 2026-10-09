@@ -31,7 +31,7 @@ function emptyIcon(): HTMLCanvasElement {
 /**
  * Gear screen: the fighter stands big in the middle with the six slots around
  * them like a paper doll; the items for the chosen slot are a grid of icons.
- * Tapping an item grows it in place into a 2x2 card with its text, skills,
+ * Tapping an item grows it in place into a 3x2 card with its text, skills,
  * stat changes and skins, and equips from there. Changes save at once (through `onChange`).
  */
 export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { forms?: boolean; title?: string } = {}): { el: HTMLElement; dispose(): void } {
@@ -126,7 +126,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     }, iconOf(id), h('b', null, g ? g.name : 'None'));
   }
 
-  /** The open item: grows in place to 2x2 cells with its text, stat changes, skins and Equip. */
+  /** The open item: grows in place to 3x2 cells with its text, stat changes, skins and Equip. */
   function card(id: GearId): HTMLElement {
     const g = gearOf(id);
     const on = c.gear[slot] === id;
@@ -152,15 +152,19 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
         iconOf(id),
         h('div.icard-title', null,
           h('b', null, g.name),
-          h('small', null, h(`span.r-${g.rarity}`, null, g.rarity), hands ? ` · ${hands}` : '')),
+          h('small', null, h(`span.r-${g.rarity}`, null, g.rarity), hands ? ` · ${hands}` : '', g.passive ? ` · Passive: ${g.passive}` : '')),
         icon('close')),
       h('div.icard-body', null,
-        h('p.desc', { title: g.desc }, g.desc),
-        ...abil.map((a) => h('p.ab', { title: a.desc ? `${a.name}: ${a.desc}` : a.name }, h('i', null, a.name),
+        h('p.desc', null, g.desc),
+        ...abil.map((a) => h('p.ab', null, h('i', null, a.name),
           a.slot !== 'basic' && a.cooldown ? h('small', null, ` ${a.cooldown}s`) : '', a.desc ? ` ${a.desc}` : '')),
         diff.length ? h('div.diff', null, ...diff) : null,
         mods ? h('p.mods', null, mods) : null),
-      skins.length ? h('div.icard-skins', { title: cur ? `Skin: ${cur.name}` : 'Skins' }, icon('star'), chip(null), ...skins.map(chip)) : null,
+      skins.length ? h('div.icard-skins', null,
+        h('div.sk-row', null, icon('star'), chip(null), ...skins.map(chip)),
+        h('p.sk-info', null, ...(cur
+          ? [h(`b.${cur.rarity}`, null, `${cur.name} · ${cur.rarity}`), ` ${RARITY_INFO[cur.rarity]}`]
+          : [h('b', null, 'Default look'), ` ${skins.length} skin${skins.length > 1 ? 's' : ''} to pick from. Looks only.`]))) : null,
       h('div.icard-foot', null,
         on
           ? (slot !== 'main' ? h('button.btn.sm.ghost', { onclick: () => equip(null) }, 'Unequip') : h('span.eq', null, icon('check'), 'Equipped'))
