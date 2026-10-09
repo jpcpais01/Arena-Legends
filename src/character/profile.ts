@@ -1,5 +1,5 @@
 import { DEFAULT_BUILDS, randomBuild, sanitizeBuild, type CharacterBuild } from '../sim/loadout';
-import { fitForm, randomAppearance, sanitizeAppearance, type Appearance } from './appearance';
+import { BACKDROPS, fitForm, randomAppearance, sanitizeAppearance, type Appearance } from './appearance';
 import { randomSkins } from './skins';
 
 /**
@@ -60,5 +60,7 @@ export function generateRival(avoidName?: string): PlayerCharacter {
   let name = randomName();
   for (let i = 0; i < 4 && name === avoidName; i++) name = randomName();
   const build = randomBuild();
-  return { ...build, name, look: build.look ?? randomAppearance(Math.random, build.form), skins: randomSkins(build.gear) };
+  // The backdrop is rolled here, not in randomBuild, so seeded builds keep their sequence.
+  const look = { ...(build.look ?? randomAppearance(Math.random, build.form)), backdrop: Math.floor(Math.random() * BACKDROPS.length) };
+  return { ...build, name, look, skins: randomSkins(build.gear) };
 }

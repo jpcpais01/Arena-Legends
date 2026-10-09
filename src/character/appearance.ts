@@ -114,6 +114,9 @@ export const OUTFIT_COLORS = [
 ];
 export const ACCENT_COLORS = [0xe8b030, 0xd0d8e8, 0xd03a3a, 0x30b0e0, 0x50d070, 0xb050e0, 0xf07a30, 0x2a2a34];
 
+/** Portrait backdrops (painted in render/backdrops.ts), in picker order. */
+export const BACKDROPS = ['Twilight', 'Sunset Peaks', 'Wildwood', 'Ember Forge', 'Frostlight'] as const;
+
 export interface Appearance {
   species: SpeciesId;
   /** Index into the species' skins. */
@@ -126,6 +129,8 @@ export interface Appearance {
   outfit: number;
   /** Trims, belts, sashes. */
   accent: number;
+  /** Index into BACKDROPS: the scene behind the portrait. Older saves have none (the first). */
+  backdrop?: number;
 }
 
 export const DEFAULT_LOOK: Appearance = { species: 'kitsu', skin: 0, hair: 0, hairColor: 2, eyes: 1, outfit: 0, accent: 0 };
@@ -145,6 +150,7 @@ export function sanitizeAppearance(raw: unknown): Appearance {
     eyes: idx(o.eyes, EYE_COLORS.length, DEFAULT_LOOK.eyes),
     outfit: idx(o.outfit, OUTFIT_COLORS.length, 0),
     accent: idx(o.accent, ACCENT_COLORS.length, 0),
+    backdrop: idx(o.backdrop, BACKDROPS.length, 0),
   };
 }
 

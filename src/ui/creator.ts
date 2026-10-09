@@ -1,8 +1,9 @@
 import { sfx } from '../audio/sfx';
 import {
-  ACCENT_COLORS, EYE_COLORS, fitForm, HAIR_COLORS, HAIR_STYLES, OUTFIT_COLORS, randomAppearance, SPECIES, SPECIES_IDS, type Appearance, type SpeciesId,
+  ACCENT_COLORS, BACKDROPS, EYE_COLORS, fitForm, HAIR_COLORS, HAIR_STYLES, OUTFIT_COLORS, randomAppearance, SPECIES, SPECIES_IDS, type Appearance, type SpeciesId,
 } from '../character/appearance';
 import { cleanName, NAME_MAX, randomName, type PlayerCharacter } from '../character/profile';
+import { applyBackdrop, BH, BW } from '../render/backdrops';
 import { css } from '../render/pixel/color';
 import { FORMS, FORM_IDS } from '../sim/forms';
 import { gearOf } from '../sim/gear';
@@ -23,7 +24,9 @@ const STEPS: { label: string; icon: IconName; title: string; sub: string }[] = [
   { label: 'Body', icon: 'body', title: 'Choose your body', sub: 'Your body sets your stats and how you move.' },
   { label: 'Look', icon: 'palette', title: 'Choose your look', sub: 'Colours and hair. Change them any time.' },
   { label: 'Name', icon: 'edit', title: 'Name your legend', sub: 'The crowd will chant it.' },
+  { label: 'Backdrop', icon: 'star', title: 'Choose your backdrop', sub: 'The scene behind your portrait on the home screen.' },
 ];
+const NAME = 3;
 const LAST = STEPS.length - 1;
 
 /** Form stats shown as bars, scaled between the lowest and highest form. */
@@ -47,8 +50,8 @@ const SKIN_LABEL: Partial<Record<SpeciesId, string>> = { golem: 'Stone', wisp: '
 const bare = (c: CharacterBuild): CharacterBuild => ({ ...c, gear: { main: c.gear.main }, skins: {} });
 
 /**
- * Character creation, a full screen in four steps like a game's character
- * select: species, body, look, then the name. The fighter stands big on a lit
+ * Character creation, a full screen in five steps like a game's character
+ * select: species, body, look, the name, then the portrait backdrop. The fighter stands big on a lit
  * dais and updates live; arrows beside them flip through species or bodies.
  * Editing an existing fighter unlocks every step and can save from any of them.
  */
@@ -88,7 +91,7 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     value: c.name, maxlength: String(NAME_MAX), placeholder: 'Your name', autocomplete: 'off', spellcheck: 'false', enterkeyhint: 'done',
     'aria-label': 'Name',
     oninput: () => { c.name = name.value; name.classList.remove('shake'); syncPlate(); },
-    onkeydown: (e: KeyboardEvent) => { if (e.key === 'Enter') { e.preventDefault(); name.blur(); finish(); } },
+    onkeydown: (e: KeyboardEvent) => { if (e.key === 'Enter') { e.preventDefault(); name.blur(); advance(); } },
   });
 
   function syncStage(): void {
@@ -143,7 +146,7 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
   function finish(): void {
     const n = cleanName(name.value);
     if (!n) {
-      if (step !== LAST) { reached = LAST; step = LAST; render(1); }
+      if (step !== NAME) { reached = Math.max(reached, NAME); step = NAME; render(-1); }
       name.classList.remove('shake');
       void name.offsetWidth;
       name.classList.add('shake');
@@ -342,12 +345,31 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     ];
   }
 
+  function backdropStep(): HTMLElement[] {
+    const tiles = new Map<string, HTMLElement>();
+    const grid = h('div.card-grid.backdrops');
+    BACKDROPS.forEach((label, i) => {
+      const t = tile(c, BW, BH, -18, label, '', () => {
+        if ((c.look.backdrop ?? 0) === i) return;
+        sfx.play('select');
+        c = { ...c, look: { ...c.look, backdrop: i } };
+        refresh();
+      });
+      applyBackdrop(t.querySelector<HTMLElement>('.portrait')!, i);
+      tiles.set(String(i), t);
+      grid.append(t);
+    });
+    refresh = () => mark(tiles, String(c.look.backdrop ?? 0));
+    refresh();
+    return [grid];
+  }
+
   function render(dir = 0): void {
     clearCards();
     refresh = () => {};
     const s = STEPS[step];
     headTool = null;
-    panelBody.replaceChildren(...(step === 0 ? speciesStep() : step === 1 ? formStep() : step === 2 ? lookStep() : nameStep()));
+    panelBody.replaceChildren(...(step === 0 ? speciesStep() : step === 1 ? formStep() : step === 2 ? lookStep() : step === NAME ? nameStep() : backdropStep()));
     panelHead.replaceChildren(
       h('div.step-title', null, h('div.ribbon', null, h('span', null, s.title)), headTool),
       h('p', null, s.sub));
@@ -356,7 +378,7 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     panel.classList.remove('in-l', 'in-r');
     if (dir) { void panel.offsetWidth; panel.classList.add(dir > 0 ? 'in-r' : 'in-l'); }
     syncNav();
-    if (step === LAST && !matchMedia('(pointer: coarse)').matches) requestAnimationFrame(() => name.focus());
+    if (step === NAME && !matchMedia('(pointer: coarse)').matches) requestAnimationFrame(() => name.focus());
   }
 
   const onKey = (e: KeyboardEvent) => {

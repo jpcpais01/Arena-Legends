@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.34.0',
+    date: '2026-10-09',
+    title: 'Portrait backdrops',
+    notes: [
+      'Hero creation has a new last step after Name: pick the backdrop behind your portrait on the home screen.',
+      'Five backdrops to choose from: Twilight, Sunset Peaks, Wildwood, Ember Forge and Frostlight. Change yours any time from Hero.',
+      'Rivals show up with a random backdrop of their own.',
+    ],
+  },
+  {
     version: '0.33.0',
     date: '2026-10-09',
     title: 'Gear that shines at night',
