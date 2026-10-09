@@ -218,7 +218,7 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
       const g = gearOf(s.gear);
       const tryOn = { ...pl, ...withGear(pl, g.slot, s.gear), skins: { ...pl.skins, [s.gear]: s.id } } as PlayerCharacter;
       const box = h('div.reveal-fighter');
-      const pv = new Preview(tryOn, 100, 90, { pedestal: true, fit: box });
+      const pv = new Preview(tryOn, 72, 78, { pedestal: true, fit: box });
       previews.push(pv);
       box.append(pv.el);
       setTimeout(() => { if (!dead) pv.showcase(); }, 500);
