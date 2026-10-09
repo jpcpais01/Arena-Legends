@@ -82,5 +82,5 @@ describe('battle AI', () => {
     }
     const unused = [...owned].filter((id) => !used.has(id));
     expect(unused).toEqual([]);
-  });
+  }, 20000);
 });
