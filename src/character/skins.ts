@@ -30,7 +30,7 @@ export interface SkinDef {
   set?: SkinSetId;
 }
 
-export type SkinSetId = 'sunborn' | 'hellforged' | 'foxfire' | 'wildwood';
+export type SkinSetId = 'sunborn' | 'hellforged' | 'foxfire' | 'wildwood' | 'abyssal' | 'clockwork';
 
 export interface SkinSet {
   id: SkinSetId;
@@ -44,6 +44,8 @@ export const SKIN_SETS: readonly SkinSet[] = [
   { id: 'hellforged', name: 'Hellforged', blurb: 'Black iron from the abyss, molten at every seam.' },
   { id: 'foxfire', name: 'Foxfire Shrine', blurb: 'White lacquer and vermilion, haunted by blue fox flames.' },
   { id: 'wildwood', name: 'Wildwood', blurb: 'Living wood and emerald in bloom, with fireflies drifting about.' },
+  { id: 'abyssal', name: 'Abyssal Tide', blurb: 'Treasure of the deep: scale, coral and pearl, lit by glowing sea life.' },
+  { id: 'clockwork', name: 'Clockwork Titan', blurb: 'Brass and steam, gears turning and pistons pumping, an arcane core humming.' },
 ];
 export const SKIN_SET_BY_ID: ReadonlyMap<SkinSetId, SkinSet> = new Map(SKIN_SETS.map((s) => [s.id, s]));
 
@@ -190,6 +192,12 @@ export const SKINS: readonly SkinDef[] = [
   E('wildwood', 'executioner_hood', 'stag', 'Hood of the Stag King'),
   E('wildwood', 'leather_jerkin', 'wildwood', 'Wildwood Mantle'),
   E('wildwood', 'zephyr_boots', 'rootwalkers', 'Rootwalkers'),
+  E('abyssal', 'spear', 'trident', 'Trident of the Deep'),
+  E('abyssal', 'wind_chakram', 'nautilus', 'Nautilus Disc'),
+  E('abyssal', 'frost_core', 'pearl', 'Pearl of the Abyss'),
+  E('abyssal', 'iron_helm', 'leviathan', 'Leviathan Helm'),
+  E('abyssal', 'mirror_mail', 'abyssal', 'Abyssal Scale'),
+  E('abyssal', 'shadow_treads', 'tidewalkers', 'Tidewalkers'),
 ];
 
 export const SKIN_BY_ID: ReadonlyMap<string, SkinDef> = new Map(SKINS.map((s) => [s.id, s]));

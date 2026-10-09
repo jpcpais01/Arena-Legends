@@ -422,6 +422,12 @@ export class BattleView implements View {
         g.fillRect(Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r * 1.9), 1, 1);
       }
     }
+    // An epic core floats at the far shoulder, bobbing.
+    if (f.alive && skinDraws('core', v.art.specialSkinId)) {
+      const s = projSprite('core', Math.floor(this.time * 6), 0, v.art.specialSkinId);
+      const cx = Math.round(this.sx(x - f.facing * 0.42)), cy = Math.round(this.sy(y + 1.75) + Math.sin(this.time * 2.4) * 1.5);
+      g.drawImage(s.img, cx - s.ox, cy - s.oy);
+    }
     // Familiar: the wisp lantern floats behind the shoulder.
     if (f.familiar && f.alive) {
       const fx = Math.round(this.sx(x - f.facing * 0.5)), fy = Math.round(this.sy(y + 2.1) + Math.sin(this.time * 3) * 2);
