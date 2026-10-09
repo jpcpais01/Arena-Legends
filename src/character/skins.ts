@@ -30,7 +30,8 @@ export interface SkinDef {
   set?: SkinSetId;
 }
 
-export type SkinSetId = 'sunborn' | 'hellforged' | 'foxfire' | 'wildwood' | 'abyssal' | 'clockwork' | 'bloodmoon' | 'starweaver' | 'frostbound' | 'stormcaller' | 'voidborn';
+export type SkinSetId = 'sunborn' | 'hellforged' | 'foxfire' | 'wildwood' | 'abyssal' | 'clockwork' | 'bloodmoon' | 'starweaver' | 'frostbound' | 'stormcaller' | 'voidborn'
+  | 'jadedragon' | 'seraph' | 'lichborne' | 'quetzal' | 'prismheart';
 
 export interface SkinSet {
   id: SkinSetId;
@@ -51,6 +52,11 @@ export const SKIN_SETS: readonly SkinSet[] = [
   { id: 'frostbound', name: 'Frostbound Jarl', blurb: "A northern warlord's gear: rimed iron, white fur and glacier ice, snow on the wind." },
   { id: 'stormcaller', name: 'Stormcaller', blurb: 'Thunderheads and lightning: storm-grey steel, gold and crackling blue-white bolts.' },
   { id: 'voidborn', name: 'Voidborn', blurb: 'Something from between the stars: black chitin, violet light, tendrils and too many eyes.' },
+  { id: 'jadedragon', name: 'Jade Dragon Emperor', blurb: 'Crimson lacquer, imperial gold and carved jade, with a dragon coiling through the clouds.' },
+  { id: 'seraph', name: 'Seraphic Choir', blurb: 'White marble and pale gold of the heavenly host, halo alight and feathers drifting down.' },
+  { id: 'lichborne', name: 'Lichborne', blurb: 'Bone, grave-black rags and ghostly green soulfire, while the restless dead stir at your feet.' },
+  { id: 'quetzal', name: 'Feathered Serpent', blurb: 'Turquoise, gold and obsidian of the sky-serpent god, cloaked in shimmering quetzal plumes.' },
+  { id: 'prismheart', name: 'Prismheart', blurb: 'Living crystal that splits the light into rainbows, its shards orbiting in the air.' },
 ];
 export const SKIN_SET_BY_ID: ReadonlyMap<SkinSetId, SkinSet> = new Map(SKIN_SETS.map((s) => [s.id, s]));
 
@@ -250,6 +256,41 @@ export const SKINS: readonly SkinDef[] = [
   E('voidborn', 'thornmail', 'tendril', 'Tendril Carapace'),
   E('voidborn', 'shadow_treads', 'voidwalkers', 'Voidwalkers'),
   E('voidborn', 'leather_leggings', 'chitin', 'Chitin Cuisses'),
+  E('jadedragon', 'spear', 'guandao', "Dragon Emperor's Guandao"),
+  E('jadedragon', 'hand_crossbow', 'chukonu', 'Cloudpiercer Repeater'),
+  E('jadedragon', 'echo_stone', 'pearl', 'Flaming Pearl'),
+  E('jadedragon', 'iron_helm', 'dragonemperor', "Dragon Emperor's Helm"),
+  E('jadedragon', 'plate_armor', 'lamellar', 'Jade Dragon Lamellar'),
+  E('jadedragon', 'stonehide_tassets', 'jadedragon', 'Jade Dragon Tassets'),
+  E('jadedragon', 'leather_boots', 'cloudstep', 'Cloudstep Boots'),
+  E('seraph', 'longsword', 'judgement', 'Judgement of the Choir'),
+  E('seraph', 'war_horn', 'trumpet', 'Trumpet of the Last Dawn'),
+  E('seraph', 'phoenix_feather', 'halo', 'Halo of the Seraph'),
+  E('seraph', 'storm_crown', 'diadem', 'Diadem of Light'),
+  E('seraph', 'mirror_mail', 'seraph', "Seraph's Wingplate"),
+  E('seraph', 'chain_leggings', 'seraph', 'Choir Chausses'),
+  E('seraph', 'zephyr_boots', 'heavenstriders', 'Heavenstriders'),
+  E('lichborne', 'arcane_staff', 'phylactery', 'Staff of the Lich King'),
+  E('lichborne', 'frost_wand', 'gravecaller', 'Gravecaller Wand'),
+  E('lichborne', 'phantom_blade', 'wailing', 'Wailing Soulblades'),
+  E('lichborne', 'berserker_mask', 'lich', "Lich King's Visage"),
+  E('lichborne', 'mage_robe', 'gravecloth', 'Gravecloth Robes'),
+  E('lichborne', 'bloodrite_wraps', 'ossuary', 'Ossuary Wraps'),
+  E('lichborne', 'shadow_treads', 'gravewalkers', 'Gravewalkers'),
+  E('quetzal', 'mace', 'macuahuitl', 'Macuahuitl of the Sun'),
+  E('quetzal', 'throwing_knives', 'obsidian', 'Obsidian Plume Darts'),
+  E('quetzal', 'wisp_lantern', 'serpent', 'Quetzal Spirit'),
+  E('quetzal', 'duelist_band', 'headdress', 'Plumed Headdress'),
+  E('quetzal', 'leather_jerkin', 'quetzal', 'Quetzal Plume Mantle'),
+  E('quetzal', 'windrunner_leggings', 'jaguar', 'Jaguar Warrior Leggings'),
+  E('quetzal', 'leaping_boots', 'serpent', 'Serpent Sandals'),
+  E('prismheart', 'warhammer', 'prism', 'Prism Maul'),
+  E('prismheart', 'kite_shield', 'facet', 'Facet Ward'),
+  E('prismheart', 'ember_core', 'prism', 'Heart of the Prism'),
+  E('prismheart', 'chrono_circlet', 'crystal', 'Crystal Crown'),
+  E('prismheart', 'thornmail', 'crystalline', 'Crystalline Carapace'),
+  E('prismheart', 'runed_leggings', 'geode', 'Geode Legguards'),
+  E('prismheart', 'colossus_boots', 'geode', 'Geode Stompers'),
 ];
 
 export const SKIN_BY_ID: ReadonlyMap<string, SkinDef> = new Map(SKINS.map((s) => [s.id, s]));

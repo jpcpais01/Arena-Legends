@@ -7,6 +7,11 @@ import { STARWEAVER_FX, starweaverAura } from './sprite/skins/starweaver';
 import { FROSTBOUND_FX, frostboundAura } from './sprite/skins/frostbound';
 import { STORMCALLER_FX, stormcallerAura } from './sprite/skins/stormcaller';
 import { VOIDBORN_FX, voidbornAura } from './sprite/skins/voidborn';
+import { JADEDRAGON_FX, jadedragonAura } from './sprite/skins/jadedragon';
+import { SERAPH_FX, seraphAura } from './sprite/skins/seraph';
+import { LICHBORNE_FX, lichborneAura } from './sprite/skins/lichborne';
+import { QUETZAL_FX, quetzalAura } from './sprite/skins/quetzal';
+import { PRISMHEART_FX, prismheartAura } from './sprite/skins/prismheart';
 
 /**
  * Set auras: what a fighter wearing a whole epic set gets around them, in
@@ -28,6 +33,11 @@ export const SET_FX: Record<SkinSetId, SkinFx> = {
   frostbound: FROSTBOUND_FX,
   stormcaller: STORMCALLER_FX,
   voidborn: VOIDBORN_FX,
+  jadedragon: JADEDRAGON_FX,
+  seraph: SERAPH_FX,
+  lichborne: LICHBORNE_FX,
+  quetzal: QUETZAL_FX,
+  prismheart: PRISMHEART_FX,
 };
 
 type G = CanvasRenderingContext2D;
@@ -184,6 +194,7 @@ function clockwork(g: G, x: number, y: number, t: number, layer: Layer): void {
 
 const DRAW: Record<SkinSetId, (g: G, x: number, y: number, t: number, layer: Layer) => void> = { sunborn, hellforged, foxfire, wildwood, abyssal, clockwork,
   bloodmoon: bloodmoonAura, starweaver: starweaverAura, frostbound: frostboundAura, stormcaller: stormcallerAura, voidborn: voidbornAura,
+  jadedragon: jadedragonAura, seraph: seraphAura, lichborne: lichborneAura, quetzal: quetzalAura, prismheart: prismheartAura,
 };
 
 /** Draws one layer of a set's aura around feet at (x, y) art pixels; `t` is seconds. */

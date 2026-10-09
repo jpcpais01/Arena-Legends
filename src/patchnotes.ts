@@ -12,6 +12,19 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.37.0',
+    date: '2026-10-09',
+    title: 'Five new epic sets',
+    notes: [
+      'Jade Dragon Emperor: crimson lacquer, gold and jade, with a dragon guandao, a repeating crossbow and a flaming pearl. Wear it all and a golden dragon swims around you.',
+      'Seraphic Choir: white and pale gold, a winged sword, a herald\'s trumpet, a floating halo and great feathered wings. Its aura raises a pillar of light with feathers drifting down.',
+      'Lichborne: bone, grave-black rags and green soulfire, with a skull staff, wailing ghost blades and a crown of bone. Skeletal hands claw out of the ground around you.',
+      'Feathered Serpent: turquoise, gold and obsidian, with a macuahuitl, obsidian darts, a plumed headdress and a little feathered serpent familiar that spirals around you.',
+      'Prismheart: living crystal that throws rainbows, with a geode maul, a crystal heart and crystal shards orbiting you.',
+      'All 35 pieces are in the chest pool as epic drops, and each glints only on its gems and accents at night.',
+    ],
+  },
+  {
     version: '0.36.0',
     date: '2026-10-09',
     title: 'Circling fighters still fight',
