@@ -12,12 +12,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.28.0',
+    version: '0.29.0',
     date: '2026-10-09',
     title: 'Fighters glow softly at night',
     notes: [
       'As night falls on Skygrove Isle, the fighters and their weapons, armour and summoned items pick up a faint moonlit glow: a soft pale rim around them and a little of their own colour back, so they stay easy to read in the dark.',
       'It creeps in at dusk and is at its strongest under the full night sky. It stays subtle and never looks like the violet overtime power-up.',
+    ],
+  },
+  {
+    version: '0.28.0',
+    date: '2026-10-09',
+    title: 'Legs and usable gear',
+    notes: [
+      'Two new gear slots: Legs (between Chest and Boots) and Usable (under Special). The Armory and the battle card now show all eight.',
+      'Six leggings: Leather, Chain, Stonehide Tassets, Windrunner, Runed and Bloodrite Wraps. Bloodrite Wraps give Second Wind: the first time you drop low, you heal a bit and get a burst of speed.',
+      'Six usables with limited uses per fight: Healing Potion, Swiftness Draught, Fury Tonic, Stoneskin Elixir (washes off burns, poison and curses), Energy Tonic and Fire Bomb.',
+      'Using one has its own animation: your fighter grabs the flask from the belt, pops the cork, drinks it down and tosses the empty bottle away, or lobs the Fire Bomb in an arc. Two-handed fighters lower their weapon to do it.',
+      'The AI knows when to drink: it saves potions for when they matter and throws bombs when they will land.',
     ],
   },
   {

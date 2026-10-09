@@ -54,7 +54,7 @@ export class Preview {
   private alive = true;
   private next = 0;
   private flip = false;
-  private out: AnimOut = { clip: 'idle', frame: 0, face: null, secOut: false, jitter: 0, hop: 0, key: '' };
+  private out: AnimOut = { clip: 'idle', frame: 0, face: null, secOut: false, useOut: false, jitter: 0, hop: 0, key: '' };
   /** Legendary skin sparkles: position (canvas px), age and colours. */
   private sparks: { x: number; y: number; t: number; a: number; b: number; flame: boolean }[] = [];
   private sparkT = 0;

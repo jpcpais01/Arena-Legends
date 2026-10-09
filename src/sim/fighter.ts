@@ -29,6 +29,8 @@ export interface Fighter {
   profile: CombatProfile;
   abilities: AbilityDef[];
   cooldowns: number[];
+  /** Uses left per ability this battle (−1 = unlimited). */
+  uses: number[];
 
   x: number;
   y: number;
@@ -62,6 +64,8 @@ export interface Fighter {
 
   // Item state
   phoenixUsed: boolean;
+  /** Bloodrite Wraps' second wind has fired. */
+  secondWind: boolean;
   stormCounter: number;
   mirrorCd: number;
   ironWillCd: number;
@@ -93,6 +97,7 @@ export function createFighter(id: FighterId, cfg: FighterConfig): Fighter {
     profile: buildProfile(cfg.form, cfg.gear),
     abilities,
     cooldowns: abilities.map(() => 0),
+    uses: abilities.map((a) => a.uses ?? -1),
     x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0,
     facing: id === 0 ? 1 : -1,
     move: 0,
@@ -110,6 +115,7 @@ export function createFighter(id: FighterId, cfg: FighterConfig): Fighter {
     alive: true,
     empowered: false,
     phoenixUsed: false,
+    secondWind: false,
     stormCounter: 0,
     mirrorCd: 0,
     ironWillCd: 0,
