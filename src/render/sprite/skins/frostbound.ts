@@ -359,6 +359,48 @@ function glacierGreaves(): SkinArt {
   };
 }
 
+function frostboundChausses(): SkinArt {
+  // Rimed mail chausses under a fringe of white fur hanging from the belt, a dark iron cuisse on the
+  // front of the thigh with the hail rune pulsing on it, and iron knee cops with a glacier crystal growing out of each.
+  return {
+    mats: {
+      chain: { base: IRON[2], ramp: IRON, shiny: true, step: 0.14, tex: (x, y) => (wrap(Math.floor(x + y), 2) === 0 ? -1 : 0) },
+      chainDark: { base: IRON_DK[2], ramp: IRON_DK, shiny: true }, chainPlate: { base: IRON[2], ramp: IRON, shiny: true, tex: rimeSoft },
+      'l.fur': { base: FUR[2], ramp: FUR, tex: tufts }, 'l.dark': { base: IRON_DK[2], ramp: IRON_DK, shiny: true },
+      'l.ice': { base: ICE[2], ramp: ICE, shiny: true, tex: sweep(8, 2) }, 'l.rune': { base: RUNE[3], ramp: RUNE, glow: true, tex: pulse },
+    },
+    legs: {
+      mat: 'chain', trim: null, knee: 'chainPlate', tasset: null, rune: null, wraps: null, bulk: 0.25,
+      over(r, t, m, c) {
+        const o = { group: c.g, toneBias: c.bias };
+        const ph = r.phase % 4, w = c.w, L = c.len;
+        // The cuisse: a dark iron plate over the front of the thigh, the hail rune glowing on it.
+        const hail = (x: number, y: number, k: number, tone: number) => {
+          // The hail rune with its stem along the thigh.
+          const ln = (ax: number, ay: number, bx: number, by: number) => r.line(t.x(ax, ay), t.y(ax, ay), t.x(bx, by), t.y(bx, by), m('l.rune'), tone, c.g);
+          ln(x - k, y, x + k, y);
+          ln(x - k * 0.6, y - k * 0.6, x + k * 0.6, y + k * 0.6);
+          ln(x - k * 0.6, y + k * 0.6, x + k * 0.6, y - k * 0.6);
+        };
+        const plate = t.poly([L * 0.62, -w * 0.5, L * 0.62, w + 0.5, L * 0.16, w + 0.6, L * 0.12, -w * 0.3], 0.4);
+        r.fill(plate, m('l.dark'), { ...o, bevel: 1.2 });
+        if (!c.far) hail(L * 0.33, w * 0.3, 1.5, [2, 3, 4, 3][ph]);
+        // A glacier crystal growing up out of the top of the knee cop, leaning forward, and a small one beside it.
+        const kr = c.body.kneeR + 0.25;
+        r.fill(shard(t, 0.4, kr + 0.6, 0.8, 4.2, 1), m('l.ice'), { ...o, bevel: 0.8 });
+        r.fill(shard(t, -0.6, kr + 0.8, -0.2, 2, 0.6), m('l.ice'), { ...o, bevel: 0.7 });
+        // The fur flap hanging from the belt over the thigh, its lumpy hem stirring.
+        const hem = L * 0.56, fl = [0, 0.3, 0.5, 0.3][ph];
+        r.fill(union(
+          t.poly([L + 1, -w - 0.2, L + 1, w + 1.2, hem + 0.6, w + 1.4, hem + 0.6, -w]),
+          furRoll(t, hem + 0.6, -w + 0.1, hem + 0.2 - fl, w + 1.3, 1.1, 3),
+        ), m('l.fur'), { ...o, bevel: 1.4 });
+      },
+    },
+    ...FX,
+  };
+}
+
 // -----------------------------------------------------------------------------
 // Aura
 // -----------------------------------------------------------------------------
@@ -405,4 +447,5 @@ export const FROSTBOUND: Record<string, SkinArt> = {
   'iron_helm.jarl': jarlHelm(),
   'plate_armor.frostbound': frostboundPlate(),
   'iron_greaves.glacier': glacierGreaves(),
+  'chain_leggings.frostbound': frostboundChausses(),
 };

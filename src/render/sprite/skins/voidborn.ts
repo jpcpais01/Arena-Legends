@@ -440,6 +440,43 @@ function voidwalkers(): SkinArt {
   };
 }
 
+function chitinCuisses(): SkinArt {
+  // Segmented black chitin with violet veins, shell plates overlapping down the front of the thigh,
+  // an eye in the knee cop that looks around and blinks, and small tendrils curling from the hip.
+  return {
+    mats: {
+      legLeather: chitin(segments(2.6, 1.3)), legLeatherDark: plain(0x120c1c),
+      'l.shell': shell(), 'l.flesh': flesh(), 'l.tip': voidLight(), 'l.white': sclera(), 'l.iris': iris(),
+      'l.vein': voidLight(), 'l.pupil': plain(0x0a0610),
+    },
+    legs: {
+      mat: 'legLeather', trim: 'legLeatherDark', knee: 'l.shell', tasset: null, rune: null, wraps: null, bulk: 0.2,
+      over(r, t, m, c) {
+        const o = { group: c.g, toneBias: c.bias };
+        const ph = r.phase % 4, w = c.w, L = c.len;
+        // Tendrils curling out from under the hip, writhing (behind the plates).
+        const ts: [number, number, number, number, number][] = [[L * 0.8, -w + 0.4, Math.PI * 1.22, L * 0.55, 0], [L * 0.7, w * 0.1, Math.PI * 1.1, L * 0.4, 2]];
+        ts.forEach(([x, y, dir, len, k], i) => {
+          const { shape, tip } = tendril(t, x, y, dir, len, ph, k, 0.85, i ? 1.4 : -1.5, 0.6);
+          r.fill(shape, m('l.flesh'), { group: c.g, bevel: 0.8, toneBias: c.bias });
+          r.dot(t.x(tip[0], tip[1]), t.y(tip[0], tip[1]), m('l.tip'), 3, c.g);
+        });
+        // Shell plates overlapping down the front of the thigh, each over the one below.
+        for (let k = 0; k < 3; k++) {
+          const a = L * (0.3 + k * 0.2);
+          r.fill(t.poly([a + L * 0.22, w - 0.8, a + L * 0.22, w + 0.5, a - 0.2, w + 0.9, a - 0.6, w - 0.4]), m('l.shell'), { ...o, bevel: 0.8 });
+        }
+        // The eye in the knee cop.
+        const kr = c.body.kneeR + 0.2;
+        // Drawn in an upright frame (x toward the front, y up the thigh) so the lid shuts across the leg.
+        const up = new Xf(t.ox, t.oy, t.ang - Math.PI / 2);
+        eyeball(r, up, 0.8, 0.4, kr * 0.66, lookAt(ph, c.far ? 2 : 0), { white: m('l.white'), iris: m('l.iris'), pupil: m('l.pupil'), lid: m('l.shell'), seam: m('l.vein') }, c.g, undefined, c.bias);
+      },
+    },
+    ...FX,
+  };
+}
+
 // -----------------------------------------------------------------------------
 // Set
 // -----------------------------------------------------------------------------
@@ -507,4 +544,5 @@ export const VOIDBORN: Record<string, SkinArt> = {
   'executioner_hood.thousandeyes': thousandEyes(),
   'thornmail.tendril': tendrilCarapace(),
   'shadow_treads.voidwalkers': voidwalkers(),
+  'leather_leggings.chitin': chitinCuisses(),
 };

@@ -494,6 +494,47 @@ function galewalkers(): SkinArt {
   };
 }
 
+function thunderstride(): SkinArt {
+  // Storm-steel leggings banded in gold with lightning veins crawling down them (a new path every frame),
+  // a tasset of gold thunderbird feathers fanning over the thigh, a gold knee cop and sparks snapping off it.
+  return {
+    mats: {
+      windLeg: { base: STORM[2], ramp: [...STORM, VEIN], tex: (x, y, ph) => crackle(3.2, 0.6, true)(x, y, ph) + (wrap(x, 3) < 0.5 ? -1 : 0) },
+      windTrim: { base: GOLD[2], ramp: GOLD, shiny: true },
+      'l.wing': { base: GOLD[2], ramp: GOLD, shiny: true }, 'l.gold': { base: GOLD[2], ramp: GOLD, shiny: true }, 'l.steel': { base: STEEL[2], ramp: STEEL, shiny: true },
+      'l.bolt': glow(BOLT), 'l.arc': glow(ARC), 'l.dark': { base: GOLD[0], ramp: GOLD },
+    },
+    legs: {
+      mat: 'windLeg', trim: 'windTrim', knee: 'l.steel', tasset: null, rune: null, wraps: null, bulk: 0.15,
+      over(r, t, m, c) {
+        const o = { group: c.g, toneBias: c.bias };
+        const ph = r.phase % 4, w = c.w, L = c.len;
+        // The feather tasset: three gold primaries from the belt, fanning down over the outside of the thigh,
+        // their tips lifting in the storm wind.
+        const lift = [0, 0.3, 0.5, 0.2][ph];
+        // One fan, its hem cut into three feather tips with dark quill lines between them.
+        const tip = (k: number) => lift * (k + 1) * 0.35;
+        const fan = t.poly([
+          L + 1, -w - 0.4, L + 1, w * 0.6 + 0.4, L * 0.4 + tip(2), w * 0.6 + 0.9, L * 0.52, w * 0.15,
+          L * 0.24 + tip(1), -w * 0.3, L * 0.46, -w * 0.55, L * 0.34 + tip(0), -w - 0.6,
+        ]);
+        r.fill(fan, m('l.wing'), { ...o, bevel: 1.1 });
+        for (const y of [w * 0.15, -w * 0.55]) r.line(t.x(L * 0.78, y + 0.1), t.y(L * 0.78, y + 0.1), t.x(L * 0.5, y), t.y(L * 0.5, y), m('l.dark'), 1, c.g);
+        if (c.far) return;
+        // A gold bolt on the knee cop (drawn upright along the thigh), flashing white when the sparks fly.
+        r.fill(boltGlyph(new Xf(t.ox, t.oy, t.ang - Math.PI / 2), 0.7, -1.6, 3.6, 0.55, 0.3), m(ph === 1 ? 'l.bolt' : 'l.gold'), { ...o, bevel: 0.6 });
+        // Sparks snapping off the knee cop, somewhere new each frame.
+        if (ph !== 3) {
+          const sx = [0.8, -0.6, 1.6][ph], sy = c.body.kneeR + 1.6 + [0.2, 0.8, 0][ph];
+          r.dot(t.x(sx, sy), t.y(sx, sy), m(ph === 1 ? 'l.bolt' : 'l.arc'), 3, c.g);
+          r.dot(t.x(sx + [0.9, -0.9, 1][ph], sy + 1), t.y(sx + [0.9, -0.9, 1][ph], sy + 1), m('l.arc'), 3, c.g);
+        }
+      },
+    },
+    ...FX,
+  };
+}
+
 // -----------------------------------------------------------------------------
 // Aura
 // -----------------------------------------------------------------------------
@@ -562,5 +603,6 @@ export const STORMCALLER: Record<string, SkinArt> = {
   'storm_crown.thunderking': thunderKing(),
   'mirror_mail.stormcaller': stormMail(),
   'zephyr_boots.galewalkers': galewalkers(),
+  'windrunner_leggings.thunderstride': thunderstride(),
 };
 
