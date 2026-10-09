@@ -90,6 +90,7 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
   drawTail(r, art, T, m, sway);
   if (sp === 'human') drawScarfTails(r, art, T, m, sway);
   if (chest.cape) drawCape(r, T, body.torso, m(chest.cape), sway);
+  chest.back?.(r, T, m, { top: body.torso, sway, body, g: G.cape });
   drawHairBack(r, art, H, m, sway);
   if (hold.main === 'back') drawMainOnBack(r, art, sk, OX, OY, m);
   if (hold.sec === 'stowed' && art.secFamily === 'shield') drawSecHolster(r, art, sk, T, OX, OY, m, true);
@@ -97,7 +98,7 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
 
   // --- Far side -------------------------------------------------------------------
   if (hold.sec === 'hand' && !hold.secFront) drawSec(r, art, sk, pose, hold, OX, OY, m, -1);
-  drawArm(r, art, sk, 'F', X, Y, m);
+  drawArm(r, art, sk, 'F', X, Y, m, T.ang);
   if (art.family === 'bow' && hold.main === 'hand') drawMain(r, art, sk, pose, hold, OX, OY, m, 0);
   drawLeg(r, art, sk, 'F', X, Y, m);
 
@@ -108,6 +109,7 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
   if (sp === 'human') drawScarfWrap(r, art, T, m);
   if (chest.skirt > 0) drawSkirt(r, art, T, sk, m(chest.skirtMat), sway, m(chest.trim ?? chest.skirtMat));
   else drawHem(r, art, T, m);
+  chest.over?.(r, T, m, { top: body.torso, sway, body, g: G.cape });
 
   // --- Head -------------------------------------------------------------------------
   r.space = H;
@@ -123,7 +125,7 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
   if (hold.sec === 'hand' && hold.secFront) drawSec(r, art, sk, pose, hold, OX, OY, m, 0);
   if (spec.smear && hold.main === 'hand') drawSmear(r, art, sk, { ...spec.smear, from: spec.smear.from + pose.rot, to: spec.smear.to + pose.rot }, OX, OY);
   if (hold.main === 'hand' && !hold.mainBehind && art.family !== 'bow') drawMain(r, art, sk, pose, hold, OX, OY, m, 0);
-  drawArm(r, art, sk, 'N', X, Y, m);
+  drawArm(r, art, sk, 'N', X, Y, m, T.ang);
   r.space = null;
   return sk;
 }
@@ -151,6 +153,10 @@ function drawLeg(r: Raster, art: CharacterArt, sk: Skeleton, side: 'N' | 'F', X:
   const bt = { x: ankle.x + (knee.x - ankle.x) * boots.height, y: ankle.y + (knee.y - ankle.y) * boots.height };
   if (boots.height < 0.98) r.fill(cap(knee, bt, body.kneeR * 0.95, body.shinR), pants, { group: g, bevel: 2.2, toneBias: bias });
   const bulk = boots.bulk;
+  // Boot textures follow the shin: x up from the ankle, y toward the front.
+  const shin = new Xf(X(ankle), Y(ankle), Math.atan2(knee.y - ankle.y, knee.x - ankle.x), 1, -1);
+  const torsoSpace = r.space;
+  r.space = shin;
   r.fill(cap(bt, ankle, body.shinR + bulk, body.ankleR + bulk * 0.8), m(boots.mat), { group: g, bevel: 2, toneBias: bias });
   // Foot: heel to toe.
   const heel = { x: ankle.x - 1.1, y: ankle.y - body.footH * 0.55 };
@@ -169,9 +175,16 @@ function drawLeg(r: Raster, art: CharacterArt, sk: Skeleton, side: 'N' | 'F', X:
     const wing = m(boots.wing);
     r.fill(polyR([ax - 1, ay, ax - 6, ay - 4, ax - 5, ay - 1.5, ax - 7, ay - 1, ax - 4, ay + 1]), wing, { group: G.legN, bevel: 1.2 });
   }
+  if (boots.over) {
+    // Foot frame: x toward the toe, y up.
+    const len = Math.hypot(knee.x - ankle.x, knee.y - ankle.y);
+    const foot = new Xf(X(ankle), Y(ankle), Math.atan2(toe.y - ankle.y, toe.x - ankle.x));
+    boots.over(r, shin, foot, m, { g, bias, far, body, len, top: len * boots.height, w: body.shinR + bulk, toe: Math.hypot(toe.x - ankle.x, toe.y - ankle.y) });
+  }
+  r.space = torsoSpace;
 }
 
-function drawArm(r: Raster, art: CharacterArt, sk: Skeleton, side: 'N' | 'F', X: (p: P) => number, Y: (p: P) => number, m: (k: string) => number): void {
+function drawArm(r: Raster, art: CharacterArt, sk: Skeleton, side: 'N' | 'F', X: (p: P) => number, Y: (p: P) => number, m: (k: string) => number, lean: number): void {
   const { body, chest } = art;
   const far = side === 'F';
   const g = far ? G.armF : G.armN;
@@ -193,6 +206,7 @@ function drawArm(r: Raster, art: CharacterArt, sk: Skeleton, side: 'N' | 'F', X:
     r.fill(ellipseR(X(sh) - 0.3, Y(sh) - 0.4, body.armR + 1.7, body.armR + 1.2, 0), m(chest.pauldron), { group: g, bevel: 2.2, toneBias: bias });
     if (chest.spikes) r.fill(polyR([X(sh) - 2, Y(sh) - 2.2, X(sh) - 1, Y(sh) - 6, X(sh) + 0.6, Y(sh) - 2.5]), m(chest.spikes), { group: g, bevel: 1, toneBias: bias });
   }
+  chest.shoulder?.(r, new Xf(X(sh), Y(sh), lean), m, { g, bias, far, body });
   if (art.look.species === 'golem' && !far && !chest.pauldron) {
     r.fill(polyR([X(sh) - 2.5, Y(sh) - 1.5, X(sh) - 1.2, Y(sh) - 5.5, X(sh) + 0.2, Y(sh) - 1.8]), m('crystal'), { group: g });
     r.fill(polyR([X(sh) - 0.2, Y(sh) - 1.8, X(sh) + 1.2, Y(sh) - 4.2, X(sh) + 1.8, Y(sh) - 1.2]), m('crystal'), { group: g });
@@ -272,8 +286,8 @@ function drawTorso(r: Raster, art: CharacterArt, sk: Skeleton, T: Xf, X: (p: P) 
   const fang = art.gear.special === 'vampiric_fang';
   if (fang) {
     const px = T.x(body.chestPush * 0.7 + 2.5, top - 2.5), py = T.y(body.chestPush * 0.7 + 2.5, top - 2.5);
-    r.dot(px, py, m('white'), 2, G.torso);
-    r.dot(px, py + 1, m('mask'), 3, G.torso);
+    r.dot(px, py, m('fangTooth'), 2, G.torso);
+    r.dot(px, py + 1, m('fangBlood'), 3, G.torso);
   }
 }
 
@@ -664,8 +678,8 @@ function drawHeadgear(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => num
     }
   }
   if (art.gear.special === 'phoenix_feather' && art.headgear !== 'executioner_hood') {
-    r.fill(H.poly([-5, 4, -9.5, 9.5, -8.6, 10.4, -4.2, 5]), m('mask'), { group: g, bevel: 1 });
-    r.dot(H.x(-9, 10), H.y(-9, 10), m('maskEye'), 3, g);
+    r.fill(H.poly([-5, 4, -9.5, 9.5, -8.6, 10.4, -4.2, 5]), m('plume'), { group: g, bevel: 1 });
+    r.dot(H.x(-9, 10), H.y(-9, 10), m('plumeTip'), 3, g);
   }
 }
 

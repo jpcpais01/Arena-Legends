@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { iconFrame } from '../render/icons';
 import { Raster } from '../render/pixel/raster';
 import { clipLength, clipsFor, frameSpec } from '../render/sprite/anims';
 import { drawFigure } from '../render/sprite/draw';
@@ -56,6 +57,8 @@ describe('item skins', () => {
       } else expect(reshaped, s.id).toBe(true);
       if (s.rarity === 'legendary') expect(a.fx, s.id).toBeDefined();
       else expect(a.fx, s.id).toBeUndefined();
+      // Special item skins colour their battle particles too.
+      if (gearOf(s.gear).slot === 'special' && s.gear !== 'vampiric_fang') expect(a.glow, s.id).toBeDefined();
     }
   });
 
@@ -84,6 +87,11 @@ describe('item skins', () => {
 
   it('every skin draws, and looks different from the plain item', () => {
     for (const s of SKINS) {
+      // Special items are mostly not worn on the body: compare their icons.
+      if (gearOf(s.gear).slot === 'special') {
+        expect(same([iconFrame(s.gear).data], [iconFrame(s.gear, s.id).data]), s.id).toBe(false);
+        continue;
+      }
       const plain = render(wearing(null, s.gear));
       const skinned = render(wearing(s.id, s.gear));
       expect(same(plain, skinned), s.id).toBe(false);
