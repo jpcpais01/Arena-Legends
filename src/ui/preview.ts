@@ -34,7 +34,7 @@ function queueStill(p: Preview): void {
   stillRaf = requestAnimationFrame(run);
 }
 
-const SHOWCASE_SKIP = new Set(['idle', 'run', 'back', 'hurt', 'stun', 'air', 'ko', 'roll', 'leap', 'evade', 'blink', 'sec.riposte']);
+const SHOWCASE_SKIP = new Set(['idle', 'run', 'back', 'stop', 'stopB', 'land', 'hurt', 'stun', 'air', 'ko', 'roll', 'leap', 'evade', 'blink', 'sec.riposte']);
 
 /**
  * A character standing in a small pixel canvas (creator, menu, gear picker).
@@ -131,13 +131,14 @@ export class Preview {
     if (this.playing) {
       const c = this.bank.set.clips.get(this.playing)!;
       const n = clipLength(c);
-      const i = Math.floor(this.t * 11);
+      const i = Math.floor(this.t * 14);
       if (i >= n + 3) { this.playing = null; this.t = 0; }
       o.clip = this.playing ?? 'idle';
       o.frame = this.playing ? Math.min(n - 1, i) : 0;
     } else {
       o.clip = 'idle';
-      o.frame = Math.floor(this.t * 3) % 4;
+      const n = this.bank.set.clips.get('idle')!.w.length;
+      o.frame = Math.floor(this.t * 0.62 * n) % n;
       if (this.next > 0 && this.t > this.next) { this.showcase(); this.next = 3 + Math.random() * 3; }
     }
     o.key = `${o.clip}.${o.frame}.`;
