@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.35.1',
+    date: '2026-10-09',
+    title: 'Fighter box gear in Armory order',
+    notes: [
+      'The gear in the home fighter boxes now reads like the Armory: weapons, special and usable down the left column, head, chest, legs and boots down the right.',
+    ],
+  },
+  {
     version: '0.35.0',
     date: '2026-10-09',
     title: 'Heat meter (temporary debug)',
