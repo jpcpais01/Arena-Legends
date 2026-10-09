@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.28.1',
+    date: '2026-10-09',
+    title: 'A cleaner home screen',
+    notes: [
+      'The home screen now gets out of the way of the duel behind it. The big fighter cards are now slim nameplates in the top corners. Tap one to see that fighter\'s gear.',
+      'All the buttons sit together in the bottom-right corner: Armory, Hero and Rival above, Online and Fight below. Sound and settings moved to the bottom-left.',
+    ],
+  },
+  {
     version: '0.28.0',
     date: '2026-10-09',
     title: 'Legs and usable gear',
