@@ -12,6 +12,47 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.31.0',
+    date: '2026-10-09',
+    title: 'Skin chests and gems',
+    notes: [
+      'Skins are now collectibles. Open skin chests to get them: one chest costs 100 gems, and ten cost 900 and always hold a mythic or better.',
+      'Everyone starts with 1000 gems. Skins you were already wearing stay yours.',
+      'Win fights to earn gems: 25 for the win, plus up to 75 more for the health you have left. Online round wins pay too.',
+      'Opening a chest is a show: it rattles, its light climbs from rare to mythic to legendary to epic, the lid blows off and your skins flip out on cards. Tap to skip ahead.',
+      'Odds: rare 70%, mythic 22%, legendary 7%, epic 1%. An epic is guaranteed within 60 chests, and skins you already own give gems back.',
+      'In the Armory, skins you have not found yet show a lock. Tap one to see where to get it.',
+    ],
+  },
+  {
+    version: '0.30.0',
+    date: '2026-10-09',
+    title: 'Accounts',
+    notes: [
+      'Make an account with just a name and a password, from the new Account button next to sound and settings or Sign in on the title screen.',
+      'Your hero, gear, item skins, wins and settings are saved to your account and come with you to any device.',
+      'Signing in for the first time keeps what you already have on this device. Playing without an account works like before.',
+    ],
+  },
+  {
+    version: '0.29.1',
+    date: '2026-10-09',
+    title: 'A cleaner home screen',
+    notes: [
+      'The home screen now gets out of the way of the duel behind it. The big fighter cards are now slim nameplates in the top corners. Tap one to see that fighter\'s gear.',
+      'All the buttons sit together in the bottom-right corner: Armory, Hero and Rival above, Online and Fight below. Sound and settings moved to the bottom-left.',
+    ],
+  },
+  {
+    version: '0.29.0',
+    date: '2026-10-09',
+    title: 'Fighters glow softly at night',
+    notes: [
+      'As night falls on Skygrove Isle, the fighters and their weapons, armour and summoned items pick up a faint moonlit glow: a soft pale rim around them and a little of their own colour back, so they stay easy to read in the dark.',
+      'It creeps in at dusk and is at its strongest under the full night sky. It stays subtle and never looks like the violet overtime power-up.',
+    ],
+  },
+  {
     version: '0.28.0',
     date: '2026-10-09',
     title: 'Legs and usable gear',

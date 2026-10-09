@@ -1,7 +1,7 @@
 {
   "name": "arena-legends",
   "private": true,
-  "version": "0.28.0",
+  "version": "0.31.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@fontsource/pixelify-sans": "^5.3.0",
+    "firebase": "^12.19.0",
     "peerjs": "^1.5.5"
   }
 }
