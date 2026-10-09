@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.17.0',
+    date: '2026-10-09',
+    title: 'Less health for every body',
+    notes: [
+      'Every body form now starts with 30% less health (Balanced goes from 3,040 to 2,128), so fights are quicker and knockouts come sooner.',
+      'Items are unchanged. Night overtime still kicks in after 60 seconds if both fighters are standing.',
+    ],
+  },
+  {
     version: '0.16.0',
     date: '2026-10-09',
     title: '30 more item skins, and skins for special items',
