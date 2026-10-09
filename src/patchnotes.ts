@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.19.1',
+    date: '2026-10-09',
+    title: 'Roomier item cards in the gear screen',
+    notes: [
+      'The item card in the gear screen is now three tiles wide and two tall, so everything fits comfortably.',
+      'Every item shows its full description and every skill\'s full text, never cut off. Item names wrap instead of being shortened.',
+      'Items with a passive now show its name, like "Passive: Echo".',
+      'Under the skin icons you can read the skin you picked, its rarity and what that rarity changes. With no skin picked, it tells you how many skins the item has.',
+    ],
+  },
+  {
     version: '0.19.0',
     date: '2026-10-09',
     title: 'A battle soundtrack that builds',
