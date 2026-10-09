@@ -294,15 +294,15 @@ export class BattleView implements View {
   private draw(dt: number): void {
     const g = this.screen.g;
     const b = this.battle!;
-    const cam = this.camX * PPM - this.shakeX;
+    const cam = this.camX * PPM;
     this.arena!.setDay(b.time / ROUND_TIME);
-    this.arena!.draw(g, cam, this.time);
+    this.arena!.draw(g, cam, this.time, this.shakeX, this.shakeY);
     this.fx.drawUnder(g, this);
     // Shadows.
     for (const f of b.fighters) {
       const x = Math.round(this.sx(this.lx(f))), y = Math.round(this.sy(0));
       const lift = clamp(this.ly(f) / 2.5, 0, 0.7);
-      this.arena!.shadow(g, x, y, 11 + (f.form === 'robust' || f.form === 'mighty' ? 2 : 0), 1, lift);
+      this.arena!.shadow(g, x, y, 11 + (f.form === 'titan' ? 4 : f.form === 'robust' || f.form === 'mighty' || f.form === 'stout' ? 2 : 0), 1, lift);
     }
     // The fighter mid-attack draws in front.
     const order: FighterId[] = b.fighters[0].action && !b.fighters[1].action ? [1, 0] : [0, 1];

@@ -99,6 +99,8 @@ export class ArenaView {
   private sky: { stars: HTMLCanvasElement; rainbow: HTMLCanvasElement; moon: HTMLCanvasElement; lamp: HTMLCanvasElement; firefly: HTMLCanvasElement } | null;
   /** Share of the round gone by (0 noon … 1 night) for arenas with a day cycle. */
   private day = 0;
+  /** This frame's screen shake, applied to the arena's near parts only. */
+  private shake: [number, number] = [0, 0];
   private torch: HTMLCanvasElement[];
   private brazier: HTMLCanvasElement[];
   private excite = 0;
@@ -207,59 +209,67 @@ export class ArenaView {
     if (this.crowdT >= 1) { this.crowdT -= 1; this.crowdFrame ^= 1; }
   }
 
-  /** Everything behind the fighters. `cam` is the camera centre in art px; `t` real time. */
-  draw(g: CanvasRenderingContext2D, cam: number, t: number): void {
-    const W = this.W;
+  /**
+   * Everything behind the fighters. `cam` is the camera centre in art px; `t`
+   * real time. Screen shake (`shakeX`, `shakeY`) moves only the arena itself
+   * (the stands or grove, floor, island and pillars), so the sky and the far
+   * scenery stay put while the ground under the fighters jolts.
+   */
+  draw(g: CanvasRenderingContext2D, cam: number, t: number, shakeX = 0, shakeY = 0): void {
+    const W = this.W, wf = this.art.wallFactor;
     this.aim();
+    this.shake = [shakeX, shakeY];
     // A live sky is painted behind everything afterwards (see light()).
     if (this.sky) g.clearRect(0, 0, W, this.H);
-    const off = (img: HTMLCanvasElement, f: number) => Math.round(-(img.width - W) / 2 - cam * f);
+    const near = cam - shakeX;
+    const off = (img: HTMLCanvasElement, f: number) => Math.round(-(img.width - W) / 2 - (f >= wf ? near : cam) * f);
     const layer = (l: LayerImg) => {
-      const x = off(l.img, l.factor);
-      if (!l.drift) { g.drawImage(l.img, x, l.y); return; }
+      const x = off(l.img, l.factor), y = l.y + (l.factor >= wf ? shakeY : 0);
+      if (!l.drift) { g.drawImage(l.img, x, y); return; }
       // Drifting layers tile: two copies cover the screen at any offset.
       const dx = x + Math.round((t * l.drift) % l.img.width);
-      g.drawImage(l.img, dx, l.y);
-      g.drawImage(l.img, dx - l.img.width, l.y);
+      g.drawImage(l.img, dx, y);
+      g.drawImage(l.img, dx - l.img.width, y);
     };
     for (const l of this.layers) {
       layer(l);
       if (l.after === 'birds' && this.amb && this.day < 0.8) this.drawBirds(g, cam, t);
       else if (l.after === 'floaters') this.drawFloaters(g, cam, t, false);
     }
-    const wf = this.art.wallFactor;
     const cx = off(this.crowd[0], wf);
-    g.drawImage(this.crowd[this.crowdFrame], cx, 0);
+    g.drawImage(this.crowd[this.crowdFrame], cx, shakeY);
     const fi = Math.floor(t * 9);
     for (const [x, y] of this.art.torches) {
       const fr = this.torch[(fi + x) % 3];
-      g.drawImage(fr, cx + x - (fr.width >> 1), y - fr.height + 2);
+      g.drawImage(fr, cx + x - (fr.width >> 1), y - fr.height + 2 + shakeY);
     }
-    // Floor rows, nearest-neighbour, each with its own scale.
+    // Floor rows, nearest-neighbour, each with its own scale; a few extra past
+    // the bottom so a shake upward never shows a gap.
     const fw = this.floor.width;
-    const floorEnd = Math.min(this.H, this.art.floorEnd);
+    const floorEnd = Math.min(this.H - Math.min(0, shakeY), this.art.floorEnd);
     for (let y = this.art.floorTop; y < floorEnd; y++) {
       const { s, v } = floorRow(this.art, y);
       const srcW = W / s;
-      const sx = fw / 2 + cam - srcW / 2;
-      g.drawImage(this.floor, sx, v, srcW, 1, 0, y, W, 1);
+      const sx = fw / 2 + near - srcW / 2;
+      g.drawImage(this.floor, sx, v, srcW, 1, 0, y + shakeY, W, 1);
     }
     for (const l of this.front) layer(l);
     if (this.floaters.length) this.drawFloaters(g, cam, t, true);
     if (this.amb) this.drawAmbience(g, cam, t);
     // Pillars with braziers at the arena bounds.
+    const gy = this.gy + shakeY;
     for (const side of [-1, 1]) {
-      const x = Math.round(W / 2 + side * (ARENA_HALF_WIDTH + 0.75) * PPM - cam - this.pillar.width / 2);
+      const x = Math.round(W / 2 + side * (ARENA_HALF_WIDTH + 0.75) * PPM - near - this.pillar.width / 2);
       if (x > W + 60 || x + this.pillar.width < -60) continue;
-      this.shadow(g, x + (this.pillar.width >> 1), this.gy + 1, 12, 1.5);
-      g.drawImage(this.pillar, x, this.gy - this.pillar.height + 2);
+      this.shadow(g, x + (this.pillar.width >> 1), gy + 1, 12, 1.5);
+      g.drawImage(this.pillar, x, gy - this.pillar.height + 2);
       if (this.crystal) {
         const bob = Math.round(Math.sin(t * 1.8 + side) * 2);
-        g.drawImage(this.crystal, x + ((this.pillar.width - this.crystal.width) >> 1), this.gy - this.pillar.height - this.crystal.height + bob);
+        g.drawImage(this.crystal, x + ((this.pillar.width - this.crystal.width) >> 1), gy - this.pillar.height - this.crystal.height + bob);
         continue;
       }
       const fr = this.brazier[(fi + (side > 0 ? 1 : 0)) % 3];
-      g.drawImage(fr, x + (this.pillar.width >> 1) - (fr.width >> 1), this.gy - this.pillar.height + 2 - fr.height + 3);
+      g.drawImage(fr, x + (this.pillar.width >> 1) - (fr.width >> 1), gy - this.pillar.height + 2 - fr.height + 3);
     }
   }
 
@@ -349,10 +359,11 @@ export class ArenaView {
     if (lamps > 0) {
       for (let i = 0; i < cy.lamps.length; i++) {
         const l = cy.lamps[i];
-        const x = l.x - cam * l.factor;
+        const near = l.factor >= this.art.wallFactor;
+        const x = l.x - (near ? cam - this.shake[0] : cam) * l.factor, y = l.y + (near ? this.shake[1] : 0);
         if (x < -l.r || x > W + l.r) continue;
         g.globalAlpha = lamps * (0.85 + 0.15 * Math.sin(t * 2.3 + i * 1.7));
-        g.drawImage(sk.lamp, x - l.r, l.y - l.r, l.r * 2, l.r * 2);
+        g.drawImage(sk.lamp, x - l.r, y - l.r, l.r * 2, l.r * 2);
       }
       // Fireflies drifting over the meadow.
       const span = W + 40;

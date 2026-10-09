@@ -12,7 +12,7 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.18.0',
+    version: '0.22.0',
     date: '2026-10-09',
     title: 'Fights with a rhythm',
     notes: [
@@ -20,6 +20,68 @@ export const PATCH_NOTES: PatchNote[] = [
       'After a hot exchange, fighters break off and circle to catch their breath before the next clash. Hot-headed fighters barely pause and may chase you down, while patient ones take their time. They still punish any opening.',
       'The clock now matters more and more as the end approaches: a fighter who is behind stops resting and pushes hard, and one who is ahead plays it safe.',
       'A new "Circling" stance shows up on the battle HUD while a fighter is catching their breath.',
+    ],
+  },
+  {
+    version: '0.21.1',
+    date: '2026-10-09',
+    title: 'Tap an item card again to close it',
+    notes: [
+      'In the gear screen, tapping an open item card anywhere closes it. The skin icons and the Equip button still work as before.',
+      'The X button on the item card is gone.',
+    ],
+  },
+  {
+    version: '0.21.0',
+    date: '2026-10-09',
+    title: 'Volume sliders',
+    notes: [
+      'Settings now has three volume sliders instead of on/off switches: Master, Music and Sound effects. Changes apply while you drag.',
+      'Setting Music to 0 turns the battle soundtrack off. If you had turned Music off before, it stays off. The sound button on the menu still mutes everything at once.',
+    ],
+  },
+  {
+    version: '0.20.0',
+    date: '2026-10-09',
+    title: 'Three new bodies, three new species',
+    notes: [
+      'New body form Stout: short legs and a big round belly. Hard to knock over and heals more, but slow with short reach.',
+      'New body form Feral: hunched and coiled with long arms. Fast, relentless strikes that drink a little life, but thin hide.',
+      'New body form Titan: a towering giant with huge health, long reach and crushing force, but the slowest swings in the arena.',
+      'New species Saurin (lizard-folk with a snout, a spiny crest and a sweeping tail), Myco (mushroom-folk under a spotted cap that glows at night) and Ursin (bear-folk with round ears and a broad muzzle).',
+      'Each species now has its own set of body forms: no Titan imps or Feral golems. The creator shows the forms each species can take.',
+      'If your fighter had a form their species no longer takes, they moved to the closest one it does.',
+    ],
+  },
+  {
+    version: '0.19.1',
+    date: '2026-10-09',
+    title: 'Roomier item cards in the gear screen',
+    notes: [
+      'The item card in the gear screen is now three tiles wide and two tall, so everything fits comfortably.',
+      'Every item shows its full description and every skill\'s full text, never cut off. Item names wrap instead of being shortened.',
+      'Items with a passive now show its name, like "Passive: Echo".',
+      'Under the skin icons you can read the skin you picked, its rarity and what that rarity changes. With no skin picked, it tells you how many skins the item has.',
+    ],
+  },
+  {
+    version: '0.19.0',
+    date: '2026-10-09',
+    title: 'A battle soundtrack that builds',
+    notes: [
+      'Fights now have music, and it reacts to the fight: the lower the weaker fighter\'s health, the more intense it gets. It starts with a calm groove, then drums, a driving bass, arpeggios and a full theme come in, the chords darken and the tempo speeds up.',
+      'When someone is one or two hits from defeat, a heartbeat, trembling strings and rising swells take over. Heals let the music settle back down.',
+      'Night overtime lifts the whole song a step higher and adds war drums. A knockout ends it on a final chord.',
+      'Pausing muffles the music. Turn it off any time with the new Music switch in Settings.',
+    ],
+  },
+  {
+    version: '0.18.0',
+    date: '2026-10-09',
+    title: 'Steadier screen shake',
+    notes: [
+      'Big hits now shake only the arena itself: the island, the fighters and the effects. The sky, the sun and the floating islands in the distance stay still, so heavy blows feel like they hit the ground instead of the whole screen.',
+      'The same goes for every arena: the stands and floor jolt, the sky and mountains behind them stay put.',
     ],
   },
   {

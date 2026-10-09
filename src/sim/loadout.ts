@@ -1,4 +1,4 @@
-import { randomAppearance, sanitizeAppearance, type Appearance } from '../character/appearance';
+import { fitForm, randomAppearance, sanitizeAppearance, type Appearance } from '../character/appearance';
 import { sanitizeSkins, type SkinMap } from '../character/skins';
 import type { Rng } from '../core/rng';
 import { EVADE } from './abilities';
@@ -134,7 +134,8 @@ export function randomBuild(rng?: Rng): CharacterBuild {
   const gear = { main: pick(gearIdsFor('main')) } as GearSet;
   const w = gear as Record<GearSlot, GearId>;
   for (const s of GEAR_SLOTS) if (s !== 'main') w[s] = pick(gearIdsFor(s));
-  return { name: pick(NAMES), form: pick(FORM_IDS), gear, look: randomAppearance(r) };
+  const form = pick(FORM_IDS);
+  return { name: pick(NAMES), form, gear, look: randomAppearance(r, form) };
 }
 
 /**
@@ -144,7 +145,7 @@ export function randomBuild(rng?: Rng): CharacterBuild {
 export function sanitizeBuild(raw: unknown, fallback: CharacterBuild): CharacterBuild {
   if (!raw || typeof raw !== 'object') return fallback;
   const o = raw as Record<string, unknown>;
-  const form: FormId = FORM_IDS.includes(o.form as FormId) ? (o.form as FormId) : fallback.form;
+  let form: FormId = FORM_IDS.includes(o.form as FormId) ? (o.form as FormId) : fallback.form;
   const g = (o.gear && typeof o.gear === 'object' ? o.gear : {}) as Record<string, unknown>;
   const gear = {} as Record<GearSlot, GearId>;
   for (const s of GEAR_SLOTS) {
@@ -154,6 +155,8 @@ export function sanitizeBuild(raw: unknown, fallback: CharacterBuild): Character
   if (!gear.main) return fallback;
   const name = typeof o.name === 'string' && o.name.trim() ? o.name.trim().slice(0, 16) : fallback.name;
   const look = o.look && typeof o.look === 'object' ? sanitizeAppearance(o.look) : fallback.look;
+  // A species only takes the body forms that suit it (older saves predate that rule).
+  if (look) form = fitForm(look.species, form);
   return { name, form, gear: gear as unknown as GearSet, look, skins: sanitizeSkins(o.skins) };
 }
 

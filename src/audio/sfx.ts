@@ -15,6 +15,10 @@ class AudioEngine {
   muted = false;
   volume = 0.6;
 
+  /** The shared context and noise, once unlocked (the music plays on them too). */
+  get context(): AudioContext | null { return this.ctx; }
+  get noiseBuffer(): AudioBuffer | null { return this.noise; }
+
   /** Must be called from a user gesture. */
   unlock(): void {
     if (this.ctx) { if (this.ctx.state === 'suspended') void this.ctx.resume(); return; }
@@ -31,6 +35,12 @@ class AudioEngine {
     this.noise = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
     const d = this.noise.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  }
+
+  /** 0..1 effects level (master x effects slider). */
+  setVolume(v: number): void {
+    this.volume = 0.6 * v;
+    if (this.master && this.ctx) this.master.gain.setTargetAtTime(this.muted ? 0 : this.volume, this.ctx.currentTime, 0.02);
   }
 
   setMuted(m: boolean): void {
