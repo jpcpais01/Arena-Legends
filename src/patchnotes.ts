@@ -12,12 +12,22 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.32.4',
+    version: '0.33.1',
     date: '2026-10-09',
     title: 'Bigger chests button',
     notes: [
       'The Chests button on the home screen is now big and purple, with a hopping chest and your gems.',
       'When you open one chest, your fighter wearing the new skin now stands as tall as the skin card.',
+    ],
+  },
+  {
+    version: '0.33.0',
+    date: '2026-10-09',
+    title: 'Gear that shines at night',
+    notes: [
+      'The bright outline around fighters at night is gone. Instead, as night falls on Skygrove Isle, only the parts of your gear meant to catch the light start to shine: gems, runes, embers, glowing veins and the glints on polished metal.',
+      'How much it shines depends on the item: plain gear only glints a little, rare and mythic skins glow more, and legendary and epic skins shine the most and twinkle now and then.',
+      'Your body and clothes stay dark, so the glow shows the gear without lighting up the whole fighter.',
     ],
   },
   {

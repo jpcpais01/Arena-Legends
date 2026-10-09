@@ -113,10 +113,8 @@ export class BattleView implements View {
   /** Called after the scene is drawn (HUD overlays). */
   onFrame: ((dt: number) => void) | null = null;
   private lastDt = 0;
-  /** Sprites drawn this frame that pick up the night glow: feet position and facing. */
+  /** Fighter sprites drawn this frame, for their night accents: feet position and facing. */
   private glowList: { s: Sprite; x: number; y: number; flip: boolean }[] = [];
-  /** Scratch canvas for the glow rim, grown to the largest sprite seen. */
-  private rim = scratchCanvas();
 
   constructor(readonly screen: Screen) {
     screen.onResize = () => this.layout();
@@ -340,49 +338,42 @@ export class BattleView implements View {
   }
 
   /**
-   * Night glow, once the live sky has turned dark: the fighters and what they
-   * carry hold a faint light of their own. A pale moonlit rim hugs each
-   * silhouette, a little of the sprite's own colour comes back through the
-   * night tint, and a dim halo sits around it. All of it scales with how far
-   * night has fallen (`n`), so it creeps in at dusk and never turns into a
-   * spotlight. Kept cool and near-white so it never reads as the violet
-   * overtime flare.
+   * Night accents, once the live sky has turned dark: only the parts of the
+   * gear meant to catch the light shine (gems, runes, embers, hot veins, the
+   * glints on polished metal), by the item's tier, with a faint bloom around
+   * them. Legendary and epic pieces also twinkle now and then. All of it
+   * scales with how far night has fallen (`n`).
    */
   private nightGlow(g: CanvasRenderingContext2D, n: number): void {
-    const rc = this.rim.c, rg = this.rim.g;
     g.globalCompositeOperation = 'lighter';
-    for (const { s, x, y, flip } of this.glowList) {
-      const w = s.w + 6, h = s.h + 6;
-      if (rc.width < w || rc.height < h) {
-        rc.width = Math.max(rc.width, w);
-        rc.height = Math.max(rc.height, h);
+    for (let k = 0; k < this.glowList.length; k++) {
+      const { s, x, y, flip } = this.glowList[k];
+      if (!s.glow) continue;
+      g.globalAlpha = 0.14 * n;
+      for (const [dx, dy] of RING1) blitImg(g, s, s.glow, x + dx, y + dy, flip);
+      g.globalAlpha = 0.8 * n;
+      blitImg(g, s, s.glow, x, y, flip);
+      const sp = s.sparks;
+      if (!sp?.length || n < 0.3) continue;
+      // One twinkle at a time, hopping between the brightest accents.
+      const beat = this.time * 1.3 + k * 0.43;
+      const ph = beat % 1;
+      if (ph > 0.5) continue;
+      const j = (Math.floor(beat) * 7 + k * 3) % (sp.length / 2);
+      const c = sp[j * 2], r = sp[j * 2 + 1];
+      const px = flip ? x + s.ox - c : x - s.ox + c, py = y - s.oy + r;
+      const a = Math.sin((ph / 0.5) * Math.PI) * n;
+      g.fillStyle = '#fffbe8';
+      g.globalAlpha = a;
+      g.fillRect(px, py, 1, 1);
+      g.globalAlpha = a * 0.55;
+      g.fillRect(px - 1, py, 1, 1); g.fillRect(px + 1, py, 1, 1);
+      g.fillRect(px, py - 1, 1, 1); g.fillRect(px, py + 1, 1, 1);
+      if (a > 0.6) {
+        g.globalAlpha = a * 0.25;
+        g.fillRect(px - 2, py, 1, 1); g.fillRect(px + 2, py, 1, 1);
+        g.fillRect(px, py - 2, 1, 1); g.fillRect(px, py + 2, 1, 1);
       }
-      // Rim: the silhouette grown by two pixels, minus the sprite itself.
-      const sil = solidCache(s, '#dce6ff').img;
-      rg.clearRect(0, 0, w, h);
-      rg.globalCompositeOperation = 'source-over';
-      rg.globalAlpha = 0.4;
-      for (const [dx, dy] of RING2) rg.drawImage(sil, 3 + dx, 3 + dy);
-      rg.globalAlpha = 1;
-      for (const [dx, dy] of RING1) rg.drawImage(sil, 3 + dx, 3 + dy);
-      rg.globalCompositeOperation = 'destination-out';
-      rg.drawImage(s.img, 3, 3);
-      // Halo around the middle of the sprite.
-      const cx = flip ? x + 1 - (s.w / 2 - s.ox) : x - s.ox + s.w / 2, cy = y - s.oy + s.h / 2;
-      const r = Math.max(s.w, s.h) * 0.75;
-      g.globalAlpha = 0.11 * n;
-      g.drawImage(haloSprite(), cx - r, cy - r, r * 2, r * 2);
-      g.globalAlpha = 0.36 * n;
-      if (!flip) g.drawImage(rc, 0, 0, w, h, x - s.ox - 3, y - s.oy - 3, w, h);
-      else {
-        g.save();
-        g.translate(x + 1, 0);
-        g.scale(-1, 1);
-        g.drawImage(rc, 0, 0, w, h, -s.ox - 3, y - s.oy - 3, w, h);
-        g.restore();
-      }
-      g.globalAlpha = 0.16 * n;
-      blit(g, s, x, y, flip);
     }
     g.globalAlpha = 1;
     g.globalCompositeOperation = 'source-over';
@@ -559,7 +550,6 @@ export class BattleView implements View {
       const s = projSprite('sigil', Math.floor(this.time * 10), 0, this.fighters[f.id]?.art.specialSkinId);
       const x = Math.round(this.sx(this.lx(f))), y = Math.round(this.sy(this.ly(f) + 2.8));
       g.drawImage(s.img, x - s.ox, y - s.oy);
-      this.glowList.push({ s, x, y, flip: false });
       return;
     }
     // Phantom blade: rises, flies at the enemy, slashes, returns.
@@ -573,7 +563,6 @@ export class BattleView implements View {
     g.globalAlpha = 0.85;
     g.drawImage(s.img, x - s.ox, y - s.oy);
     g.globalAlpha = 1;
-    this.glowList.push({ s, x, y, flip: false });
     if (Math.random() < 0.5) {
       const c = this.glow(f.id, 0xd8e8ff, 0x6a8ad8);
       this.fx.burst({ x: it.x, y: it.y, count: 1, speed: [0.2, 0.6], life: [0.2, 0.4], color: c[0], color2: c[1] });
@@ -1009,30 +998,6 @@ export class BattleView implements View {
 }
 
 const RING1 = [[1, 0], [-1, 0], [0, 1], [0, -1]] as const;
-const RING2 = [[2, 0], [-2, 0], [0, 2], [0, -2], [1, 1], [-1, 1], [1, -1], [-1, -1]] as const;
-
-function scratchCanvas(): { c: HTMLCanvasElement; g: CanvasRenderingContext2D } {
-  const c = document.createElement('canvas');
-  c.width = c.height = 96;
-  return { c, g: c.getContext('2d')! };
-}
-
-/** Soft moonlit halo behind a fighter at night (built on first use). */
-let nightHalo: HTMLCanvasElement | null = null;
-function haloSprite(): HTMLCanvasElement {
-  if (nightHalo) return nightHalo;
-  const c = document.createElement('canvas');
-  c.width = c.height = 64;
-  const g = c.getContext('2d')!;
-  const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-  grad.addColorStop(0, 'rgba(200,216,255,0.55)');
-  grad.addColorStop(0.45, 'rgba(200,216,255,0.2)');
-  grad.addColorStop(1, 'rgba(200,216,255,0)');
-  g.fillStyle = grad;
-  g.fillRect(0, 0, 64, 64);
-  return (nightHalo = c);
-}
-
 const solid = new WeakMap<Sprite, Map<string, Sprite>>();
 function solidCache(s: Sprite, color: string): Sprite {
   let m = solid.get(s);
@@ -1050,6 +1015,16 @@ function solidCache(s: Sprite, color: string): Sprite {
     m.set(color, o);
   }
   return o;
+}
+
+/** Draws a sprite's companion layer (night accents) exactly where `blit` draws the sprite. */
+function blitImg(g: CanvasRenderingContext2D, s: Sprite, img: HTMLCanvasElement, x: number, y: number, flip: boolean): void {
+  if (!flip) { g.drawImage(img, x - s.ox, y - s.oy); return; }
+  g.save();
+  g.translate(x + 1, 0);
+  g.scale(-1, 1);
+  g.drawImage(img, -s.ox, y - s.oy);
+  g.restore();
 }
 
 function blit(g: CanvasRenderingContext2D, s: Sprite, x: number, y: number, flip: boolean): void {

@@ -23,6 +23,15 @@ export interface Material {
   glowTone: number;
   /** Surface texture: tone offset at a point (see tex.ts). */
   tex?: Tex;
+  /**
+   * Night accents (0..1, set per item tier in look.ts): how strongly this
+   * material's self-lit parts and hot texture veins shine once night falls.
+   */
+  shine: number;
+  /** Night accents (0..1): how strongly its highlight glints (tone 4 on shiny metal) catch the moonlight. */
+  gleam: number;
+  /** Its brightest night accents twinkle now and then (legendary and epic gear). */
+  sparkle: boolean;
 }
 
 /**
@@ -59,6 +68,9 @@ export function material(spec: MaterialSpec): Material {
     glow: !!spec.glow,
     glowTone: 3,
     tex: spec.tex,
+    shine: 0,
+    gleam: 0,
+    sparkle: false,
   };
 }
 
@@ -89,6 +101,10 @@ export interface Frame {
   oy: number;
   /** Packed RGBA (ImageData little-endian layout). */
   data: Uint32Array;
+  /** Night accents, same layout: the pixels that shine after dark, alpha = strength. */
+  glow?: Uint32Array;
+  /** Pixels (x, y pairs, frame space) where night sparkles may twinkle. */
+  sparks?: number[];
 }
 
 // Light from the upper front (the side the sprite faces), toward the viewer.
@@ -264,10 +280,13 @@ export class Raster {
    * Composes the final sprite: tones to colours, contour lines and the
    * silhouette outline, cropped to its bounds. (ox, oy) is the origin.
    */
-  compose(ox: number, oy: number, outline = true): Frame {
+  compose(ox: number, oy: number, outline = true, night = false): Frame {
     const { w, h, mat, tone, flags, order } = this;
     this.contours();
     const px = new Uint32Array(w * h);
+    // Night accents: self-lit parts and hot veins shine, metal glints gleam.
+    const glow = night && this.materials.some((m) => m.shine > 0 || m.gleam > 0) ? new Uint32Array(w * h) : null;
+    const sparkAt: number[] = [];
     let bx0 = w, by0 = h, bx1 = -1, by1 = -1;
     for (let i = 0; i < w * h; i++) {
       const m = mat[i];
@@ -276,6 +295,13 @@ export class Raster {
       let t = tone[i];
       if (flags[i] & FLAG_LINE) t = Math.max(0, Math.min(t - 2, 0));
       px[i] = pack(flags[i] & FLAG_LINE ? mixLine(mt) : mt.ramp[t]);
+      if (glow && !(flags[i] & FLAG_LINE)) {
+        const e = mt.glow || (t === 4 && mt.maxTone < 4) ? mt.shine : t === 4 ? mt.gleam : 0;
+        if (e > 0) {
+          glow[i] = pack(mt.ramp[t], Math.round(e * 255));
+          if (mt.sparkle && t >= 3) sparkAt.push(i);
+        }
+      }
       const x = i % w, y = (i / w) | 0;
       if (x < bx0) bx0 = x; if (x > bx1) bx1 = x;
       if (y < by0) by0 = y; if (y > by1) by1 = y;
@@ -303,7 +329,21 @@ export class Raster {
     const cw = bx1 - bx0 + 1, ch = by1 - by0 + 1;
     const data = new Uint32Array(cw * ch);
     for (let y = 0; y < ch; y++) data.set(px.subarray((y + by0) * w + bx0, (y + by0) * w + bx0 + cw), y * cw);
-    return { w: cw, h: ch, ox: ox - bx0, oy: oy - by0, data };
+    const out: Frame = { w: cw, h: ch, ox: ox - bx0, oy: oy - by0, data };
+    if (glow) {
+      out.glow = new Uint32Array(cw * ch);
+      for (let y = 0; y < ch; y++) out.glow.set(glow.subarray((y + by0) * w + bx0, (y + by0) * w + bx0 + cw), y * cw);
+      // A handful of spread-out spots is plenty for twinkles.
+      if (sparkAt.length) {
+        out.sparks = [];
+        const step = Math.max(1, Math.floor(sparkAt.length / 6));
+        for (let k = 0; k < sparkAt.length && out.sparks.length < 12; k += step) {
+          const i = sparkAt[k];
+          out.sparks.push((i % w) - bx0, ((i / w) | 0) - by0);
+        }
+      }
+    }
+    return out;
   }
 }
 
