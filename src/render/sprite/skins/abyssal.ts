@@ -121,7 +121,7 @@ function nautilusDisc(): WeaponArt {
 const AM = mats({
   shell: { base: 0xf2dcc0, shiny: true, step: 0.14 }, band: { base: CORAL }, pearl: { base: PEARL, ramp: PEARL_RAMP, shiny: true },
   water: { base: 0x5ad8ff, glow: true }, foam: { base: 0xe8fbff, glow: true },
-  glowPearl: { base: PEARL, glow: true, ramp: PEARL_RAMP }, bubble: { base: 0x9af0ff, glow: true },
+  glowPearl: { base: PEARL, glow: true, ramp: PEARL_RAMP }, clam: { base: 0xf09a88, shiny: true, step: 0.14, ramp: [0x8a2a3a, 0xc84a52, 0xf09a88, 0xffd0b8, 0xfff0e0] }, bubble: { base: 0x9af0ff, glow: true },
 });
 const AMK = (k: string) => AM[k as keyof typeof AM];
 
@@ -138,15 +138,17 @@ const chakramProj: ProjArt = {
 
 const coreProj: ProjArt = {
   frames: 4,
-  draw(r, t, f, h) {
-    // A glowing pearl floating in a ring of bubbles that drift round it.
-    r.fill(t.circ(0, 0, 2.6), h(AM.glowPearl), { group: 1 });
-    r.dot(t.x(-0.8, 0.8), t.y(-0.8, 0.8), h(AM.foam), 3, 1);
-    for (let k = 0; k < 3; k++) {
-      const a = f * Q * 0.5 + (k * Math.PI * 2) / 3;
-      const x = Math.cos(a) * 4.6, y = Math.sin(a) * 2.4 + 0.4;
-      r.fill(t.circ(x, y, k === 0 ? 0.9 : 0.6), h(AM.bubble), { group: 1, noLine: true });
-    }
+  outline: true,
+  draw(r, t0, f, h) {
+    const t = new Xf(t0.ox, t0.oy, t0.ang, 1.5, 1.5);
+    // A little clam floating at the shoulder, breathing open and shut round its glowing pearl, a bubble rising.
+    const lift = [0.45, 0.65, 0.85, 0.65][f];
+    const lid = new Xf(t.x(-3.8, -0.4), t.y(-3.8, -0.4), t.ang + lift, t.sx, t.sy);
+    r.fill(lid.ell(3.8, 0.4, 4.2, 1.6), h(AM.clam), { group: 1, bevel: 1.2, toneBias: -1 });
+    r.fill(t.circ(0.2, 0.8, 2.3), h(AM.glowPearl), { group: 2 });
+    r.dot(t.x(-0.5, 1.3), t.y(-0.5, 1.3), h(AM.foam), 3, 2);
+    r.fill(t.ell(0, -1.4, 4.4, 2.1), h(AM.clam), { group: 3, bevel: 1.2 });
+    r.fill(t.circ(1.6, 3.6 + f * 1.1, f === 3 ? 0.6 : 0.85), h(AM.bubble), { group: 4, noLine: true });
   },
 };
 

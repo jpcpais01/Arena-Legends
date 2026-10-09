@@ -14,6 +14,8 @@ export type HeadDraw = (r: Raster, H: Xf, m: (k: string) => number, g: number, s
 export interface HeadSkin {
   mats: Record<string, ReturnType<typeof material>>;
   draw: HeadDraw;
+  /** A hood or mask that leaves the face open: the wearer's eyes are drawn as usual. */
+  face?: boolean;
 }
 
 export function hornedWarhelm(): HeadSkin {

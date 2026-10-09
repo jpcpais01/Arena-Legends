@@ -444,7 +444,7 @@ function drawFace(r: Raster, art: CharacterArt, H: Xf, face: Expression, m: (k: 
   const glowEyes = sp === 'wisp' || sp === 'golem';
   const hood = art.headgear === 'executioner_hood';
   const mask = art.headgear === 'berserker_mask';
-  if (hood || mask) return; // drawn by the headgear
+  if ((hood || mask) && !art.headFace) return; // drawn by the headgear
   const [nx, ny] = px(H, 1.4, 0.4);
   const [fx, fy] = px(H, 4.8, 0.3);
   const lash = m('lash');

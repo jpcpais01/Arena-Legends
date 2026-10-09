@@ -12,14 +12,16 @@ import { epicFx, glow, mats, plain, shiny, veined, wrap } from './kit';
  * humming at the heart of every piece.
  */
 
-const BRASS = [0x4a2e14, 0x7a5224, 0xb88438, 0xe8b850, 0xfff0b0];
+const BRASS = [0x4a2e14, 0x7a5224, 0xb88438, 0xe8b850, 0xfce8a0];
+/** Plate brass: a deeper ramp, so a whole torso of it still reads as brass under the light. */
+const PLATE = [0x3a2410, 0x6a4620, 0x9a6c2c, 0xc89640, 0xecc870];
 const STEEL = [0x181c22, 0x262c34, 0x3a424c, 0x5a6470];
 const COPPER = 0xc8743e, CORE = 0x6af0ff, CORE_HOT = 0xe8ffff, STEAM = 0xe4e8ee;
 
 /** Riveted panels: seams every few units, a rivet at each corner. */
-const rivets = (p = 3.2): Tex => (x, y) => {
+const rivets = (p = 3.2, hi = 2): Tex => (x, y) => {
   const u = wrap(x, p), v = wrap(y, p);
-  if (u < 0.75 && v < 0.75) return 2;
+  if (u < 0.75 && v < 0.75) return hi;
   return u < 0.32 || v < 0.32 ? -1 : 0;
 };
 /** A gleam sliding along polished brass, one step per frame. */
@@ -149,11 +151,11 @@ const heartProj: ProjArt = {
   outline: true,
   draw(r, t, f, h) {
     // A small clockwork heart floating at the shoulder: a cog turning behind it, the core beating.
-    const s = 0.42;
-    r.fill(gear(t, -2.4, 2.4, 2.2, 7, turn(7, f), 0.8, 0.8), h(CM.copper), { group: 1, bevel: 0.8 });
+    const s = 0.55;
+    r.fill(gear(t, -3, 3, 2.6, 7, turn(7, f), 0.9, 0.9), h(CM.copper), { group: 1, bevel: 0.8 });
     r.fill(heartShape(t, s), h(CM.brass), { group: 2, bevel: 1.6, local: t });
     const big = f % 2 === 0;
-    r.fill(t.circ(0, 0.6, big ? 1.6 : 1.2), h(CM.core), { group: 2 });
+    r.fill(t.circ(0, 0.6, big ? 2 : 1.5), h(CM.core), { group: 2 });
     r.dot(t.x(-0.4, 1), t.y(-0.4, 1), h(CM.coreHot), 3, 2);
     if (f === 1) r.fill(t.circ(1.6, 4.6, 0.6), h(CM.steam), { group: 3, noLine: true });
     if (f === 2) r.fill(t.circ(2, 5.8, 0.8), h(CM.steam), { group: 3, noLine: true });
@@ -227,7 +229,7 @@ function titanFrame(): SkinArt {
   // venting steam, and a furnace window on the chest where the arcane core beats.
   return {
     mats: {
-      plate: { base: BRASS[2], ramp: BRASS, shiny: true, tex: (x, y, ph) => rivets(3)(x, y, ph) + gleam(9)(x, y, ph) }, plateDark: shiny(STEEL[2]),
+      plate: { base: PLATE[2], ramp: PLATE, shiny: true, step: 0.12, tex: (x, y, ph) => rivets(3, 1)(x, y, ph) + gleam(9)(x, y, ph) }, plateDark: shiny(STEEL[2]),
       'k.gear': shiny(COPPER, undefined, 0.14), 'k.hub': { base: BRASS[2], ramp: BRASS, shiny: true }, 'k.steel': shiny(STEEL[2]),
       'k.core': { base: CORE, glow: true, ramp: [0x1a6a8a, 0x2ab8e0, CORE, 0xb8fcff, CORE_HOT], tex: beat }, 'k.steam': plain(STEAM),
       'k.pipe': shiny(COPPER),

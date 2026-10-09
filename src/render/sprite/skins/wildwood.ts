@@ -205,6 +205,7 @@ function stagHood(): SkinArt {
         const a = r.phase * Q;
         r.dot(H.x(-1.8 + Math.cos(a) * 4, 13 + Math.sin(a) * 1.4), H.y(-1.8 + Math.cos(a) * 4, 13 + Math.sin(a) * 1.4), m('h.fly'), 3, g);
       },
+      face: true,
     }),
     ...FX,
   };
