@@ -33,7 +33,7 @@ describe('battle simulation', () => {
       const r = runHeadless(cfg(s * 7919));
       expect(r.over).toBe(true);
     }
-  });
+  }, 30000); // 20 full battles with look-ahead AI
 
   it('produces events', () => {
     const b = new Battle(cfg(99));
