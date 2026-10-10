@@ -12,7 +12,7 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.51.0',
+    version: '0.52.0',
     date: '2026-10-10',
     title: 'Entrances',
     notes: [
@@ -21,6 +21,16 @@ export const PATCH_NOTES: PatchNote[] = [
       'Hero creation has a new last step, Entrance: tap one to watch it on your hero, pick the ones you own, or unlock one right there.',
       'The Shop has a new Entrances shelf. Tap an offer to watch it on the stage before you buy.',
       'Rivals show up with entrances of their own, and in online duels you see your friend\'s.',
+    ],
+  },
+  {
+    version: '0.51.0',
+    date: '2026-10-10',
+    title: 'An epic new battle soundtrack',
+    notes: [
+      'The battle music is now played by a full orchestra in a grand hall: strings, a choir, horns, celesta, timpani, war drums and anvils.',
+      'It still builds as the weaker fighter loses health. Calm strings and bells at first, then a harp and a driving string rhythm, then the horns call out, and finally the heroic theme with the choir and every drum in the arena.',
+      'Near defeat a heartbeat and trembling strings take over, night overtime lifts the key and adds more war drums, and the fight ends on a big triumphant chord.',
     ],
   },
   {
