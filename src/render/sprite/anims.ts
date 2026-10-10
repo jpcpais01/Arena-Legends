@@ -258,7 +258,7 @@ function wandClips(): Record<string, Phases> {
 }
 
 function heavyClips(): Record<string, Phases> {
-  return {
+  const clips: Record<string, Phases> = {
     slash: {
       w: [
         F({ hNx: 0.12, hNy: 0.05, wAng: 2.1, lean: 0.02, hipX: -0.03 }),
@@ -289,7 +289,7 @@ function heavyClips(): Record<string, Phases> {
         F({ hNx: 0.24, hNy: -0.55, wAng: 1.3, lean: 0.14 }, 'calm'),
       ],
     },
-    // Hammer overhead into the floor.
+    // Hammer overhead into the floor (also the halberd's and scythe's overhead chop).
     slam: {
       w: [
         F({ hNx: 0.15, hNy: 0.35, wAng: 1.8, lean: 0.0, hipY: -0.05 }),
@@ -325,6 +325,8 @@ function heavyClips(): Record<string, Phases> {
       ],
     },
   };
+  clips.overhead = clips.slam;
+  return clips;
 }
 
 function polearmClips(): Record<string, Phases> {
@@ -399,7 +401,7 @@ const FAMILY_CLIPS: Record<MainFamily, () => Record<string, Phases>> = {
 function secondaryClip(art: CharacterArt, anim: string): Phases | null {
   const fam = art.secFamily;
   if (!fam) return null;
-  const front = fam === 'shield' || fam === 'buckler';
+  const front = fam === 'shield' || fam === 'buckler' || fam === 'fist';
   const S = (p: PoseKey, face: Expression = 'fierce', hold: Partial<Hold> = {}) => F(p, face, { hold: { sec: 'hand', secFront: front, ...hold } });
   switch (anim) {
     case 'guard':
@@ -415,6 +417,21 @@ function secondaryClip(art: CharacterArt, anim: string): Phases | null {
         r: [S({ hFx: 0.45, hFy: -0.25, sAng: 0.6 }, 'calm')],
       };
     case 'bash':
+      // Cestus uppercut: sink low with the fist at the hip, then drive it up under the chin.
+      if (fam === 'fist') return {
+        w: [
+          S({ hFx: 0.2, hFy: -0.6, sAng: 0.7, lean: 0.24, hipY: -0.15, hipX: -0.03, fNx: -0.36, fFx: 0.38, head: -0.06 }),
+          S({ hFx: 0.12, hFy: -0.72, sAng: 1.0, lean: 0.34, hipY: -0.22, hipX: -0.04, fNx: -0.42, fFx: 0.42, head: -0.1 }),
+        ],
+        a: [
+          S({ hFx: 0.62, hFy: 0.2, sAng: 1.35, lean: 0.02, hipY: -0.04, hipX: 0.06, fNx: -0.3, fFx: 0.44, toeN: -0.3, head: 0.12, sway: -0.6 }, 'shout'),
+          S({ hFx: 0.5, hFy: 0.78, sAng: 1.55, lean: -0.16, hipY: 0.0, hipX: 0.07, fNx: -0.24, fFx: 0.36, toeN: -0.45, toeF: -0.2, head: 0.22, sway: -1 }, 'shout'),
+        ],
+        r: [
+          S({ hFx: 0.48, hFy: 0.6, sAng: 1.45, lean: -0.1, hipY: -0.03, hipX: 0.05 }),
+          S({ hFx: 0.42, hFy: -0.25, sAng: 0.5, lean: 0.12, hipY: -0.08 }, 'calm'),
+        ],
+      };
       return {
         w: [S({ hFx: 0.18, hFy: -0.35, sAng: 0, lean: 0.0, hipX: -0.04 }), S({ hFx: 0.05, hFy: -0.32, sAng: 0, lean: -0.05, hipX: -0.06 })],
         a: [S({ hFx: 1, hFy: -0.15, sAng: 0, lean: 0.36, hipX: 0.1, fFx: 0.5 }, 'shout')],
@@ -479,8 +496,9 @@ function drawFrames(art: CharacterArt): FrameDef[] {
     out.push(F({ hNx: 0.12, hNy: 0.32, wAng: 2.4, lean: 0.06 }, 'calm', { hold: { main: 'hand' } }));
     out.push(F({ ...FREE_NEAR, hNx: 0.05, hNy: 0.3, lean: 0.08 }, 'calm', { hold: { main: 'back' } }));
   }
-  out.push(F({ ...reach }, 'calm', { hold: { sec: 'stowed' } }));
-  out.push(F({ hFx: 0.25, hFy: -0.45, sAng: shield ? -1.2 : 0.3 }, 'calm', { hold: { sec: 'hand', secFront: shield || art.secFamily === 'buckler' } }));
+  // A cestus is already on the fist: just bring it up.
+  if (art.secFamily !== 'fist') out.push(F({ ...reach }, 'calm', { hold: { sec: 'stowed' } }));
+  out.push(F({ hFx: 0.25, hFy: -0.45, sAng: shield ? -1.2 : 0.3 }, 'calm', { hold: { sec: 'hand', secFront: shield || art.secFamily === 'buckler' || art.secFamily === 'fist' } }));
   return out;
 }
 
@@ -489,8 +507,8 @@ function stowFrames(art: CharacterArt, gone: boolean): FrameDef[] {
   const out: FrameDef[] = [];
   const shield = art.secFamily === 'shield';
   const reach: PoseKey = shield ? { hFx: -0.15, hFy: 0.15, elF: -1 } : { hFx: -0.28, hFy: -0.72 };
-  out.push(F({ hFx: 0.2, hFy: -0.5, sAng: shield ? -1.2 : 0.3 }, 'calm', { hold: { sec: gone ? 'gone' : 'hand', secFront: shield || art.secFamily === 'buckler' } }));
-  out.push(F({ ...reach }, 'calm', { hold: { sec: 'stowed' } }));
+  out.push(F({ hFx: 0.2, hFy: -0.5, sAng: shield ? -1.2 : 0.3 }, 'calm', { hold: { sec: gone ? 'gone' : 'hand', secFront: shield || art.secFamily === 'buckler' || art.secFamily === 'fist' } }));
+  out.push(F(art.secFamily === 'fist' ? { hFx: 0.3, hFy: -0.42 } : { ...reach }, 'calm', { hold: { sec: 'stowed' } }));
   if (art.hands === 2) {
     out.push(F({ ...FREE_NEAR, hNx: 0.05, hNy: 0.3, lean: 0.08 }, 'calm', { hold: { main: 'back' } }));
     out.push(F({ hNx: 0.12, hNy: 0.32, wAng: 2.4, lean: 0.06 }, 'calm', { hold: { main: 'hand' } }));

@@ -145,7 +145,7 @@ export function iconFrame(id: GearId, skin?: string | null): Frame {
   const c = 70;
   if (def.slot === 'main' || def.slot === 'secondary') {
     const w = weaponArt(id, skin)!;
-    const shield = id === 'kite_shield' || id === 'buckler';
+    const shield = id === 'kite_shield' || id === 'buckler' || id === 'tower_shield';
     const bow = id === 'longbow';
     const ang = shield ? -Math.PI / 2 : bow ? -Math.PI / 4 : Math.PI / 4;
     // Long weapons are shortened along their length so every icon fits the same box.

@@ -1,6 +1,6 @@
 import { material, type LocalSpace, type Material, type Raster } from '../pixel/raster';
 import type { Shape } from '../pixel/sdf';
-import type { Xf } from './xform';
+import { Xf } from './xform';
 
 /**
  * Shared pieces for weapon art: the WeaponArt contract, stock materials and
@@ -10,7 +10,8 @@ import type { Xf } from './xform';
  */
 
 export type MainFamily = 'sword' | 'wand' | 'heavy' | 'polearm' | 'staff' | 'bow';
-export type SecFamily = 'shield' | 'parry' | 'buckler' | 'knife' | 'crossbow' | 'chakram' | 'wand' | 'horn';
+/** `fist`: worn on the off hand all fight (cestus), never holstered. */
+export type SecFamily = 'shield' | 'parry' | 'buckler' | 'knife' | 'crossbow' | 'chakram' | 'wand' | 'horn' | 'fist';
 
 export interface WeaponArt {
   /** Distance from the grip to the tip (smears, hit sparks). */
@@ -65,3 +66,31 @@ export function clearShape(r: Raster, s: Shape): void {
   }
 }
 
+
+/**
+ * A frame at the weapon's point (lx, ly) whose +x points straight down the
+ * screen, +y toward screen right: for parts that hang (chains, cords,
+ * charms) whatever angle the weapon is held at. Keeps the weapon's size.
+ */
+export function hangAt(t: Xf, lx: number, ly: number): Xf {
+  const s = Math.abs(t.sy);
+  return new Xf(t.x(lx, ly), t.y(lx, ly), -Math.PI / 2, s, s);
+}
+
+/**
+ * A chain along a quadratic curve (raster space): one-pixel links in
+ * alternating tones, so it reads as metal links at any length.
+ */
+export function chainLine(r: Raster, ax: number, ay: number, cx: number, cy: number, bx: number, by: number, mat: number, group = 6): void {
+  const len = Math.hypot(cx - ax, cy - ay) + Math.hypot(bx - cx, by - cy);
+  const n = Math.max(2, Math.ceil(len));
+  let lx = -1, ly = -1, k = 0;
+  for (let i = 0; i <= n; i++) {
+    const u = i / n, v = 1 - u;
+    const x = Math.floor(v * v * ax + 2 * u * v * cx + u * u * bx);
+    const y = Math.floor(v * v * ay + 2 * u * v * cy + u * u * by);
+    if (x === lx && y === ly) continue;
+    r.dot(x, y, mat, k++ % 2 ? 1 : 3, group);
+    lx = x; ly = y;
+  }
+}
