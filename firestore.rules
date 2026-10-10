@@ -86,5 +86,35 @@ service cloud.firestore {
       allow delete: if request.auth != null && (request.auth.uid == uid || request.auth.uid == other);
       allow update: if false;
     }
+
+    // invites/{from}_{to} -> { from, to, fromName, code, at, state }: a battle invite to a friend.
+    // The inviter hosts online room `code`; the friend accepts or declines by setting `state`.
+    match /invites/{id} {
+      function validInvite() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['from', 'to', 'fromName', 'code', 'at', 'state'])
+          && d.from == request.auth.uid
+          && d.to is string
+          && d.to != request.auth.uid
+          && id == request.auth.uid + '_' + d.to
+          && d.code is string
+          && d.code.matches('^[0-9]{5}$')
+          && d.at is int
+          && d.state == 'open'
+          && d.fromName is string
+          && get(/databases/$(database)/documents/usernames/$(d.fromName.lower())).data.uid == request.auth.uid
+          && exists(/databases/$(database)/documents/friends/$(request.auth.uid)/list/$(d.to));
+      }
+      allow get: if request.auth != null
+        && (resource == null || resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+      allow list, delete: if request.auth != null
+        && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+      allow create: if request.auth != null && validInvite();
+      allow update: if request.auth != null
+        && ((resource.data.from == request.auth.uid && validInvite())
+          || (resource.data.to == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['state'])
+            && request.resource.data.state in ['accepted', 'declined']));
+    }
   }
 }

@@ -45,6 +45,7 @@ import { setPieces, type SkinDef } from './character/skins';
 import { accountStatus, accountsEnabled, consumeResume, me, onAccount, poke, restoreAccount, setReloadGate, social } from './account/account';
 import { accountSheet } from './ui/account';
 import { friendsSheet } from './ui/friends';
+import { invitePopup, type InvitePopup } from './ui/invite';
 
 type State = 'menu' | 'intro' | 'battle' | 'results';
 
@@ -152,9 +153,123 @@ function openFriends(): void {
     onClose: () => closeSheet(),
     onAccount: () => openAccount(),
     onIncoming: (n) => { requestsAt = Date.now(); menu.setFriendRequests(n); },
+    onInvite: (f) => inviteFriend(f.uid, f.name),
   });
   ui.append(sheet.el);
 }
+
+// --- Duel invites between friends --------------------------------------------------------------
+// The inviter hosts an online room and leaves an invite naming its code; the
+// friend's game checks for invites while on the menu and pops up a challenge.
+
+/** How long an invite stands, from when it was sent. */
+const INVITE_SECONDS = 60;
+/** The friend we invited to the room we host, and how they answered. */
+let sentInvite: { to: string; name: string; code: string; state: 'sending' | 'open' | 'declined' | 'expired' | 'failed'; at: number } | null = null;
+let invitePoll = 0;
+
+function inviteFriend(uid: string, name: string): void {
+  if (!me()) return;
+  startOnline('host');
+  if (!session) return; // no hero yet: the creator opened instead
+  sentInvite = { to: uid, name, code: '', state: 'sending', at: 0 };
+  syncOnline();
+}
+
+/** Host side, after every session change: send the invite once the room is open, then watch for the answer. */
+function syncInvite(s: OnlineSession): void {
+  const inv = sentInvite;
+  const who = me();
+  if (!inv || !who) return;
+  // They joined (or the room closed): the invite has done its job.
+  if (s.snap || s.conn === 'error' || s.conn === 'left') { endInvite(); return; }
+  if (s.conn !== 'waiting' || inv.code === s.code) return;
+  inv.code = s.code;
+  inv.state = 'sending';
+  social().then((m) => m.invite(who, inv.to, s.code)).then(() => {
+    if (sentInvite !== inv) return;
+    inv.state = 'open';
+    inv.at = Date.now();
+    syncOnline();
+    clearInterval(invitePoll);
+    invitePoll = window.setInterval(() => void watchInvite(inv), 3000);
+  }, (e) => {
+    console.warn('[invite]', e);
+    if (sentInvite === inv) { inv.state = 'failed'; syncOnline(); }
+  });
+}
+
+async function watchInvite(inv: NonNullable<typeof sentInvite>): Promise<void> {
+  if (sentInvite !== inv || inv.state !== 'open') return;
+  if (Date.now() - inv.at > INVITE_SECONDS * 1000) {
+    inv.state = 'expired';
+    clearInterval(invitePoll);
+    void social().then((m) => m.dropInvite(me()?.uid ?? '', inv.to)).catch(() => {});
+    syncOnline();
+    return;
+  }
+  const got = await social().then((m) => m.inviteState(me()?.uid ?? '', inv.to)).catch(() => undefined);
+  if (sentInvite !== inv || !got) return;
+  if (got.state === 'declined') {
+    inv.state = 'declined';
+    clearInterval(invitePoll);
+    sfx.play('back');
+    void social().then((m) => m.dropInvite(got.from, got.to)).catch(() => {});
+    syncOnline();
+  }
+}
+
+/** Forgets the invite we sent and takes it down. */
+function endInvite(): void {
+  const inv = sentInvite;
+  sentInvite = null;
+  clearInterval(invitePoll);
+  const who = me();
+  if (inv && who && inv.code) void social().then((m) => m.dropInvite(who.uid, inv.to)).catch(() => {});
+}
+
+/** Friend side: the popup on screen, and invites already answered or let lapse (by sender and time). */
+let invitePop: InvitePopup | null = null;
+let shownInvite = '';
+const seenInvites = new Set<string>();
+
+/** Checks for duel invites while this player sits on the menu, signed in. */
+async function checkInvites(): Promise<void> {
+  const who = me();
+  if (!who || document.visibilityState !== 'visible') return;
+  const idle = state === 'menu' && !session && !title;
+  if (!idle) { closeInvite(); return; }
+  const list = await social().then((m) => m.invites(who.uid)).catch(() => null);
+  if (!list || me()?.uid !== who.uid) return;
+  const now = Date.now();
+  // Generous on age: the two clocks can disagree a little.
+  const live = list.filter((i) => now - i.at < (INVITE_SECONDS + 15) * 1000 && !seenInvites.has(`${i.from}:${i.at}`));
+  if (invitePop && !live.some((i) => `${i.from}:${i.at}` === shownInvite)) closeInvite(); // they cancelled
+  if (invitePop || !live.length || !(state === 'menu' && !session && !title)) return;
+  const inv = live.sort((a, b) => b.at - a.at)[0];
+  const key = `${inv.from}:${inv.at}`;
+  const left = Math.max(10, Math.min(INVITE_SECONDS, INVITE_SECONDS - (now - inv.at) / 1000));
+  const answer = (yes: boolean) => social().then((m) => m.answerInvite(inv, yes)).catch(() => {});
+  shownInvite = key;
+  invitePop = invitePopup(inv.fromName, left, {
+    onAccept: () => {
+      seenInvites.add(key); closeInvite();
+      void answer(true);
+      startOnline('guest', inv.code);
+    },
+    onDecline: () => { seenInvites.add(key); closeInvite(); void answer(false); },
+    onExpire: () => { seenInvites.add(key); closeInvite(); },
+  });
+  ui.append(invitePop.el);
+  social().then((m) => m.hero(inv.from)).then((x) => invitePop?.setHero(x), () => {});
+}
+
+function closeInvite(): void {
+  invitePop?.dispose();
+  invitePop = null;
+  shownInvite = '';
+}
+window.setInterval(() => void checkInvites(), 5000);
 
 /** Checks for friend requests now and then (the dot on the menu's friends button). */
 let requestsAt = 0;
@@ -534,6 +649,7 @@ function endOnline(bye: boolean, toTitle = true): void {
   const s = session;
   if (!s) return;
   session = null;
+  endInvite();
   if (bye) s.leave(); else s.close();
   lobby.hide();
   netBanner.hide();
@@ -557,11 +673,16 @@ function syncOnline(): void {
   if (!snap) {
     netBanner.hide();
     if (s.conn === 'error') lobby.show({ kind: 'error', code: s.code, error: s.error ?? 'offline', canRetry: true });
-    else if (s.role === 'host') lobby.show(s.conn === 'starting' ? { kind: 'opening' } : { kind: 'waiting', code: s.code });
+    else if (s.role === 'host') {
+      syncInvite(s);
+      const inv = sentInvite;
+      lobby.show(s.conn === 'starting' ? { kind: 'opening' } : { kind: 'waiting', code: s.code, invited: inv ? { name: inv.name, state: inv.state } : undefined });
+    }
     else lobby.show({ kind: 'joining', code: s.code });
     return;
   }
   lobby.hide();
+  if (sentInvite) endInvite();
   syncBanner(s, snap);
   if (snap.phase === 'pick') {
     const key = `${snap.id}:${snap.round}`;

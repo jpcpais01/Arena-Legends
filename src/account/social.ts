@@ -13,6 +13,9 @@ export interface FriendsData { friends: Friend[]; incoming: FriendRequest[]; out
 /** A friend's shared hero: the raw saved character (checked by the caller) and their win record. */
 export interface SharedHero { name: string; hero: unknown; w: number; l: number; at: number }
 
+/** A battle invite: the inviter hosts room `code` and waits there. */
+export interface Invite { from: string; to: string; fromName: string; code: string; at: number; state: 'open' | 'accepted' | 'declined' }
+
 export type AddResult = 'sent' | 'friends' | 'self' | 'missing' | 'already' | 'pending';
 
 const str = (v: unknown) => (typeof v === 'string' ? v : '');
@@ -98,4 +101,36 @@ export async function hero(uid: string): Promise<SharedHero | null> {
 /** Shares this player's hero and record so friends can see them. */
 export async function share(me: Me, heroJson: string, w: number, l: number): Promise<void> {
   await setDoc(doc(db, 'heroes', me.uid), { name: me.name.slice(0, 16), hero: heroJson, w: int(w), l: int(l), at: Date.now() });
+}
+
+const inviteRef = (from: string, to: string) => doc(db, 'invites', `${from}_${to}`);
+
+function asInvite(d: Record<string, unknown>): Invite {
+  const state = d.state === 'accepted' || d.state === 'declined' ? d.state : 'open';
+  return { from: str(d.from), to: str(d.to), fromName: str(d.fromName), code: str(d.code), at: int(d.at), state };
+}
+
+/** Invites a friend to the online room we are hosting. */
+export async function invite(me: Me, to: string, code: string): Promise<void> {
+  await setDoc(inviteRef(me.uid, to), { from: me.uid, to, fromName: me.name, code, at: Date.now(), state: 'open' });
+}
+
+/** Open invites waiting for this player. */
+export async function invites(uid: string): Promise<Invite[]> {
+  const snap = await getDocs(query(collection(db, 'invites'), where('to', '==', uid)));
+  return snap.docs.map((d) => asInvite(d.data())).filter((i) => i.state === 'open' && i.code);
+}
+
+/** The inviter checks whether the friend answered (null once the invite is gone). */
+export async function inviteState(from: string, to: string): Promise<Invite | null> {
+  const snap = await getDoc(inviteRef(from, to));
+  return snap.exists() ? asInvite(snap.data()) : null;
+}
+
+export async function answerInvite(i: Invite, yes: boolean): Promise<void> {
+  await setDoc(inviteRef(i.from, i.to), { ...i, state: yes ? 'accepted' : 'declined' });
+}
+
+export async function dropInvite(from: string, to: string): Promise<void> {
+  await deleteDoc(inviteRef(from, to));
 }

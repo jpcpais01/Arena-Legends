@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.62.0',
+    date: '2026-10-10',
+    title: 'Duel your friends',
+    notes: [
+      'Open a friend in Friends and tap Invite to duel. A room opens for you and your friend gets the invite straight away.',
+      'Invites pop up as a challenge with your hero, your record and a timer. Accept and you both go straight into an online best of five; decline and the inviter sees it.',
+      'Invites last a minute and show up while your friend is signed in on the home screen. The room code still works if they miss it.',
+    ],
+  },
+  {
     version: '0.61.2',
     date: '2026-10-10',
     title: 'Batuca unlocks everything',
