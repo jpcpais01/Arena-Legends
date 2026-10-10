@@ -365,7 +365,7 @@ function startDemo(): void {
 
 function toMenu(): void {
   state = 'menu';
-  music.stop();
+  music.menu();
   closeSheet();
   resultsEl?.remove();
   resultsEl = null;
@@ -513,7 +513,7 @@ function startOnline(role: 'host' | 'guest', code = '', resume?: ReturnType<type
   const s: OnlineSession = role === 'host' ? new HostSession(me, resume ?? undefined) : new GuestSession(code, me, resume ?? undefined);
   session = s;
   netMatch = ''; netRound = 0; netPick = ''; resultsKey = '';
-  music.stop();
+  music.menu();
   s.onChange = () => { if (session === s) syncOnline(); };
   // The background duel keeps going behind the lobby and the pick screen.
   state = 'menu';
@@ -602,7 +602,7 @@ function pickInfo(s: OnlineSession, snap: Snapshot): PickInfo {
 function enterPick(s: OnlineSession, snap: Snapshot, key: string): void {
   netPick = key;
   state = 'menu';
-  music.stop();
+  music.menu();
   closeSheet();
   resultsEl?.remove();
   resultsEl = null;
@@ -717,8 +717,8 @@ window.addEventListener('keydown', (e) => {
   } else if (state === 'results' && e.key === 'Enter' && !session) startFight();
 });
 // Browsers only start audio after a gesture.
-window.addEventListener('pointerdown', () => sfx.unlock(), { capture: true });
-window.addEventListener('keydown', () => sfx.unlock(), { capture: true, once: true });
+window.addEventListener('pointerdown', () => { sfx.unlock(); music.unlocked(); }, { capture: true });
+window.addEventListener('keydown', () => { sfx.unlock(); music.unlocked(); }, { capture: true, once: true });
 setupPhoneFullscreen();
 
 // --- Boot --------------------------------------------------------------------------------------
