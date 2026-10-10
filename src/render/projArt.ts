@@ -43,6 +43,11 @@ const M = {
 };
 
 const ART: Record<ProjectileStyle | 'phantom' | 'sigil', ProjArt> = {
+  // PLACEHOLDERS: new styles drawn as existing ones until their art lands.
+  get hook() { return ART.knife; }, get bolas() { return ART.chakram; }, get javelin() { return ART.arrow; },
+  get spark() { return ART.arcane; }, get soul() { return ART.wisp; }, get bonespike() { return ART.groundwave; },
+  get frostflask() { return ART.flask; }, get caltrops() { return ART.flask; }, get hawk() { return ART.arrow; },
+  get breath() { return ART.fire; },
   arrow: {
     frames: 1, outline: true,
     draw(r, t, _f, h) {

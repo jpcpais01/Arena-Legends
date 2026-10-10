@@ -3,7 +3,7 @@ import type { Battle } from '../battle';
 import { ARENA_HALF_WIDTH, DT, MATCH_TIME } from '../constants';
 import { getStatus, isDisabled, stacksOf, type Fighter } from '../fighter';
 import {
-  analyzeKit, analyzeMatchup, ccValue, dpsAt, estDamage, fastestAnswer, liveReach, readyDefenses, STATUS_FX,
+  analyzeKit, analyzeMatchup, ccValue, dpsAt, estDamage, fastestAnswer, hasControl, liveReach, readyDefenses, STATUS_FX,
   type AbilityInfo, type Kit, type Matchup,
 } from './kit';
 import { OpponentModel } from './opponent';
@@ -109,6 +109,9 @@ function effectiveHp(f: Fighter): number {
   }
   let v = hp / f.stats.maxHp;
   if (f.has.has('phoenix_feather') && !f.phoenixUsed) v += 0.3;
+  if (f.has.has('hourglass') && !f.rewindUsed) v += 0.12;
+  const regen = getStatus(f, 'regen');
+  if (regen) v += 0.025 * regen.remaining * f.stats.healMult;
   return v;
 }
 
@@ -320,7 +323,7 @@ export class Brain implements FighterBrain {
       this.midAction(b, e);
       return;
     }
-    if (isDisabled(f)) { f.move = 0; return; }
+    if (isDisabled(f) || getStatus(f, 'fear')) { f.move = 0; return; }
 
     const threat = this.readThreat(b, e);
     const open = this.enemyOpenFor(e);
@@ -345,6 +348,8 @@ export class Brain implements FighterBrain {
   // ---------------------------------------------------------------------------
 
   private perceive(b: Battle, e: Fighter): void {
+    // Hidden in smoke: nothing to read until they step out.
+    if (getStatus(e, 'hidden')) { this.seenKey = -1; return; }
     const key = actionKey(e);
     if (key !== this.seenKey) {
       this.seenKey = key;
@@ -639,7 +644,8 @@ export class Brain implements FighterBrain {
     for (const info of this.kit.info) {
       if (info.item || !b.canUse(f, info.idx)) continue;
       let r: { val: number; why: string; wait?: boolean } | null;
-      if (info.defense) r = this.scoreDefense(b, info, c);
+      if (info.ab.kind === 'swap') r = this.scoreSwap(info, c);
+      else if (info.defense) r = this.scoreDefense(b, info, c);
       else if (info.buff) r = this.scoreBuff(info, c);
       else if (info.offensive) r = this.scoreAttack(b, info, c);
       else r = null;
@@ -913,6 +919,34 @@ export class Brain implements FighterBrain {
     return val > 0 ? { val, why } : null;
   }
 
+  /**
+   * Trickster Talisman: trading places is worth it to get out of a corner (and
+   * leave them in it), or to leave a melee windup swinging at the empty spot.
+   */
+  private scoreSwap(info: AbilityInfo, c: Ctx): { val: number; why: string } | null {
+    const f = this.f;
+    const e = c.e;
+    const ab = info.ab;
+    if (c.dist > ab.range || c.dist < 0.9 || e.invuln > 0) return null;
+    const startup = ab.windup / f.stats.attackSpeed;
+    const gap = (x: number) => ARENA_HALF_WIDTH - Math.abs(x);
+    // Whose back is to the wall: the one standing between the other and it.
+    const myBack = Math.sign(f.x) === -Math.sign(e.x - f.x) ? gap(f.x) : 99;
+    const theirBack = Math.sign(e.x) === -Math.sign(f.x - e.x) ? gap(e.x) : 99;
+    let val = 0;
+    let why = '';
+    if (myBack < 2.2 && theirBack > 3 && c.dist < 4.5) {
+      val = 0.035 + (2.2 - myBack) * 0.015 + (this.kit.ranged ? 0.015 : 0);
+      why = 'Trades places out of the corner!';
+    }
+    const t = c.threat;
+    if (t && t.melee && t.tti > startup + 0.02 && t.tti < startup + 0.35 && t.danger > 0.04) {
+      const v = t.danger * 0.9 + 0.02;
+      if (v > val) { val = v; why = 'Switcheroo: their swing hits nothing!'; }
+    }
+    return val > 0 ? { val: val * (0.8 + this.p.cunning * 0.4), why } : null;
+  }
+
   /** Value of washing off what's on me now (stoneskin elixir). */
   private cleanseValue(ab: AbilityInfo['ab']): number {
     if (!ab.cleanse) return 0;
@@ -937,6 +971,23 @@ export class Brain implements FighterBrain {
     let val = 0;
     let why = '';
     if (ab.buff) for (const s of ab.buff) {
+      if (s.status === 'hidden') {
+        // Smoke: worth most right before stepping in for the ambush.
+        if (!getStatus(f, 'hidden') && c.dist < Math.max(this.m.engage, c.enemyReach) + 1.5) {
+          val += 0.025 + this.p.cunning * 0.02 + (c.threat ? 0.01 : 0);
+          why = 'Vanishes in smoke!';
+        }
+        continue;
+      }
+      if (s.status === 'regen') {
+        const missing = 1 - c.myHp;
+        const total = 0.025 * s.duration;
+        if (!getStatus(f, 'regen') && (missing > total * 0.9 || c.myHp < 0.35)) {
+          val += Math.min(total, missing) * f.stats.healMult * 0.7;
+          why = `${ab.name}!`;
+        }
+        continue;
+      }
       const fx = STATUS_FX[s.status];
       if (!fx || getStatus(f, s.status)) continue;
       const gain = (fx.dmg ?? 0) + (fx.speed ?? 0) * 0.8;
@@ -1079,7 +1130,12 @@ export class Brain implements FighterBrain {
     }
 
     val += pHit * dmg;
-    if (ab.stun || ab.applies?.some((s) => STATUS_FX[s.status]?.cc)) val += pHit * ccValue(ab, c.burst);
+    if (hasControl(ab)) val += pHit * ccValue(ab, c.burst);
+    if (ab.drainLife) val += pHit * dmg * ab.drainLife * 0.6 * (1.4 - c.myHp);
+    // Out of the smoke, the first hit is an ambush.
+    if (getStatus(f, 'hidden')) { val += pHit * dmg * 0.4; why = why || `Ambush — ${ab.name}!`; }
+    // A pull only helps a fighter who wants them close.
+    if (ab.pull && this.kit.ranged && this.m.zone > 0) val -= 0.02;
 
     // Finishing blow.
     const phoenix = e.has.has('phoenix_feather') && !e.phoenixUsed;
@@ -1232,6 +1288,7 @@ export class Brain implements FighterBrain {
   private considerItem(b: Battle, e: Fighter): void {
     const f = this.f;
     if (f.item || b.over) { this.itemReady = 0; return; }
+    if (getStatus(e, 'hidden')) return;
     for (const info of this.kit.info) {
       if (!info.item || !b.canUse(f, info.idx)) continue;
       this.itemReady += DT;
@@ -1247,7 +1304,13 @@ export class Brain implements FighterBrain {
       const guarding = !!ea && ea.phase !== 'recovery' && e.abilities[ea.ability].kind === 'guard';
       let go = false;
       let why = '';
-      if (ab.kind === 'meteor') {
+      if (ab.kind === 'totem') {
+        // Planted between us: it zaps them as long as they fight on my ground.
+        const inside = dist < ab.totem!.radius + 0.6;
+        const stuck = isDisabled(e) || !!getStatus(e, 'root') || open > 0.3;
+        go = inside && (stuck || this.plan === 'pressure' || this.plan === 'allin' || this.plan === 'turtle' || this.itemReady > 2.5);
+        why = stuck ? `${ab.name} while they're stuck!` : `Plants the ${ab.name}!`;
+      } else if (ab.kind === 'meteor') {
         // Lands a while after the call: they must still be stuck (or slow) by then.
         const landIn = ab.windup + 12 / ab.projectile!.speed;
         const pinned = open >= landIn * 0.55 || (isDisabled(e) && open > 0.45) || guarding;

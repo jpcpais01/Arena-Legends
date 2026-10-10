@@ -71,6 +71,25 @@ export interface Fighter {
   ironWillCd: number;
   /** Echo hits queued: [delay, damage] pairs. */
   echoQueue: { delay: number; amount: number; dtype: AbilityDef['damageType'] }[];
+  /** Sands of Time: x and hp sampled every HISTORY_STEP s, a ring of HISTORY_SIZE pairs. */
+  hist: number[];
+  histI: number;
+  histT: number;
+  rewindUsed: boolean;
+  /** Ward Stone: seconds until the next ward. */
+  wardCd: number;
+  dreadCd: number;
+  /** Seer's Blindfold: seconds until foresight is ready again. */
+  foresightCd: number;
+  /** Chain hook: seconds left being dragged, and where to. */
+  pullT: number;
+  pullTo: number;
+  /** Charger Cuisses: seconds spent running at the enemy. */
+  chargeT: number;
+  /** Shadow Garb: seconds left for the sure crit after an evade. */
+  garbT: number;
+  /** Heartwood: healing waiting to be applied. */
+  mendAcc: number;
 
   /** Seconds since last taking damage. */
   sinceHurt: number;
@@ -108,7 +127,10 @@ export function createFighter(id: FighterId, cfg: FighterConfig): Fighter {
     stats: { ...base },
     action: null,
     item: null,
-    familiar: ids.includes('wisp_lantern') ? { cd: 2, charge: 0 } : null,
+    familiar: ids.includes('wisp_lantern') ? { kind: 'wisp', away: 0, cd: 2, charge: 0 }
+      : ids.includes('hunter_hawk') ? { kind: 'hawk', away: 0, cd: 2.5, charge: 0 }
+      : ids.includes('dragon_whelp') ? { kind: 'whelp', away: 0, cd: 1.5, charge: 0 }
+      : null,
     statuses: [],
     stagger: 0,
     invuln: 0,
@@ -120,6 +142,9 @@ export function createFighter(id: FighterId, cfg: FighterConfig): Fighter {
     mirrorCd: 0,
     ironWillCd: 0,
     echoQueue: [],
+    hist: [], histI: 0, histT: 0, rewindUsed: false,
+    wardCd: 3, dreadCd: 0, foresightCd: 0,
+    pullT: 0, pullTo: 0, chargeT: 0, garbT: 0, mendAcc: 0,
     sinceHurt: 99,
     sinceHit: 99,
     totals: {
@@ -143,6 +168,16 @@ export function stacksOf(f: Fighter, id: StatusId): number {
 
 export function isDisabled(f: Fighter): boolean {
   return f.stagger > 0 || !!getStatus(f, 'stun') || !!getStatus(f, 'frozen');
+}
+
+/** Silenced: only basic attacks and the evade work. */
+export function isSilenced(f: Fighter): boolean {
+  return !!getStatus(f, 'silence');
+}
+
+/** Juggernaut Plate above half health: shrugs off crowd control. */
+export function isUnstoppable(f: Fighter): boolean {
+  return f.has.has('juggernaut_plate') && f.hp > f.stats.maxHp * 0.5;
 }
 
 export function hpRatio(f: Fighter): number {
@@ -174,6 +209,7 @@ export function refreshStats(f: Fighter): void {
       case 'vulnerable': s.damageTakenMult *= 1.25; break;
       case 'ironskin': s.damageTakenMult *= 0.5; break;
       case 'poison': s.healMult *= 0.6; break;
+      case 'momentum': s.damageMult *= 1 + 0.04 * st.stacks; break;
     }
   }
 

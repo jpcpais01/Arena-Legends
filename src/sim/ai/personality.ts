@@ -33,6 +33,7 @@ export function derivePersonality(f: Fighter, kit: Kit, temper: number, temper2:
     caution: clamp(caution, 0.06, 0.92),
     cunning: clamp(cunning, 0.1, 0.92),
     adaptivity: clamp(base.adaptivity + (temper2 - 0.5) * 0.1, 0.3, 0.95),
-    reaction: clamp(base.reaction + (temper2 - 0.5) * 0.03, 0.13, 0.28),
+    // The Seer's Blindfold sees what's coming a moment early.
+    reaction: clamp(base.reaction + (temper2 - 0.5) * 0.03, 0.13, 0.28) * (f.has.has('seer_blindfold') ? 0.7 : 1),
   };
 }

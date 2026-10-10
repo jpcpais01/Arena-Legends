@@ -69,6 +69,9 @@ export const STATUS_FX: Partial<Record<StatusId, StatusFx>> = {
   poison: { dot: 0.09 },
   stun: { cc: true },
   frozen: { cc: true },
+  fear: { cc: true },
+  root: { move: -0.5 },
+  momentum: { dmg: 0.04 },
 };
 
 const OFFENSIVE_BUFFS: StatusId[] = ['rage', 'haste'];
@@ -85,11 +88,14 @@ export function reachOf(f: Fighter, ab: AbilityDef): [number, number] {
     case 'projectile': return [0, r];
     case 'meteor': return [0, r];
     case 'blade': return [0, r];
+    case 'totem': return [0, (ab.totem?.radius ?? 0) + 0.5];
     default: return [0, 0];
   }
 }
 
 export function defenseOf(ab: AbilityDef): DefenseKind | null {
+  // A stomp in place of a dodge (Earthshaker Boots) is an attack, not an escape.
+  if (ab.kind === 'aoe') return null;
   if (ab.kind === 'guard') return 'parry';
   if (ab.kind === 'blink') return 'blink';
   if (ab.slot === 'evade' || (ab.kind === 'dash' && !ab.dash?.strike && (ab.dash?.iframes ?? 0) > 0)) return 'evade';
@@ -150,6 +156,7 @@ function onHitBonus(src: Fighter, dst: Fighter, raw: number): number {
 export function estDamage(src: Fighter, ab: AbilityDef, dst: Fighter, withPassives = true): number {
   const s = src.stats;
   let raw = s.power * ab.power * (ab.hits ?? 1) * s.damageMult;
+  if (ab.kind === 'projectile' && src.has.has('hawkeye_hood')) raw *= 1.18;
   let critMult = s.critMult;
   if (src.has.has('executioner_hood') && dst.hp / dst.stats.maxHp < 0.3) critMult *= 1.5;
   raw *= 1 + s.critChance * (critMult - 1);
@@ -175,11 +182,23 @@ export function estDamage(src: Fighter, ab: AbilityDef, dst: Fighter, withPassiv
 export function ccValue(ab: AbilityDef, followUpPerSec: number): number {
   let v = 0;
   if (ab.stun) v += ab.stun * followUpPerSec;
+  // Launched: helpless while in the air. Pulled: dragged into my reach.
+  if (ab.launch) v += (2 * ab.launch / 30) * followUpPerSec * 0.8;
+  if (ab.pull) v += 0.015 + followUpPerSec * 0.25;
+  if (ab.drainEnergy) v += ab.drainEnergy * 0.0004;
   if (ab.applies) for (const a of ab.applies) {
     if (a.status === 'chill') v += 0.006 * (a.stacks ?? 1);
+    else if (a.status === 'root') v += 0.01 * a.duration;
+    else if (a.status === 'silence') v += 0.014 * a.duration;
     else if (STATUS_FX[a.status]?.cc) v += a.duration * followUpPerSec;
   }
   return v;
+}
+
+/** Has crowd control worth valuing on top of the damage. */
+export function hasControl(ab: AbilityDef): boolean {
+  return !!ab.stun || !!ab.launch || !!ab.pull || !!ab.drainEnergy
+    || !!ab.applies?.some((s) => STATUS_FX[s.status]?.cc || s.status === 'root' || s.status === 'silence');
 }
 
 // -----------------------------------------------------------------------------

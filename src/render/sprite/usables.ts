@@ -46,6 +46,9 @@ function neck(r: Raster, t: Xf, m: (k: string) => number, o: UsableDrawOpts, x0:
 }
 
 const ART: Record<UsableId, () => UsableArt> = {
+  // PLACEHOLDERS until their art lands.
+  smoke_bomb: () => ART.fire_bomb(), caltrops: () => ART.fire_bomb(), frost_bomb: () => ART.fire_bomb(),
+  troll_tonic: () => ART.healing_potion(),
   // A round-bellied flask of red healing draught.
   healing_potion: () => ({
     mats: {

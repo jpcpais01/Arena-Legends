@@ -315,11 +315,13 @@ function warHorn(): WeaponArt {
 export const MAIN_FAMILY: Record<MainWeaponId, MainFamily> = {
   longsword: 'sword', katana: 'sword', mace: 'sword', dagger: 'sword', ember_wand: 'wand',
   warhammer: 'heavy', greataxe: 'heavy', spear: 'polearm', arcane_staff: 'staff', longbow: 'bow',
+  chain_sickle: 'sword', soul_scythe: 'heavy', rapier: 'sword', storm_rod: 'wand', halberd: 'heavy', grave_staff: 'staff',
 };
 
 export const SEC_FAMILY: Record<SecondaryId, SecFamily> = {
   kite_shield: 'shield', parrying_dagger: 'parry', buckler: 'buckler', throwing_knives: 'knife',
   hand_crossbow: 'crossbow', wind_chakram: 'chakram', frost_wand: 'wand', war_horn: 'horn',
+  bolas: 'knife', trickster_talisman: 'wand', tower_shield: 'shield', javelin: 'knife', iron_cestus: 'buckler',
 };
 
 const BUILDERS: Partial<Record<GearId, () => WeaponArt>> = {
@@ -327,6 +329,10 @@ const BUILDERS: Partial<Record<GearId, () => WeaponArt>> = {
   arcane_staff: arcaneStaff, longbow,
   kite_shield: kiteShield, parrying_dagger: parryingDagger, buckler, throwing_knives: throwingKnife,
   hand_crossbow: handCrossbow, wind_chakram: chakram, frost_wand: frostWand, war_horn: warHorn,
+  // PLACEHOLDERS until their art lands.
+  chain_sickle: longsword, soul_scythe: greataxe, rapier: longsword, storm_rod: emberWand, halberd: greataxe,
+  grave_staff: arcaneStaff, bolas: throwingKnife, trickster_talisman: frostWand, tower_shield: kiteShield,
+  javelin: throwingKnife, iron_cestus: buckler,
 };
 
 const cache = new Map<string, WeaponArt>();

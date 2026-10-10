@@ -304,6 +304,146 @@ const MAIN: Catalog['main'] = {
       },
     ],
   },
+  chain_sickle: {
+    id: 'chain_sickle', slot: 'main', name: 'Chain Sickle', rarity: 'epic', color: 0x9fb4bc,
+    desc: 'One-handed. Quick hooked cuts, and a weighted chain thrown out to drag the enemy right in front of you.',
+    weapon: { hands: 1, ranged: false, preferredRange: 1.7 },
+    tags: ['melee', 'physical', 'control'],
+    abilities: [
+      {
+        id: 'sickle_cut', name: 'Sickle Cut', slot: 'basic', kind: 'melee',
+        range: 1.85, cost: 0, cooldown: 0.12,
+        windup: 0.19, active: 0.09, recovery: 0.27,
+        power: 1.25, damageType: 'physical', stagger: 0.2, knockback: 0.8, lunge: 0.3,
+        anim: 'slash', desc: 'Quick hooked cut.',
+      },
+      {
+        id: 'chain_hook', name: 'Chain Hook', slot: 'skill', kind: 'projectile',
+        range: 7.5, cost: 15, cooldown: 6,
+        windup: 0.3, active: 0.06, recovery: 0.34,
+        power: 0.6, damageType: 'physical', stagger: 0.45, pull: true,
+        projectile: { speed: 20, radius: 0.3, style: 'hook' },
+        anim: 'thrust', desc: 'Throws the weighted chain: on a hit, drags the enemy right in front of you.',
+      },
+    ],
+  },
+  soul_scythe: {
+    id: 'soul_scythe', slot: 'main', name: 'Soul Scythe', rarity: 'legendary', color: 0x7affc8,
+    desc: 'Two-handed. Every reap steals the enemy\'s energy; Grave Harvest silences them: no skills, secondary, items or potions for 2.5s.',
+    weapon: { hands: 2, ranged: false, preferredRange: 2.0 },
+    tags: ['melee', 'physical', 'heavy', 'control'],
+    abilities: [
+      {
+        id: 'reap', name: 'Reap', slot: 'basic', kind: 'melee',
+        range: 2.3, cost: 0, cooldown: 0.2,
+        windup: 0.36, active: 0.12, recovery: 0.4,
+        power: 1.75, damageType: 'physical', stagger: 0.32, knockback: 2, lunge: 0.35, drainEnergy: 8,
+        anim: 'slash', desc: 'Wide reaping cut that steals 8 energy.',
+      },
+      {
+        id: 'grave_harvest', name: 'Grave Harvest', slot: 'skill', kind: 'melee',
+        range: 2.4, cost: 15, cooldown: 8,
+        windup: 0.52, active: 0.14, recovery: 0.46,
+        power: 2.6, damageType: 'physical', heavy: true, stagger: 0.45, knockback: 3, lunge: 0.7, drainEnergy: 25,
+        applies: [{ status: 'silence', duration: 2.5 }],
+        anim: 'overhead', desc: 'Harvests the soul: steals 25 energy and silences for 2.5s.',
+      },
+    ],
+  },
+  rapier: {
+    id: 'rapier', slot: 'main', name: 'Duelist Rapier', rarity: 'rare', color: 0xe8e0c8,
+    desc: 'One-handed. +6% crit, +5% attack speed. Long, needle-fast thrusts, and a lunging fleche that ignores armour.',
+    add: { critChance: 0.06 }, mul: { attackSpeed: 1.05 },
+    weapon: { hands: 1, ranged: false, preferredRange: 1.85 },
+    tags: ['melee', 'physical', 'fast', 'crit'],
+    abilities: [
+      {
+        id: 'pierce', name: 'Pierce', slot: 'basic', kind: 'melee',
+        range: 2.1, cost: 0, cooldown: 0.1,
+        windup: 0.16, active: 0.08, recovery: 0.25,
+        power: 0.95, damageType: 'physical', stagger: 0.16, knockback: 0.6, lunge: 0.4,
+        anim: 'thrust', desc: 'Long, quick thrust.',
+      },
+      {
+        id: 'fleche', name: 'Fleche', slot: 'skill', kind: 'melee',
+        range: 2.2, cost: 15, cooldown: 6,
+        windup: 0.34, active: 0.12, recovery: 0.42,
+        power: 2.2, damageType: 'true', heavy: true, stagger: 0.4, knockback: 2.5, lunge: 2.0,
+        anim: 'thrust', desc: 'Flying lunge that pierces straight through armour (true damage).',
+      },
+    ],
+  },
+  storm_rod: {
+    id: 'storm_rod', slot: 'main', name: 'Storm Rod', rarity: 'rare', color: 0x8fd8ff,
+    desc: 'One-handed. Crackling sparks from mid range, and a thunderclap that stuns and blasts back anyone who gets close.',
+    weapon: { hands: 1, ranged: true, preferredRange: 5 },
+    tags: ['ranged', 'magic', 'control'],
+    abilities: [
+      {
+        id: 'spark', name: 'Spark', slot: 'basic', kind: 'projectile',
+        range: 7.5, cost: 0, cooldown: 0.3,
+        windup: 0.2, active: 0.05, recovery: 0.24,
+        power: 0.5, damageType: 'magic', stagger: 0.1,
+        projectile: { speed: 24, radius: 0.28, style: 'spark' },
+        anim: 'cast', desc: 'Fast spark of lightning.',
+      },
+      {
+        id: 'thunderclap', name: 'Thunderclap', slot: 'skill', kind: 'aoe',
+        range: 2.6, cost: 15, cooldown: 7,
+        windup: 0.3, active: 0.1, recovery: 0.36,
+        power: 1.2, damageType: 'magic', stun: 0.6, knockback: 6,
+        anim: 'castBig', desc: 'Thunder bursts around you: stuns and blasts back.',
+      },
+    ],
+  },
+  halberd: {
+    id: 'halberd', slot: 'main', name: 'Halberd', rarity: 'rare', color: 0xb8c0cc,
+    desc: 'Two-handed. +0.04 poise. Long chopping reach between a sword and a spear, and a crescent chop that knocks the enemy off their feet.',
+    add: { poise: 0.04 },
+    weapon: { hands: 2, ranged: false, preferredRange: 2.15 },
+    tags: ['melee', 'physical', 'heavy', 'control'],
+    abilities: [
+      {
+        id: 'halberd_chop', name: 'Chop', slot: 'basic', kind: 'melee',
+        range: 2.45, cost: 0, cooldown: 0.2,
+        windup: 0.34, active: 0.12, recovery: 0.4,
+        power: 1.7, damageType: 'physical', stagger: 0.3, knockback: 2.6, lunge: 0.35,
+        anim: 'slash', desc: 'Long chopping swing.',
+      },
+      {
+        id: 'crescent_chop', name: 'Crescent Chop', slot: 'skill', kind: 'melee',
+        range: 2.7, cost: 15, cooldown: 7,
+        windup: 0.55, active: 0.14, recovery: 0.48,
+        power: 2.7, damageType: 'physical', heavy: true, stun: 0.5, knockback: 5, stagger: 0.5, lunge: 0.6,
+        anim: 'overhead', desc: 'Huge overhead chop at the very tip: knocks down (stun) and back.',
+      },
+    ],
+  },
+  grave_staff: {
+    id: 'grave_staff', slot: 'main', name: 'Grave Staff', rarity: 'epic', color: 0xc8f0a0,
+    desc: 'Two-handed. Soul bolts that heal you for a third of their damage, and bone spikes along the ground that root the enemy in place.',
+    weapon: { hands: 2, ranged: true, preferredRange: 6 },
+    tags: ['ranged', 'magic', 'sustain', 'control'],
+    abilities: [
+      {
+        id: 'soul_bolt', name: 'Soul Bolt', slot: 'basic', kind: 'projectile',
+        range: 10, cost: 0, cooldown: 0.38,
+        windup: 0.28, active: 0.05, recovery: 0.28,
+        power: 0.55, damageType: 'magic', stagger: 0.12, drainLife: 0.35,
+        projectile: { speed: 15, radius: 0.32, style: 'soul' },
+        anim: 'cast', desc: 'Soul bolt: heals you for 35% of its damage.',
+      },
+      {
+        id: 'bone_spikes', name: 'Bone Spikes', slot: 'skill', kind: 'projectile',
+        range: 9, cost: 15, cooldown: 7,
+        windup: 0.42, active: 0.08, recovery: 0.36,
+        power: 1.1, damageType: 'magic', heavy: true, stagger: 0.3,
+        applies: [{ status: 'root', duration: 1.6 }],
+        projectile: { speed: 12, radius: 0.55, style: 'bonespike', ground: true },
+        anim: 'castBig', desc: 'Bone spikes burst along the ground: root for 1.6s.',
+      },
+    ],
+  },
 };
 
 // -----------------------------------------------------------------------------
@@ -418,6 +558,72 @@ const SECONDARY: Catalog['secondary'] = {
       anim: 'horn', desc: 'Enrage (+25% damage, +15% speed) and heal.',
     }],
   },
+  bolas: {
+    id: 'bolas', slot: 'secondary', name: 'Hunter\'s Bolas', rarity: 'rare', color: 0xc89a5a,
+    desc: 'Whirled and thrown: wraps the legs, rooting the enemy for 2s. Rooted, they can\'t walk, dash or evade, only fight where they stand.',
+    tags: ['ranged', 'physical', 'control'],
+    abilities: [{
+      id: 'bolas_throw', name: 'Bolas', slot: 'secondary', kind: 'projectile',
+      range: 8, cost: 10, cooldown: 8,
+      windup: 0.24, active: 0.06, recovery: 0.3,
+      power: 0.35, damageType: 'physical', stagger: 0.2,
+      applies: [{ status: 'root', duration: 2 }],
+      projectile: { speed: 16, radius: 0.4, style: 'bolas' },
+      anim: 'throw', desc: 'Wraps the legs: root for 2s.',
+    }],
+  },
+  trickster_talisman: {
+    id: 'trickster_talisman', slot: 'secondary', name: 'Trickster Talisman', rarity: 'legendary', color: 0xffc84a,
+    desc: 'A two-faced charm: trade places with the enemy in a flash. Put them in your corner, slip out of theirs, or leave their windup swinging at nothing.',
+    tags: ['magic', 'mobility'],
+    abilities: [{
+      id: 'switcheroo', name: 'Switcheroo', slot: 'secondary', kind: 'swap',
+      range: 7, cost: 15, cooldown: 9,
+      windup: 0.2, active: 0.08, recovery: 0.24,
+      power: 0, damageType: 'magic', iframes: 0.3,
+      anim: 'castBig', desc: 'Trade places with the enemy; their windup is thrown off.',
+    }],
+  },
+  tower_shield: {
+    id: 'tower_shield', slot: 'secondary', name: 'Tower Shield', rarity: 'rare', color: 0x8a96a8,
+    desc: '+18 armor, 20% less knockback, −5% move. A wall of iron: blocks 88% from the front for a long time, but the parry window is tight.',
+    add: { armor: 18, poise: 0.05 }, mul: { moveSpeed: 0.95, knockbackTaken: 0.8 },
+    tags: ['guard', 'tank'],
+    abilities: [{
+      id: 'shield_wall', name: 'Shield Wall', slot: 'secondary', kind: 'guard',
+      range: 0, cost: 0, cooldown: 3.5,
+      windup: 0.06, active: 1.4, recovery: 0.24,
+      power: 0, damageType: 'physical',
+      guard: { reduction: 0.88, parryWindow: 0.1 },
+      anim: 'guard', desc: 'Plant the tower shield: blocks 88%. Tight parry window.',
+    }],
+  },
+  javelin: {
+    id: 'javelin', slot: 'secondary', name: 'Javelins', rarity: 'common', color: 0xc8a878,
+    desc: 'A heavy throwing spear: big damage and knockback from far away, slamming them into the wall when they\'re close to it.',
+    tags: ['ranged', 'physical'],
+    abilities: [{
+      id: 'javelin_throw', name: 'Javelin', slot: 'secondary', kind: 'projectile',
+      range: 10, cost: 15, cooldown: 7,
+      windup: 0.32, active: 0.06, recovery: 0.3,
+      power: 1.3, damageType: 'physical', heavy: true, stagger: 0.35, knockback: 5,
+      projectile: { speed: 18, radius: 0.3, style: 'javelin' },
+      anim: 'throw', desc: 'Heavy javelin with big knockback.',
+    }],
+  },
+  iron_cestus: {
+    id: 'iron_cestus', slot: 'secondary', name: 'Iron Cestus', rarity: 'rare', color: 0x9aa0a8,
+    desc: '+3 power, +6 armor. A fast iron-knuckle uppercut that launches the enemy into the air, helpless until they land.',
+    add: { power: 3, armor: 6 },
+    tags: ['melee', 'physical', 'control'],
+    abilities: [{
+      id: 'uppercut', name: 'Uppercut', slot: 'secondary', kind: 'melee',
+      range: 1.6, cost: 10, cooldown: 7,
+      windup: 0.18, active: 0.1, recovery: 0.4,
+      power: 0.9, damageType: 'physical', stagger: 0.3, launch: 9, lunge: 0.4,
+      anim: 'bash', desc: 'Uppercut that launches the enemy into the air.',
+    }],
+  },
 };
 
 // -----------------------------------------------------------------------------
@@ -490,6 +696,46 @@ const SPECIAL: Catalog['special'] = {
     passive: 'Chill',
     tags: ['control', 'magic'],
   },
+  thunder_totem: {
+    id: 'thunder_totem', slot: 'special', name: 'Thunder Totem', rarity: 'epic', color: 0x9fd8ff,
+    desc: 'At half an energy bar, plants a totem beside you for 7s. Lightning strikes anyone inside its circle every 0.9s, chilling them. Fight on your ground.',
+    tags: ['magic', 'control'],
+    abilities: [{
+      id: 'thunder_totem', name: 'Thunder Totem', slot: 'item', kind: 'totem',
+      range: 4, cost: 50, cooldown: 12,
+      windup: 0.4, active: 0.1, recovery: 0,
+      power: 0.5, damageType: 'magic', stagger: 0.12,
+      applies: [{ status: 'chill', duration: 2 }],
+      totem: { life: 7, radius: 3, every: 0.9 },
+      anim: 'item', desc: 'Plants a totem that zaps the enemy in its circle.',
+    }],
+  },
+  hourglass: {
+    id: 'hourglass', slot: 'special', name: 'Sands of Time', rarity: 'legendary', color: 0xf0d080,
+    desc: '+8 resist. Once per battle, a blow that would drop you under 25% HP turns time back 3s: health and position return, harmful effects wash off.',
+    passive: 'Rewind',
+    add: { resist: 8 },
+    tags: ['revive', 'sustain'],
+  },
+  ward_stone: {
+    id: 'ward_stone', slot: 'special', name: 'Ward Stone', rarity: 'rare', color: 0x8ac8ff,
+    desc: '+8 resist. Whenever you have no shield, every 10s the stone wraps you in one worth 8% of max HP.',
+    passive: 'Ward',
+    add: { resist: 8 },
+    tags: ['sustain', 'tank'],
+  },
+  hunter_hawk: {
+    id: 'hunter_hawk', slot: 'special', name: 'Hunting Hawk', rarity: 'epic', color: 0xc8925a,
+    desc: 'A hawk rides your shoulder. Every 4.5s it dives at the enemy, marking them (+15% damage taken).',
+    passive: 'Familiar',
+    tags: ['physical', 'ranged'],
+  },
+  dragon_whelp: {
+    id: 'dragon_whelp', slot: 'special', name: 'Dragon Whelp', rarity: 'epic', color: 0xff7a3a,
+    desc: 'A whelp perches on your shoulder. When the enemy comes within 4.5m, it breathes fire on them every 5s (2 stacks of burn).',
+    passive: 'Familiar',
+    tags: ['magic', 'dot'],
+  },
 };
 
 // -----------------------------------------------------------------------------
@@ -547,6 +793,53 @@ const USABLE: Catalog['usable'] = {
       anim: 'toss', desc: 'Lobbed flask that bursts in flames. Three per battle.',
     }],
   },
+  smoke_bomb: {
+    id: 'smoke_bomb', slot: 'usable', name: 'Smoke Bomb', rarity: 'epic', color: 0x9a9aaa,
+    desc: 'Two per battle. Smash it at your feet: hidden for 2.5s. The enemy can\'t read your moves, their familiars lose you, and your first hit out of the smoke deals +40%.',
+    tags: ['mobility', 'burst'],
+    abilities: [{
+      id: 'smoke_bomb', name: 'Smoke Bomb', slot: 'usable', kind: 'buff',
+      range: 0, cost: 0, cooldown: 8, uses: 2,
+      windup: 0.22, active: 0.1, recovery: 0.22,
+      power: 0, damageType: 'physical',
+      buff: [{ status: 'hidden', duration: 2.5 }],
+      anim: 'toss', desc: 'Vanish in smoke for 2.5s; the first hit out of it lands harder. Two per battle.',
+    }],
+  },
+  caltrops: {
+    id: 'caltrops', slot: 'usable', name: 'Caltrops', rarity: 'rare', color: 0x8a8f96,
+    desc: 'Two per battle. Scatter iron spikes where the enemy is heading: for 8s, anyone on the patch gets cut and slowed.',
+    tags: ['physical', 'control', 'ranged'],
+    abilities: [{
+      id: 'caltrops', name: 'Caltrops', slot: 'usable', kind: 'projectile',
+      range: 7, cost: 0, cooldown: 6, uses: 2,
+      windup: 0.26, active: 0.06, recovery: 0.28,
+      power: 0.3, damageType: 'physical', stagger: 0.1,
+      applies: [{ status: 'chill', duration: 2 }],
+      projectile: { speed: 11, radius: 0.3, style: 'caltrops', lob: 1.2, zone: 'caltrops' },
+      anim: 'toss', desc: 'Scatters a patch of spikes that cuts and slows. Two per battle.',
+    }],
+  },
+  frost_bomb: {
+    id: 'frost_bomb', slot: 'usable', name: 'Frost Bomb', rarity: 'rare', color: 0x9fe8ff,
+    desc: 'Three per battle. A flask of liquid frost: bursts in a cloud that chills hard (3 stacks; 5 freeze solid).',
+    tags: ['magic', 'control', 'ranged'],
+    abilities: [{
+      id: 'frost_bomb', name: 'Frost Bomb', slot: 'usable', kind: 'projectile',
+      range: 8, cost: 0, cooldown: 5, uses: 3,
+      windup: 0.3, active: 0.06, recovery: 0.3,
+      power: 0.8, damageType: 'magic', stagger: 0.2, knockback: 1.5,
+      applies: [{ status: 'chill', duration: 3, stacks: 3 }],
+      projectile: { speed: 11, radius: 0.3, style: 'frostflask', lob: 1.6 },
+      anim: 'toss', desc: 'Lobbed flask of frost: 3 stacks of chill. Three per battle.',
+    }],
+  },
+  troll_tonic: {
+    id: 'troll_tonic', slot: 'usable', name: 'Troll Tonic', rarity: 'rare', color: 0x7ac85a,
+    desc: 'Two per battle. Drink troll blood: regenerate 2.5% of max HP every second for 8s (20% in all).',
+    tags: ['sustain'],
+    abilities: [{ ...DRINK, id: 'troll_tonic', name: 'Troll Tonic', cooldown: 10, uses: 2, buff: [{ status: 'regen', duration: 8 }], desc: 'Regenerate 20% of max HP over 8s. Two per battle.' }],
+  },
 };
 
 // -----------------------------------------------------------------------------
@@ -592,6 +885,34 @@ const HEAD: Catalog['head'] = {
     passive: 'Duelist',
     add: { armor: 8 }, mul: { attackSpeed: 1.08 },
     tags: ['parry'],
+  },
+  seer_blindfold: {
+    id: 'seer_blindfold', slot: 'head', name: 'Seer\'s Blindfold', rarity: 'legendary', color: 0xd8c8ff,
+    desc: '+6 resist. Sees a moment ahead: once every 7s, a real blow that would hit you simply misses. Reacts faster to what the enemy starts.',
+    passive: 'Foresight',
+    add: { resist: 6 },
+    tags: ['magic'],
+  },
+  dread_helm: {
+    id: 'dread_helm', slot: 'head', name: 'Dread Helm', rarity: 'epic', color: 0x5a4a5a,
+    desc: '+8 armor, +2 power. Heavy blows that land strike terror: the enemy flees in fear for 0.9s (once every 7s).',
+    passive: 'Dread',
+    add: { armor: 8, power: 2 },
+    tags: ['control', 'tank'],
+  },
+  hawkeye_hood: {
+    id: 'hawkeye_hood', slot: 'head', name: 'Hawkeye Hood', rarity: 'rare', color: 0x6a8a4a,
+    desc: '+5% crit. Your projectiles fly 20% faster and deal 18% more damage.',
+    passive: 'Hawkeye',
+    add: { critChance: 0.05 },
+    tags: ['ranged', 'crit'],
+  },
+  gladiator_helm: {
+    id: 'gladiator_helm', slot: 'head', name: 'Gladiator Helm', rarity: 'rare', color: 0xd8a040,
+    desc: '+6 armor. Every hit you land builds momentum: +4% damage per stack, up to 5. It fades 4s after your last hit.',
+    passive: 'Momentum',
+    add: { armor: 6 },
+    tags: ['burst'],
   },
 };
 
@@ -662,6 +983,34 @@ const CHEST: Catalog['chest'] = {
     add: { power: 8, resist: 30, energyRegen: 0.5, cdr: 0.15 },
     tags: ['magic'],
   },
+  juggernaut_plate: {
+    id: 'juggernaut_plate', slot: 'chest', name: 'Juggernaut Plate', rarity: 'legendary', color: 0x7a7a88,
+    desc: '+30 armor, half knockback, −8% move. Above 50% HP nothing stops you: immune to stuns, freezes, roots, fear, silence and flinching.',
+    passive: 'Unstoppable',
+    add: { armor: 30 }, mul: { moveSpeed: 0.92, knockbackTaken: 0.5 },
+    tags: ['tank'],
+  },
+  heartwood_armor: {
+    id: 'heartwood_armor', slot: 'chest', name: 'Heartwood Armor', rarity: 'epic', color: 0x6a9a4a,
+    desc: '+16 armor, +6% max HP. After 2.5s out of harm, the living wood mends you: 1.2% of max HP per second.',
+    passive: 'Bark Mend',
+    add: { armor: 16 }, mul: { maxHp: 1.06 },
+    tags: ['sustain', 'tank'],
+  },
+  shadow_garb: {
+    id: 'shadow_garb', slot: 'chest', name: 'Shadow Garb', rarity: 'rare', color: 0x4a4a6a,
+    desc: '+8 armor, +6% crit, +5% move speed. Right after you evade, your next hit within 1.5s is a sure critical hit.',
+    passive: 'Shadowstrike',
+    add: { armor: 8, critChance: 0.06 }, mul: { moveSpeed: 1.05 },
+    tags: ['crit', 'mobility'],
+  },
+  runic_mail: {
+    id: 'runic_mail', slot: 'chest', name: 'Runic Mail', rarity: 'rare', color: 0x6a9aff,
+    desc: '+14 armor, +18 resist. Harmful effects on you wear off 30% sooner (burns, poison, chill, marks, stuns, roots, silence, fear).',
+    passive: 'Runeward',
+    add: { armor: 14, resist: 18 },
+    tags: ['tank', 'magic'],
+  },
 };
 
 // -----------------------------------------------------------------------------
@@ -705,6 +1054,33 @@ const LEGS: Catalog['legs'] = {
     passive: 'Second Wind',
     add: { armor: 6 },
     tags: ['sustain'],
+  },
+  ghoststep_leggings: {
+    id: 'ghoststep_leggings', slot: 'legs', name: 'Ghoststep Leggings', rarity: 'epic', color: 0xa8d8e8,
+    desc: '+4 armor, +6% move speed. You pass through the enemy like a ghost: no body blocking, so nobody pins you in a corner.',
+    passive: 'Ghoststep',
+    add: { armor: 4 }, mul: { moveSpeed: 1.06 },
+    tags: ['mobility'],
+  },
+  charger_cuisses: {
+    id: 'charger_cuisses', slot: 'legs', name: 'Charger Cuisses', rarity: 'rare', color: 0xb87a4a,
+    desc: '+10 armor, +4% move speed. After 0.8s running at the enemy, your next melee hit lands 35% harder and stuns for 0.4s.',
+    passive: 'Charge',
+    add: { armor: 10 }, mul: { moveSpeed: 1.04 },
+    tags: ['burst'],
+  },
+  acrobat_trousers: {
+    id: 'acrobat_trousers', slot: 'legs', name: 'Acrobat Trousers', rarity: 'rare', color: 0xe86a8a,
+    desc: '+4 armor, +5% move speed, +3% attack speed. Your evade recharges 28% faster.',
+    passive: 'Tumbler',
+    add: { armor: 4 }, mul: { moveSpeed: 1.05, attackSpeed: 1.03 },
+    tags: ['fast', 'mobility'],
+  },
+  warlord_faulds: {
+    id: 'warlord_faulds', slot: 'legs', name: 'Warlord Faulds', rarity: 'common', color: 0xa08a6a,
+    desc: '+16 armor, +3 power, +0.03 poise. A heavy plated skirt for those who stand and trade.',
+    add: { armor: 16, power: 3, poise: 0.03 },
+    tags: ['tank'],
   },
 };
 
@@ -754,6 +1130,45 @@ const BOOTS: Catalog['boots'] = {
     mul: { moveSpeed: 1.05 },
     tags: ['mobility'],
     evade: { ...EVADE, id: 'back_leap', name: 'Back Leap', cooldown: 3.6, active: 0.34, airborne: true, dash: { distance: 3.8, iframes: 0.34 }, anim: 'leap', desc: 'Long backward leap.' },
+  },
+  warp_boots: {
+    id: 'warp_boots', slot: 'boots', name: 'Warp Boots', rarity: 'legendary', color: 0xb08aff,
+    desc: '+6% move speed. Warp Step: when the enemy is close, teleport right behind them; otherwise blink back.',
+    mul: { moveSpeed: 1.06 },
+    tags: ['mobility', 'magic'],
+    evade: {
+      ...EVADE, id: 'warp_step', name: 'Warp Step', kind: 'blink', cooldown: 4.2,
+      windup: 0.05, active: 0.08, recovery: 0.16, iframes: 0.35,
+      dash: { distance: 3.2, iframes: 0.35, through: true },
+      anim: 'blink', desc: 'Teleports behind a close enemy, or blinks back.',
+    },
+  },
+  earthshaker_boots: {
+    id: 'earthshaker_boots', slot: 'boots', name: 'Earthshaker Boots', rarity: 'epic', color: 0xa87a4a,
+    desc: '+0.05 poise, 25% less knockback. No dodge: your evade is a quake stomp that blasts back and staggers anyone close.',
+    add: { poise: 0.05 }, mul: { knockbackTaken: 0.75 },
+    tags: ['tank', 'control'],
+    evade: {
+      id: 'quake_stomp', name: 'Quake Stomp', slot: 'evade', kind: 'aoe',
+      range: 2.4, cost: 0, cooldown: 4.5,
+      windup: 0.16, active: 0.08, recovery: 0.3,
+      power: 0.7, damageType: 'physical', knockback: 7, stagger: 0.4, iframes: 0.1,
+      anim: 'stomp', desc: 'Stamps a quake: knocks back and staggers anyone close.',
+    },
+  },
+  frostwalkers: {
+    id: 'frostwalkers', slot: 'boots', name: 'Frostwalkers', rarity: 'rare', color: 0xa8e8ff,
+    desc: '+8 resist. Your evade leaves a burst of frost where you stood, chilling anyone close (2 stacks).',
+    add: { resist: 8 },
+    tags: ['control', 'magic'],
+    evade: { ...EVADE, id: 'frost_step', name: 'Frost Step', cooldown: 3.6, desc: 'Backstep that leaves a burst of frost behind.' },
+  },
+  savate_boots: {
+    id: 'savate_boots', slot: 'boots', name: 'Savate Boots', rarity: 'rare', color: 0x5a4a3a,
+    desc: '+4% move and attack speed. Your evade opens with a push kick that shoves a close enemy away before you step back.',
+    mul: { moveSpeed: 1.04, attackSpeed: 1.04 },
+    tags: ['control'],
+    evade: { ...EVADE, id: 'savate_kick', name: 'Savate Kick', cooldown: 3.8, desc: 'Push kick, then a backstep.' },
   },
 };
 

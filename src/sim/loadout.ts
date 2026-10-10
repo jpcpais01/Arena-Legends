@@ -74,7 +74,10 @@ export function buildAbilities(gear: GearSet): AbilityDef[] {
     }
   }
   const boots = gear.boots ? GEAR.boots[gear.boots] : null;
-  out.push({ ...(boots?.evade ?? EVADE), from: 'boots' });
+  const evade = boots?.evade ?? EVADE;
+  // Acrobat Trousers: the evade recharges faster.
+  const evadeCd = gear.legs === 'acrobat_trousers' ? evade.cooldown * 0.72 : evade.cooldown;
+  out.push({ ...evade, cooldown: evadeCd, from: 'boots' });
   return out;
 }
 

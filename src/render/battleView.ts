@@ -21,6 +21,8 @@ const STYLE_COLOR: Record<ProjectileStyle, number> = {
   arcane: 0xc58cff, hex: 0xa04aff, wave: 0xd8f4ff, groundwave: 0xc8a070, meteor: 0xff7a1a, arrow: 0xf0e0c0,
   knife: 0xd0d8e8, bolt: 0xd0d8e8, fire: 0xff9a3a, flamewave: 0xff7a2a, chakram: 0xb8e4f0, wisp: 0x7ae8ff,
   flask: 0xff8a2a,
+  hook: 0xc8d0d8, bolas: 0xc89a5a, javelin: 0xd8c8a0, spark: 0x9fe0ff, soul: 0x9affc8, bonespike: 0xe8e0c8,
+  frostflask: 0x9fe8ff, caltrops: 0x9aa0a8, hawk: 0xc8925a, breath: 0xff8a3a,
 };
 
 interface FighterView {

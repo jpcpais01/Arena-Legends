@@ -612,6 +612,15 @@ function evadeClips(stance: Pose): Record<string, Phases> {
       a: [roll(0), roll(-Math.PI / 2), roll(-Math.PI), roll(-Math.PI * 1.5)],
       r: [F({ ...crouch, hipY: -0.2, lean: 0.35 }, 'fierce'), F({ hipY: -0.1, lean: 0.18 }, 'calm')],
     },
+    // Quake stomp: the front knee comes up high, then the foot drives into the ground.
+    stomp: {
+      w: [
+        F({ hipY: -0.04, lean: -0.08, fFx: 0.2, fFy: -0.45, toeF: 0.3, hFx: 0.3, hFy: 0.15, sway: -0.4 }, 'fierce'),
+        F({ hipY: 0.02, lean: -0.14, head: 0.06, fFx: 0.26, fFy: -0.28, toeF: 0.5, hFx: 0.38, hFy: 0.3, elF: 1, sway: -0.7 }, 'shout'),
+      ],
+      a: [F({ hipY: -0.22, lean: 0.24, head: -0.12, fNx: -0.4, fFx: 0.46, toeF: -0.1, hFx: 0.42, hFy: -0.3, sway: 1 }, 'shout')],
+      r: [F({ hipY: -0.16, lean: 0.14, fNx: -0.38, fFx: 0.4 }, 'fierce'), F({ hipY: -0.08, lean: 0.06 }, 'calm')],
+    },
     leap: {
       w: [F({ ...crouch, lean: 0.1 }, 'fierce')],
       a: [roll(0, { lean: 0.4 }), roll(Math.PI / 2), roll(Math.PI), roll(Math.PI * 1.5)],

@@ -19,23 +19,31 @@ export type GearSlot = 'main' | 'secondary' | 'special' | 'usable' | 'head' | 'c
 
 export type MainWeaponId =
   | 'longsword' | 'katana' | 'mace' | 'dagger' | 'ember_wand'
-  | 'warhammer' | 'spear' | 'greataxe' | 'arcane_staff' | 'longbow';
+  | 'warhammer' | 'spear' | 'greataxe' | 'arcane_staff' | 'longbow'
+  | 'chain_sickle' | 'soul_scythe' | 'rapier' | 'storm_rod' | 'halberd' | 'grave_staff';
 export type SecondaryId =
   | 'kite_shield' | 'parrying_dagger' | 'buckler' | 'throwing_knives' | 'hand_crossbow'
-  | 'wind_chakram' | 'frost_wand' | 'war_horn';
+  | 'wind_chakram' | 'frost_wand' | 'war_horn'
+  | 'bolas' | 'trickster_talisman' | 'tower_shield' | 'javelin' | 'iron_cestus';
 export type SpecialId =
   | 'meteor_sigil' | 'phantom_blade' | 'wisp_lantern' | 'phoenix_feather' | 'echo_stone'
-  | 'vampiric_fang' | 'ember_core' | 'frost_core';
+  | 'vampiric_fang' | 'ember_core' | 'frost_core'
+  | 'thunder_totem' | 'hourglass' | 'ward_stone' | 'hunter_hawk' | 'dragon_whelp';
 export type HeadId =
-  | 'berserker_mask' | 'iron_helm' | 'chrono_circlet' | 'executioner_hood' | 'storm_crown' | 'duelist_band';
+  | 'berserker_mask' | 'iron_helm' | 'chrono_circlet' | 'executioner_hood' | 'storm_crown' | 'duelist_band'
+  | 'seer_blindfold' | 'dread_helm' | 'hawkeye_hood' | 'gladiator_helm';
 export type ChestId =
-  | 'plate_armor' | 'phase_cloak' | 'thornmail' | 'mirror_mail' | 'leather_jerkin' | 'mage_robe';
+  | 'plate_armor' | 'phase_cloak' | 'thornmail' | 'mirror_mail' | 'leather_jerkin' | 'mage_robe'
+  | 'juggernaut_plate' | 'heartwood_armor' | 'shadow_garb' | 'runic_mail';
 export type UsableId =
-  | 'healing_potion' | 'swiftness_draught' | 'fury_tonic' | 'stoneskin_elixir' | 'energy_tonic' | 'fire_bomb';
+  | 'healing_potion' | 'swiftness_draught' | 'fury_tonic' | 'stoneskin_elixir' | 'energy_tonic' | 'fire_bomb'
+  | 'smoke_bomb' | 'caltrops' | 'frost_bomb' | 'troll_tonic';
 export type LegsId =
-  | 'leather_leggings' | 'chain_leggings' | 'stonehide_tassets' | 'windrunner_leggings' | 'runed_leggings' | 'bloodrite_wraps';
+  | 'leather_leggings' | 'chain_leggings' | 'stonehide_tassets' | 'windrunner_leggings' | 'runed_leggings' | 'bloodrite_wraps'
+  | 'ghoststep_leggings' | 'charger_cuisses' | 'acrobat_trousers' | 'warlord_faulds';
 export type BootsId =
-  | 'leather_boots' | 'zephyr_boots' | 'iron_greaves' | 'shadow_treads' | 'colossus_boots' | 'leaping_boots';
+  | 'leather_boots' | 'zephyr_boots' | 'iron_greaves' | 'shadow_treads' | 'colossus_boots' | 'leaping_boots'
+  | 'warp_boots' | 'earthshaker_boots' | 'frostwalkers' | 'savate_boots';
 
 export type GearId = MainWeaponId | SecondaryId | SpecialId | UsableId | HeadId | ChestId | LegsId | BootsId;
 
@@ -56,7 +64,19 @@ export type GearSet = { main: MainWeaponId } & { [S in Exclude<GearSlot, 'main'>
 
 export type StatusId =
   | 'burn' | 'poison' | 'chill' | 'frozen' | 'stun'
-  | 'rage' | 'haste' | 'mark' | 'ironskin' | 'vulnerable';
+  | 'rage' | 'haste' | 'mark' | 'ironskin' | 'vulnerable'
+  /** Can't use skills, secondaries, defensives, items or usables: basic attacks and the evade only. */
+  | 'silence'
+  /** Pinned in place: can't walk, dash, blink or evade (attacks still work). */
+  | 'root'
+  /** In smoke: the enemy can't read your moves, and your first hit out of it lands harder. */
+  | 'hidden'
+  /** Runs from the one who scared it, unable to act. */
+  | 'fear'
+  /** Heals a little every second. */
+  | 'regen'
+  /** Gladiator's momentum: each stack adds damage. */
+  | 'momentum';
 
 /**
  * Animation the renderer plays for an ability. The sim never reads it; the
@@ -66,11 +86,12 @@ export type AnimKey =
   | 'slash' | 'thrust' | 'overhead' | 'bash' | 'spin' | 'cast' | 'castBig'
   | 'guard' | 'counter' | 'dash' | 'evade' | 'roll' | 'blink' | 'leap' | 'roar'
   | 'flurry' | 'slam' | 'throw' | 'shoot' | 'crossbow' | 'horn' | 'harden' | 'barrier' | 'item'
-  | 'drink' | 'toss';
+  | 'drink' | 'toss' | 'stomp';
 
 export type ProjectileStyle =
   | 'arcane' | 'hex' | 'wave' | 'groundwave' | 'meteor' | 'arrow' | 'knife' | 'bolt' | 'fire' | 'flamewave' | 'chakram' | 'wisp'
-  | 'flask';
+  | 'flask'
+  | 'hook' | 'bolas' | 'javelin' | 'spark' | 'soul' | 'bonespike' | 'frostflask' | 'caltrops' | 'hawk' | 'breath';
 
 export interface Stats {
   maxHp: number;
@@ -118,7 +139,11 @@ export interface StatusApply {
  */
 export type AbilitySlot = 'basic' | 'skill' | 'secondary' | 'defense' | 'item' | 'usable' | 'evade';
 export type AbilityKind =
-  | 'melee' | 'projectile' | 'guard' | 'dash' | 'buff' | 'blink' | 'aoe' | 'meteor' | 'blade';
+  | 'melee' | 'projectile' | 'guard' | 'dash' | 'buff' | 'blink' | 'aoe' | 'meteor' | 'blade'
+  /** Trade places with the enemy. */
+  | 'swap'
+  /** The special item plants a totem that strikes anyone in its circle. */
+  | 'totem';
 
 export interface AbilityDef {
   id: string;
@@ -160,6 +185,8 @@ export interface AbilityDef {
      * `lob` metres of the burst.
      */
     lob?: number;
+    /** Lobbed: leaves a hazard on the ground where it bursts. */
+    zone?: ZoneKind;
   };
   guard?: { reduction: number; parryWindow: number; counterPower?: number; reflectProjectiles?: boolean };
   /**
@@ -175,6 +202,16 @@ export interface AbilityDef {
   energyGain?: number;
   /** Removes harmful statuses (burn, poison, chill, mark, vulnerable) on activation. */
   cleanse?: boolean;
+  /** Yanks the target to the user on hit (chain hook). */
+  pull?: boolean;
+  /** Throws the target up into the air on hit (uppercut), metres per second. */
+  launch?: number;
+  /** Energy taken from the target on hit (it goes to the user). */
+  drainEnergy?: number;
+  /** Fraction of the damage dealt that heals the user. */
+  drainLife?: number;
+  /** Totem: seconds it stands and the radius it covers. */
+  totem?: { life: number; radius: number; every: number };
   /** Times it can be used per battle (usable items). Unlimited when absent. */
   uses?: number;
   /** Seconds of invulnerability starting with the active phase. */
@@ -242,12 +279,34 @@ export interface ItemAction {
   hitsDone: number;
 }
 
-/** A familiar that fires on its own (wisp lantern). */
+/** A familiar that fires on its own (wisp lantern, hunting hawk, dragon whelp). */
 export interface Familiar {
+  kind: 'wisp' | 'hawk' | 'whelp';
+  /** Hawk: seconds until it is back on the shoulder after a dive. */
+  away: number;
   /** Seconds until it can fire again. */
   cd: number;
   /** Seconds left in the current charge-up, or 0 when idle. */
   charge: number;
+}
+
+/** Something left on the ground that hurts the owner's enemy while it lasts. */
+export type ZoneKind = 'totem' | 'caltrops';
+
+export interface Zone {
+  id: number;
+  kind: ZoneKind;
+  owner: FighterId;
+  x: number;
+  radius: number;
+  /** Seconds left. */
+  life: number;
+  /** Seconds it was set to last. */
+  span: number;
+  /** Seconds until it strikes again. */
+  tick: number;
+  every: number;
+  power: number;
 }
 
 export interface StatusInstance {
@@ -327,7 +386,21 @@ export type BattleEvent =
   | { type: 'revive'; f: FighterId }
   | { type: 'lightning'; f: FighterId; x: number }
   | { type: 'reflect'; f: FighterId; x: number; y: number }
-  | { type: 'shockwave'; x: number; radius: number; f: FighterId; style: 'slam' | 'nova' | 'meteor' | 'whirl' | 'flask' }
+  | { type: 'shockwave'; x: number; radius: number; f: FighterId; style: 'slam' | 'nova' | 'meteor' | 'whirl' | 'flask' | 'frost' | 'smoke' | 'stomp' | 'thunder' }
+  /** A zone appeared (totem planted, caltrops scattered). */
+  | { type: 'zone'; f: FighterId; kind: ZoneKind; x: number; radius: number }
+  /** A totem strikes the enemy standing in its circle. */
+  | { type: 'zap'; f: FighterId; from: number; to: number }
+  /** Two fighters traded places. */
+  | { type: 'swap'; f: FighterId; from: number; to: number }
+  /** The hourglass turned time back for this fighter. */
+  | { type: 'rewind'; f: FighterId; from: number; to: number }
+  /** Foresight: an attack that would have hit simply missed. */
+  | { type: 'foresight'; f: FighterId; x: number; y: number }
+  /** A chain hook dragged the target in. */
+  | { type: 'pull'; f: FighterId; target: FighterId }
+  /** A ward stone shield, an ambush out of smoke, a charge landing: a one-word callout over a fighter. */
+  | { type: 'callout'; f: FighterId; text: string; color: string }
   | { type: 'projectileEnd'; id: number; x: number; y: number; style: ProjectileStyle; hit: boolean }
   | { type: 'blink'; f: FighterId; from: number; to: number }
   | { type: 'familiar'; f: FighterId }
