@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.47.0',
+    date: '2026-10-10',
+    title: 'Heat counts your own blows more',
+    notes: [
+      'Each fighter\'s heat now rises twice as much from the hits they land as from the hits they take, so the fighter dishing out the punishment tires first and the one on the receiving end keeps pushing.',
+    ],
+  },
+  {
     version: '0.46.0',
     date: '2026-10-10',
     title: 'Tidier heat meter (temporary debug)',
