@@ -11,7 +11,7 @@ import type { GearId } from '../sim/types';
 import { fitPixels } from './pixelfit';
 import { sfx } from '../audio/sfx';
 import type { EntranceId } from '../character/entrances';
-import { Entrance, type EntrancePose } from '../render/entrance';
+import { Entrance, wrapFrame, type EntrancePose } from '../render/entrance';
 import { Fx } from '../render/fx';
 import { PPM } from '../render/sprite/animator';
 
@@ -181,7 +181,7 @@ export class Preview {
     if (pose) {
       const c = this.bank.set.clips.get(pose.clip) ? pose.clip : 'idle';
       o.clip = c;
-      o.frame = pose.frame % clipLength(this.bank.set.clips.get(c)!);
+      o.frame = wrapFrame(pose.frame, clipLength(this.bank.set.clips.get(c)!));
       o.face = pose.face;
       o.key = `${o.clip}.${o.frame}.${o.face ?? ''}`;
       this.drawEntrance(dt, pose);
