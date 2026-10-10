@@ -1873,3 +1873,10 @@ input.fr-input { flex: 1; min-width: 0; height: 2.5rem; font-size: 1.05rem; }
 .btn.fight, .banner, .clock, .res-banner b, .title-start, input.name { font-family: var(--font-pixel); }
 .hist-btns .plain { gap: 5px; padding-left: 0.6rem; padding-right: 0.7rem; font-size: 0.75rem; }
 .hist-btns .plain svg { width: 0.85rem; height: 0.85rem; }
+
+/* --- Confirm popup (equip set) ----------------------------------------------------------------- */
+.sheet-wrap.confirm { z-index: 40; }
+.sheet-wrap.confirm .sheet { width: min(24rem, 100%); grid-template-rows: auto auto; }
+.confirm-body { padding: 0.85rem 1rem 1rem; display: grid; gap: 14px; }
+.confirm-body p { font-size: 0.9rem; line-height: 1.45; color: var(--text); }
+.confirm-body .opts { justify-content: flex-end; }

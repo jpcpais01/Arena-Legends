@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.63.1',
+    date: '2026-10-10',
+    title: 'Equip set asks first',
+    notes: [
+      'Equip set (in the Armory and the Shop) now asks before swapping all your items for the set pieces. Cancel keeps your build as it is. In the Armory, Undo still brings it back afterwards.',
+    ],
+  },
+  {
     version: '0.63.0',
     date: '2026-10-10',
     title: 'Preview fight while you pick',
