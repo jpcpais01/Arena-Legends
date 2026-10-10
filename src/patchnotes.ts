@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.38.2',
+    date: '2026-10-10',
+    title: 'Room code keypad',
+    notes: [
+      'Room codes are now 5 digits, typed on a little keypad right under the code box. The phone keyboard no longer pops up over the game.',
+      'Invite links and pasting a code still work.',
+    ],
+  },
+  {
     version: '0.38.1',
     date: '2026-10-10',
     title: 'Gear on in hero creation, smoother Online popup',

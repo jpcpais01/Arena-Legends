@@ -75,7 +75,8 @@ export function matchWinner(results: RoundResult[], uptoRound = Infinity): Side 
   return a >= WINS_NEEDED ? 0 : b >= WINS_NEEDED ? 1 : -1;
 }
 
-const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+/** Room codes are digits only, so they can be typed on the in-game keypad. */
+const CODE_CHARS = '0123456789';
 export const CODE_LENGTH = 5;
 
 export function newRoomCode(): string {
@@ -85,9 +86,9 @@ export function newRoomCode(): string {
   return s;
 }
 
-/** Upper-cases a typed code and drops anything that can't be in one. */
+/** Drops anything that can't be in a code (spaces, dashes) and trims it to length. */
 export function normalizeCode(raw: string): string {
-  return raw.toUpperCase().split('').filter((c) => CODE_CHARS.includes(c)).join('').slice(0, CODE_LENGTH);
+  return raw.split('').filter((c) => CODE_CHARS.includes(c)).join('').slice(0, CODE_LENGTH);
 }
 
 export function randomId(): string {

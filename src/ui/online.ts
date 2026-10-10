@@ -33,7 +33,7 @@ function sheet(parent: HTMLElement, title: string, body: HTMLElement, onClose?: 
     wrap.remove();
     onClose?.();
   };
-  const wrap: HTMLDivElement = h<HTMLDivElement>('div.sheet-wrap', { onclick: (e: Event) => { if (e.target === wrap && !wrap.classList.contains('typing')) { sfx.play('ui'); close(); } } },
+  const wrap: HTMLDivElement = h<HTMLDivElement>('div.sheet-wrap', { onclick: (e: Event) => { if (e.target === wrap) { sfx.play('ui'); close(); } } },
     h('div.sheet.plate', { role: 'dialog', 'aria-label': title, style: { width: `min(${width}px, 100%)` } },
       h('div.sheet-head', null, h('h2', null, title),
         h('button.btn.icon', { title: 'Close', 'aria-label': 'Close', onclick: () => { sfx.play('ui'); close(); } }, icon('close'))),
@@ -50,12 +50,14 @@ export interface OnlineSheetCallbacks {
 
 /** "Play online": host a room or join one with a code. */
 export function openOnlineSheet(parent: HTMLElement, cb: OnlineSheetCallbacks, prefill = ''): void {
+  // Codes are digits, typed on the keypad beside the box, so the phone keyboard never opens
+  // (inputmode none). A real keyboard and pasting still work on a computer.
   const input = h<HTMLInputElement>('input.name.code-input', {
-    type: 'text', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false',
-    maxlength: String(CODE_LENGTH + 2), placeholder: 'CODE', 'aria-label': 'Room code',
+    type: 'text', inputmode: 'none', autocomplete: 'off', spellcheck: 'false',
+    maxlength: String(CODE_LENGTH + 2), placeholder: '·····', 'aria-label': 'Room code',
   });
   input.value = normalizeCode(prefill);
-  const join = h<HTMLButtonElement>('button.btn.primary', { onclick: () => submit() }, icon('swords'), 'Join');
+  const join = h<HTMLButtonElement>('button.btn.primary.join', { onclick: () => submit() }, icon('swords'), 'Join');
   const sync = () => {
     const v = normalizeCode(input.value);
     if (v !== input.value) input.value = v;
@@ -68,6 +70,18 @@ export function openOnlineSheet(parent: HTMLElement, cb: OnlineSheetCallbacks, p
     close();
     cb.onJoin(input.value);
   };
+  const press = (k: string) => {
+    sfx.play('select');
+    if (k === 'del') input.value = input.value.slice(0, -1);
+    else if (k === 'clr') input.value = '';
+    else if (input.value.length < CODE_LENGTH) input.value += k;
+    sync();
+  };
+  const key = (k: string, label: Node | string, title: string) =>
+    h('button.key', { type: 'button', title, 'aria-label': title, onclick: () => press(k) }, label);
+  const pad = h('div.keypad', null,
+    ...'12345'.split('').map((d) => key(d, d, d)), key('del', icon('back'), 'Delete'),
+    ...'67890'.split('').map((d) => key(d, d, d)), key('clr', icon('close'), 'Clear'));
   input.addEventListener('input', sync);
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
   sync();
@@ -79,29 +93,10 @@ export function openOnlineSheet(parent: HTMLElement, cb: OnlineSheetCallbacks, p
       h('button.btn.primary', { onclick: () => { sfx.play('ui'); close(); cb.onHost(); } }, icon('globe'), 'Create room')),
     h('section.online-opt', null,
       h('b', null, 'Join a friend'),
-      h('p.muted', null, 'Type the code from their screen.'),
-      h('div.opts', null, input, join)),
+      h('div.opts.code-row', null, input, join),
+      pad),
   );
-  const close = sheet(parent, 'Play online', body, () => stopKeyboard(), 680);
-  // While typing the code on a phone, the keyboard covers most of the screen: show just the
-  // code row and keep the sheet inside the part of the screen that is still visible.
-  const wrap = body.closest<HTMLElement>('.sheet-wrap')!;
-  const vv = window.visualViewport;
-  const fit = () => {
-    if (!vv) return;
-    const typing = wrap.classList.contains('typing');
-    wrap.style.top = typing ? `${vv.offsetTop}px` : '';
-    wrap.style.height = typing ? `${vv.height}px` : '';
-    wrap.style.bottom = typing ? 'auto' : '';
-  };
-  const setTyping = (on: boolean) => { wrap.classList.toggle('typing', on); fit(); if (on) input.scrollIntoView({ block: 'nearest' }); };
-  input.addEventListener('focus', () => { if (matchMedia('(pointer: coarse)').matches) setTyping(true); });
-  // Wait for the tap that closed the keyboard to land before the full sheet comes back,
-  // so it doesn't hit the backdrop and close the sheet.
-  input.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== input) setTyping(false); }, 350));
-  vv?.addEventListener('resize', fit);
-  vv?.addEventListener('scroll', fit);
-  function stopKeyboard(): void { vv?.removeEventListener('resize', fit); vv?.removeEventListener('scroll', fit); }
+  const close = sheet(parent, 'Play online', body, undefined, 680);
   if (!matchMedia('(pointer: coarse)').matches) setTimeout(() => input.focus(), 50);
 }
 
