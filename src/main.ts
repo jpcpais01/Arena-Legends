@@ -68,6 +68,7 @@ let soundOn = store<boolean>('al.sound', true);
 // Volume sliders (0..1). Older saves had a Music on/off switch: off becomes 0.
 let volume: Volume = { master: 1, music: store<boolean>('al.music', true) === false ? 0 : 1, sfx: 1, ...store<Partial<Volume>>('al.volume', {}) };
 let quotesOn = store<boolean>('al.quotes', true) !== false;
+let hideSmall = store<boolean>('al.hideSmallNumbers', true) !== false;
 let camMode = store<string>('al.camera', 'classic') as CamMode;
 if (!CAM_MODES.some((m) => m.id === camMode)) camMode = 'classic';
 const camName = () => CAM_MODES.find((m) => m.id === camMode)!.name;
@@ -120,6 +121,7 @@ function cycleCamera(): void {
   sfx.play('ui');
 }
 hud.setBubbles(quotesOn);
+view.minNumber = hideSmall ? 50 : 0;
 
 const menu = new Menu({
   onFight: () => startFight(),
@@ -189,11 +191,16 @@ function openSettings(): void {
   closeSheet();
   sfx.play('ui');
   const arenas = THEMES.map((t) => ({ id: t.id, name: t.name, sky: t.sky, floor: t.floor }));
-  sheet = settingsSheet({ quotes: quotesOn, volume, arena: arenaPick }, arenas, (s) => {
+  sheet = settingsSheet({ quotes: quotesOn, smallNumbers: hideSmall, volume, arena: arenaPick }, arenas, (s) => {
     if (s.quotes !== quotesOn) {
       quotesOn = s.quotes;
       save('al.quotes', quotesOn);
       hud.setBubbles(quotesOn);
+    }
+    if (s.smallNumbers !== hideSmall) {
+      hideSmall = s.smallNumbers;
+      save('al.hideSmallNumbers', hideSmall);
+      view.minNumber = hideSmall ? 50 : 0;
     }
     if (s.volume !== volume) {
       const wasMusic = volume.master * volume.music > 0;
