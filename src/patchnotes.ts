@@ -12,6 +12,19 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.38.0',
+    date: '2026-10-10',
+    title: 'The Shop',
+    notes: [
+      'The Chests button is now the Shop: a proper store where you spend gems on exactly the skins you want.',
+      'Featured set: one epic set a day, worn by your own fighter with its aura, at 40% off.',
+      'Daily skins: six single skins that change every day, with at least one mythic or better.',
+      'Epic sets: every set, the five new ones included, as a bundle at 25% off. You only pay for the pieces you are missing.',
+      'Tap a price once to arm it and again to buy, so nothing gets bought by accident. New skins pop up with an Equip button.',
+      'Skin chests are still here, under the Chests tab at the top of the Shop.',
+    ],
+  },
+  {
     version: '0.37.0',
     date: '2026-10-09',
     title: 'Five new epic sets',

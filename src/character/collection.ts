@@ -169,6 +169,16 @@ export function openChest(count: 1 | 10, r: () => number = Math.random): Pull[] 
   return out;
 }
 
+/** Buys skins outright for `cost` gems (skins already owned are skipped). False when short of gems. */
+export function buySkins(ids: string[], cost: number): boolean {
+  const c = get();
+  if (c.gems < cost) return false;
+  c.gems -= cost;
+  for (const id of ids) if (SKIN_BY_ID.has(id) && !c.owned.includes(id)) c.owned.push(id);
+  persist();
+  return true;
+}
+
 /** Drops skins the player doesn't own from a worn-skin map. */
 export function ownedOnly(skins: SkinMap | undefined): SkinMap {
   const out: SkinMap = {};

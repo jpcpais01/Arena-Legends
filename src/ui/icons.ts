@@ -398,6 +398,17 @@ const GLYPHS = {
     '#########',
     '.........',
   ],
+  shop: [
+    '#########',
+    '#.#.#.#.#',
+    '#########',
+    '.#.#.#.#.',
+    '.#.....#.',
+    '.#.###.#.',
+    '.#.#.#.#.',
+    '.#.###.#.',
+    '#########',
+  ],
 } satisfies Record<string, string[]>;
 
 export type IconName = keyof typeof GLYPHS;

@@ -1345,3 +1345,170 @@ input.acct-input { height: 2.8rem; font-size: 1.2rem; }
   .reveal-one { flex-direction: column; gap: 0.5rem; }
   .reveal-fighter { width: 8rem; height: 8rem; }
 }
+
+/* --- Shop: featured set, daily skins, set bundles; the chests are its second tab ------------------ */
+.shop-tabs { display: flex; gap: 0; flex: none; padding: calc(var(--px) * 2); background: #0b0715; border: var(--px) solid var(--ink); box-shadow: inset 0 var(--px) 0 #05030a, 0 var(--px) 0 rgba(92, 74, 140, 0.35); }
+.shop-tab {
+  display: inline-flex; align-items: center; gap: 0.4em; min-height: 2.5rem; padding: 0 0.9rem calc(var(--px) * 1);
+  font: 700 1rem/1 var(--font); letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim);
+  background: transparent; border: 0; cursor: pointer; text-shadow: 0 var(--px) 0 var(--ink);
+}
+.shop-tab svg { width: 1.15em; height: 1.15em; shape-rendering: crispEdges; }
+.shop-tab:hover { color: var(--text); }
+.shop-tab.on {
+  color: var(--gold-hi); cursor: default;
+  background: linear-gradient(180deg, #4a3a86, #2c2156); box-shadow: inset 0 var(--px) 0 #7a66c0, inset 0 calc(var(--px) * -2) 0 #1a1236, 0 0 0 var(--px) var(--ink);
+}
+.shop-tab.on svg { color: var(--gold); filter: drop-shadow(0 var(--px) 0 var(--ink)); }
+
+.scr.shop {
+  grid-template-columns: minmax(17rem, 38%) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "head head" "feat shelves";
+  background:
+    radial-gradient(ellipse 30% 50% at 19% 55%, rgba(127, 240, 224, 0.16), transparent 70%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.018) 0 2px, transparent 2px 64px),
+    linear-gradient(180deg, rgba(16, 10, 30, 0.92), rgba(8, 5, 15, 0.97));
+}
+.scr.shop .scr-head { gap: 0.75rem; }
+.shop-feat { grid-area: feat; position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 0.35rem; min-height: 0; margin: 0.25rem 0.25rem 0.5rem var(--safe-l); padding: 0.45rem 0.6rem 0.6rem; overflow: hidden; }
+.shop-feat::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: conic-gradient(from 0deg at 50% 46%, transparent 0 6%, rgba(127, 240, 224, 0.1) 6% 9%, transparent 9% 19%, rgba(255, 216, 96, 0.08) 19% 22%, transparent 22% 31%, rgba(255, 122, 200, 0.08) 31% 34%, transparent 34% 44%, rgba(127, 240, 224, 0.1) 44% 47%, transparent 47% 56%, rgba(255, 216, 96, 0.08) 56% 59%, transparent 59% 69%, rgba(255, 122, 200, 0.08) 69% 72%, transparent 72% 81%, rgba(127, 240, 224, 0.1) 81% 84%, transparent 84%);
+  animation: feat-spin 40s linear infinite;
+}
+@keyframes feat-spin { to { transform: rotate(1turn); } }
+.shop-feat > * { position: relative; }
+.feat-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-width: 0; }
+.shop-timer { display: inline-flex; align-items: center; gap: 0.3em; flex: none; font: 700 0.75rem/1 var(--font); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.shop-timer svg { width: 1em; height: 1em; color: var(--gold); }
+.feat-stage { display: grid; place-items: end center; min-height: 0; overflow: hidden; background: radial-gradient(ellipse 50% 40% at 50% 78%, rgba(127, 240, 224, 0.22), transparent 70%); }
+.feat-stage canvas { image-rendering: pixelated; }
+.feat-info { display: grid; gap: 0.35rem; justify-items: center; text-align: center; }
+.feat-name {
+  font: 700 1.45rem/1 var(--font); letter-spacing: 0.04em; padding-bottom: calc(var(--px) * 2);
+  background: var(--skin-epic-sweep) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 var(--px) 0 var(--ink)) drop-shadow(var(--px) 0 0 var(--ink)) drop-shadow(calc(var(--px) * -1) 0 0 var(--ink));
+  animation: epicSweep 3s linear infinite;
+}
+.feat-blurb { font-size: 0.8125rem; color: var(--muted); line-height: 1.3; max-width: 26rem; }
+.feat-pieces { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
+.feat-pieces .sock, .set-icons .sock { width: 2.4rem; height: 2.4rem; }
+.feat-pieces .sock canvas, .set-icons .sock canvas, .offer .sock canvas, .shop-got-icons .sock canvas { width: 82%; height: 82%; image-rendering: pixelated; }
+.feat-pieces .sock.have, .set-icons .sock.have { box-shadow: inset 0 var(--px) 0 #05030a, inset 0 0 0 var(--px) var(--skin-epic); position: relative; }
+.feat-pieces .sock.have::after, .set-icons .sock.have::after { content: ''; position: absolute; right: -2px; bottom: -2px; width: calc(var(--px) * 3); height: calc(var(--px) * 3); background: var(--green); box-shadow: 0 0 0 var(--px) var(--ink); }
+.feat-buy { display: flex; align-items: center; justify-content: center; gap: 0.6rem; flex-wrap: wrap; }
+.feat-off {
+  padding: 3px 7px 4px; transform: rotate(-5deg); font: 700 1rem/1 var(--font); color: #fff; letter-spacing: 0.04em;
+  background: var(--ribbon); border: var(--px) solid var(--ink); box-shadow: inset 0 var(--px) 0 var(--ribbon-hi), inset 0 calc(var(--px) * -2) 0 var(--ribbon-lo);
+  animation: off-wobble 2.4s steps(2) infinite;
+}
+@keyframes off-wobble { 0%, 80% { transform: rotate(-5deg); } 90% { transform: rotate(3deg) scale(1.08); } }
+.feat-was { color: var(--dim); font-size: 0.9375rem; text-decoration-thickness: 2px; text-decoration-color: var(--red); }
+.feat-was .gem-tag svg { filter: grayscale(0.6); }
+
+/* Price buttons: label + a gem price. The first tap asks again. */
+.btn.buy-btn { gap: 0.5rem; justify-content: space-between; }
+.btn.buy-btn .gem-tag { padding: 2px 6px 3px; background: rgba(0, 0, 0, 0.35); }
+.btn.buy-btn.go { min-height: 3rem; min-width: 11rem; font-size: 1.1rem; }
+.btn.buy-btn.armed { --face: #2f8a4e; --hi: #5fd07e; --lo: #144626; animation: armed 600ms steps(2) infinite; }
+@keyframes armed { 50% { filter: brightness(1.25); } }
+.btn.buy-btn.short { --face: #3a3150; --hi: #554a70; --lo: #1e182e; --fg: var(--muted); }
+.btn.buy-btn.short .gem-tag { color: var(--red); }
+.owned-tag { display: inline-flex; align-items: center; gap: 0.3em; font: 700 0.8125rem/1 var(--font); letter-spacing: 0.08em; text-transform: uppercase; color: var(--green); text-shadow: 0 var(--px) 0 var(--ink); }
+.owned-tag svg { width: 1.1em; height: 1.1em; }
+
+/* Shelves. */
+.shop-shelves { grid-area: shelves; display: grid; gap: 0.5rem; align-content: start; margin-left: 0.25rem; }
+.shelf-head { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.2rem; }
+.shelf-head small { font-size: 0.75rem; color: var(--muted); }
+.shelf-picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.4rem, 1fr)); gap: 0.45rem; }
+.offer {
+  --rc: var(--rare); --rc-glow: rgba(90, 168, 255, 0.28);
+  position: relative; display: grid; justify-items: center; gap: 3px; padding: 0 6px 7px; text-align: center; min-width: 0;
+  background: radial-gradient(ellipse 70% 40% at 50% 38%, var(--rc-glow), transparent 70%), linear-gradient(180deg, #241a3c, #110b1e);
+  border: calc(var(--px) * 2) solid var(--ink); box-shadow: inset 0 0 0 var(--px) var(--rc), inset 0 calc(var(--px) * -3) 0 rgba(0, 0, 0, 0.4);
+  clip-path: polygon(var(--px) 0, calc(100% - var(--px)) 0, 100% var(--px), 100% calc(100% - var(--px)), calc(100% - var(--px)) 100%, var(--px) 100%, 0 calc(100% - var(--px)), 0 var(--px));
+  transition: transform 120ms;
+}
+.offer:hover { transform: translateY(calc(var(--px) * -1)); }
+.offer.r-mythic { --rc: var(--mythic); --rc-glow: rgba(255, 90, 154, 0.3); }
+.offer.r-legendary { --rc: var(--legendary); --rc-glow: rgba(255, 176, 64, 0.32); }
+.offer.r-epic { --rc: var(--skin-epic); --rc-glow: rgba(127, 240, 224, 0.34); }
+.offer.r-legendary, .offer.r-epic { color: var(--text); }
+.offer-tier { justify-self: stretch; margin: 0 -6px 2px; padding: 2px 0 3px; background: var(--rc); color: var(--ink); font: 700 0.625rem/1 var(--font); letter-spacing: 0.16em; text-transform: uppercase; }
+.offer.r-epic .offer-tier { background: var(--skin-epic-sweep) 0 0 / 300% 100%; animation: epicSweep 3s linear infinite; }
+.offer .sock { width: 3.4rem; height: 3.4rem; background: transparent; border: 0; box-shadow: none; }
+.offer-name { max-width: 100%; font: 700 0.8125rem/1.05 var(--font); color: var(--text); text-shadow: 0 var(--px) 0 var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.offer-item { max-width: 100%; font-size: 0.5625rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.offer .btn.buy-btn, .offer-set .btn.buy-btn { min-height: 2.1rem; padding: var(--px) 0.5rem calc(var(--px) * 3); font-size: 0.75rem; box-shadow: inset 0 var(--px) 0 var(--hi), inset 0 calc(var(--px) * -2) 0 var(--lo); margin-top: 2px; }
+.offer .btn.buy-btn { justify-self: stretch; justify-content: center; }
+.offer .owned-tag { min-height: 2.1rem; margin-top: 2px; }
+.offer.mine .sock canvas { opacity: 0.55; }
+
+.shelf-sets { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 0.45rem; }
+.offer-set {
+  display: grid; gap: 5px; padding: 6px 8px 7px; min-width: 0;
+  background: linear-gradient(180deg, rgba(127, 240, 224, 0.08), transparent 60%), linear-gradient(180deg, #221838, #100a1c);
+  border: calc(var(--px) * 2) solid transparent;
+  background-clip: padding-box, padding-box;
+  box-shadow: 0 0 0 var(--px) var(--ink), inset 0 0 0 var(--px) rgba(127, 240, 224, 0.35);
+}
+.offer-set.mine { opacity: 0.75; box-shadow: 0 0 0 var(--px) var(--ink), inset 0 0 0 var(--px) rgba(98, 212, 122, 0.4); }
+.set-name { font: 700 0.9375rem/1 var(--font); letter-spacing: 0.03em; color: var(--text); text-shadow: 0 var(--px) 0 var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.set-icons { display: flex; gap: 3px; }
+.set-icons .sock { width: auto; flex: 1 1 0; height: auto; aspect-ratio: 1; max-width: 2.6rem; }
+.set-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.set-foot small { font-size: 0.75rem; color: var(--muted); }
+
+/* Unlocked pop-up. */
+.shop-got-wrap { display: none; }
+.shop-got-wrap.on { display: block; position: absolute; inset: 0; z-index: 5; }
+.shop-got { position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; background: rgba(6, 3, 12, 0.78); animation: fade-in 200ms ease-out; }
+.shop-got-card {
+  --rc: var(--rare); position: relative; display: grid; justify-items: center; gap: 0.6rem; min-width: min(22rem, 92vw); max-width: 92vw; padding: 0.7rem 1rem 0.8rem; overflow: hidden;
+  animation: card-rise 450ms cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+.shop-got-card.r-mythic { --rc: var(--mythic); } .shop-got-card.r-legendary { --rc: var(--legendary); } .shop-got-card.r-epic { --rc: var(--skin-epic); }
+.shop-got-card > * { position: relative; }
+.shop-got-card > .shop-got-rays {
+  position: absolute; left: 50%; top: 55%; width: 46rem; height: 46rem; margin: -23rem 0 0 -23rem; pointer-events: none; opacity: 0.35;
+  background: repeating-conic-gradient(from 0deg, var(--rc) 0 5deg, transparent 5deg 20deg);
+  -webkit-mask: radial-gradient(circle, #000 0, transparent 55%); mask: radial-gradient(circle, #000 0, transparent 55%);
+  animation: feat-spin 14s linear infinite;
+}
+.shop-got-card .ribbon { justify-self: center; }
+.shop-got-name { font: 700 1.4rem/1 var(--font); color: var(--gold-hi); text-shadow: var(--outline); padding-bottom: calc(var(--px) * 2); text-align: center; }
+.shop-got-icons { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; max-width: 30rem; }
+.shop-got-icons .sock { width: 3.4rem; height: 3.4rem; animation: got-pop 420ms var(--d, 0ms) cubic-bezier(0.2, 1.8, 0.4, 1) both; box-shadow: inset 0 var(--px) 0 #05030a, inset 0 0 0 var(--px) currentColor, 0 0 0.7rem color-mix(in srgb, currentColor 45%, transparent); }
+.shop-got-icons .sock.r-epic { color: var(--skin-epic); }
+@keyframes got-pop { from { opacity: 0; transform: scale(0.2) rotate(-25deg); } }
+.shop-got-foot { display: flex; gap: 0.6rem; justify-content: center; }
+.shop-got-foot .btn { min-width: 7rem; }
+@media (prefers-reduced-motion: reduce) { .shop-feat::before, .shop-got-rays, .feat-off, .feat-name, .btn.buy-btn.armed { animation: none; } }
+
+@media (orientation: landscape) and (max-height: 560px) {
+  .shop-tab { min-height: 2.1rem; padding: 0 0.65rem var(--px); font-size: 0.875rem; }
+  .scr.shop { grid-template-columns: minmax(15rem, 37%) minmax(0, 1fr); }
+  .shop-feat { padding: 0.3rem 0.45rem 0.45rem; gap: 0.25rem; margin-bottom: 0.35rem; }
+  .shop-feat .ribbon span { font-size: 0.875rem; }
+  .feat-blurb { display: none; }
+  .feat-name { font-size: 1.15rem; }
+  .feat-info { gap: 0.25rem; }
+  .feat-pieces { gap: 3px; flex-wrap: nowrap; }
+  .feat-pieces .sock { width: 2.05rem; height: 2.05rem; }
+  .btn.buy-btn.go { min-height: 2.5rem; min-width: 9rem; font-size: 0.95rem; }
+  .feat-off { font-size: 0.875rem; }
+  .shop-shelves { gap: 0.4rem; margin-bottom: 0.35rem; }
+  .shelf-picks { grid-template-columns: repeat(auto-fill, minmax(4.9rem, 1fr)); gap: 0.3rem; }
+  .offer { padding: 0 4px 6px; }
+  .offer-tier { margin: 0 -4px 2px; letter-spacing: 0.1em; }
+  .offer .sock { width: 2.7rem; height: 2.7rem; }
+  .shelf-sets { grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.35rem; }
+  .shop-got-icons .sock { width: 2.8rem; height: 2.8rem; }
+}
+@media (orientation: portrait) and (max-width: 720px) {
+  .scr.shop { grid-template-columns: 1fr; grid-template-rows: auto auto minmax(0, 1fr); grid-template-areas: "head" "feat" "shelves"; }
+  .scr.shop .scr-head { flex-wrap: wrap; }
+  .shop-feat { grid-template-rows: auto 9rem auto; margin-right: var(--safe-r); }
+  .feat-blurb { display: none; }
+  .shop-shelves { margin-left: var(--safe-l); }
+}
