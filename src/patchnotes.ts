@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.52.1',
+    date: '2026-10-10',
+    title: 'Companions in the Armory',
+    notes: [
+      'The hunting hawk, dragon whelp, wisp lantern, ward stone, hourglass and totem charm now float around your fighter in the Armory and on the home screen, like in battle.',
+      'The ember and frost cores show their embers and frost glints there too.',
+    ],
+  },
+  {
     version: '0.52.0',
     date: '2026-10-10',
     title: 'Entrances',
