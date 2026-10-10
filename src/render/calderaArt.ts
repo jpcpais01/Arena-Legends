@@ -123,6 +123,7 @@ export function buildCaldera(theme: Theme, W: number, H: number, gy: number, tra
       bolts: [0, 1, 2].map(() => paintBolt(rng)),
       glow: LAVA[3],
     },
+    cosmos: null,
   };
 }
 
