@@ -7,7 +7,8 @@ import { Sheet, writePng } from './png';
 /** Dev preview: every gear icon, one slot per row. */
 it('gear icons', () => {
   const cell = 44;
-  const sheet = new Sheet(10 * cell, GEAR_SLOTS.length * cell, pack(0x2a2236));
+  const cols = Math.max(...GEAR_SLOTS.map((s) => gearIdsFor(s).length));
+  const sheet = new Sheet(cols * cell, GEAR_SLOTS.length * cell, pack(0x2a2236));
   GEAR_SLOTS.forEach((slot, row) => {
     gearIdsFor(slot).forEach((id, i) => {
       const f = iconFrame(id);

@@ -111,13 +111,17 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
   // --- Far side -------------------------------------------------------------------
   if (hold.sec === 'hand' && !hold.secFront) drawSec(r, art, sk, pose, hold, OX, OY, m, -1);
   drawArm(r, art, sk, 'F', X, Y, m, T.ang);
+  // A cestus stays on the off fist when it isn't punching.
+  if (hold.sec === 'stowed' && art.sec && art.secFamily === 'fist') {
+    art.sec.draw(r, frameAt(OX, OY, sk.handF, Math.atan2(sk.handF.y - sk.elF.y, sk.handF.x - sk.elF.x)), (k) => m('s.' + k), { group: G.sec, toneBias: -1 });
+  }
   if (art.use && hold.use === 'hand' && hold.useBehind) drawUseHand(r, art, sk, pose, hold, OX, OY, m);
   if (art.family === 'bow' && hold.main === 'hand') drawMain(r, art, sk, pose, hold, OX, OY, m, 0);
   drawLeg(r, art, sk, 'F', X, Y, m);
 
   // --- Body -------------------------------------------------------------------------
   drawTorso(r, art, sk, T, X, Y, m);
-  if (hold.sec === 'stowed' && art.secFamily !== 'shield') drawSecHolster(r, art, sk, T, OX, OY, m, false);
+  if (hold.sec === 'stowed' && art.secFamily !== 'shield' && art.secFamily !== 'fist') drawSecHolster(r, art, sk, T, OX, OY, m, false);
   drawLeg(r, art, sk, 'N', X, Y, m);
   if (sp === 'human') drawScarfWrap(r, art, T, m);
   if (chest.skirt > 0) drawSkirt(r, art, T, sk, m(chest.skirtMat), sway, m(chest.trim ?? chest.skirtMat));
