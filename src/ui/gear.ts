@@ -133,7 +133,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
       return h('div.sk-set', null,
         h('p.sk-info', null, h(`b.${peek.rarity}`, null, `${peek.name} · ${peek.rarity}`), ' ', h('span.sk-locked', null, 'Locked.'),
           ` Find it in a skin chest.${set ? ` Part of the ${set.name} set.` : ''}`),
-        cb.onChests ? h('div.sk-set-row', null, h('button.btn.sm', { onclick: () => cb.onChests!() }, icon('chest'), 'Open chests')) : null);
+        cb.onChests ? h('div.sk-set-row', null, h('button.btn.sm', { onclick: () => cb.onChests!() }, icon('shop'), 'Shop')) : null);
     }
     const got = list.filter((sk) => owns(sk.id)).length;
     if (!cur) return h('p.sk-info', null, h('b', null, 'Default look'), ` ${got} of ${list.length} skin${list.length > 1 ? 's' : ''} unlocked. Looks only.`);

@@ -46,7 +46,7 @@ export class Menu {
   private chestBtn: HTMLButtonElement;
 
   constructor(cb: MenuCallbacks) {
-    this.chestBtn = h<HTMLButtonElement>('button.btn.chest-btn.go', { title: 'Skin chests', onclick: () => cb.onChests() });
+    this.chestBtn = h<HTMLButtonElement>('button.btn.chest-btn.go', { title: 'Shop', onclick: () => cb.onChests() });
     this.soundBtn = h<HTMLButtonElement>('button.btn.icon.sm', { title: 'Sound', 'aria-label': 'Sound', onclick: () => cb.onSound() });
     const mark = h('div.menu-logo.home-logo', { 'aria-label': 'Arena Legends' });
     void logo().then((c) => { mark.append(c); fitPixels(c, mark); });
@@ -77,7 +77,7 @@ export class Menu {
 
   /** The chest button shows the gems, with a dot when a chest can be opened. */
   setGems(n: number, canOpen: boolean): void {
-    this.chestBtn.replaceChildren(icon('chest'), h('span', null, 'Chests'), gemTag(n));
+    this.chestBtn.replaceChildren(icon('shop'), h('span', null, 'Shop'), gemTag(n));
     this.chestBtn.classList.toggle('unseen', canOpen);
   }
 

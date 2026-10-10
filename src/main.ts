@@ -21,6 +21,7 @@ import { h, save, store } from './ui/dom';
 import { icon } from './ui/icons';
 import { setupPhoneFullscreen } from './ui/fullscreen';
 import { chestScreen } from './ui/gacha';
+import { shopScreen } from './ui/shop';
 import { gearSheet } from './ui/gear';
 import { Hud } from './ui/hud';
 import { Menu, type Record as WinLoss } from './ui/menu';
@@ -35,7 +36,7 @@ import { onlineResultsSheet, type OnlineOutcome } from './ui/results';
 import { withGear, type CharacterBuild } from './sim/loadout';
 import { MATCH_TIME } from './sim/constants';
 import { gearOf } from './sim/gear';
-import type { SkinDef } from './character/skins';
+import { setPieces, type SkinDef } from './character/skins';
 import { accountStatus, accountsEnabled, consumeResume, onAccount, poke, restoreAccount, setReloadGate } from './account/account';
 import { accountSheet } from './ui/account';
 
@@ -123,7 +124,7 @@ const menu = new Menu({
     sfx.play('ui');
   },
   onSettings: () => openSettings(),
-  onChests: () => openChests(),
+  onChests: () => openShop(),
   onOnline: () => {
     sfx.play('ui');
     if (!player) { openCreator(true); return; }
@@ -235,19 +236,35 @@ function openGear(): void {
   sheet = gearSheet(player, {
     onChange: (c) => { player = c; saveCharacter(c); },
     onClose: () => { closeSheet(); refreshMenu(); },
-    onChests: () => openChests(),
+    onChests: () => openShop(),
   });
   ui.append(sheet.el);
   setCovered(true);
 }
 
-/** Skin chests: spend gems on skins. */
-function openChests(): void {
+/** The shop: featured set, daily skins and set bundles, all for gems. Chests are its second tab. */
+function openShop(): void {
   closeSheet();
   sfx.unlock();
   sfx.play('ui');
+  sheet = shopScreen({
+    onClose: () => { closeSheet(); refreshMenu(); },
+    onChests: () => openChests(),
+    onEquip: (s: SkinDef) => wearPulled(s),
+    onEquipSet: (id) => { for (const s of setPieces(id)) wearPulled(s); },
+    player: () => player,
+  });
+  ui.append(sheet.el);
+  setCovered(true);
+}
+
+/** Skin chests (the shop's second tab): spend gems on random skins. */
+function openChests(): void {
+  closeSheet();
+  sfx.play('ui');
   sheet = chestScreen({
     onClose: () => { closeSheet(); refreshMenu(); },
+    onShop: () => openShop(),
     onEquip: (s: SkinDef) => wearPulled(s),
     player: () => player,
   });

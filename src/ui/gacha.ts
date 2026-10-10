@@ -19,6 +19,15 @@ export interface ChestCallbacks {
   onEquip(skin: SkinDef): void;
   /** The player's fighter, to show a pulled skin on. */
   player(): PlayerCharacter | null;
+  /** Shown as a tab when the chests sit inside the shop. */
+  onShop?(): void;
+}
+
+/** The shop's two tabs (offers and chests), for the screen headers. */
+export function shopTabs(on: 'offers' | 'chests', go: (t: 'offers' | 'chests') => void): HTMLElement {
+  const tab = (id: 'offers' | 'chests', ic: Parameters<typeof icon>[0], label: string) =>
+    h(`button.shop-tab${id === on ? '.on' : ''}`, { 'aria-pressed': String(id === on), onclick: () => { if (id !== on) go(id); } }, icon(ic), h('span', null, label));
+  return h('nav.shop-tabs', null, tab('offers', 'star', 'Offers'), tab('chests', 'chest', 'Chests'));
 }
 
 const REVEAL: Record<SkinRarity, Sfx> = { rare: 'revealRare', mythic: 'revealMythic', legendary: 'revealLegendary', epic: 'revealEpic' };
@@ -118,7 +127,8 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
   const done = h('button.btn.primary.done', { onclick: () => close() }, icon('check'), 'Done');
   const el = h('div.scr.gacha', { role: 'dialog', 'aria-label': 'Skin chests' },
     fx.canvas,
-    h('header.scr-head', null, h('div.scr-title', null, h('h1', null, 'Skin Chests')), h('div.grow'), gemChip, done),
+    h('header.scr-head', null, h('div.scr-title', null, h('h1', null, cb.onShop ? 'Shop' : 'Skin Chests')),
+      cb.onShop ? shopTabs('chests', () => { if (!busy) { sfx.play('select'); cb.onShop!(); } }) : null, h('div.grow'), gemChip, done),
     stage, panel, reveal,
   );
   // Taps on the darkened screen skip the opening too.
