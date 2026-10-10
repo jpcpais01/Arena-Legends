@@ -100,7 +100,7 @@ export interface Fighter {
 }
 
 export function createFighter(id: FighterId, cfg: FighterConfig): Fighter {
-  const base = computeBaseStats(cfg.form, cfg.gear);
+  const base = computeBaseStats(cfg.form, cfg.gear, cfg.train);
   const abilities = buildAbilities(cfg.gear);
   const ids = gearIds(cfg.gear);
   const f: Fighter = {

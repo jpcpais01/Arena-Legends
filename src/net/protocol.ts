@@ -47,11 +47,16 @@ export type GuestMsg =
   | { t: 'unlock'; round: number }
   | { t: 'verdict'; round: number; hash: string; checks: string[] }
   | { t: 'done'; round: number }
-  | { t: 'rematch'; id: string };
+  | { t: 'rematch'; id: string }
+  // Arena Cup lobby (rooms whose code starts with CUP_PREFIX).
+  | { t: 'cupJoin'; proto: number; version: string; pid: string; build: CharacterBuild; level: number };
 
 export type HostMsg =
   | { t: 'state'; s: Snapshot }
-  | { t: 'reject'; reason: 'version' | 'full'; version: string };
+  | { t: 'reject'; reason: 'version' | 'full' | 'started'; version: string }
+  | { t: 'cupRoom'; members: { pid: string; build: CharacterBuild; level: number }[] }
+  // The drawn cup, as its JSON in pieces (a JSON data channel message must stay under ~16 KB).
+  | { t: 'cupPart'; id: string; i: number; n: number; data: string };
 
 export type CommonMsg = { t: 'ping' } | { t: 'pong' } | { t: 'bye' };
 
@@ -79,10 +84,15 @@ export function matchWinner(results: RoundResult[], uptoRound = Infinity): Side 
 const CODE_CHARS = '0123456789';
 export const CODE_LENGTH = 5;
 
-export function newRoomCode(): string {
-  let s = '';
+/** Arena Cup lobbies have codes starting with this digit; duel rooms never do. */
+export const CUP_PREFIX = '9';
+export const isCupCode = (code: string) => code.length === CODE_LENGTH && code[0] === CUP_PREFIX;
+
+/** A duel room code (never starts with CUP_PREFIX), or a cup lobby code when `cup`. */
+export function newRoomCode(cup = false): string {
   const r = crypto.getRandomValues(new Uint32Array(CODE_LENGTH));
-  for (let i = 0; i < CODE_LENGTH; i++) s += CODE_CHARS[r[i] % CODE_CHARS.length];
+  let s = cup ? CUP_PREFIX : String(r[0] % 9);
+  for (let i = 1; i < CODE_LENGTH; i++) s += CODE_CHARS[r[i] % CODE_CHARS.length];
   return s;
 }
 

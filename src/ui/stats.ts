@@ -1,4 +1,5 @@
 import { computeBaseStats } from '../sim/loadout';
+import type { Training } from '../sim/training';
 import type { FormId, GearSet, Stats } from '../sim/types';
 import { h } from './dom';
 
@@ -13,8 +14,8 @@ const LINES: [keyof Stats, string, (v: number) => string][] = [
 ];
 
 /** Label/value pairs for a build's stats (for a `.statline` grid). */
-export function statLines(form: FormId, gear: GearSet): HTMLElement[] {
-  const s = computeBaseStats(form, gear);
+export function statLines(form: FormId, gear: GearSet, train?: Training): HTMLElement[] {
+  const s = computeBaseStats(form, gear, train);
   return LINES.flatMap(([k, label, f]) => [h('span', null, label), h('b', null, f(s[k] as number))]);
 }
 
@@ -43,8 +44,8 @@ export function modText(add?: Partial<Stats>, mul?: Partial<Stats>): string {
  * Every stat of a build as an inspector cell: the value with `to`, and how far
  * it moved from `from` (for an `.ins-stats` grid). Unchanged stats are dimmed.
  */
-export function statCompare(form: FormId, from: GearSet, to: GearSet): HTMLElement[] {
-  const a = computeBaseStats(form, from), b = computeBaseStats(form, to);
+export function statCompare(form: FormId, from: GearSet, to: GearSet, train?: Training): HTMLElement[] {
+  const a = computeBaseStats(form, from, train), b = computeBaseStats(form, to, train);
   return LINES.map(([k, label, f]) => {
     const x = a[k] as number, y = b[k] as number;
     const same = f(x) === f(y);

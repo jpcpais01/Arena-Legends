@@ -12,6 +12,18 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.67.0',
+    date: '2026-10-10',
+    title: 'Arena Cup and hero levels',
+    notes: [
+      'New game mode: the Arena Cup! 32 fighters, five knockout rounds: Opening Clash, Gauntlet, Quarter-finals, Semi-finals and the Final. Lose once and you are out; win five in a row to lift the cup. Find it under the new Cup button on the menu.',
+      'The bracket shows every fight of the cup, your path in gold. Challengers get tougher the deeper you go, and between rounds you can change your gear and spend stat points.',
+      'Cup with friends: open a lobby, invite up to 7 friends (or send them the room code), and everyone lands in the same bracket, spread out so you meet as late as possible. When two of you meet, you both watch the same fight.',
+      'Your hero now has a level and earns XP. Every cup win pays XP, more in later rounds and the more health you keep; winning the cup pays a big bonus in XP and gems. Quick fights pay a little XP too.',
+      'Levels never end. Each level gives 2 stat points to spend on Health, Power, Armor, Resist, Speed or Crit in Hero > Stats. Take them back any time with Reset. Rivals and cup challengers train their stats too.',
+    ],
+  },
+  {
     version: '0.66.0',
     date: '2026-10-10',
     title: 'See who is online',

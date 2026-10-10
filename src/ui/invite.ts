@@ -17,30 +17,30 @@ export interface InvitePopup {
   dispose(): void;
 }
 
-/** `seconds` is how long the invite has left; it closes itself (as `onExpire`) when time runs out. */
-export function invitePopup(fromName: string, seconds: number, cb: { onAccept(): void; onDecline(): void; onExpire(): void }): InvitePopup {
+/** `seconds` is how long the invite has left; it closes itself (as `onExpire`) when time runs out. `cup`: an Arena Cup invite, not a duel. */
+export function invitePopup(fromName: string, seconds: number, cb: { onAccept(): void; onDecline(): void; onExpire(): void }, cup = false): InvitePopup {
   let preview: Preview | null = null;
   let done = false;
   const finish = (f: () => void) => { if (done) return; done = true; f(); };
-  const stage = h('div.inv-stage', null, h('span.sock', null, icon('swords')));
+  const stage = h('div.inv-stage', null, h('span.sock', null, icon(cup ? 'trophy' : 'swords')));
   const sub = h('div.inv-sub');
   const bar = h('i', { style: { animationDuration: `${seconds}s` } });
   const timer = window.setTimeout(() => finish(cb.onExpire), seconds * 1000);
   const accept = h<HTMLButtonElement>('button.btn.primary.big.go.inv-accept', {
     onclick: () => { sfx.play('confirm'); finish(cb.onAccept); },
-  }, icon('swords'), h('span', null, 'Accept'));
+  }, icon(cup ? 'trophy' : 'swords'), h('span', null, cup ? 'Join' : 'Accept'));
   const decline = h<HTMLButtonElement>('button.btn.inv-decline', {
     onclick: () => { sfx.play('back'); finish(cb.onDecline); },
   }, icon('close'), h('span', null, 'Decline'));
   const el = h('div.inv-wrap', null,
-    h('div.inv-pop', { role: 'alertdialog', 'aria-label': `${fromName} challenges you to a duel` },
-      h('div.ribbon.inv-ribbon', null, h('span', null, 'Duel challenge!')),
+    h('div.inv-pop', { role: 'alertdialog', 'aria-label': cup ? `${fromName} invites you to an Arena Cup` : `${fromName} challenges you to a duel` },
+      h('div.ribbon.inv-ribbon', null, h('span', null, cup ? 'Cup invite!' : 'Duel challenge!')),
       h('div.inv-main', null,
         stage,
         h('div.inv-text', null,
           h('div.inv-name', null, fromName),
           sub,
-          h('p', null, 'challenges you to an online best of five.'))),
+          h('p', null, cup ? 'invites you to an Arena Cup: one bracket, 32 fighters, five rounds.' : 'challenges you to an online best of five.'))),
       h('div.inv-timer', null, bar),
       h('div.inv-btns', null, decline, accept)));
   sfx.play('tierUp');

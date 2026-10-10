@@ -261,7 +261,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
       const mods = modText(g.add, g.mul);
       body = [
         h('div.ins-sub', null, on ? 'Your stats with it' : 'If you equip it'),
-        h('div.ins-stats', null, ...statCompare(c.form, from, to)),
+        h('div.ins-stats', null, ...statCompare(c.form, from, to, c.train)),
         mods ? h('p.ins-mods', null, mods) : null,
         abil.length || g.passive ? h('div.ins-sub', null, 'Skills') : null,
         ...abil.map((a) => h('div.ins-ab', null,
@@ -344,7 +344,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     slotHead.replaceChildren(h('div.ribbon', null, h('span', null, SLOT_NAMES[slot])), h('p', null, SLOT_INFO[slot]));
     const ids = gearIdsFor(slot) as GearId[];
     list.replaceChildren(...(slot === 'main' ? [] : [tile(null)]), ...ids.map(tile));
-    stats.replaceChildren(...statLines(c.form, c.gear));
+    stats.replaceChildren(...statLines(c.form, c.gear, c.train));
     undoBtn.disabled = !undos.length;
     redoBtn.disabled = !redos.length;
     plainBtn.disabled = !Object.keys(c.skins ?? {}).length;

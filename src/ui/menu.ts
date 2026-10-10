@@ -12,6 +12,7 @@ import { icon } from './icons';
 import { logo } from './logo';
 import { fitPixels } from './pixelfit';
 import { Preview } from './preview';
+import { levelBadge } from './xp';
 
 export interface MenuCallbacks {
   onFight(): void;
@@ -26,6 +27,7 @@ export interface MenuCallbacks {
   onAccount?(): void;
   /** Friends button (only when accounts are switched on). */
   onFriends?(): void;
+  onCup(): void;
 }
 
 export interface Record { w: number; l: number }
@@ -47,6 +49,8 @@ export class Menu {
   private rival = h('div.home-slot.rival');
   private chestBtn: HTMLButtonElement;
   private friendsBtn: HTMLButtonElement | null = null;
+  private heroBtn: HTMLButtonElement;
+  private cupBtn: HTMLButtonElement;
 
   constructor(cb: MenuCallbacks) {
     this.chestBtn = h<HTMLButtonElement>('button.btn.chest-btn.go', { title: 'Shop', onclick: () => cb.onChests() });
@@ -55,7 +59,9 @@ export class Menu {
     void logo().then((c) => { mark.append(c); fitPixels(c, mark); });
     if (cb.onFriends) this.friendsBtn = h<HTMLButtonElement>('button.btn.icon.sm', { title: 'Friends', 'aria-label': 'Friends', onclick: () => cb.onFriends!() }, icon('friends'));
     const side = (ic: Parameters<typeof icon>[0], label: string, fn: () => void) =>
-      h('button.btn.sm.home-side', { title: label, onclick: fn }, icon(ic), h('span', null, label));
+      h<HTMLButtonElement>('button.btn.sm.home-side', { title: label, onclick: fn }, icon(ic), h('span', null, label));
+    this.heroBtn = side('edit', 'Hero', () => cb.onEditLook());
+    this.cupBtn = h<HTMLButtonElement>('button.btn.home-online.home-cup', { title: 'Arena Cup', onclick: () => cb.onCup() }, icon('trophy'), h('span', null, 'Cup'));
     this.el = h('div.menu.home', null,
       h('div.home-top', null, this.you, mark, this.rival),
       h('div.home-tools', null,
@@ -67,10 +73,11 @@ export class Menu {
         h('div.home-row', null, this.chestBtn),
         h('div.home-row', null,
           side('bag', 'Armory', () => cb.onGear()),
-          side('edit', 'Hero', () => cb.onEditLook()),
+          this.heroBtn,
           side('dice', 'Rival', () => cb.onNewRival())),
         h('div.home-row', null,
           h('button.btn.home-online', { title: 'Online duel', onclick: () => cb.onOnline() }, icon('globe'), h('span', null, 'Online')),
+          this.cupBtn,
           h('button.btn.primary.big.fight', { onclick: () => cb.onFight() }, icon('swords'), h('span', null, 'Fight')))),
     );
   }
@@ -92,6 +99,19 @@ export class Menu {
     if (this.friendsBtn) this.friendsBtn.title = n > 0 ? `Friends (${n} new request${n > 1 ? 's' : ''})` : 'Friends';
   }
 
+  /** A dot on Hero while there are stat points to spend. */
+  setPoints(n: number): void {
+    this.heroBtn.classList.toggle('unseen', n > 0);
+    this.heroBtn.title = n > 0 ? `Hero (${n} stat point${n > 1 ? 's' : ''} to spend)` : 'Hero';
+  }
+
+  /** The Cup button says which round a running cup is at. */
+  setCup(round: string | null): void {
+    this.cupBtn.replaceChildren(icon('trophy'), h('span', null, round ?? 'Cup'));
+    this.cupBtn.classList.toggle('live', !!round);
+    this.cupBtn.title = round ? `Arena Cup: ${round}` : 'Arena Cup';
+  }
+
   set(player: PlayerCharacter, rival: PlayerCharacter, rec: Record): void {
     this.dispose();
     const a = new Preview(player, ...PLATE_ART, { autoplay: true, ground: -18 });
@@ -104,7 +124,7 @@ export class Menu {
   /** A nameplate: the fighter's portrait over name, species and form, beside their gear two to a row. */
   private plate(c: CharacterBuild, p: Preview, side: 0 | 1, tag: string, extra: string): HTMLElement {
     const look = c.look ?? DEFAULT_LOOK;
-    const art = h('div.plate-art', null, p.el);
+    const art = h('div.plate-art', null, p.el, levelBadge(c.level ?? 1, 'on-art'));
     applyBackdrop(art, look.backdrop);
     p.fitTo(art);
     return h(`div.nplate${side ? '.rival' : '.you'}`, null,
@@ -126,7 +146,7 @@ export class Menu {
 const PLATE_ART: [number, number] = [BW, BH];
 
 /** Icons for every gear slot in order, skins applied; empty slots are blank. */
-function gearIcons(c: CharacterBuild): HTMLElement[] {
+export function gearIcons(c: CharacterBuild): HTMLElement[] {
   return GEAR_SLOTS.map((slot) => {
     const id = c.gear[slot];
     if (!id) return h('i', { title: `${SLOT_NAMES[slot]}: empty` });
