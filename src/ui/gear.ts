@@ -91,6 +91,11 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
   const redos: PlayerCharacter[] = [];
   const undoBtn = h<HTMLButtonElement>('button.btn.icon.sm.hist', { title: 'Undo', 'aria-label': 'Undo', onclick: () => travel(undos, redos) }, icon('undo'));
   const redoBtn = h<HTMLButtonElement>('button.btn.icon.sm.hist', { title: 'Redo', 'aria-label': 'Redo', onclick: () => travel(redos, undos) }, icon('redo'));
+  /** Puts every item back to its plain look (one Undo brings the skins back). */
+  const plainBtn = h<HTMLButtonElement>('button.btn.sm.hist.plain', {
+    title: 'Unequip all skins', 'aria-label': 'Unequip all skins',
+    onclick: () => { if (Object.keys(c.skins ?? {}).length) { peek = null; save({ ...c, skins: {} }, false); } },
+  }, icon('star'), 'No skins');
 
   /** Steps back (or forward) one change: the current build goes on the other stack. */
   function travel(from: PlayerCharacter[], to: PlayerCharacter[]): void {
@@ -341,6 +346,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     stats.replaceChildren(...statLines(c.form, c.gear));
     undoBtn.disabled = !undos.length;
     redoBtn.disabled = !redos.length;
+    plainBtn.disabled = !Object.keys(c.skins ?? {}).length;
     root.classList.toggle('inspecting', !!open);
     inspect.replaceChildren(...(open ? [inspector(open)] : []));
     syncPreview();
@@ -360,7 +366,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     h('header.scr-head', null,
       h('div.scr-title', null, h('h1', null, opts.title ?? 'Armory')),
       h('div.grow'),
-      h('div.hist-btns', null, undoBtn, redoBtn),
+      h('div.hist-btns', null, plainBtn, undoBtn, redoBtn),
       h('button.btn.primary.done', { onclick: close }, icon('check'), 'Done')),
     stage, panel, inspect,
   );
