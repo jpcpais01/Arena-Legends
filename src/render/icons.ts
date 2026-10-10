@@ -286,7 +286,7 @@ export function iconFrame(id: GearId, skin?: string | null): Frame {
     f = r.compose(c, c);
   } else if (def.slot === 'usable') {
     // Potions and bombs stand upright at their own pixel size, like armour.
-    const a = usableArt(id as UsableId);
+    const a = usableArt(id as UsableId, skin);
     const h = handles(r);
     a.draw(r, new Xf(c, c, Math.PI / 2 - 0.3), (k) => h(a.mats[k]), { group: 1 });
     const full = r.compose(c, c);

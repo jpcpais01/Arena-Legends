@@ -51,7 +51,10 @@ describe('item skins', () => {
     for (const s of SKINS) {
       const a = SKIN_ART[s.id];
       const special = gearOf(s.gear).slot === 'special';
-      const reshaped = !!(a.weapon || a.head || a.chest || a.legs || a.boots || (special && a.icon));
+      const usable = gearOf(s.gear).slot === 'usable';
+      const reshaped = !!(a.weapon || a.head || a.chest || a.legs || a.boots || a.usable || (special && a.icon));
+      // Only usable items can bring a reshaped usable.
+      if (a.usable) expect(usable, s.id).toBe(true);
       if (s.rarity === 'rare') {
         expect(reshaped, s.id).toBe(false);
         expect(a.mats && Object.keys(a.mats).length, s.id).toBeTruthy();
@@ -66,6 +69,8 @@ describe('item skins', () => {
       } else expect(s.set, s.id).toBeUndefined();
       // Special item skins colour their battle particles too.
       if (special && s.gear !== 'vampiric_fang') expect(a.glow, s.id).toBeDefined();
+      // So do usable item skins: their clouds, bursts, drinks and patches.
+      if (usable) expect(a.glow, s.id).toBeDefined();
     }
   });
 
@@ -120,6 +125,8 @@ describe('item skins', () => {
       const plain = render(wearing(null, s.gear));
       const skinned = render(wearing(s.id, s.gear));
       expect(same(plain, skinned), s.id).toBe(false);
+      // Usable items show on the belt, and in their icon.
+      if (gearOf(s.gear).slot === 'usable') expect(same([iconFrame(s.gear).data], [iconFrame(s.gear, s.id).data]), s.id).toBe(false);
     }
   }, 60_000);
 

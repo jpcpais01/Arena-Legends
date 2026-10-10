@@ -16,7 +16,7 @@ interface Particle {
   color: number; color2: number;
   size: number;
   gravity: number; drag: number;
-  kind: 'dot' | 'streak' | 'smoke' | 'ember' | 'twinkle' | 'flame' | 'plus' | 'drop';
+  kind: 'dot' | 'streak' | 'smoke' | 'ember' | 'twinkle' | 'flame' | 'plus' | 'drop' | 'petal' | 'flake';
   ground: boolean;
 }
 
@@ -195,6 +195,19 @@ export class Fx {
         g.fillRect(x, y, 1, 2);
         g.fillStyle = '#fff';
         g.fillRect(x, y, 1, 1);
+      } else if (p.kind === 'petal' || p.kind === 'flake') {
+        // Drifting petals and snowflakes (usable item skins): they sway side to side as they fall.
+        const sx = x + Math.round(Math.sin(p.life * 5 + p.max * 41) * 1.4);
+        if (p.kind === 'petal') {
+          // Two pixels, flipping between flat and tilted as it tumbles, the lit edge in the first colour.
+          const flat = (Math.floor(p.life * 9 + p.max * 13) & 1) === 0;
+          g.fillRect(sx, y, 1, 1);
+          g.fillStyle = css(mix(col, p.color2, 0.5));
+          g.fillRect(sx + 1, flat ? y : y + 1, 1, 1);
+        } else {
+          g.fillRect(sx, y, 1, 1);
+          if (k < 0.35) { g.fillRect(sx - 1, y, 3, 1); g.fillRect(sx, y - 1, 1, 3); }
+        }
       } else if (p.kind === 'twinkle') {
         // A little four-point star that shrinks to a dot (legendary skins).
         g.fillRect(x, y, 1, 1);

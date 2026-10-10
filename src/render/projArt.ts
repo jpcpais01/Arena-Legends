@@ -2,6 +2,7 @@ import type { ProjectileStyle, UsableId } from '../sim/types';
 import { material, Raster, type Frame, type Material } from './pixel/raster';
 import { arc, union, type Shape } from './pixel/sdf';
 import type { Sprite } from './sprite/bank';
+import { SKIN_BY_ID } from '../character/skins';
 import { SKIN_ART, skinMaterials, type ProjArt } from './sprite/skins';
 import { usableArt } from './sprite/usables';
 import { Xf } from './sprite/xform';
@@ -398,8 +399,35 @@ const ART: Record<ProjectileStyle | 'phantom' | 'sigil', ProjArt> = {
  */
 export type ProjArtId = keyof typeof ART | 'lantern' | 'core';
 
+/** Battle sprites a usable item throws: the item tumbling end over end, or (caltrops) its scattered handful. */
+const USABLE_SHOTS: Partial<Record<ProjArtId, UsableId>> = { frostflask: 'frost_bomb', flask: 'fire_bomb', caltrops: 'caltrops' };
+
+const usableShots = new Map<string, ProjArt>();
+
+/** A thrown usable in a usable item skin: drawn from the skinned item's own art and materials. */
+function usableShot(id: ProjArtId, skin: string): ProjArt | undefined {
+  const use = USABLE_SHOTS[id];
+  if (!use || !SKIN_BY_ID.has(skin) || SKIN_BY_ID.get(skin)!.gear !== use) return undefined;
+  const key = `${id}|${skin}`;
+  let p = usableShots.get(key);
+  if (!p) {
+    const a = usableArt(use, skin);
+    const shot = a.shot;
+    // Materials are named by the item, so `h` (which maps stock sprite materials) passes them through.
+    p = shot
+      ? { frames: shot.frames, outline: true, draw: (r, t, f, h) => shot.draw(r, t, f, (k) => h(a.mats[k])) }
+      : { frames: 6, outline: true, draw: (r, t, f, h) => a.draw(r, new Xf(t.ox, t.oy, -f * (Math.PI / 3)), (k) => h(a.mats[k]), { group: 1, frame: f }) };
+    usableShots.set(key, p);
+  }
+  return p;
+}
+
 /** The art for a sprite: the skin's reshaped one if it has it, else the stock one. */
-const artFor = (id: ProjArtId, skin?: string | null): ProjArt | undefined => (skin ? SKIN_ART[skin]?.proj?.[id] : undefined) ?? (id === 'lantern' || id === 'core' ? undefined : ART[id]);
+const artFor = (id: ProjArtId, skin?: string | null): ProjArt | undefined =>
+  (skin ? SKIN_ART[skin]?.proj?.[id] ?? usableShot(id, skin) : undefined) ?? (id === 'lantern' || id === 'core' ? undefined : ART[id]);
+
+/** Whether a sprite is a usable item thrown in its skin (its materials are the item's, not swapped by name). */
+export const isUsableShot = (id: ProjArtId, skin?: string | null) => !!skin && !SKIN_ART[skin]?.proj?.[id] && !!usableShot(id, skin);
 
 /** Whether a skin reshapes this sprite. */
 export function skinDraws(id: ProjArtId, skin?: string | null): boolean {
@@ -407,6 +435,19 @@ export function skinDraws(id: ProjArtId, skin?: string | null): boolean {
 }
 
 const M_NAME = new Map<Material, string>(Object.entries(M).map(([k, m]) => [m, k]));
+const M_KEYS = new Set(Object.keys(M));
+const tints = new Map<string, boolean>();
+
+/** Whether a (rare) weapon skin recolours its thrown sprite: its `mats` name some of the stock sprite materials above. */
+export function skinTints(skin?: string | null): boolean {
+  if (!skin) return false;
+  let v = tints.get(skin);
+  if (v === undefined) {
+    v = Object.keys(SKIN_ART[skin]?.mats ?? {}).some((k) => M_KEYS.has(k));
+    tints.set(skin, v);
+  }
+  return v;
+}
 
 const cache = new Map<string, Sprite>();
 let raster: Raster | null = null;
@@ -439,7 +480,7 @@ export function projFrame(id: ProjArtId, frame: number, angle = 0, skin?: string
   const r = (raster ??= new Raster(80, 80));
   r.clear();
   const mats = new Map<Material, number>();
-  const over = skin ? skinMaterials(skin) : null;
+  const over = skin && !isUsableShot(id, skin) ? skinMaterials(skin) : null;
   const h = (m: Material) => {
     if (over) m = over[M_NAME.get(m)!] ?? m;
     let k = mats.get(m);
@@ -452,15 +493,15 @@ export function projFrame(id: ProjArtId, frame: number, angle = 0, skin?: string
 
 const bottles = new Map<string, Sprite>();
 
-/** An empty bottle tumbling through the air (tossed away after drinking), 8 frames per turn. */
-export function bottleSprite(id: UsableId, frame: number): Sprite {
+/** An empty bottle tumbling through the air (tossed away after drinking), 8 frames per turn, optionally in the item's skin. */
+export function bottleSprite(id: UsableId, frame: number, skin?: string | null): Sprite {
   const f = ((frame % 8) + 8) % 8;
-  const key = `${id}.${f}`;
+  const key = `${id}.${f}.${skin ?? ''}`;
   let s = bottles.get(key);
   if (s) return s;
   const r = (raster ??= new Raster(80, 80));
   r.clear();
-  const a = usableArt(id);
+  const a = usableArt(id, skin);
   const mats = new Map<Material, number>();
   const h = (k: string) => {
     const m = a.mats[k];

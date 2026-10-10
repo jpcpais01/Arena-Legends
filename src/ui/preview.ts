@@ -182,6 +182,7 @@ export class Preview {
       [art.headSkin?.fx, [gx, top + 4], 8],
       [art.chestSkin?.fx, [gx, gy - 30], 14],
       [art.bootsSkin?.fx, [gx, gy - 1], 12],
+      [art.useSkin?.fx, fl([4, -26]), 4],
       [art.set ? SET_FX[art.set] : undefined, [gx, gy - 1], 30],
     ];
     if ((this.sparkT -= dt) <= 0) {

@@ -1,6 +1,9 @@
 import { inkFor, pack } from './pixel/color';
+import { Raster, type Material } from './pixel/raster';
 import { hash } from './pixel/tex';
 import type { Sprite } from './sprite/bank';
+import { SKIN_ART, skinMaterials, type ProjArt } from './sprite/skins';
+import { Xf } from './sprite/xform';
 
 /**
  * Hand-pixelled battle sprites for the small things that ride along with a
@@ -14,9 +17,16 @@ import type { Sprite } from './sprite/bank';
  * `[colour, shine]` are night accents (a gem, a rune, a glowing crystal):
  * they go into the sprite's `glow` layer, which battleView lights up after
  * dark, scaled by `shine`.
+ *
+ * Item skins: a rare skin recolours these maps from its `mats` (each letter
+ * follows one of the item's icon materials, see the `*_MAP` tables), and a
+ * reshaped skin brings its own sprites through `proj` (ids `perch`, `whelp`,
+ * `totem`, `charm`, `hourglass`, `ward`), rasterized here with night accents.
  */
 
-type Pal = Record<string, number | [number, number]>;
+type PalEntry = number | [number, number];
+/** A letter's colour, optionally per pixel (a texture laid over the map). */
+type Pal = Record<string, PalEntry | ((x: number, y: number) => PalEntry)>;
 
 export interface PixFrame {
   w: number;
@@ -26,6 +36,8 @@ export interface PixFrame {
   oy: number;
   data: Uint32Array;
   glow: Uint32Array | null;
+  /** Spots where night twinkles may land (x, y pairs). */
+  sparks?: number[];
 }
 
 /**
@@ -44,8 +56,9 @@ export function pixFrame(rows: readonly string[], pal: Pal, ax: number, ay: numb
     for (let x = 0; x < row.length; x++) {
       const ch = row[x];
       if (ch === '.' || ch === ' ') continue;
-      const e = pal[ch];
-      if (e === undefined) throw new Error(`pixFrame: no colour for '${ch}'`);
+      const e0 = pal[ch];
+      if (e0 === undefined) throw new Error(`pixFrame: no colour for '${ch}'`);
+      const e = typeof e0 === 'function' ? e0(x, y) : e0;
       const [c, shine] = typeof e === 'number' ? [e, 0] : e;
       const i = (y + p) * w + x + p;
       data[i] = pack(c);
@@ -83,8 +96,73 @@ function sprite(key: string, make: () => PixFrame): Sprite {
   const f = make();
   s = { img: canvasOf(f.w, f.h, f.data), ox: f.ox, oy: f.oy, w: f.w, h: f.h };
   if (f.glow) s.glow = canvasOf(f.w, f.h, f.glow);
+  if (f.sparks?.length) s.sparks = f.sparks;
   cache.set(key, s);
   return s;
+}
+
+// -----------------------------------------------------------------------------
+// Item skins
+// -----------------------------------------------------------------------------
+
+/** How a sprite's letters follow a skin's colours: [icon material name, tone of its ramp]. */
+type Recolor = Record<string, [string, number]>;
+
+/**
+ * A palette in a rare skin's colours: every letter whose material the skin
+ * overrides takes that material's tone (and its texture, per pixel). Self-lit
+ * materials keep the letter's night shine; a texture that reaches the top
+ * tone makes a small glint.
+ */
+function recolor(pal: Pal, map: Recolor, skin: string | null | undefined): Pal {
+  if (!skin || !SKIN_ART[skin]?.mats) return pal;
+  const mats = skinMaterials(skin);
+  const out: Pal = { ...pal };
+  for (const [ch, [key, tone]] of Object.entries(map)) {
+    const m = mats[key];
+    if (!m) continue;
+    const st = pal[ch];
+    const stockShine = Array.isArray(st) ? st[1] : 0;
+    const at = (t: number): PalEntry => {
+      const s = m.glow ? stockShine || 0.6 : t === 4 ? (m.maxTone === 4 ? 0.25 : 0.6) : 0;
+      return s ? [m.ramp[t], s] : m.ramp[t];
+    };
+    const tex = m.tex;
+    out[ch] = tex ? (x, y) => at(Math.max(0, Math.min(4, tone + tex(x, y, 0)))) : at(tone);
+  }
+  return out;
+}
+
+/** A skin's reshaped battle sprite, if it brings one. */
+const reshaped = (id: string, skin: string | null | undefined): ProjArt | undefined => (skin ? SKIN_ART[skin]?.proj?.[id] : undefined);
+
+/** Night accents of a reshaped special (legendary tier, as look.ts NIGHT): its glows shine, its metal glints, its brightest bits twinkle. */
+const NIGHT_LEGEND = { shine: 0.9, gleam: 0.42, sparkle: true };
+const nightMats = new Map<Material, Material>();
+let skinRaster: Raster | null = null;
+
+/** Rasterizes one frame of a skin's sprite around its anchor, with its night layer. */
+function skinFrame(art: ProjArt, frame: number): PixFrame {
+  const r = (skinRaster ??= new Raster(112, 112));
+  r.clear();
+  r.phase = frame & 3;
+  const handles = new Map<Material, number>();
+  const h = (m: Material) => {
+    let n = nightMats.get(m);
+    if (!n) { n = { ...m, ...NIGHT_LEGEND }; nightMats.set(m, n); }
+    let k = handles.get(n);
+    if (!k) { k = r.add(n); handles.set(n, k); }
+    return k;
+  };
+  art.draw(r, new Xf(56, 72, 0), ((frame % art.frames) + art.frames) % art.frames, h);
+  const f = r.compose(56, 72, art.outline ?? true, true);
+  return { w: f.w, h: f.h, ox: f.ox, oy: f.oy, data: f.data, glow: f.glow ?? null, sparks: f.sparks };
+}
+
+/** Sprites with a resting and a lit state: the first half of the frames rests, the second half is lit; `tick` animates either. */
+function pairFrame(art: ProjArt, on: boolean, tick: number): number {
+  const n = Math.max(1, art.frames >> 1);
+  return (on && art.frames > 1 ? n : 0) + (((tick % n) + n) % n);
 }
 
 // -----------------------------------------------------------------------------
@@ -183,8 +261,21 @@ const HAWK: Record<HawkPose, { rows: string[]; ax: number; ay: number }> = {
   },
 };
 
-export function hawkSprite(pose: HawkPose): Sprite {
-  return sprite('hawk.' + pose, () => { const h = HAWK[pose]; return pixFrame(h.rows, HAWK_PAL, h.ax, h.ay); });
+const HAWK_MAP: Recolor = {
+  k: ['hawk', 0], B: ['hawk', 2], l: ['hawk', 3], c: ['hawkLight', 2], d: ['hawkLight', 1], y: ['beak', 3], Y: ['beak', 1], e: ['eye', 2],
+};
+/** Frame order of a reshaped hawk's `perch` sprite. */
+export const HAWK_POSES: readonly HawkPose[] = ['perch0', 'perch1', 'up', 'down', 'glide'];
+
+export function hawkFrame(pose: HawkPose, skin?: string | null): PixFrame {
+  const art = reshaped('perch', skin);
+  if (art) return skinFrame(art, HAWK_POSES.indexOf(pose));
+  const h = HAWK[pose];
+  return pixFrame(h.rows, recolor(HAWK_PAL, HAWK_MAP, skin), h.ax, h.ay);
+}
+
+export function hawkSprite(pose: HawkPose, skin?: string | null): Sprite {
+  return sprite(`hawk.${pose}.${skin ?? ''}`, () => hawkFrame(pose, skin));
 }
 
 // -----------------------------------------------------------------------------
@@ -270,8 +361,21 @@ const WHELP: Record<WhelpPose, { rows: string[]; ax: number; ay: number }> = {
   },
 };
 
-export function whelpSprite(pose: WhelpPose): Sprite {
-  return sprite('whelp.' + pose, () => { const h = WHELP[pose]; return pixFrame(h.rows, WHELP_PAL, h.ax, h.ay); });
+const WHELP_MAP: Recolor = {
+  R: ['whelp', 0], r: ['whelp', 2], o: ['whelpWing', 4], y: ['whelpBelly', 2], Y: ['whelpBelly', 1], h: ['horn', 3], e: ['eye', 2], f: ['ember', 3],
+};
+/** Frame order of a reshaped whelp's `whelp` sprite. */
+export const WHELP_POSES: readonly WhelpPose[] = ['hover0', 'hover1', 'rear', 'breath'];
+
+export function whelpFrame(pose: WhelpPose, skin?: string | null): PixFrame {
+  const art = reshaped('whelp', skin);
+  if (art) return skinFrame(art, WHELP_POSES.indexOf(pose));
+  const h = WHELP[pose];
+  return pixFrame(h.rows, recolor(WHELP_PAL, WHELP_MAP, skin), h.ax, h.ay);
+}
+
+export function whelpSprite(pose: WhelpPose, skin?: string | null): Sprite {
+  return sprite(`whelp.${pose}.${skin ?? ''}`, () => whelpFrame(pose, skin));
 }
 
 // -----------------------------------------------------------------------------
@@ -312,17 +416,47 @@ const TOTEM_ROWS = [
   '.wwWWWWWww.',
 ];
 
-/** The planted totem; `hot` while it strikes (the crystal flares). */
-export function totemSprite(hot: boolean): Sprite {
-  return sprite('totem.' + (hot ? 1 : 0), () => pixFrame(TOTEM_ROWS, TOTEM_PAL(hot ? 1 : 0), 5, TOTEM_ROWS.length - 1));
+const TOTEM_MAP: Recolor = {
+  k: ['totemWood', 0], w: ['totemWood', 1], W: ['totemWood', 2], L: ['totemWood', 3], r: ['totemRed', 2], p: ['totemPaint', 1], P: ['totemPaint', 3],
+  e: ['hawkLight', 2], y: ['beak', 3], c: ['storm', 2], C: ['stormHot', 2],
+};
+
+export function totemFrame(hot: boolean, skin?: string | null, tick = 0): PixFrame {
+  const art = reshaped('totem', skin);
+  if (art) return skinFrame(art, pairFrame(art, hot, tick));
+  return pixFrame(TOTEM_ROWS, recolor(TOTEM_PAL(hot ? 1 : 0), TOTEM_MAP, skin), 5, TOTEM_ROWS.length - 1);
+}
+
+/** The planted totem; `hot` while it strikes (the crystal flares). A reshaped one animates by `tick`. */
+export function totemSprite(hot: boolean, skin?: string | null, tick = 0): Sprite {
+  const art = reshaped('totem', skin);
+  const f = art ? pairFrame(art, hot, tick) : hot ? 1 : 0;
+  return sprite(`totem.${f}.${skin ?? ''}`, () => totemFrame(hot, skin, tick));
 }
 
 /** Where the storm crystal sits, in px above the base. */
 export const TOTEM_TOP = TOTEM_ROWS.length - 2;
 
-/** The little carved charm that rides along before the totem is planted. */
-export function charmSprite(): Sprite {
-  return sprite('charm', () => pixFrame([
+const tops = new Map<string, number>();
+
+/** Where a skin's totem strikes from, in px above the base: its highest self-lit pixel (the stock crystal for plain ones). */
+export function totemTop(skin?: string | null): number {
+  if (!reshaped('totem', skin)) return TOTEM_TOP;
+  let top = tops.get(skin!);
+  if (top === undefined) {
+    const f = totemFrame(false, skin);
+    let row = 0;
+    if (f.glow) for (let i = 0; i < f.glow.length; i++) if (f.glow[i]) { row = Math.floor(i / f.w); break; }
+    top = f.oy - row - 1;
+    tops.set(skin!, top);
+  }
+  return top;
+}
+
+export function charmFrame(skin?: string | null): PixFrame {
+  const art = reshaped('charm', skin);
+  if (art) return skinFrame(art, 0);
+  return pixFrame([
     '.c.',
     'cCc',
     '.c.',
@@ -332,7 +466,12 @@ export function charmSprite(): Sprite {
     'rrr',
     'WeW',
     'wWw',
-  ], TOTEM_PAL(0), 1, 4));
+  ], recolor(TOTEM_PAL(0), TOTEM_MAP, skin), 1, 4);
+}
+
+/** The little carved charm that rides along before the totem is planted. */
+export function charmSprite(skin?: string | null): Sprite {
+  return sprite(`charm.${skin ?? ''}`, () => charmFrame(skin));
 }
 
 // -----------------------------------------------------------------------------
@@ -343,10 +482,14 @@ const GLASS_PAL: Pal = {
   g: 0xa07020, G: 0xe8b848, q: 0x9ab8d0, Q: 0xd8f0ff, s: [0xf0c060, 0.35], S: [0xfff0b0, 0.7],
 };
 
-/** Four steps of sand trickling through. */
-export function hourglassSprite(frame: number): Sprite {
+const GLASS_MAP: Recolor = { g: ['gold', 1], G: ['gold', 3], q: ['glass', 1], Q: ['glass', 3], s: ['sand', 2], S: ['sand', 4] };
+
+/** Four steps of sand trickling through (a reshaped one runs through its own frames). */
+export function hourglassFrame(frame: number, skin?: string | null): PixFrame {
+  const art = reshaped('hourglass', skin);
+  if (art) return skinFrame(art, frame);
   const f = ((frame % 4) + 4) % 4;
-  return sprite('hourglass.' + f, () => {
+  {
     const fall = ['s..', '.s.', '..s', '.S.'][f];
     return pixFrame([
       'gGGGGGg',
@@ -358,22 +501,38 @@ export function hourglassSprite(frame: number): Sprite {
       '.qq' + fall[2] + 'qq.',
       '.qsSsq.',
       'gGGGGGg',
-    ], GLASS_PAL, 3, 4);
-  });
+    ], recolor(GLASS_PAL, GLASS_MAP, skin), 3, 4);
+  }
+}
+
+export function hourglassSprite(frame: number, skin?: string | null): Sprite {
+  const n = reshaped('hourglass', skin)?.frames ?? 4;
+  const f = ((frame % n) + n) % n;
+  return sprite(`hourglass.${f}.${skin ?? ''}`, () => hourglassFrame(f, skin));
 }
 
 const WARD_PAL: Pal = { k: 0x4a5468, s: 0x7a889e, S: 0xa8b6c8, r: [0x8ac8ff, 0.6], R: [0xe0f4ff, 0.8] };
 
-/** The ward stone; `lit` when it has just raised a shield. */
-export function wardSprite(lit: boolean): Sprite {
-  return sprite('ward.' + (lit ? 1 : 0), () => pixFrame([
+const WARD_MAP: Recolor = { k: ['wardStone', 0], s: ['wardStone', 2], S: ['wardStone', 3], r: ['wardRune', 2], R: ['wardRune', 4] };
+
+export function wardFrame(lit: boolean, skin?: string | null, tick = 0): PixFrame {
+  const art = reshaped('ward', skin);
+  if (art) return skinFrame(art, pairFrame(art, lit, tick));
+  return pixFrame([
     '.sss.',
     'sSrSs',
     lit ? 'SRrRs' : 'SrrrS',
     'sSrSs',
     'ssrsk',
     '.skk.',
-  ], WARD_PAL, 2, 3));
+  ], recolor(WARD_PAL, WARD_MAP, skin), 2, 3);
+}
+
+/** The ward stone; `lit` when it has just raised a shield. A reshaped one animates by `tick`. */
+export function wardSprite(lit: boolean, skin?: string | null, tick = 0): Sprite {
+  const art = reshaped('ward', skin);
+  const f = art ? pairFrame(art, lit, tick) : lit ? 1 : 0;
+  return sprite(`ward.${f}.${skin ?? ''}`, () => wardFrame(lit, skin, tick));
 }
 
 // -----------------------------------------------------------------------------
@@ -452,35 +611,46 @@ export interface Patch {
 
 const patches = new Map<string, Patch>();
 
+/** A skinned patch: its own pieces (optional) and a colour per letter; `s` marks the tips that glint. */
+export interface PatchLook {
+  /** Cache key (the skin id). */
+  id: string;
+  shapes?: string[][];
+  colors: Record<string, number>;
+}
+
 /**
  * A caltrops patch `halfW` px either side of its centre, scattered by
  * `seed`. Drawn with its anchor on the ground line; the spikes lie on the
- * floor in front of it (y 0..5).
+ * floor in front of it (y 0..5). A usable item skin can bring its own look.
  */
-export function caltropsPatch(seed: number, halfW: number): Patch {
-  const key = `${seed}.${halfW}`;
+export function caltropsPatch(seed: number, halfW: number, look?: PatchLook | null): Patch {
+  const key = `${seed}.${halfW}.${look?.id ?? ''}`;
   let p = patches.get(key);
   if (p) return p;
   const w = halfW * 2 + 3, h = 9;
   const data = new Uint32Array(w * h);
   const tips: number[] = [];
   const iron = pack(0x8a92a0), dark = pack(0x2a2a36), tip = pack(0xe0e6ee), shade = pack(0x1a1420, 110);
+  const shapes = look?.shapes ?? CALTROPS;
+  const col: Record<string, number> = {};
+  if (look) for (const [k, c] of Object.entries(look.colors)) col[k] = pack(c);
   const n = Math.round(halfW / 2.2);
   for (let k = 0; k < n; k++) {
     // Denser near the middle, thinning out at the edges.
     const u = hash(seed * 31 + k, 7) * 2 - 1;
     const x = Math.round(halfW + 1 + u * Math.abs(u) ** 0.4 * halfW * 0.96 - 1);
     const y = 1 + Math.floor(hash(seed * 17 + k, 3) * 5);
-    const shape = CALTROPS[Math.floor(hash(k, seed) * CALTROPS.length)];
+    const shape = shapes[Math.floor(hash(k, seed) * shapes.length)];
     for (let j = 0; j < shape.length; j++) for (let i = 0; i < shape[j].length; i++) {
       const ch = shape[j][i];
       const px = x + i - 1, py = y + j - 1;
       if (ch === '.' || px < 0 || py < 0 || px >= w || py >= h) continue;
-      data[py * w + px] = ch === 's' ? tip : ch === 'k' ? dark : iron;
+      data[py * w + px] = look ? col[ch] ?? iron : ch === 's' ? tip : ch === 'k' ? dark : iron;
       if (ch === 's') tips.push(px - halfW - 1, py - 1);
     }
     // A smudge of shadow under each one.
-    const sy = y + 2;
+    const sy = y + shape.length - 1;
     for (const sx of [x - 1, x + 1]) if (sy < h && sx >= 0 && sx < w && !data[sy * w + sx]) data[sy * w + sx] = shade;
   }
   p = { sprite: { img: canvasOf(w, h, data), ox: halfW + 1, oy: 1, w, h }, tips };
