@@ -85,6 +85,8 @@ const HEAT_PER_GUARD = 0.035;
 /** Per unit of max HP lost by either fighter. */
 const HEAT_PER_DAMAGE = 0.8;
 const HEAT_BRAWL = 0.1;
+/** Hits and damage taken count this much of hits and damage dealt. */
+const HEAT_TAKEN = 0.5;
 const HEAT_COOL = 0.32;
 /** Seconds before the end of the match when the clock starts to weigh on decisions. */
 const CLOCK_WINDOW = 35;
@@ -219,7 +221,7 @@ export class Brain implements FighterBrain {
   private heldMove = 0;
 
   // Tempo
-  /** How hot the exchange is (see HEAT_*). Both fighters measure the same fight. */
+  /** How hot the exchange is (see HEAT_*). Each fighter feels it a little differently: blows landed count double blows taken. */
   heat = 0;
   /** Heat this fighter takes before wanting a breather (recomputed every tick). */
   tolerance = 1;
@@ -514,9 +516,10 @@ export class Brain implements FighterBrain {
   private tempo(b: Battle, e: Fighter): void {
     const f = this.f;
     const ft = f.totals, et = e.totals;
-    const hits = ft.hits + et.hits;
+    // Landing blows heats me up; taking them counts half.
+    const hits = ft.hits + et.hits * HEAT_TAKEN;
     const guards = ft.blocks + et.blocks + ft.parries + et.parries + ft.evades + et.evades;
-    const damage = ft.damageTaken / f.stats.maxHp + et.damageTaken / e.stats.maxHp;
+    const damage = et.damageTaken / e.stats.maxHp + (ft.damageTaken / f.stats.maxHp) * HEAT_TAKEN;
     let heat = this.heat + (hits - this.seenHits) * HEAT_PER_HIT + (guards - this.seenGuards) * HEAT_PER_GUARD
       + (damage - this.seenDamage) * HEAT_PER_DAMAGE;
     this.seenHits = hits; this.seenGuards = guards; this.seenDamage = damage;
