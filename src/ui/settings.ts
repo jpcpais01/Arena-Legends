@@ -8,6 +8,8 @@ export interface Volume { master: number; music: number; sfx: number }
 export interface Settings {
   /** Thought bubbles over the fighters during a battle. */
   quotes: boolean;
+  /** Hides floating battle numbers under 50 (damage, heals, energy). */
+  smallNumbers: boolean;
   /** Volume sliders, 0..1. */
   volume: Volume;
   /** Arena id for every fight, or 'random'. */
@@ -23,7 +25,7 @@ export interface ArenaChoice {
 }
 
 interface Row {
-  key: 'quotes';
+  key: 'quotes' | 'smallNumbers';
   icon: IconName;
   label: string;
   hint: string;
@@ -31,6 +33,7 @@ interface Row {
 
 const ROWS: Row[] = [
   { key: 'quotes', icon: 'quote', label: 'Battle quotes', hint: 'Speech bubbles with what each fighter is thinking.' },
+  { key: 'smallNumbers', icon: 'eye', label: 'Hide small numbers', hint: 'Hides damage, heal and energy numbers under 50 in battle.' },
 ];
 
 const SLIDERS: { key: keyof Volume; icon: IconName; label: string }[] = [

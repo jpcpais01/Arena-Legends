@@ -165,6 +165,8 @@ export class BattleView implements View {
   listener: BattleListener | null = null;
   /** No sounds (the menu's background duel). */
   quiet = false;
+  /** Floating numbers (damage, heals, energy) below this are not shown (the "Hide small numbers" setting). */
+  minNumber = 0;
   /** Fighters animate but the sim doesn't advance (intro, countdown). */
   hold = false;
   /** Called after the scene is drawn (HUD overlays). */
@@ -1329,7 +1331,7 @@ export class BattleView implements View {
       }
       case 'hit': {
         if (e.dot) {
-          if (e.amount >= 1) fx.pop(fmt(e.amount), e.x + (Math.random() - 0.5) * 0.3, e.y, { color: e.ability === 'poison' ? '#9cff4a' : e.ability === 'thorns' ? '#7ad870' : e.ability === 'totem' ? css(this.glow(e.attacker, 0x9fe0ff, 0)[0]) : e.ability === 'caltrops' ? '#d0d6e0' : '#ffb040' }, 0.7, 1.2);
+          if (e.amount >= Math.max(1, this.minNumber)) fx.pop(fmt(e.amount), e.x + (Math.random() - 0.5) * 0.3, e.y, { color: e.ability === 'poison' ? '#9cff4a' : e.ability === 'thorns' ? '#7ad870' : e.ability === 'totem' ? css(this.glow(e.attacker, 0x9fe0ff, 0)[0]) : e.ability === 'caltrops' ? '#d0d6e0' : '#ffb040' }, 0.7, 1.2);
           break;
         }
         const tv = this.fighters[e.target];
@@ -1356,7 +1358,7 @@ export class BattleView implements View {
         if (heavy) { this.arena?.cheer(0.3); }
         const label = e.crit ? `${fmt(e.amount)}!` : fmt(e.amount);
         const st = e.blocked ? { color: '#a8c8f0' } : e.crit ? { color: '#ffe040', scale: 2, shade: '#e08a20' } : e.echo ? { color: css(this.glow(e.attacker, 0xc0a8ff, 0)[0]) } : e.dtype === 'magic' ? { color: '#d8a8ff', shade: '#9a5ae0' } : heavy ? { color: '#ffffff', scale: 2, shade: '#c8c8d8' } : { color: '#ffffff', shade: '#c8c8d8' };
-        fx.pop(label, e.x, e.y + 0.5, st, e.crit ? 1.1 : 0.85);
+        if (e.amount >= this.minNumber) fx.pop(label, e.x, e.y + 0.5, st, e.crit ? 1.1 : 0.85);
         if (e.ability === 'wall') fx.pop('WALL SPLAT!', e.x, e.y + 1.2, { color: '#ffb040', scale: 2 }, 1.1, 0.8);
         break;
       }
@@ -1374,7 +1376,7 @@ export class BattleView implements View {
       case 'heal': {
         const f = b.fighters[e.f];
         fx.burst({ x: f.x, y: 1.0, count: 6, jitter: 0.4, dir: Math.PI / 2, spread: 0.3, speed: [0.8, 1.6], life: [0.5, 0.8], color: 0x8aff9a, color2: 0x3ac860, size: 2 });
-        if (e.amount >= 15) fx.pop(`+${fmt(e.amount)}`, f.x, this.fighters[e.f].headY, { color: '#8aff9a', shade: '#3ac860' }, 0.8);
+        if (e.amount >= Math.max(15, this.minNumber)) fx.pop(`+${fmt(e.amount)}`, f.x, this.fighters[e.f].headY, { color: '#8aff9a', shade: '#3ac860' }, 0.8);
         break;
       }
       case 'used':
@@ -1388,7 +1390,7 @@ export class BattleView implements View {
       case 'energy': {
         const f = b.fighters[e.f];
         fx.burst({ x: f.x, y: 1.0, count: 20, jitter: 0.3, dir: Math.PI / 2, spread: 0.35, speed: [2, 5], life: [0.3, 0.6], color: 0xfffbe0, color2: 0xffc020, drag: 2, kind: 'streak' });
-        if (e.amount > 0) fx.pop(`+${e.amount} ENERGY`, f.x, this.fighters[e.f].headY + 0.35, { color: '#ffe060', shade: '#c08a10' }, 0.9);
+        if (e.amount > 0 && e.amount >= this.minNumber) fx.pop(`+${e.amount} ENERGY`, f.x, this.fighters[e.f].headY + 0.35, { color: '#ffe060', shade: '#c08a10' }, 0.9);
         this.play('cast', this.pan(f.x), 0.6);
         break;
       }
