@@ -20,6 +20,12 @@ import { SERAPH } from './seraph';
 import { LICHBORNE } from './lichborne';
 import { QUETZAL } from './quetzal';
 import { PRISMHEART } from './prismheart';
+import { WAVE4_MAINS } from './wave4Mains';
+import { WAVE4_OFFHAND } from './wave4Offhand';
+import { WAVE4_SPECIALS } from './wave4Specials';
+import { WAVE4_USABLES } from './wave4Usables';
+import { WAVE4_HEADS } from './wave4Heads';
+import { WAVE4_LEGS } from './wave4Legs';
 import {
   geodeHeart, icicleScepter, kagutsuchi, krakenConch, lionheart, morningstar, skullcrusher, solarDisc, swordbreaker,
   frostreaver, voidfang, wintersHeart, wyrmRepeater,
@@ -356,4 +362,10 @@ export const SKIN_ART: Record<string, SkinArt> = {
   ...LICHBORNE,
   ...QUETZAL,
   ...PRISMHEART,
+  ...WAVE4_MAINS,
+  ...WAVE4_OFFHAND,
+  ...WAVE4_SPECIALS,
+  ...WAVE4_USABLES,
+  ...WAVE4_HEADS,
+  ...WAVE4_LEGS,
 };
