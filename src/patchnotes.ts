@@ -12,6 +12,18 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.60.0',
+    date: '2026-10-10',
+    title: 'Nine new entrances',
+    notes: [
+      'Nine new entrances in the Shop and in hero creation, each with its own effects and sounds.',
+      'Rare (300 gems): Whirlwind, a tornado that spits you out spinning; Human Cannonball, fired from offstage into a skidding landing; Bat Swarm, a shrieking cloud of bats that scatters to reveal you.',
+      'Mythic (600 gems): Jackpot, a golden statue in a shower of coins; Blade Dance, a blur of afterimages and the air splitting a beat later; Earthshaker, riding a rock pillar out of the ground and leaping down.',
+      'Legendary (1200 gems): Rift Walker, stepping out of a starry rift that implodes behind you; Starborn, night falls and the stars draw you as a constellation; Phoenix Rebirth, burning wings spread and beat as you are reborn.',
+      'Rivals can show up with the new entrances too.',
+    ],
+  },
+  {
     version: '0.59.0',
     date: '2026-10-10',
     title: 'New battle bars',

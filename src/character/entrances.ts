@@ -8,7 +8,11 @@ import { allUnlocked, gems, spendGems } from './collection';
  * Owned entrances are saved on their own (`al.entrances`), next to the skins.
  */
 
-export const ENTRANCE_IDS = ['stride', 'skyfall', 'smoke', 'shadow', 'thunder', 'inferno', 'frost', 'meteor', 'divine'] as const;
+export const ENTRANCE_IDS = [
+  'stride', 'skyfall', 'smoke', 'shadow', 'whirlwind', 'cannon', 'bats',
+  'thunder', 'inferno', 'frost', 'jackpot', 'blade', 'quake',
+  'meteor', 'divine', 'rift', 'starborn', 'phoenix',
+] as const;
 export type EntranceId = (typeof ENTRANCE_IDS)[number];
 export type EntranceTier = 'common' | 'rare' | 'mythic' | 'legendary';
 
@@ -37,6 +41,15 @@ export const ENTRANCES: Record<EntranceId, EntranceDef> = {
   thunder: def('thunder', 'Thunderclap', 'mythic', 0x7ac8ff, 'A bolt of lightning strikes the arena and leaves the hero crouched in its sparks.'),
   inferno: def('inferno', 'Inferno', 'mythic', 0xff8030, 'A column of fire erupts from the sand and burns away to reveal the hero.'),
   frost: def('frost', 'Glacier', 'mythic', 0xbff0ff, 'Ice spikes burst out of the ground; the hero breaks free of a frozen shell.'),
+  whirlwind: def('whirlwind', 'Whirlwind', 'rare', 0xd8d0b0, 'A spinning tornado tears across the sand and spits the hero out, still twirling.'),
+  cannon: def('cannon', 'Human Cannonball', 'rare', 0xe0a050, 'Boom! Fired from a cannon offstage, tumbling through the air, landing in a skid.'),
+  bats: def('bats', 'Bat Swarm', 'rare', 0xc04060, 'A shrieking swarm of bats gathers into a dark cloud, then scatters to reveal the hero.'),
+  jackpot: def('jackpot', 'Jackpot', 'mythic', 0xffd040, 'Coins rain down on a golden statue of the hero, who shakes off the gold with a grin.'),
+  blade: def('blade', 'Blade Dance', 'mythic', 0x9ad8ff, 'Dashes through in a blur of afterimages, comes back to the spot, and the air splits a beat later.'),
+  quake: def('quake', 'Earthshaker', 'mythic', 0xb08a5a, 'The ground rumbles, a rock pillar bursts up with the hero on top, and they leap down.'),
+  rift: def('rift', 'Rift Walker', 'legendary', 0x9a70ff, 'A starry rift tears open in the air; the hero steps out of it before it implodes.'),
+  starborn: def('starborn', 'Starborn', 'legendary', 0xc8e0ff, 'Night falls, stars draw the hero as a constellation, and it flares into flesh.'),
+  phoenix: def('phoenix', 'Phoenix Rebirth', 'legendary', 0xff6020, 'Embers flare into a phoenix that spreads its burning wings and is reborn as the hero.'),
   meteor: def('meteor', 'Meteor Strike', 'legendary', 0xffb040, 'Rides a blazing meteor down into the arena. The ground shakes, the crowd roars.'),
   divine: def('divine', 'Divine Descent', 'legendary', 0xffe070, 'A golden beam parts the sky and the hero floats down in it, light raining around them.'),
 };

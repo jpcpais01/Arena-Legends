@@ -531,6 +531,12 @@ export class BattleView implements View {
       g.rect(0, 0, this.screen.w, Math.round(this.sy(0)) + 1);
       g.clip();
     }
+    if (pose.flip) flip = !flip;
+    // Afterimages, oldest (faintest) first.
+    for (let k = pose.ghosts; k >= 1; k--) {
+      g.globalAlpha = pose.alpha * 0.55 * (1 - k / (pose.ghosts + 1));
+      blit(g, pose.ghostCol ? v.bank.flash(o, pose.ghostCol) : s, px - Math.round(pose.ghostDx * k * PPM), py, flip);
+    }
     g.globalAlpha = pose.alpha;
     blit(g, s, px, py, flip);
     if (pose.tint && pose.tintA > 0) {
