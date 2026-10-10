@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.42.0',
+    date: '2026-10-10',
+    title: 'New item inspector in the Armory',
+    notes: [
+      'Tapping an item opens a clean inspector over the item list instead of a card squeezed into the grid. Your fighter stays in view and tries the item on.',
+      'Stats tab: every stat with what the item changes, in green or red, then its skills and passive.',
+      'Skins tab: every skin with its name and rarity. Tap a locked one to try it on your fighter before you find it.',
+      'Arrows in the inspector step through the other items of the slot.',
+    ],
+  },
+  {
     version: '0.41.0',
     date: '2026-10-10',
     title: '10 new epic sets',
