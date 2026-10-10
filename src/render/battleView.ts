@@ -118,6 +118,12 @@ export interface BattleListener {
  * fixed 60 Hz and interpolates for the display; speed, pause and slow motion
  * only change how many steps run per frame.
  */
+/** Damage number looks per corner: index 0 is the blue (left) fighter, 1 the red (right) one. */
+const DMG_INK = [
+  { hit: { color: '#9cc8ff', shade: '#2f6ad0' }, heavy: { color: '#b4d6ff', scale: 2, shade: '#2f6ad0' }, crit: { color: '#dcecff', scale: 2, shade: '#3a7cf0' }, blocked: { color: '#7c98c0', shade: '#34486a' }, dot: { color: '#86b4f0', shade: '#2a5aa8' } },
+  { hit: { color: '#ff9c9c', shade: '#c8303c' }, heavy: { color: '#ffb4b0', scale: 2, shade: '#c8303c' }, crit: { color: '#ffe0d8', scale: 2, shade: '#ea3a40' }, blocked: { color: '#c08a8e', shade: '#6a343c' }, dot: { color: '#f08a8a', shade: '#a82a34' } },
+] as const;
+
 export class BattleView implements View {
   battle: Battle | null = null;
   arena: ArenaView | null = null;
@@ -1337,7 +1343,7 @@ export class BattleView implements View {
       }
       case 'hit': {
         if (e.dot) {
-          if (e.amount >= Math.max(1, this.minNumber)) fx.pop(fmt(e.amount), e.x + (Math.random() - 0.5) * 0.3, e.y, { color: e.ability === 'poison' ? '#9cff4a' : e.ability === 'thorns' ? '#7ad870' : e.ability === 'totem' ? css(this.glow(e.attacker, 0x9fe0ff, 0)[0]) : e.ability === 'caltrops' ? '#d0d6e0' : '#ffb040' }, 0.7, 1.2);
+          if (e.amount >= Math.max(1, this.minNumber)) fx.pop(fmt(e.amount), e.x + (Math.random() - 0.5) * 0.3, e.y, DMG_INK[e.attacker === 1 ? 1 : 0].dot, 0.7, 1.2);
           break;
         }
         const tv = this.fighters[e.target];
@@ -1363,7 +1369,9 @@ export class BattleView implements View {
         if (heavy && !e.blocked) this.punchIn(1, e.crit ? 0.5 : 0.35, e.x);
         if (heavy) { this.arena?.cheer(0.3); }
         const label = e.crit ? `${fmt(e.amount)}!` : fmt(e.amount);
-        const st = e.blocked ? { color: '#a8c8f0' } : e.crit ? { color: '#ffe040', scale: 2, shade: '#e08a20' } : e.echo ? { color: css(this.glow(e.attacker, 0xc0a8ff, 0)[0]) } : e.dtype === 'magic' ? { color: '#d8a8ff', shade: '#9a5ae0' } : heavy ? { color: '#ffffff', scale: 2, shade: '#c8c8d8' } : { color: '#ffffff', shade: '#c8c8d8' };
+        // Damage reads in the attacker's corner colour (blue left, red right); crits and heavy hits keep their size.
+        const ink = DMG_INK[e.attacker === 1 ? 1 : 0];
+        const st = e.blocked ? ink.blocked : e.crit ? ink.crit : heavy ? ink.heavy : ink.hit;
         if (e.amount >= this.minNumber) fx.pop(label, e.x, e.y + 0.5, st, e.crit ? 1.1 : 0.85);
         if (e.ability === 'wall') fx.pop('WALL SPLAT!', e.x, e.y + 1.2, { color: '#ffb040', scale: 2 }, 1.1, 0.8);
         break;
