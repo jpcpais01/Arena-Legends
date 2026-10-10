@@ -86,7 +86,28 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     return ic;
   };
 
+  /** Earlier and undone builds for Undo/Redo (gear, skins and body form changed here). */
+  const undos: PlayerCharacter[] = [];
+  const redos: PlayerCharacter[] = [];
+  const undoBtn = h<HTMLButtonElement>('button.btn.icon.sm.hist', { title: 'Undo', 'aria-label': 'Undo', onclick: () => travel(undos, redos) }, icon('undo'));
+  const redoBtn = h<HTMLButtonElement>('button.btn.icon.sm.hist', { title: 'Redo', 'aria-label': 'Redo', onclick: () => travel(redos, undos) }, icon('redo'));
+
+  /** Steps back (or forward) one change: the current build goes on the other stack. */
+  function travel(from: PlayerCharacter[], to: PlayerCharacter[]): void {
+    const prev = from.pop();
+    if (!prev) return;
+    to.push(c);
+    c = prev;
+    peek = null;
+    sfx.play('equip');
+    cb.onChange(c);
+    render();
+  }
+
   function save(next: PlayerCharacter, move: boolean): void {
+    undos.push(c);
+    if (undos.length > 50) undos.shift();
+    redos.length = 0;
     c = next;
     sfx.play(move ? 'equip' : 'select');
     cb.onChange(c);
@@ -318,6 +339,8 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     const ids = gearIdsFor(slot) as GearId[];
     list.replaceChildren(...(slot === 'main' ? [] : [tile(null)]), ...ids.map(tile));
     stats.replaceChildren(...statLines(c.form, c.gear));
+    undoBtn.disabled = !undos.length;
+    redoBtn.disabled = !redos.length;
     root.classList.toggle('inspecting', !!open);
     inspect.replaceChildren(...(open ? [inspector(open)] : []));
     syncPreview();
@@ -325,7 +348,11 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
 
   const close = () => { sfx.play('back'); cb.onClose(); };
   const onKey = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') { if (open) show(open); else close(); }
+    if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'z' || e.key.toLowerCase() === 'y')) {
+      e.preventDefault();
+      if (e.key.toLowerCase() === 'y' || e.shiftKey) travel(redos, undos);
+      else travel(undos, redos);
+    } else if (e.key === 'Escape') { if (open) show(open); else close(); }
     else if (open && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) step(e.key === 'ArrowLeft' ? -1 : 1);
   };
   window.addEventListener('keydown', onKey);
@@ -333,6 +360,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     h('header.scr-head', null,
       h('div.scr-title', null, h('h1', null, opts.title ?? 'Armory')),
       h('div.grow'),
+      h('div.hist-btns', null, undoBtn, redoBtn),
       h('button.btn.primary.done', { onclick: close }, icon('check'), 'Done')),
     stage, panel, inspect,
   );

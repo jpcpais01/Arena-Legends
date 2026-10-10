@@ -12,6 +12,26 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.49.0',
+    date: '2026-10-10',
+    title: 'Entrances',
+    notes: [
+      'Heroes now make an entrance before every fight: they arrive one after the other, then the 3-2-1 starts.',
+      'Nine entrances, each with its own effects and sounds: Stride In (free for everyone), Skyfall, Smoke Bomb and Shadow Rise (300 gems), Thunderclap, Inferno and Glacier (600) and Meteor Strike and Divine Descent (1200).',
+      'Hero creation has a new last step, Entrance: tap one to watch it on your hero, pick the ones you own, or unlock one right there.',
+      'The Shop has a new Entrances shelf. Tap an offer to watch it on the stage before you buy.',
+      'Rivals show up with entrances of their own, and in online duels you see your friend\'s.',
+    ],
+  },
+  {
+    version: '0.48.1',
+    date: '2026-10-10',
+    title: 'Undo and Redo in the Armory',
+    notes: [
+      'Two small Undo and Redo buttons next to Done take back gear, skin and body form changes made in the Armory (Ctrl+Z and Ctrl+Y on a keyboard).',
+    ],
+  },
+  {
     version: '0.48.0',
     date: '2026-10-10',
     title: 'Rivals fight Balanced',
