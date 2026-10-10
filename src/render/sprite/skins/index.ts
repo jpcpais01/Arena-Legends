@@ -21,6 +21,16 @@ import { SERAPH } from './seraph';
 import { LICHBORNE } from './lichborne';
 import { QUETZAL } from './quetzal';
 import { PRISMHEART } from './prismheart';
+import { CORSAIR } from './corsair';
+import { ONI } from './oni';
+import { BEASTLORD } from './beastlord';
+import { DJINN } from './djinn';
+import { PLAGUE } from './plague';
+import { SUGARRUSH } from './sugarrush';
+import { HALLOW } from './hallow';
+import { OLYMPIAN } from './olympian';
+import { LIONHEART } from './lionheart';
+import { MOTHQUEEN } from './mothqueen';
 import { WAVE4_MAINS } from './wave4Mains';
 import { WAVE4_OFFHAND } from './wave4Offhand';
 import { WAVE4_SPECIALS } from './wave4Specials';
@@ -367,6 +377,16 @@ export const SKIN_ART: Record<string, SkinArt> = {
   ...LICHBORNE,
   ...QUETZAL,
   ...PRISMHEART,
+  ...CORSAIR,
+  ...ONI,
+  ...BEASTLORD,
+  ...DJINN,
+  ...PLAGUE,
+  ...SUGARRUSH,
+  ...HALLOW,
+  ...OLYMPIAN,
+  ...LIONHEART,
+  ...MOTHQUEEN,
   ...WAVE4_MAINS,
   ...WAVE4_OFFHAND,
   ...WAVE4_SPECIALS,

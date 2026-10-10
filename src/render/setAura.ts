@@ -12,6 +12,16 @@ import { SERAPH_FX, seraphAura } from './sprite/skins/seraph';
 import { LICHBORNE_FX, lichborneAura } from './sprite/skins/lichborne';
 import { QUETZAL_FX, quetzalAura } from './sprite/skins/quetzal';
 import { PRISMHEART_FX, prismheartAura } from './sprite/skins/prismheart';
+import { CORSAIR_FX, corsairAura } from './sprite/skins/corsair';
+import { ONI_FX, oniAura } from './sprite/skins/oni';
+import { BEASTLORD_FX, beastlordAura } from './sprite/skins/beastlord';
+import { DJINN_FX, djinnAura } from './sprite/skins/djinn';
+import { PLAGUE_FX, plagueAura } from './sprite/skins/plague';
+import { SUGARRUSH_FX, sugarrushAura } from './sprite/skins/sugarrush';
+import { HALLOW_FX, hallowAura } from './sprite/skins/hallow';
+import { OLYMPIAN_FX, olympianAura } from './sprite/skins/olympian';
+import { LIONHEART_FX, lionheartAura } from './sprite/skins/lionheart';
+import { MOTHQUEEN_FX, mothqueenAura } from './sprite/skins/mothqueen';
 
 /**
  * Set auras: what a fighter wearing a whole epic set gets around them, in
@@ -38,6 +48,16 @@ export const SET_FX: Record<SkinSetId, SkinFx> = {
   lichborne: LICHBORNE_FX,
   quetzal: QUETZAL_FX,
   prismheart: PRISMHEART_FX,
+  corsair: CORSAIR_FX,
+  oni: ONI_FX,
+  beastlord: BEASTLORD_FX,
+  djinn: DJINN_FX,
+  plague: PLAGUE_FX,
+  sugarrush: SUGARRUSH_FX,
+  hallow: HALLOW_FX,
+  olympian: OLYMPIAN_FX,
+  lionheart: LIONHEART_FX,
+  mothqueen: MOTHQUEEN_FX,
 };
 
 type G = CanvasRenderingContext2D;
@@ -195,6 +215,7 @@ function clockwork(g: G, x: number, y: number, t: number, layer: Layer): void {
 const DRAW: Record<SkinSetId, (g: G, x: number, y: number, t: number, layer: Layer) => void> = { sunborn, hellforged, foxfire, wildwood, abyssal, clockwork,
   bloodmoon: bloodmoonAura, starweaver: starweaverAura, frostbound: frostboundAura, stormcaller: stormcallerAura, voidborn: voidbornAura,
   jadedragon: jadedragonAura, seraph: seraphAura, lichborne: lichborneAura, quetzal: quetzalAura, prismheart: prismheartAura,
+  corsair: corsairAura, oni: oniAura, beastlord: beastlordAura, djinn: djinnAura, plague: plagueAura, sugarrush: sugarrushAura, hallow: hallowAura, olympian: olympianAura, lionheart: lionheartAura, mothqueen: mothqueenAura,
 };
 
 /** Draws one layer of a set's aura around feet at (x, y) art pixels; `t` is seconds. */
