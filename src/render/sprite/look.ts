@@ -40,6 +40,9 @@ export interface CharacterArt {
   /** Potion or bomb on the belt. */
   useId: UsableId | null;
   use: UsableArt | null;
+  /** Usable item skin (its art is already in `use`): recolours its battle sprites, patches and clouds. */
+  useSkin: SkinArt | null;
+  useSkinId: string | null;
   /** Item skins in use, and their art (null when the item is plain). */
   skins: SkinMap;
   mainSkin: SkinArt | null;
@@ -355,7 +358,8 @@ export function makeArt(build: CharacterBuild): CharacterArt {
   const sec = secId ? weaponArt(secId, secSkinId) : null;
   for (const [k, v] of Object.entries(main.mats)) mats['w.' + k] = v;
   const useId = build.gear.usable ?? null;
-  const use = useId ? usableArt(useId) : null;
+  const [useSkinId, useSkin] = skinArt(useId ?? undefined);
+  const use = useId ? usableArt(useId, useSkinId) : null;
   if (use) for (const [k, v] of Object.entries(use.mats)) mats['u.' + k] = v;
   if (sec) for (const [k, v] of Object.entries(sec.mats)) mats['s.' + k] = v;
   // Armour skins recolour the body's armour materials; reshaped headgear brings its own.
@@ -415,7 +419,7 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     headgear: build.gear.head ?? null,
     legs,
     boots,
-    useId, use,
+    useId, use, useSkin, useSkinId,
     skins, mainSkin, secSkin, headDraw, headFace,
     headSkin: worn.head, chestSkin: worn.chest, legsSkin: worn.legs, bootsSkin: worn.boots,
     specialSkin, specialSkinId,

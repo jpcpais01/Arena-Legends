@@ -2,7 +2,8 @@ import type { UsableId } from '../../sim/types';
 import { material, type Material, type Raster } from '../pixel/raster';
 import { intersect, union } from '../pixel/sdf';
 import { speckle } from '../pixel/tex';
-import type { Xf } from './xform';
+import { SKIN_ART } from './skins';
+import { Xf } from './xform';
 
 /**
  * Usable items (potions and bombs) as pixel art. Drawn in item-local space:
@@ -25,20 +26,32 @@ export interface UsableArt {
   /** Liquid colour for drink effects and splashes (bright, deep). */
   glow: [number, number];
   draw(r: Raster, t: Xf, m: (k: string) => number, o?: UsableDrawOpts): void;
+  /**
+   * Thrown items that scatter (caltrops): the handful in flight, drawn with
+   * the item's own materials around the frame origin. Skinned items use it;
+   * the plain item keeps its stock battle sprite.
+   */
+  shot?: { frames: number; draw(r: Raster, t: Xf, f: number, m: (k: string) => number): void };
+  /**
+   * Items that leave a patch on the ground (caltrops): pixel shapes seen from
+   * the side (`.` empty, `s` a tip that glints), each other letter coloured
+   * by [material, tone]. Skinned items use it; omitted shapes keep the stock ones.
+   */
+  patch?: { shapes?: string[][]; key: Record<string, [string, number]> };
 }
 
 const glass = () => material({ base: 0xd8eef4, shiny: true, step: 0.13 });
 const cork = () => material({ base: 0xa8784a, tex: speckle(0.2, -1) });
 
 /** Fill helper with the item's group and tone bias. */
-function filler(r: Raster, o: UsableDrawOpts) {
+export function filler(r: Raster, o: UsableDrawOpts) {
   const group = o.group ?? 7, toneBias = o.toneBias ?? 0;
   return (s: Parameters<Raster['fill']>[0], mat: number, bevel = 1.4, extra: { flat?: number; noLine?: boolean } = {}) =>
     r.fill(s, mat, { group, toneBias, bevel, ...extra });
 }
 
 /** Neck, lip and (unless drinking) cork, from `x0` up to `x1`. */
-function neck(r: Raster, t: Xf, m: (k: string) => number, o: UsableDrawOpts, x0: number, x1: number, w = 0.95, corkKey = 'cork'): void {
+export function neck(r: Raster, t: Xf, m: (k: string) => number, o: UsableDrawOpts, x0: number, x1: number, w = 0.95, corkKey = 'cork'): void {
   const fill = filler(r, o);
   fill(t.cap(x0, 0, x1, 0, w + 0.15, w), m('glass'), 1);
   fill(t.cap(x1, 0, x1 + 0.2, 0, w + 0.45), m('glass'), 0.8);
@@ -105,6 +118,9 @@ const ART: Record<UsableId, () => UsableArt> = {
       // Stitched seam down the front.
       r.line(t.x(-3.6, 1.2), t.y(-3.6, 1.2), t.x(0.6, 1.0), t.y(0.6, 1.0), m('band'), 1, o.group ?? 7);
     },
+    // In a skin: the spikes in flight and on the ground take the colour of its spikes (`cork`).
+    shot: { frames: 4, draw: caltropShot('cork') },
+    patch: { key: { k: ['cork', 0], i: ['cork', 2], s: ['cork', 4] } },
   }),
   // A pale, frosted flask of liquid winter, ice crystals growing off its sides.
   frost_bomb: () => ({
@@ -290,11 +306,50 @@ const ART: Record<UsableId, () => UsableArt> = {
   }),
 };
 
-const cache = new Map<UsableId, UsableArt>();
+/** A handful of four-pointed spikes tumbling apart (the stock caltrops sprite, in material `mat`). */
+export function caltropShot(mat: string) {
+  return (r: Raster, t: Xf, f: number, m: (k: string) => number): void => {
+    const spots = [[-3.4, 2, 0.3], [3.4, 1.4, 1.4], [0, -3, 2.2]];
+    spots.forEach(([x, y, a0], i) => {
+      const k = new Xf(t.ox + x, t.oy - y, a0 + f * (Math.PI / 4) * (i % 2 ? -1 : 1));
+      const arms = [];
+      for (let j = 0; j < 4; j++) {
+        const a = (j / 4) * Math.PI * 2 + (j % 2) * 0.3;
+        const c = Math.cos(a), s = Math.sin(a), len = j === 3 ? 2.6 : 3.6;
+        arms.push(k.poly([-s * 0.85, c * 0.85, c * len, s * len, s * 0.85, -c * 0.85]));
+      }
+      r.fill(union(...arms), m(mat), { group: 1 + i, bevel: 0.9 });
+    });
+  };
+}
 
-/** The art for a usable item (built once, shared). */
-export function usableArt(id: UsableId): UsableArt {
-  let a = cache.get(id);
-  if (!a) { a = ART[id](); cache.set(id, a); }
+const cache = new Map<string, UsableArt>();
+
+/**
+ * The art for a usable item (built once, shared), optionally in a skin: a
+ * rare skin swaps materials by name, a fancier one brings a reshaped item
+ * (`SkinArt.usable`). A skin's `glow` recolours its drink and burst effects.
+ */
+export function usableArt(id: UsableId, skinId?: string | null): UsableArt {
+  const skin = skinId ? SKIN_ART[skinId] : undefined;
+  const key = skin ? `${id}|${skinId}` : id;
+  let a = cache.get(key);
+  if (!a) {
+    if (!skin) a = ART[id]();
+    else {
+      const base = skin.usable ? skin.usable() : ART[id]();
+      const mats = { ...base.mats };
+      if (skin.mats) for (const [k, spec] of Object.entries(skin.mats)) mats[k] = material(spec);
+      // Skin textures stay glued to the item as it moves.
+      const draw: UsableArt['draw'] = (r, t, m, o) => {
+        const space = r.space;
+        r.space = t;
+        base.draw(r, t, m, o);
+        r.space = space;
+      };
+      a = { ...base, mats, glow: skin.glow ?? base.glow, draw };
+    }
+    cache.set(key, a);
+  }
   return a;
 }

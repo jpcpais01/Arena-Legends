@@ -231,7 +231,9 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
       const pv = new Preview(tryOn, 72, 78, { pedestal: true, fit: box });
       previews.push(pv);
       box.append(pv.el);
-      setTimeout(() => { if (!dead) pv.showcase(); }, 500);
+      // A usable item skin is shown being used.
+      const use = g.slot === 'usable' ? g.abilities?.[0]?.anim : undefined;
+      setTimeout(() => { if (!dead) pv.showcase(use ? `use.${use}` : undefined); }, 500);
       stageEl = box;
     }
     const equip = h<HTMLButtonElement>('button.btn', {

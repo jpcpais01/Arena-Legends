@@ -452,35 +452,46 @@ export interface Patch {
 
 const patches = new Map<string, Patch>();
 
+/** A skinned patch: its own pieces (optional) and a colour per letter; `s` marks the tips that glint. */
+export interface PatchLook {
+  /** Cache key (the skin id). */
+  id: string;
+  shapes?: string[][];
+  colors: Record<string, number>;
+}
+
 /**
  * A caltrops patch `halfW` px either side of its centre, scattered by
  * `seed`. Drawn with its anchor on the ground line; the spikes lie on the
- * floor in front of it (y 0..5).
+ * floor in front of it (y 0..5). A usable item skin can bring its own look.
  */
-export function caltropsPatch(seed: number, halfW: number): Patch {
-  const key = `${seed}.${halfW}`;
+export function caltropsPatch(seed: number, halfW: number, look?: PatchLook | null): Patch {
+  const key = `${seed}.${halfW}.${look?.id ?? ''}`;
   let p = patches.get(key);
   if (p) return p;
   const w = halfW * 2 + 3, h = 9;
   const data = new Uint32Array(w * h);
   const tips: number[] = [];
   const iron = pack(0x8a92a0), dark = pack(0x2a2a36), tip = pack(0xe0e6ee), shade = pack(0x1a1420, 110);
+  const shapes = look?.shapes ?? CALTROPS;
+  const col: Record<string, number> = {};
+  if (look) for (const [k, c] of Object.entries(look.colors)) col[k] = pack(c);
   const n = Math.round(halfW / 2.2);
   for (let k = 0; k < n; k++) {
     // Denser near the middle, thinning out at the edges.
     const u = hash(seed * 31 + k, 7) * 2 - 1;
     const x = Math.round(halfW + 1 + u * Math.abs(u) ** 0.4 * halfW * 0.96 - 1);
     const y = 1 + Math.floor(hash(seed * 17 + k, 3) * 5);
-    const shape = CALTROPS[Math.floor(hash(k, seed) * CALTROPS.length)];
+    const shape = shapes[Math.floor(hash(k, seed) * shapes.length)];
     for (let j = 0; j < shape.length; j++) for (let i = 0; i < shape[j].length; i++) {
       const ch = shape[j][i];
       const px = x + i - 1, py = y + j - 1;
       if (ch === '.' || px < 0 || py < 0 || px >= w || py >= h) continue;
-      data[py * w + px] = ch === 's' ? tip : ch === 'k' ? dark : iron;
+      data[py * w + px] = look ? col[ch] ?? iron : ch === 's' ? tip : ch === 'k' ? dark : iron;
       if (ch === 's') tips.push(px - halfW - 1, py - 1);
     }
     // A smudge of shadow under each one.
-    const sy = y + 2;
+    const sy = y + shape.length - 1;
     for (const sx of [x - 1, x + 1]) if (sy < h && sx >= 0 && sx < w && !data[sy * w + sx]) data[sy * w + sx] = shade;
   }
   p = { sprite: { img: canvasOf(w, h, data), ox: halfW + 1, oy: 1, w, h }, tips };
