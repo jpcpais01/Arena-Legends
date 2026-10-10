@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.63.0',
+    date: '2026-10-10',
+    title: 'Preview fight while you pick',
+    notes: [
+      'In online matches, the fight behind the pick screen is now you against your rival, each with the build they have picked so far. It restarts with the new builds whenever either of you changes gear. It is only a preview: the real round is still fought once you both lock in.',
+    ],
+  },
+  {
     version: '0.62.1',
     date: '2026-10-10',
     title: 'Clearer invite errors',
