@@ -3,7 +3,7 @@ import { buildArena, floorRow, THEMES, type Layer } from '../src/render/arenaArt
 import { Pix } from '../src/render/pixel/paint';
 import { writePng } from './png';
 
-/** Dev preview: an arena composed at a camera position (`THEME=0 (isle) | 1 (caldera) | 2 (astral) CAM=0 W=560 H=315 OUT=...`). */
+/** Dev preview: an arena composed at a camera position (`THEME=0 (isle) | 1 (astral) CAM=0 W=560 H=315 OUT=...`). */
 it('arena preview', () => {
   const W = Number(process.env.W ?? 560), H = Number(process.env.H ?? 315);
   const gy = H > W ? Math.round(H * 0.6) : H - Math.max(44, Math.round(H * 0.17));

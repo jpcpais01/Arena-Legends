@@ -127,7 +127,7 @@ export function buildCosmos(theme: Theme, W: number, H: number, gy: number, trav
     crowd: [twA, twB], crowdLayer: L(twA, wallFactor), floor, torches: [],
     pillar: paintColumn(),
     crystal: paintStar(),
-    cycle: null, floaters, ambience: null, heat: null,
+    cycle: null, floaters, ambience: null,
     cosmos: {
       twinkle: space.twinkle, glows,
       meteorBand: [Math.round(hz * 0.04), Math.round(hz * 0.7)],

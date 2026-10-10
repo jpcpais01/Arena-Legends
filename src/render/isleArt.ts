@@ -148,7 +148,7 @@ export function buildIsle(theme: Theme, W: number, H: number, gy: number, travel
       sparkle: 0xfff6c8,
       bird: mix(0x2a3a5a, horizon, 0.25),
     },
-    heat: null, cosmos: null,
+    cosmos: null,
   };
 }
 
