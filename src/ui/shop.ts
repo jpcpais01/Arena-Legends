@@ -6,6 +6,7 @@ import { SKIN_SETS, type SkinDef, type SkinSetId } from '../character/skins';
 import { iconCanvas } from '../render/icons';
 import { gearOf, SLOT_NAMES } from '../sim/gear';
 import { DEFAULT_BUILDS, withGear } from '../sim/loadout';
+import { confirmBox } from './confirm';
 import { h } from './dom';
 import { fmtInt } from './format';
 import { gemTag, shopTabs } from './gacha';
@@ -115,20 +116,28 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
 
   function buySet(o: SetOffer): void {
     if (!buySkins(o.missing.map((p) => p.id), o.price)) return;
-    celebrate(o.pieces, o.set.name, () => cb.onEquipSet(o.set.id), 'Equip set');
+    celebrate(o.pieces, o.set.name, (done) => askEquip(o, done), 'Equip set');
   }
 
   function buyOne(s: SkinDef): void {
     if (!buySkins([s.id], SKIN_PRICE[s.rarity])) return;
-    celebrate([s], s.name, () => cb.onEquip(s), 'Equip');
+    celebrate([s], s.name, (done) => { cb.onEquip(s); done(); }, 'Equip');
   }
 
   /** The "unlocked" pop-up: the new skins pop in with sparkles. */
-  function celebrate(skins: SkinDef[], title: string, equip: () => void, equipLabel: string): void {
+  /** Equipping a set swaps every piece of the build, so it asks first. `done` runs once it is worn. */
+  function askEquip(o: SetOffer, done?: () => void): void {
+    confirmBox(el, 'Equip set?', `Swap your items for the ${o.set.name} pieces and wear their set skins? It replaces the gear you have on now.`, 'Equip set', () => {
+      cb.onEquipSet(o.set.id); if (done) done(); else sfx.play('equip');
+    }, 'bag');
+  }
+
+  /** `equip` calls its `done` once the item is really worn (a set asks first). */
+  function celebrate(skins: SkinDef[], title: string, equip: (done: () => void) => void, equipLabel: string): void {
     const top = skins.some((s) => s.rarity === 'epic') ? 'epic' : skins.some((s) => s.rarity === 'legendary') ? 'legendary' : skins.some((s) => s.rarity === 'mythic') ? 'mythic' : 'rare';
     sfx.play(top === 'epic' ? 'revealEpic' : top === 'legendary' ? 'revealLegendary' : top === 'mythic' ? 'revealMythic' : 'revealRare');
     const eq = h<HTMLButtonElement>('button.btn.primary', {
-      onclick: () => { equip(); sfx.play('equip'); eq.disabled = true; eq.replaceChildren(icon('check'), 'Equipped'); },
+      onclick: () => equip(() => { sfx.play('equip'); eq.disabled = true; eq.replaceChildren(icon('check'), 'Equipped'); }),
     }, icon('bag'), equipLabel);
     got.replaceChildren(h('div.shop-got', { onclick: (e: MouseEvent) => { if (e.target === e.currentTarget) dismiss(); } },
       h(`div.shop-got-card.frame.r-${top}`, null,
@@ -192,7 +201,7 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
             h('s.feat-was', null, gemTag(o.full)),
             buyBtn(o.price, have ? `Last ${o.missing.length}` : 'Buy set', () => buySet(o), true))
           : h('div.feat-buy', null, h('span.owned-tag', null, icon('check'), 'Set owned'),
-            h('button.btn.primary', { onclick: () => { cb.onEquipSet(o.set.id); sfx.play('equip'); } }, icon('bag'), 'Equip set'))));
+            h('button.btn.primary', { onclick: () => askEquip(o) }, icon('bag'), 'Equip set'))));
     tick();
   }
 
@@ -241,7 +250,7 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
             h('small', null, `${have}/${o.pieces.length} owned`),
             o.missing.length
               ? buyBtn(o.price, have ? `Last ${o.missing.length}` : 'Set', () => buySet(o))
-              : h('button.btn.sm', { onclick: () => { cb.onEquipSet(o.set.id); sfx.play('equip'); } }, icon('bag'), 'Equip')));
+              : h('button.btn.sm', { onclick: () => askEquip(o) }, icon('bag'), 'Equip')));
       })),
     );
     shelves.scrollTop = scroll;

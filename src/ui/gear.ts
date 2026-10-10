@@ -8,6 +8,7 @@ import { gearIdsFor, gearOf, SLOT_NAMES } from '../sim/gear';
 import { FORMS } from '../sim/forms';
 import { withGear } from '../sim/loadout';
 import type { GearId, GearSlot } from '../sim/types';
+import { confirmBox } from './confirm';
 import { h } from './dom';
 import { icon } from './icons';
 import { Preview } from './preview';
@@ -178,7 +179,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
       h('div.sk-set-row', null,
         h(`span.sk-pips${worn === all ? '.full' : ''}`, { title: `${worn} of ${all} pieces worn` }, ...setPieces(set.id).map((_, i) => h(`i${i < worn ? '.on' : ''}`))),
         h('small', null, worn === all ? 'Full set: aura on' : `${worn}/${all} worn. Wear all ${all} for its aura.`),
-        worn < all && have === all ? h('button.btn.sm.ghost', { onclick: () => wearSet(set.id), title: 'Equips every item of the set, in their set skins' }, 'Equip set') : null,
+        worn < all && have === all ? h('button.btn.sm.ghost', { onclick: () => confirmBox(root, 'Equip set?', `Swap your items for the ${set.name} pieces and wear their set skins? Undo brings your build back.`, 'Equip set', () => wearSet(set.id), 'bag'), title: 'Equips every item of the set, in their set skins' }, 'Equip set') : null,
         have < all ? h('small', null, `${have}/${all} owned`) : null));
   }
 
