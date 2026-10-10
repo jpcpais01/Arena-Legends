@@ -12,6 +12,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.41.0',
+    date: '2026-10-10',
+    title: '10 new epic sets',
+    notes: [
+      'Ten new epic sets, each with seven matching pieces (main weapon, secondary, special, head, chest, legs and boots) and its own aura when you wear the whole set.',
+      'Dread Tide Corsair: a ghost-pirate captain with a cutlass, a flintlock, a ghost parrot on the shoulder and waves rolling round the feet.',
+      'Oni Shogun: a demon warlord in black and crimson lacquer, with an oni naginata, a war banner and falling maple leaves.',
+      'Primal Beastlord: a mammoth bone club, a sabertooth skull helm, a baby raptor companion and a sabertooth spirit prowling around you.',
+      'Djinn of the Endless Sands: a scimitar, a wishing lamp, silks of turquoise and saffron, and a little dust devil at your feet.',
+      'Plague Doctor: a beaked mask, a miasma censer, a syringe crossbow, a leech jar, and rats scurrying through the fog.',
+      'Sugar Rush: a lollipop hammer, a cookie shield, a gumball machine, a cupcake crown, and candy bursting into sprinkles.',
+      'Hallow King: a pumpkin head with a crown, a scarecrow outfit, a bat-winged jack-o\'-lantern, and bats and leaves swirling.',
+      'Olympian: a hoplite spear and shield, a Corinthian helm, the winged sandals of Hermes and a Pillar of Zeus that throws lightning.',
+      'Lionheart: a paladin king in white steel and gold, with lion crests, a lion rampant shield and a sun-ray aura.',
+      'Moth Queen\'s Court: a moonlit scepter that shoots moths of light, luna moth wings and a fairy ring of glowing mushrooms.',
+    ],
+  },
+  {
     version: '0.40.0',
     date: '2026-10-10',
     title: '72 skins for the new items',
