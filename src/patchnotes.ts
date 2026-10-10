@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.45.0',
+    date: '2026-10-10',
+    title: 'Melee fighters close the gap',
+    notes: [
+      'A melee fighter chasing down an archer or caster now rolls forward under incoming shots instead of dodging backwards, so they actually reach their target. Up close, dodges still step back as before.',
+    ],
+  },
+  {
     version: '0.44.0',
     date: '2026-10-10',
     title: 'Friends',
