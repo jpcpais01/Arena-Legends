@@ -997,10 +997,6 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
   .scr-stage { padding: 0.2rem 0.4rem 0.2rem var(--safe-l); }
   .spot { bottom: 1rem; }
   .stage-box .arrow { width: 2.4rem; height: 2.4rem; }
-  .creator .nameplate { position: absolute; top: 0.2rem; left: var(--safe-l); z-index: 1; justify-items: start; gap: 3px; min-width: 0; max-width: 62%; margin: 0; padding: 0 0.4rem 0.15rem; text-align: left; border-width: calc(var(--px) * 4); }
-  .creator .nameplate b { font-size: 1.05rem; }
-  .creator .nameplate .tags { justify-content: flex-start; }
-  .creator .nameplate .chip { font-size: 0.5625rem; }
   .scr-panel { margin: 0 var(--safe-r) var(--safe-b) 0.1rem; padding: 0.4rem 0.5rem 0.6rem; }
   .creator .scr-panel { padding: 0.3rem 0.1rem 0.3rem 0.3rem; }
   .scr-nav { padding: 0.3rem 0.4rem var(--safe-b) var(--safe-l); gap: 6px; }
@@ -1147,10 +1143,6 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
   .step-line { flex: 1; width: auto; min-width: 0.5rem; }
   .scr-stage { padding: 0.2rem var(--safe-r) 0.2rem var(--safe-l); }
   .spot { bottom: 0.5rem; }
-  .creator .nameplate { position: absolute; top: 0.3rem; left: var(--safe-l); z-index: 1; justify-items: start; gap: 4px; min-width: 0; max-width: 60%; margin: 0; padding: 0 0.4rem 0.15rem; text-align: left; border-width: calc(var(--px) * 4); }
-  .creator .nameplate b { font-size: 1.15rem; }
-  .creator .nameplate .tags { justify-content: flex-start; }
-  .creator .nameplate .chip { font-size: 0.5625rem; }
   .stage-box .arrow { width: 2.6rem; height: 2.6rem; }
   .scr-panel { margin: 0 var(--safe-r) 0.2rem var(--safe-l); padding: 0.5rem 0.5rem 0.7rem; }
   .scr.gear .scr-panel { margin-bottom: var(--safe-b); }

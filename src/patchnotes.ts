@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.42.2',
+    date: '2026-10-10',
+    title: 'Clear view of your hero',
+    notes: [
+      'Hero creation no longer has a name box over your fighter, so nothing covers them while you pick their look.',
+    ],
+  },
+  {
     version: '0.42.1',
     date: '2026-10-10',
     title: 'Tiago unlocks everything',
