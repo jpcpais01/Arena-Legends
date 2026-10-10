@@ -276,7 +276,7 @@ function openShop(): void {
   sfx.play('ui');
   sheet = shopScreen({
     onClose: () => { closeSheet(); refreshMenu(); },
-    onChests: () => openChests(),
+    onChests: (t) => openChests(t),
     onEquip: (s: SkinDef) => wearPulled(s),
     onEquipSet: (id) => { for (const s of setPieces(id)) wearPulled(s); },
     player: () => player,
@@ -285,8 +285,8 @@ function openShop(): void {
   setCovered(true);
 }
 
-/** Skin chests (the shop's second tab): spend gems on random skins. */
-function openChests(): void {
+/** Skin chests and the forge (the shop's other tabs): spend gems on random skins, melt spares. */
+function openChests(tab: 'chests' | 'forge' = 'chests'): void {
   closeSheet();
   sfx.play('ui');
   sheet = chestScreen({
@@ -294,7 +294,7 @@ function openChests(): void {
     onShop: () => openShop(),
     onEquip: (s: SkinDef) => wearPulled(s),
     player: () => player,
-  });
+  }, tab);
   ui.append(sheet.el);
   setCovered(true);
 }

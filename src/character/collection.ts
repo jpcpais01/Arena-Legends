@@ -15,6 +15,8 @@ export interface Collection {
   pity: number;
   /** Online rounds already paid out ("match:round"), so a resumed match never pays twice. */
   paid: string[];
+  /** Duplicate copies kept in the inventory, by skin id (the forge melts them). */
+  spare: Record<string, number>;
 }
 
 const KEY = 'al.collection';
@@ -27,8 +29,8 @@ export const EPIC_PITY = 60;
 
 /** Odds per pull by tier (they add up to 1). */
 export const ODDS: Record<SkinRarity, number> = { rare: 0.7, mythic: 0.22, legendary: 0.07, epic: 0.01 };
-/** Gems back for a skin already owned. */
-export const DUPE_GEMS: Record<SkinRarity, number> = { rare: 15, mythic: 35, legendary: 80, epic: 200 };
+/** Spare copies of one rarity the forge melts into one skin of the next rarity. */
+export const FORGE_COST = 3;
 
 /** Win reward: a base plus a bonus for the health the winner kept. */
 export const WIN_BASE = 25;
@@ -55,14 +57,25 @@ export function loadCollection(worn?: SkinMap): Collection {
       owned: Array.isArray(raw.owned) ? [...new Set(raw.owned.filter((id) => typeof id === 'string' && SKIN_BY_ID.has(id)))] : [],
       pity: Number.isFinite(raw.pity) ? Math.max(0, Math.min(EPIC_PITY - 1, Math.floor(raw.pity as number))) : 0,
       paid: Array.isArray(raw.paid) ? raw.paid.filter((k) => typeof k === 'string').slice(-40) : [],
+      spare: cleanSpare(raw.spare),
     };
   } else {
-    col = { gems: START_GEMS, owned: [], pity: 0, paid: [] };
+    col = { gems: START_GEMS, owned: [], pity: 0, paid: [], spare: {} };
   }
   // Anything worn stays owned (the first start, and saves from before skins were collectibles).
   for (const id of Object.values(worn ?? {})) if (id && SKIN_BY_ID.has(id) && !col.owned.includes(id)) col.owned.push(id);
   persist();
   return col;
+}
+
+function cleanSpare(raw: unknown): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const [id, n] of Object.entries(raw as Record<string, unknown>)) {
+    const k = Math.floor(Number(n));
+    if (SKIN_BY_ID.has(id) && k > 0) out[id] = Math.min(999, k);
+  }
+  return out;
 }
 
 function get(): Collection {
@@ -121,9 +134,21 @@ export function progress(): Record<SkinRarity, [number, number]> {
 
 export interface Pull {
   skin: SkinDef;
-  /** First copy (false: a duplicate, paid back in gems). */
+  /** First copy (false: a duplicate, kept as a spare for the forge). */
   fresh: boolean;
-  refund: number;
+}
+
+/** Adds a pulled skin: owned on the first copy, a spare after that. */
+function take(c: Collection, skin: SkinDef): Pull {
+  const fresh = !owns(skin.id);
+  if (fresh) c.owned.push(skin.id);
+  else c.spare[skin.id] = (c.spare[skin.id] ?? 0) + 1;
+  return { skin, fresh };
+}
+
+function rollSkin(r: () => number, tier: SkinRarity): SkinDef {
+  const pool = SKINS.filter((s) => s.rarity === tier);
+  return pool[Math.floor(r() * pool.length) % pool.length];
 }
 
 function rollTier(r: () => number, floor: SkinRarity): SkinRarity {
@@ -157,16 +182,61 @@ export function openChest(count: 1 | 10, r: () => number = Math.random): Pull[] 
     else if (count === 10 && i === 9 && out.every((p) => p.skin.rarity === 'rare')) tier = rollTier(r, 'mythic');
     else tier = rollTier(r, 'rare');
     if (tier === 'epic') c.pity = 0;
-    const pool = SKINS.filter((s) => s.rarity === tier);
-    const skin = pool[Math.floor(r() * pool.length) % pool.length];
-    const fresh = !owns(skin.id);
-    const refund = fresh ? 0 : DUPE_GEMS[tier];
-    if (fresh) c.owned.push(skin.id);
-    c.gems += refund;
-    out.push({ skin, fresh, refund });
+    out.push(take(c, rollSkin(r, tier)));
   }
   persist();
   return out;
+}
+
+/** Spare copies in the inventory: [skin, count], best tier first, most copies first. */
+export function spares(): [SkinDef, number][] {
+  const out: [SkinDef, number][] = [];
+  for (const [id, n] of Object.entries(get().spare)) { const s = SKIN_BY_ID.get(id); if (s && n > 0) out.push([s, n]); }
+  return out.sort((a, b) => SKIN_RARITIES.indexOf(b[0].rarity) - SKIN_RARITIES.indexOf(a[0].rarity) || b[1] - a[1] || a[0].name.localeCompare(b[0].name));
+}
+
+/** Spare copies per rarity. */
+export function spareCount(tier: SkinRarity): number {
+  let n = 0;
+  for (const [s, k] of spares()) if (s.rarity === tier) n += k;
+  return n;
+}
+
+/** The rarity the forge turns a rarity into (null for the top one). */
+export function forgeInto(tier: SkinRarity): SkinRarity | null {
+  return SKIN_RARITIES[SKIN_RARITIES.indexOf(tier) + 1] ?? null;
+}
+
+/**
+ * Melts FORGE_COST spare copies (`ids`, repeats allowed, all one rarity below
+ * the top) into one random skin of the next rarity. Null when the copies
+ * aren't there or the rarities don't match.
+ */
+export function forge(ids: string[], r: () => number = Math.random): Pull | null {
+  const c = get();
+  if (ids.length !== FORGE_COST) return null;
+  const skins = ids.map((id) => SKIN_BY_ID.get(id));
+  if (skins.some((s) => !s)) return null;
+  const tier = skins[0]!.rarity;
+  const into = forgeInto(tier);
+  if (!into || skins.some((s) => s!.rarity !== tier)) return null;
+  const need = new Map<string, number>();
+  for (const id of ids) need.set(id, (need.get(id) ?? 0) + 1);
+  for (const [id, n] of need) if ((c.spare[id] ?? 0) < n) return null;
+  for (const [id, n] of need) { c.spare[id] -= n; if (c.spare[id] <= 0) delete c.spare[id]; }
+  const out = take(c, rollSkin(r, into));
+  persist();
+  return out;
+}
+
+/** Picks the copies a forge of `tier` uses: the ones you hold most of first. */
+export function forgePick(tier: SkinRarity): string[] | null {
+  const out: string[] = [];
+  for (const [s, n] of spares()) {
+    if (s.rarity !== tier) continue;
+    for (let i = 0; i < n && out.length < FORGE_COST; i++) out.push(s.id);
+  }
+  return out.length === FORGE_COST ? out : null;
 }
 
 /** Buys skins outright for `cost` gems (skins already owned are skipped). False when short of gems. */

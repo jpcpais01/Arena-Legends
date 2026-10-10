@@ -1676,6 +1676,72 @@ input.fr-input { flex: 1; min-width: 0; height: 2.5rem; font-size: 1.05rem; }
   .scr.gear.inspecting .inspect-area { align-content: start; }
   .inspect { max-height: 100%; }
 }
+
+/* --- Forge: spare copies melt three into one of the next rarity ---------------------------------- */
+.shop-tab { position: relative; }
+.shop-tab.ready::after { content: ''; position: absolute; top: calc(var(--px) * 1); right: calc(var(--px) * 1); width: calc(var(--px) * 3); height: calc(var(--px) * 3); background: var(--red); box-shadow: 0 0 0 var(--px) var(--ink); animation: blink 1.4s steps(1) infinite; }
+.forge-rows { display: grid; gap: 5px; }
+.forge-row {
+  --rc: var(--rare); display: grid; grid-template-columns: 6.6rem minmax(0, 1fr) auto; align-items: center; gap: 0.5rem;
+  padding: 5px 8px 6px; background: rgba(0, 0, 0, 0.3); border: var(--px) solid var(--ink); box-shadow: inset calc(var(--px) * 2) 0 0 var(--rc);
+}
+.forge-row.mythic { --rc: var(--mythic); } .forge-row.legendary { --rc: var(--legendary); } .forge-row.epic { --rc: var(--skin-epic); }
+.forge-tier { display: grid; gap: 3px; }
+.forge-tier .tier { font: 700 0.9375rem/1 var(--font); text-transform: uppercase; letter-spacing: 0.06em; text-shadow: 0 var(--px) 0 var(--ink); }
+.forge-tier .tier.r-epic { background: var(--skin-epic-sweep) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; animation: epicSweep 3s linear infinite; }
+.forge-tier small { font-size: 0.6875rem; color: var(--muted); }
+.forge-pips { display: flex; gap: 3px; }
+.forge-pips i { width: calc(var(--px) * 3); height: calc(var(--px) * 3); background: #120c20; box-shadow: 0 0 0 var(--px) var(--ink); }
+.forge-pips i.on { background: var(--rc); }
+.forge-strip { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; min-width: 0; padding: 2px 0; }
+.forge-strip .sock { position: relative; width: 2.5rem; height: 2.5rem; box-shadow: inset 0 var(--px) 0 #05030a, inset 0 0 0 var(--px) color-mix(in srgb, var(--rc) 55%, transparent); }
+.forge-strip .sock canvas, .forge-fly canvas { width: 82%; height: 82%; image-rendering: pixelated; }
+.forge-x { position: absolute; right: -1px; bottom: -2px; padding: 0 2px 1px; font: 700 0.625rem/1 var(--font); font-style: normal; color: var(--text); background: var(--ink); }
+.forge-none, .forge-top { font-size: 0.75rem; color: var(--dim); }
+.forge-top { justify-self: end; padding-right: 0.3rem; }
+.btn.forge-btn { gap: 0.3rem; min-height: 2.4rem; padding-left: 0.6rem; padding-right: 0.6rem; font-size: 0.875rem; }
+.btn.forge-btn svg { width: 1em; height: 1em; }
+.btn.forge-btn b { text-transform: uppercase; letter-spacing: 0.04em; text-shadow: 0 var(--px) 0 var(--ink); }
+.btn.forge-btn b.r-epic { color: var(--skin-epic); }
+.scr.gacha > .forge-fly { position: absolute; z-index: 4; display: grid; place-items: center; pointer-events: none; transition: transform 650ms cubic-bezier(0.5, 0, 0.8, 0.4), opacity 650ms ease-in; }
+.gc-dupe svg { width: 1.1em; height: 1.1em; color: var(--gold); }
+
+/* --- The omen: the tier name slammed across the screen ------------------------------------------- */
+.scr.gacha > .tier-banner {
+  position: absolute; left: 0; right: 0; top: 8%; z-index: 4; display: none; justify-items: center; gap: 0.3rem; pointer-events: none; text-align: center;
+  --rc: var(--legendary);
+}
+.tier-banner.r-epic { --rc: var(--skin-epic); }
+.scr.gacha > .tier-banner.on { display: grid; }
+.tier-banner b { filter: drop-shadow(0 calc(var(--px) * 2) 0 var(--ink)) drop-shadow(calc(var(--px) * 2) 0 0 var(--ink)) drop-shadow(calc(var(--px) * -2) 0 0 var(--ink)) drop-shadow(0 calc(var(--px) * -2) 0 var(--ink)) drop-shadow(0 0 0.8rem color-mix(in srgb, var(--rc) 60%, transparent)); display: flex; justify-content: center; font: 700 clamp(2.8rem, 11vw, 5.6rem)/1 var(--font); letter-spacing: 0.06em; text-transform: uppercase; }
+.tier-banner b span {
+  display: inline-block; color: var(--rc);
+  animation: letter-slam 420ms calc(var(--i) * 45ms) cubic-bezier(0.2, 1.7, 0.4, 1) both, letter-bob 1.2s calc(500ms + var(--i) * 80ms) steps(2) infinite;
+}
+.tier-banner.r-legendary b span { background: linear-gradient(180deg, #fff6c0 0 40%, #ffb040 40% 75%, #c06a10 75%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.tier-banner.r-epic b span { background: var(--skin-epic-sweep) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: letter-slam 420ms calc(var(--i) * 45ms) cubic-bezier(0.2, 1.7, 0.4, 1) both, letter-bob 1.2s calc(500ms + var(--i) * 80ms) steps(2) infinite, epicSweep 2s linear infinite; }
+.tier-banner small { font: 700 1rem/1 var(--font); letter-spacing: 0.2em; text-transform: uppercase; color: var(--text); text-shadow: var(--outline); animation: fade-in 400ms 450ms both; }
+@keyframes letter-slam { from { opacity: 0; transform: translateY(-1.2em) scale(2.6) rotate(-12deg); } }
+@keyframes letter-bob { 50% { transform: translateY(calc(var(--px) * -2)); } }
+.gacha.quake { animation: quake 450ms steps(6); }
+@keyframes quake { 20% { transform: translate(-6px, 3px); } 40% { transform: translate(5px, -4px); } 60% { transform: translate(-4px, -2px); } 80% { transform: translate(3px, 2px); } }
+/* Legendary and epic cards keep a moving shine. */
+.gcard.flipped.r-legendary .gc-front::after, .gcard.flipped.r-epic .gc-front::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.45) 45%, transparent 55%) 0 0 / 300% 100% no-repeat;
+  animation: card-shine 2.4s 600ms ease-in-out infinite;
+}
+@keyframes card-shine { from { background-position: 100% 0; } 60%, to { background-position: -50% 0; } }
+.gcard.glory { animation: glory 600ms cubic-bezier(0.2, 1.6, 0.4, 1); z-index: 1; }
+@keyframes glory { 40% { transform: scale(1.25); } }
+@media (prefers-reduced-motion: reduce) { .tier-banner b span, .gacha.quake, .gcard .gc-front::after, .shop-tab.ready::after { animation: none; } }
+@media (orientation: landscape) and (max-height: 560px) {
+  .forge-row { grid-template-columns: 5.6rem minmax(0, 1fr) auto; padding: 4px 6px 5px; gap: 0.4rem; }
+  .forge-strip .sock { width: 2.1rem; height: 2.1rem; }
+  .btn.forge-btn { min-height: 2.1rem; font-size: 0.8125rem; }
+  .scr.gacha > .tier-banner { top: 5%; }
+  .tier-banner small { font-size: 0.8125rem; }
+}
 /* Armory Undo / Redo: two small keys beside Done. */
 .hist-btns { display: flex; gap: 6px; }
 .hist-btns .btn:disabled { opacity: 0.4; cursor: default; filter: none; transform: none; }

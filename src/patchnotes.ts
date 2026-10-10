@@ -12,13 +12,25 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.49.0',
+    version: '0.50.0',
     date: '2026-10-10',
     title: 'An epic new battle soundtrack',
     notes: [
       'The battle music is now played by a full orchestra in a grand hall: strings, a choir, horns, celesta, timpani, war drums and anvils.',
       'It still builds as the weaker fighter loses health. Calm strings and bells at first, then a harp and a driving string rhythm, then the horns call out, and finally the heroic theme with the choir and every drum in the arena.',
       'Near defeat a heartbeat and trembling strings take over, night overtime lifts the key and adds more war drums, and the fight ends on a big triumphant chord.',
+    ],
+  },
+  {
+    version: '0.49.0',
+    date: '2026-10-10',
+    title: 'The Forge and big reveals',
+    notes: [
+      'Duplicate skins are no longer swapped for gems. Each extra copy is kept as a spare.',
+      'New Forge tab in the Shop: melt 3 spares of one rarity into a random skin of the next rarity up (rare to mythic, mythic to legendary, legendary to epic).',
+      'Your three spares fly into the chest, the anvil rings, and the chest opens on the new skin.',
+      'Legendary and epic pulls get their own show: the room goes dark, a pillar of light bursts from the chest, the rarity is slammed across the screen, and epic adds falling stars.',
+      'Legendary and epic cards keep sparkling and shining after the reveal.',
     ],
   },
   {
