@@ -1742,3 +1742,6 @@ input.fr-input { flex: 1; min-width: 0; height: 2.5rem; font-size: 1.05rem; }
   .scr.gacha > .tier-banner { top: 5%; }
   .tier-banner small { font-size: 0.8125rem; }
 }
+/* Armory Undo / Redo: two small keys beside Done. */
+.hist-btns { display: flex; gap: 6px; }
+.hist-btns .btn:disabled { opacity: 0.4; cursor: default; filter: none; transform: none; }
