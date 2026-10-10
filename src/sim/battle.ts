@@ -407,6 +407,9 @@ export class Battle {
       // is in reach if the boots allow it (Shadow Treads).
       dir = -f.facing;
       through = false;
+      // Pressing forward against a fighter out of reach: roll in under the
+      // shot instead of giving ground.
+      if (Math.sign(f.move) === f.facing && Math.abs(e.x - f.x) > ab.dash!.distance + 1) dir = f.facing;
       const dest = f.x + dir * ab.dash!.distance;
       const rollThrough = ab.dash!.through && Math.abs(e.x - f.x) < ab.dash!.distance - 0.6;
       if (rollThrough || Math.abs(dest) > ARENA_HALF_WIDTH - 0.6) {

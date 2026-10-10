@@ -314,7 +314,7 @@ export class Brain implements FighterBrain {
       const s = this.script;
       if (s.kind === 'ability') {
         this.script = null;
-        if (b.startAction(f, s.idx)) return;
+        if (this.start(b, s.idx)) return;
       } else if (b.time < this.scriptUntil) {
         f.move = s.dir;
         if (!f.action) return;
@@ -673,7 +673,7 @@ export class Brain implements FighterBrain {
       const pick = this.lookAhead(b, c, options, bestIdx, waiting);
       if (pick) {
         if (pick.choice.kind === 'ability') {
-          if (b.startAction(f, pick.choice.idx)) {
+          if (this.start(b, pick.choice.idx)) {
             this.heldMove = 0;
             this.track(b, pick.choice.idx);
             if (pick.why) this.thought(b, pick.why, pick.why.includes('!') && b.rng.next() < 0.3);
@@ -703,12 +703,27 @@ export class Brain implements FighterBrain {
       return;
     }
 
-    if (bestIdx >= 0 && b.startAction(f, bestIdx)) {
+    if (bestIdx >= 0 && this.start(b, bestIdx)) {
       this.track(b, bestIdx);
       if (bestWhy) this.thought(b, bestWhy, bestWhy.includes('!') && b.rng.next() < 0.3);
       return;
     }
     this.moveDecision(b, c, waiting);
+  }
+
+  /**
+   * Starts an ability. An evade goes the way the fighter leans: a fighter
+   * closing in on a shooter rolls forward under the shot, anyone else backsteps.
+   */
+  private start(b: Battle, idx: number): boolean {
+    const f = this.f;
+    if (this.kit.info[idx].defense === 'evade') {
+      const e = b.other(f);
+      const closing = !this.kit.ranged && Math.abs(e.x - f.x) > this.m.engage + 1
+        && (this.plan === 'pressure' || this.plan === 'allin' || this.plan === 'bait');
+      f.move = closing ? Math.sign(e.x - f.x) || f.facing : 0;
+    }
+    return b.startAction(f, idx);
   }
 
   // ---------------------------------------------------------------------------
