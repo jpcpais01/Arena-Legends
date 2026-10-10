@@ -464,9 +464,27 @@ showGems();
 // --- Background duel behind the menu -------------------------------------------------------
 let demoWait = 0;
 let demoRunning = false;
+/** The builds the background duel shows: during an online pick, both players' current picks; otherwise random fighters (null). */
+function demoBuilds(): [CharacterBuild, CharacterBuild] | null {
+  const s = session, snap = s?.snap;
+  if (!s || !snap || snap.phase !== 'pick') return null;
+  return pickInfo(s, snap).builds;
+}
+/** Which builds the running background duel was started with ('' for random fighters). */
+let demoKey = '';
+
+/** Restarts the background duel when the builds it should show changed (a pick began, or someone changed their build). */
+function refreshDemo(): void {
+  const pair = demoBuilds();
+  if (!demoRunning || (pair ? JSON.stringify(pair) : '') !== demoKey) startDemo();
+}
+
 function startDemo(): void {
   demoRunning = true;
-  const a = generateRival(), b = generateRival(a.name);
+  demoWait = 0;
+  const pair = demoBuilds();
+  demoKey = pair ? JSON.stringify(pair) : '';
+  const a = pair?.[0] ?? generateRival(), b = pair?.[1] ?? generateRival(a.name);
   const seed = (Math.random() * 2 ** 32) >>> 0;
   const battle = new Battle({ seed, fighters: [a, b] });
   view.quiet = true;
@@ -687,7 +705,7 @@ function syncOnline(): void {
   if (snap.phase === 'pick') {
     const key = `${snap.id}:${snap.round}`;
     if (netPick !== key) enterPick(s, snap, key);
-    else pick.show(pickInfo(s, snap));
+    else { pick.show(pickInfo(s, snap)); if (!covered) refreshDemo(); }
   } else if (netMatch !== snap.id || netRound !== snap.round) {
     // A new fight (or the last one, when coming back to a finished match).
     startNetFight(snap);
@@ -729,7 +747,7 @@ function enterPick(s: OnlineSession, snap: Snapshot, key: string): void {
   resultsEl = null;
   hud.show(false);
   menu.el.hidden = true;
-  if (!demoRunning) startDemo();
+  refreshDemo();
   pick.show(pickInfo(s, snap));
 }
 
@@ -742,7 +760,7 @@ function openDraftGear(): void {
   const draft = { ...s.draft, look: s.draft.look ?? player!.look } as PlayerCharacter;
   sheet = gearSheet(draft, {
     onChange: (c) => { s.draft = c; if (s.snap) pick.show(pickInfo(s, s.snap)); },
-    onClose: () => closeSheet(),
+    onClose: () => { closeSheet(); if (session === s) refreshDemo(); },
   }, { forms: true, title: `Round ${s.snap.round} build` });
   ui.append(sheet.el);
   setCovered(true);
