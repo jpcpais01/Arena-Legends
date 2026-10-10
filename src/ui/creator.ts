@@ -41,7 +41,7 @@ const LAST = STEPS.length - 1;
 /** Steps whose pick the stage arrows flip through. */
 const ARROWS = 3;
 
-const STYLE_ICON: Record<FightStyleId, IconName> = {
+export const STYLE_ICON: Record<FightStyleId, IconName> = {
   balanced: 'scale', relentless: 'flame', tactician: 'eye', skirmisher: 'fast', guardian: 'shield',
 };
 const STYLE_BARS = ['Aggression', 'Defense', 'Trickery', 'Stamina'];

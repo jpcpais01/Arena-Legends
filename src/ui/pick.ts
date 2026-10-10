@@ -4,6 +4,9 @@ import type { CharacterBuild } from '../sim/loadout';
 import { h } from './dom';
 import { icon } from './icons';
 import { CARD_ART, fighterCard } from './menu';
+import { STYLE_ICON } from './creator';
+import { css } from '../render/pixel/color';
+import { FIGHT_STYLES } from '../sim/styles';
 import { scoreLine } from './online';
 import { Preview } from './preview';
 
@@ -20,6 +23,8 @@ export interface PickInfo {
 
 export interface PickCallbacks {
   onGear(): void;
+  /** Steps your fighting style for this round to the next one. */
+  onStyle(): void;
   onReady(): void;
   onUnready(): void;
   onLeave(): void;
@@ -67,8 +72,18 @@ export class PickScreen {
     const cards = ([0, 1] as const).map((s) => {
       const own = s === you;
       const state = (own ? mine : info.ready[s]) ? 'Ready' : 'Picking';
-      const btns = own && !mine ? [h('button.btn.sm', { onclick: () => this.cb.onGear() }, icon('bag'), 'Build')] : [];
-      return fighterCard(info.builds[s], this.previews[s]!, s, own ? 'You' : 'Rival', state, btns);
+      const st = FIGHT_STYLES[info.builds[s].style ?? 'balanced'];
+      const btns = own && !mine ? [
+        h('button.btn.sm', { onclick: () => this.cb.onGear() }, icon('bag'), 'Build'),
+        h('button.btn.sm.style-btn', {
+          title: `Fighting style: ${st.name} (${st.title}). Tap for the next style.`,
+          onclick: () => { sfx.play('select'); this.cb.onStyle(); },
+        }, h('span.style-ic', { style: { color: css(st.color) } }, icon(STYLE_ICON[st.id])), st.name),
+      ] : [];
+      const card = fighterCard(info.builds[s], this.previews[s]!, s, own ? 'You' : 'Rival', state, btns);
+      // Both corners show the style each fighter goes in with.
+      card.querySelector('.fcard-sub')?.append(` · ${st.name}`);
+      return card;
     });
     this.dock.replaceChildren(cards[0], this.actions, cards[1]);
     this.bar.replaceChildren(
