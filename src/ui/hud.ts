@@ -24,10 +24,14 @@ const STATUS: Record<StatusId, [string, string]> = {
 };
 
 interface SideEls {
+  hpBar: HTMLElement;
   fill: HTMLElement;
   ghost: HTMLElement;
   shield: HTMLElement;
-  num: HTMLElement;
+  /** Current and max HP, printed inside the health bar. */
+  hpNow: HTMLElement;
+  hpMax: HTMLElement;
+  enBar: HTMLElement;
   en: HTMLElement;
   plan: HTMLElement;
   /** DEBUG (temporary): AI heat bar with its tolerance mark. */
@@ -37,8 +41,11 @@ interface SideEls {
   bubbleT: number;
   /** Displayed (trailing) health for the ghost bar. */
   ghostV: number;
-  last: { hp: number; ghost: number; shield: number; en: number; st: string; band: string };
+  last: { hp: number; hpTxt: string; ghost: number; shield: number; en: number; st: string; band: string };
 }
+
+/** Slides a full-width fill so `v` (0..1) of it shows; tracks are mirrored for the right side. */
+const slide = (v: number): string => `translateX(${((v - 1) * 100).toFixed(1)}%)`;
 
 export interface HudCallbacks {
   onSpeed(s: number): void;
@@ -117,8 +124,13 @@ export class Hud {
     const bubbles: HTMLElement[] = [];
     for (const side of [0, 1] as const) {
       const f = b.fighters[side];
-      const fill = h('i.fill'), ghost = h('i.ghost'), shield = h('i.shield'), num = h('span');
+      const fill = h('i.fill'), ghost = h('i.ghost'), shield = h('i.shield');
+      const hpNow = h('b'), hpMax = h('small');
+      const hpBar = h('div.hpbar', null,
+        h('div.track', null, ghost, fill, shield, h('i.ticks'), h('i.gloss')),
+        h('span.hp-txt', null, hpNow, hpMax));
       const en = h('i.fill');
+      const enBar = h('div.enbar', null, h('div.track', null, en, h('i.cells')));
       const plan = h('span.plan', null, PLAN_LABELS[b.brains[side].plan]);
       const statuses = h('div.statuses');
       const heat = h('i.fill'), heatTick = h('i.tick');
@@ -127,13 +139,16 @@ export class Hud {
       bubbles.push(bubble);
       const el = h(`div.side${side ? '.right' : ''}`, null,
         h('div.side-name', null, h('span', null, f.name), h('small.muted', null, FORMS[f.form].name)),
-        h('div.bar', null, ghost, fill, shield, h('i.ticks')),
-        h('div.bar.en', null, en),
+        hpBar,
+        enBar,
         heatBar,
-        h('div.side-hp', null, num, ' · ', plan),
+        h('div.side-state', null, plan),
         statuses,
       );
-      this.sides.push({ fill, ghost, shield, num, en, plan, heat, heatBar, heatTick, heatKey: '', statuses, bubble, bubbleT: 0, ghostV: 1, last: { hp: -1, ghost: -1, shield: -1, en: -1, st: '-', band: '' } });
+      this.sides.push({
+        hpBar, fill, ghost, shield, hpNow, hpMax, enBar, en, plan, heat, heatBar, heatTick, heatKey: '', statuses, bubble, bubbleT: 0, ghostV: 1,
+        last: { hp: -1, hpTxt: '', ghost: -1, shield: -1, en: -1, st: '-', band: '' },
+      });
       if (side === 0) top.append(el);
       else {
         this.clock = h('div.clock.plate', null, String(ROUND_TIME));
@@ -246,24 +261,37 @@ export class Hud {
       const hp = Math.max(0, f.hp) / f.stats.maxHp;
       const hpQ = Math.round(hp * 1000);
       if (hpQ !== s.last.hp) {
+        // A big hit jolts the bar.
+        if (s.last.hp >= 0 && s.last.hp - hpQ >= 40) {
+          s.hpBar.animate([{ translate: '0 0' }, { translate: `${i ? 3 : -3}px 1px` }, { translate: `${i ? -2 : 2}px 0` }, { translate: '0 0' }], { duration: 160 });
+        }
         s.last.hp = hpQ;
-        s.fill.style.transform = `scaleX(${(hpQ / 1000).toFixed(3)})`;
-        s.num.textContent = `${fmtHp(f.hp, f.alive)} / ${Math.round(f.stats.maxHp)}`;
+        s.fill.style.transform = slide(hpQ / 1000);
         const band = hp > 0.5 ? '' : hp > 0.25 ? 'mid' : 'low';
-        if (band !== s.last.band) { s.last.band = band; s.fill.className = 'fill' + (band ? ' ' + band : ''); }
+        if (band !== s.last.band) { s.last.band = band; s.hpBar.className = 'hpbar' + (band ? ' ' + band : ''); }
+      }
+      const now = fmtHp(f.hp, f.alive);
+      if (now !== s.last.hpTxt) {
+        s.last.hpTxt = now;
+        s.hpNow.textContent = now;
+        s.hpMax.textContent = `/ ${Math.round(f.stats.maxHp)}`;
       }
       // The pale ghost trails the real bar so big hits read as a chunk.
       if (s.ghostV > hp) s.ghostV = Math.max(hp, s.ghostV - dt * (s.ghostV - hp > 0.2 ? 0.9 : 0.45));
       else s.ghostV = hp;
       const gQ = Math.round(s.ghostV * 1000);
-      if (gQ !== s.last.ghost) { s.last.ghost = gQ; s.ghost.style.transform = `scaleX(${(gQ / 1000).toFixed(3)})`; }
+      if (gQ !== s.last.ghost) { s.last.ghost = gQ; s.ghost.style.transform = slide(gQ / 1000); }
       const sh = Math.round(Math.min(1, f.shield / f.stats.maxHp) * 1000);
       if (sh !== s.last.shield) { s.last.shield = sh; s.shield.style.transform = `scaleX(${(sh / 1000).toFixed(3)})`; }
       const en = Math.round(f.energy);
       if (en !== s.last.en) {
         s.last.en = en;
-        s.en.style.transform = `scaleX(${(en / MAX_ENERGY).toFixed(2)})`;
-        s.en.classList.toggle('full', en >= MAX_ENERGY);
+        s.en.style.transform = slide(Math.min(1, en / MAX_ENERGY));
+        const full = en >= MAX_ENERGY;
+        if (full !== s.enBar.classList.contains('full')) {
+          s.enBar.classList.toggle('full', full);
+          if (full) s.enBar.animate([{ scale: '1 1.6', filter: 'brightness(1.8)' }, { scale: '1 1', filter: 'brightness(1)' }], { duration: 260, easing: 'ease-out' });
+        }
       }
       // DEBUG (temporary): heat vs this fighter's tolerance; tinted while circling.
       const br = b.brains[i];

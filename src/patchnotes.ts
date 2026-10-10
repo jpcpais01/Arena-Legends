@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.59.0',
+    date: '2026-10-10',
+    title: 'New battle bars',
+    notes: [
+      'The health bar is redesigned: a framed bar with a glossy fill, and your HP now sits right inside it.',
+      'Under the bars you now only see what each fighter is doing (Circling, All-in, Pressuring...), with no number line.',
+      'The energy bar is new too: four cells you can watch fill up, and it turns gold with a shine when it is full.',
+      'Big hits jolt the health bar, and it pulses red when a fighter is low.',
+    ],
+  },
+  {
     version: '0.58.0',
     date: '2026-10-10',
     title: 'Astral Sanctum, wide open',
