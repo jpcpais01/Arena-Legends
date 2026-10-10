@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.63.2',
+    date: '2026-10-10',
+    title: 'Damage in team colours',
+    notes: [
+      'Damage numbers now show in the colour of the fighter who dealt them: blue for the left corner, red for the right. Crits and heavy hits are still bigger, blocked hits are a dimmer shade, and heals and energy keep their own colours.',
+    ],
+  },
+  {
     version: '0.63.1',
     date: '2026-10-10',
     title: 'Equip set asks first',
