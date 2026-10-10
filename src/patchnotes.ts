@@ -12,13 +12,23 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.50.0',
+    version: '0.51.0',
     date: '2026-10-10',
     title: 'An epic new battle soundtrack',
     notes: [
       'The battle music is now played by a full orchestra in a grand hall: strings, a choir, horns, celesta, timpani, war drums and anvils.',
       'It still builds as the weaker fighter loses health. Calm strings and bells at first, then a harp and a driving string rhythm, then the horns call out, and finally the heroic theme with the choir and every drum in the arena.',
       'Near defeat a heartbeat and trembling strings take over, night overtime lifts the key and adds more war drums, and the fight ends on a big triumphant chord.',
+    ],
+  },
+  {
+    version: '0.50.0',
+    date: '2026-10-10',
+    title: 'Super attacks hit the big screen',
+    notes: [
+      'Weapon skills and item ultimates now shout their name across the screen in big, shiny letters in the move\'s own colours, with a sound sting. Skills appear on their user\'s side, ultimates like Meteor and Phantom Flurry take the middle with a burst of light.',
+      'Supers flow straight into the strike: instead of freezing in the wind-up pose, the fighter draws back while power streams into their weapon, the arena dims, and they let loose with speed lines, an afterimage trail and a battle cry.',
+      'Every super has its own impact by element: blade arcs for steel, flames for fire, lightning for storm, runes for arcane, rising souls for death magic, venom splashes and ground cracks, each with its own sound.',
     ],
   },
   {

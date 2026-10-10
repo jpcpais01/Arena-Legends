@@ -148,7 +148,10 @@ export class Animator {
     const at = (n: number, k: number) => Math.min(n - 1, Math.max(0, Math.floor(k * n)));
     // Timing: the coil at the end of a windup is held (anticipation), and the
     // recovery leaves the follow-through quickly then eases into the stance.
-    const coil = (k: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, k)), 1.6);
+    // Skills spread their windup frames more evenly so the body keeps
+    // moving into the strike instead of freezing in the coil.
+    const skill = ab.slot === 'skill';
+    const coil = (k: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, k)), skill ? 1.15 : 1.6);
     const ease = (k: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, k)), 1.4);
     let i: number;
     if (a.feint) {
@@ -159,7 +162,11 @@ export class Animator {
       else {
         const k = (a.t - a.draw) / Math.max(1e-3, a.windup - a.draw);
         i = W ? D + at(W, coil(k)) : Math.max(0, D - 1);
-        if (ab.heavy && k > 0.6) this.out.jitter = (Math.floor(this.time * 30) % 2) * 2 - 1;
+        if (skill) {
+          // Gathering power: the body draws back a couple of pixels as the windup builds, then trembles.
+          this.out.jitter = -f.facing * Math.round(Math.min(1, k * 1.4) * 2);
+          if (k > 0.7) this.out.jitter += Math.floor(this.time * 30) % 2;
+        } else if (ab.heavy && k > 0.6) this.out.jitter = (Math.floor(this.time * 30) % 2) * 2 - 1;
       }
     } else if (a.phase === 'active') {
       const k = a.t / Math.max(1e-3, a.active);

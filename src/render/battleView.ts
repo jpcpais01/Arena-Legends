@@ -4,7 +4,7 @@ import type { Battle } from '../sim/battle';
 import { ARENA_HALF_WIDTH, DT, ROUND_TIME } from '../sim/constants';
 import { getStatus, type Fighter } from '../sim/fighter';
 import { HAWK_DIVE, WHELP_BREATH } from '../sim/battle';
-import type { ActionState, BattleEvent, FighterId, Projectile, ProjectileStyle, UsableId, Zone } from '../sim/types';
+import type { AbilityDef, ActionState, BattleEvent, FighterId, FormId, Projectile, ProjectileStyle, UsableId, Zone } from '../sim/types';
 import { ArenaView } from './arena';
 import { THEMES, type Theme } from './arenaArt';
 import { drawText } from './font';
@@ -21,6 +21,7 @@ import { Animator, PPM, type AnimOut } from './sprite/animator';
 import { SpriteBank, type Sprite } from './sprite/bank';
 import { makeArt, type CharacterArt } from './sprite/look';
 import type { SkinFx } from './sprite/skins';
+import { isSuper, superLook, type SuperLook } from './supers';
 
 const STYLE_COLOR: Record<ProjectileStyle, number> = {
   arcane: 0xc58cff, hex: 0xa04aff, wave: 0xd8f4ff, groundwave: 0xc8a070, meteor: 0xff7a1a, arrow: 0xf0e0c0,
@@ -28,6 +29,11 @@ const STYLE_COLOR: Record<ProjectileStyle, number> = {
   flask: 0xff8a2a,
   hook: 0xc8d0d8, bolas: 0xc89a5a, javelin: 0xd8c8a0, spark: 0x9fe0ff, soul: 0x9affc8, bonespike: 0xe8e0c8,
   frostflask: 0x9fe8ff, caltrops: 0x9aa0a8, hawk: 0xc8925a, breath: 0xff8a3a,
+};
+
+/** Kiai pitch per body form: bigger bodies shout lower. */
+const VOICE: Partial<Record<FormId, number>> = {
+  titan: 0.7, mighty: 0.8, robust: 0.82, stout: 0.86, feral: 0.92, agile: 1.1, slender: 1.15, ethereal: 1.25,
 };
 
 interface FighterView {
@@ -68,6 +74,9 @@ interface FighterView {
   puffT: number;
   /** Who dragged this fighter with a chain (while pullT runs). */
   pulledBy: FighterId | -1;
+  /** Super attacks: next power-gathering spark, and when the last signature impact played (combos play it lighter). */
+  chargeT: number;
+  sigT: number;
 }
 
 interface Ghost {
@@ -158,6 +167,12 @@ export class BattleView implements View {
   private zoneHot = new Map<number, number>();
   /** Whelp breaths already heard. */
   private heard = new Set<number>();
+  /** A super attack begins (its name goes up on screen); `side` is where its user stands. */
+  onSuper: ((f: FighterId, look: SuperLook, side: 'left' | 'right') => void) | null = null;
+  /** A super's windup was cancelled (feint): its name comes down. */
+  onSuperCancel: ((f: FighterId) => void) | null = null;
+  /** The arena dims behind a super so the move stands out. */
+  private dim = 0;
   /** Fighter sprites drawn this frame, for their night accents: feet position and facing. */
   private glowList: { s: Sprite; x: number; y: number; flip: boolean }[] = [];
 
@@ -175,7 +190,7 @@ export class BattleView implements View {
         art, anim, bank: new SpriteBank(art, anim.set), out: anim.update(f, f.x, 0, false, false, false),
         flash: 0, ghosts: [], ghostT: 0, emberT: 0, sparkT: { main: 0, sec: 0, head: 0, body: 0, feet: 0, set: 0, use: 0, item: 0 }, headY: 2,
         ...bodyMarks(art), lastS: null, lastX: 0, lastY: 0, lastFlip: false,
-        hawkFrom: null, hawkAway: 0, landT: 0, breathT: 0, wardT: 0, puffT: 0, pulledBy: -1,
+        hawkFrom: null, hawkAway: 0, landT: 0, breathT: 0, wardT: 0, puffT: 0, pulledBy: -1, chargeT: 0, sigT: -9,
       };
     });
     clearPatches();
@@ -360,6 +375,15 @@ export class BattleView implements View {
     this.glowList.length = 0;
     this.arena!.setDay(b.time / ROUND_TIME);
     this.arena!.draw(g, cam, this.time, this.shakeX, this.shakeY);
+    // Supers dim the arena behind the fighters for the moment they take.
+    const dimTo = this.quiet ? 0 : this.superDim();
+    this.dim += (dimTo - this.dim) * Math.min(1, dt * (dimTo > this.dim ? 12 : 5));
+    if (this.dim > 0.01) {
+      g.globalAlpha = this.dim;
+      g.fillStyle = '#07040e';
+      g.fillRect(0, 0, this.screen.w, this.screen.h);
+      g.globalAlpha = 1;
+    }
     this.fx.drawUnder(g, this);
     for (const z of b.zones) this.drawZoneGround(g, z);
     // Shadows.
@@ -454,13 +478,18 @@ export class BattleView implements View {
     v.headY = y + 2.0;
     v.lastS = s; v.lastX = px; v.lastY = py; v.lastFlip = flip;
 
-    // Afterimages: haste, dashes and rolls, and the one-off ones.
+    // Afterimages: haste, dashes and rolls, supers as they strike, and the one-off ones.
     const ab = f.action ? f.abilities[f.action.ability] : null;
-    const dashing = !!ab && (ab.kind === 'dash' || ab.slot === 'evade') && f.action!.phase === 'active';
+    const act = f.action;
+    const dashing = !!ab && (ab.kind === 'dash' || ab.slot === 'evade') && act!.phase === 'active';
+    // A super in progress: how far its windup has built (0..1), and whether the body is striking now.
+    const sup = ab && alive && isSuper(ab) && !act!.feint ? superLook(ab, v.art) : null;
+    const superK = sup && act!.phase === 'windup' ? clamp((act!.t - act!.draw) / Math.max(1e-3, act!.windup - act!.draw), 0, 1) : 0;
+    const superHot = !!sup && act!.phase === 'active' && (ab!.kind === 'melee' || ab!.kind === 'dash');
     v.ghostT -= dt;
-    if ((dashing || getStatus(f, 'haste')) && v.ghostT <= 0 && dt > 0 && !hidden) {
-      v.ghosts.push({ x: px, y: py, s, flip, t: 0 });
-      v.ghostT = dashing ? 0.03 : 0.09;
+    if ((dashing || superHot || getStatus(f, 'haste')) && v.ghostT <= 0 && dt > 0 && !hidden) {
+      v.ghosts.push({ x: px, y: py, s, flip, t: 0, col: superHot ? css(sup!.lo) : undefined, a: superHot ? 0.55 : undefined });
+      v.ghostT = dashing || superHot ? 0.03 : 0.09;
     }
     const trail = getStatus(f, 'rage') ? '#ff6040' : '#9ad8ff';
     for (let i = v.ghosts.length - 1; i >= 0; i--) {
@@ -511,6 +540,11 @@ export class BattleView implements View {
     if (getStatus(f, 'vulnerable')) tint('#ff80a0', 0.12);
     if (fear) tint('#9a50e0', 0.2 + 0.08 * Math.sin(this.time * 20));
     if (f.empowered && alive) tint('#a878ff', 0.12 + 0.07 * Math.sin(this.time * 6));
+    // A super charging glows brighter as it builds, flickering; it burns bright while it strikes.
+    if (sup && superK > 0.05) tint(css(sup.hi), (0.08 + 0.26 * superK) * (Math.floor(this.time * 20) & 1 ? 1 : 0.7));
+    else if (superHot) tint(css(sup!.hi), 0.22);
+    if (sup && superK > 0 && dt > 0 && !hidden) this.superCharge(f, v, s, sup, superK, x, y, flip);
+    else if (alive && dt > 0 && f.item && !hidden) this.ultCharge(f, v, x, y);
 
     // Status particles.
     v.emberT -= dt;
@@ -1167,11 +1201,13 @@ export class BattleView implements View {
           this.play('whoosh', this.pan(f.x), 0.7);
         } else if (ab.kind === 'projectile' || ab.kind === 'meteor') this.play('cast', this.pan(f.x), 0.8);
         else if (ab.kind === 'buff') this.play('roar', this.pan(f.x));
+        if (isSuper(ab)) this.superStart(f, ab);
         break;
       }
       case 'itemStart': {
         const f = b.fighters[e.f];
         const ab = f.abilities[e.ability];
+        if (isSuper(ab)) this.superStart(f, ab);
         this.play('castBig', this.pan(f.x));
         fx.pulse('ring', f.x, 2.4, 1.2, this.glow(f.id, ab.kind === 'meteor' ? 0xff9a3a : 0xa8c8ff, 0)[0], 0.4);
         this.arena?.cheer(0.4);
@@ -1191,6 +1227,7 @@ export class BattleView implements View {
           fx.burst({ x: f.x, y: 1.1, count: 18, speed: [3, 6], life: [0.25, 0.5], color: col, drag: 3, kind: 'streak' });
           if (ab.anim === 'horn') { this.shake(0.3); this.arena?.cheer(0.6); }
         }
+        if (isSuper(ab)) this.superRelease(f, ab);
         if (ab.kind === 'dash' && ab.slot !== 'evade') {
           fx.burst({ x: f.x, y: 0.1, count: 6, jitter: 0.3, dir: Math.PI / 2 + f.facing * 1.2, spread: 0.5, speed: [1, 3], life: [0.4, 0.6], color: 0xd8c8b0, color2: 0x8a7a70, kind: 'smoke', size: 3 });
           fx.burst({ x: f.x, y: 1.0, count: 12, dir: f.facing > 0 ? Math.PI : 0, spread: 0.15, speed: [4, 9], life: [0.15, 0.3], color: 0xffffff, color2: 0x9ad8ff, kind: 'streak' });
@@ -1211,6 +1248,8 @@ export class BattleView implements View {
         fx.burst({ x: e.x, y: e.y, count: e.blocked ? 8 : heavy ? 22 : 12, dir, spread: e.blocked ? 1.2 : 0.8, speed: heavy ? [5, 12] : [3, 8], life: [0.12, 0.35], color: 0xffffff, color2: color, gravity: 12, drag: 2, kind: 'streak' });
         fx.pulse('star', e.x, e.y, e.blocked ? 0.25 : heavy ? 0.5 : 0.32, color, heavy ? 0.16 : 0.1);
         this.legendHit(e.attacker, e.target, e.ability, e.blocked, heavy, e.x, e.y);
+        const sab = e.echo ? undefined : att.abilities.find((a) => a.id === e.ability);
+        if (sab && isSuper(sab)) this.superImpact(att, sab, e.blocked, e.x, e.y);
         if (heavy && !e.blocked) {
           fx.pulse('ring', e.x, e.y, 0.9, color, 0.25);
           fx.burst({ x: e.x, y: 0.1, count: 4, jitter: 0.3, dir: Math.PI / 2, spread: 1, speed: [0.5, 1.5], life: [0.4, 0.7], color: 0xb0a090, color2: 0x6a5a60, kind: 'smoke', size: 3 });
@@ -1504,6 +1543,7 @@ export class BattleView implements View {
         break;
       case 'feint': {
         const f = b.fighters[e.f];
+        this.onSuperCancel?.(e.f);
         fx.pop('FEINT', f.x, this.fighters[e.f].headY + 0.3, { color: '#e8e0ff' }, 0.8);
         break;
       }
@@ -1692,6 +1732,132 @@ export class BattleView implements View {
     this.slowmo(0.45, 0.35);
     this.punchIn(1, 0.4, to);
     this.arena?.cheer(0.6);
+  }
+
+  // --- Super attacks ---------------------------------------------------------------------
+
+  /** How dark the arena goes behind a super right now: building through a skill's windup, deeper for an item ultimate. */
+  private superDim(): number {
+    let d = 0;
+    for (const f of this.battle!.fighters) {
+      if (!f.alive) continue;
+      const a = f.action;
+      if (a && !a.feint) {
+        const ab = f.abilities[a.ability];
+        if (isSuper(ab)) {
+          if (a.phase === 'windup') d = Math.max(d, 0.22 * clamp((a.t - a.draw) / Math.max(1e-3, a.windup - a.draw), 0, 1));
+          else if (a.phase === 'active') d = Math.max(d, 0.22);
+        }
+      }
+      const it = f.item;
+      if (it && isSuper(f.abilities[it.ability]) && it.phase !== 'return') d = Math.max(d, it.phase === 'windup' ? 0.36 * Math.min(1, it.t / 0.25) : 0.3);
+    }
+    return d;
+  }
+
+  /** A super begins: its name goes up, power starts gathering with a rising shimmer. */
+  private superStart(f: Fighter, ab: AbilityDef): void {
+    const v = this.fighters[f.id], look = superLook(ab, v?.art);
+    const o = this.battle!.other(f);
+    if (!this.quiet) this.onSuper?.(f.id, look, f.x <= o.x ? 'left' : 'right');
+    const pan = this.pan(f.x);
+    this.play(look.ult ? 'superUlt' : 'superSkill', pan);
+    this.play('charge', pan, look.ult ? 0.8 : 1);
+    this.fx.pulse('implode', f.x, f.y + 1.1, 1.7, look.hi, 0.4, look.lo);
+    this.fx.pulse('groundRing', f.x, 0, 1.6, look.lo, 0.4);
+    if (look.ult) this.flash(look.hi, 0.4);
+    if (v) v.chargeT = 0;
+  }
+
+  /** Power streams into the weapon (or the body) while a skill winds up, faster and brighter as it builds. */
+  private superCharge(f: Fighter, v: FighterView, s: Sprite, look: SuperLook, k: number, x: number, y: number, flip: boolean): void {
+    if ((v.chargeT -= this.lastDt) > 0) return;
+    v.chargeT = 0.05 - k * 0.02;
+    const at: [number, number] = s.tip ? [x + (flip ? -s.tip[0] : s.tip[0]) / PPM, y + (v.out.hop - s.tip[1]) / PPM] : [x + f.facing * 0.3, y + 1.3];
+    this.fx.gather(at[0], at[1], 1.0 - k * 0.35, 2 + Math.round(k * 2), look.hi, look.lo, k > 0.5 ? 'twinkle' : 'streak');
+    // Dust lifts off the ground around the feet as it peaks.
+    if (k > 0.55) this.fx.burst({ x, y: 0.05, count: 1, jitter: 0.5, dir: Math.PI / 2, spread: 0.2, speed: [0.6, 1.4], life: [0.3, 0.5], color: look.hi, color2: look.lo, kind: 'ember' });
+  }
+
+  /** An item ultimate charging: power gathers on the item at the back shoulder. */
+  private ultCharge(f: Fighter, v: FighterView, x: number, y: number): void {
+    const it = f.item!, ab = f.abilities[it.ability];
+    if (it.phase !== 'windup' || !isSuper(ab) || (v.chargeT -= this.lastDt) > 0) return;
+    v.chargeT = 0.04;
+    const look = superLook(ab, v.art);
+    this.fx.gather(x - f.facing * 0.45, y + 1.9, 0.9, 3, look.hi, look.lo, 'twinkle');
+  }
+
+  /** A skill lets loose: speed lines, a kiai, the blade rings out. */
+  private superRelease(f: Fighter, ab: AbilityDef): void {
+    if (ab.slot === 'item') return;
+    const v = this.fighters[f.id], look = superLook(ab, v?.art), fx = this.fx;
+    const cx = f.x + f.facing * 0.35, cy = f.y + 1.15, pan = this.pan(f.x);
+    fx.pulse('rays', cx, cy, 1.5, look.hi, 0.24, look.lo);
+    fx.pulse('star', cx, cy, 0.75, look.hi, 0.14);
+    // Speed lines streaming back off the body, and the ground kicked up behind.
+    fx.burst({ x: f.x, y: cy, count: 10, jitter: 0.1, jitterY: 0.5, dir: f.facing > 0 ? Math.PI : 0, spread: 0.08, speed: [6, 11], life: [0.12, 0.22], color: 0xffffff, color2: look.hi, kind: 'streak' });
+    fx.burst({ x: f.x - f.facing * 0.2, y: 0.1, count: 6, jitter: 0.2, dir: Math.PI / 2 - f.facing * 0.9, spread: 0.35, speed: [1.5, 3.5], life: [0.35, 0.6], color: 0xd8c8b0, color2: 0x8a7a70, kind: 'smoke', size: 3, drag: 1.5 });
+    if (!this.quiet) sfx.kiai(pan, VOICE[f.form] ?? 1);
+    if (look.el === 'steel' || look.el === 'wind') this.play('shing', pan);
+    this.shake(0.18);
+  }
+
+  /** The signature impact of a super, by element. Follow-up hits of a combo play it lighter. */
+  private superImpact(att: Fighter, ab: AbilityDef, blocked: boolean, x: number, y: number): void {
+    const v = this.fighters[att.id], look = superLook(ab, v?.art), fx = this.fx;
+    const first = !v || this.time - v.sigT > 0.3;
+    if (v) v.sigT = this.time;
+    const k = (first ? 1 : 0.45) * (blocked ? 0.5 : 1);
+    const { hi, lo } = look, face = att.facing;
+    fx.pulse('ring', x, y, 1.2 * k + 0.3, hi, 0.3, lo);
+    if (!this.quiet) sfx.superHit(look.el, this.pan(x), k);
+    if (blocked) return;
+    switch (look.el) {
+      case 'steel':
+      case 'wind': {
+        const pierce = ab.anim === 'thrust' || ab.anim === 'dash';
+        if (pierce) {
+          // Run through: a long bright line out the far side.
+          fx.burst({ x, y, count: Math.round(16 * k), dir: face > 0 ? 0 : Math.PI, spread: 0.06, speed: [8, 15], life: [0.12, 0.25], color: 0xffffff, color2: hi, drag: 2, kind: 'streak' });
+          fx.pulse('rays', x, y, 1.0, hi, 0.2, lo);
+        } else fx.slash(x, y, first ? 1.15 : 0.8, face, ab.anim !== 'overhead' && ab.anim !== 'slam', hi, 0xffffff, 0.22);
+        fx.burst({ x, y, count: Math.round(12 * k), speed: [2, 6], life: [0.3, 0.6], color: hi, color2: lo, drag: 2.5, kind: 'twinkle' });
+        if (look.el === 'wind') fx.pulse('swirl', x, y, 1.0, hi, 0.35, lo);
+        break;
+      }
+      case 'fire':
+        fx.burst({ x, y, count: Math.round(30 * k), jitter: 0.25, speed: [2, 7], life: [0.35, 0.8], color: hi, color2: lo, gravity: -2, drag: 1.5, kind: 'flame' });
+        fx.burst({ x, y, count: Math.round(14 * k), jitter: 0.3, dir: Math.PI / 2, spread: 0.8, speed: [1, 4], life: [0.5, 1], color: hi, color2: lo, gravity: -1, kind: 'ember' });
+        fx.pulse('groundRing', x, 0, 1.6 * k, lo, 0.45);
+        break;
+      case 'storm':
+        for (let i = 0; i < (first ? 2 : 1); i++) fx.bolt(x + (Math.random() - 0.5) * 1.2, 6.5, x, y, lo, 0.2);
+        fx.burst({ x, y, count: Math.round(20 * k), speed: [3, 8], life: [0.15, 0.35], color: 0xffffff, color2: lo, drag: 2.5, kind: 'streak' });
+        if (first) this.flash(hi, 0.35);
+        break;
+      case 'arcane':
+        fx.pulse('runes', x, y - 0.6, 0.6, hi, 0.5, lo);
+        fx.pulse('star', x, y, 0.9 * k, hi, 0.18);
+        fx.burst({ x, y, count: Math.round(18 * k), jitter: 0.2, speed: [1.5, 5], life: [0.4, 0.8], color: hi, color2: lo, drag: 2, kind: 'twinkle' });
+        break;
+      case 'soul':
+        // Wisps of soul torn loose, rising and curling.
+        fx.burst({ x, y, count: Math.round(16 * k), jitter: 0.35, dir: Math.PI / 2, spread: 0.6, speed: [1, 3], life: [0.6, 1.1], color: hi, color2: lo, gravity: -1.5, drag: 1.2, kind: 'twinkle' });
+        fx.pulse('swirl', x, y + 0.3, 1.1, hi, 0.45, lo);
+        fx.burst({ x, y, count: Math.round(8 * k), jitter: 0.4, speed: [0.3, 0.9], life: [0.6, 1.0], color: lo, color2: 0x1a2a28, kind: 'smoke', size: 3, drag: 1.5 });
+        break;
+      case 'venom':
+        fx.burst({ x, y, count: Math.round(14 * k), speed: [2, 5], life: [0.4, 0.7], color: hi, color2: lo, gravity: 9, kind: 'drop' });
+        fx.burst({ x, y, count: Math.round(6 * k), jitter: 0.3, speed: [0.3, 0.8], life: [0.5, 0.9], color: lo, color2: 0x1a3a18, kind: 'smoke', size: 3, drag: 1.5 });
+        break;
+      case 'earth':
+        fx.pulse('crack', x, 0, 1.4 * k, mix(lo, 0x2a1a10, 0.4), 1.4);
+        fx.pulse('groundRing', x, 0, 1.8 * k, hi, 0.45);
+        fx.burst({ x, y: 0.2, count: Math.round(18 * k), jitter: 0.5, dir: Math.PI / 2, spread: 0.9, speed: [3, 7], life: [0.4, 0.8], color: hi, color2: lo, gravity: 16, size: 2 });
+        break;
+    }
+    if (first) { this.shake(0.35); this.punchIn(1, 0.4, x); this.arena?.cheer(0.4); }
   }
 
   /** Legendary skins: hits with the weapon burst in its colours; a legendary shield flares when it blocks. */
