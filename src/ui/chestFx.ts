@@ -114,6 +114,14 @@ export class ChestFx {
   /** Darkens the screen behind the opening. */
   dim = 0;
   private dimTarget = 0;
+  /** A pillar of light out of the chest before a big pull (0..1 wide). */
+  private beam = 0;
+  private beamTarget = 0;
+  /** Epic: stars falling across the screen. */
+  private starfall = 0;
+  /** Sparkles circling a revealed card (art px), in its tier. */
+  private halo: { x: number; y: number; r: number; tier: SkinRarity } | null = null;
+  private haloT = 0;
   private parts: Part[] = [];
   private rings: Ring[] = [];
   private moteT = 0;
@@ -168,6 +176,10 @@ export class ChestFx {
     this.tier = null;
     this.shake = 0;
     this.rays = 0;
+    this.beam = 0;
+    this.beamTarget = 0;
+    this.starfall = 0;
+    this.halo = null;
     this.parts.length = 0;
     this.rings.length = 0;
   }
@@ -243,6 +255,40 @@ export class ChestFx {
     if (tier === 'epic') this.flashOnce('#ffffff', 0.6);
   }
 
+  /**
+   * The omen before a legendary or epic: the room goes dark and a pillar of
+   * light shoots out of the chest (epic adds falling stars).
+   */
+  omen(tier: SkinRarity): void {
+    this.tier = tier;
+    this.rayTier = tier;
+    this.dimTarget = 0.9;
+    this.beamTarget = 1;
+    this.glow = 1;
+    this.shake = 2.4;
+    if (tier === 'epic') this.starfall = 1;
+    for (let i = 0; i < 4; i++) this.rings.push({ r: 4, v: 160 + i * 50, t: -i * 0.12, life: 0.8, col: this.color(tier, true, i) });
+  }
+
+  /** The tier name lands: a flash and a wide ring, then the dark lifts a little. */
+  slam(tier: SkinRarity): void {
+    this.flashOnce(this.color(tier, true), 0.75);
+    const m = this.mouth;
+    this.rings.push({ r: 10, v: 260, t: 0, life: 0.9, col: this.color(tier, true) });
+    for (let i = 0; i < 60; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const v = 60 + Math.random() * 160;
+      this.spark(m.x, m.y - 30, Math.cos(a) * v, Math.sin(a) * v, this.color(tier, Math.random() < 0.5, i), 0.6 + Math.random() * 0.8, 50, Math.random() < 0.4);
+    }
+  }
+
+  /** Sparkles orbiting a revealed card; null stops them. */
+  setHalo(el: Element | null, tier: SkinRarity = 'legendary'): void {
+    if (!el) { this.halo = null; return; }
+    const p = this.pointOf(el), r = el.getBoundingClientRect();
+    this.halo = { x: p.x, y: p.y, r: Math.max(r.width, r.height) / this.k / 2 + 3, tier };
+  }
+
   flashOnce(col: string, a: number): void {
     this.flashCol = col;
     this.flash = Math.max(this.flash, a);
@@ -263,6 +309,20 @@ export class ChestFx {
     if (this.lidT >= 0) this.lidT += dt;
     if (this.goneV) this.gone = Math.min(1, this.gone + dt * this.goneV);
     this.flash = Math.max(0, this.flash - dt * 2.6);
+    this.beam += (this.beamTarget - this.beam) * (1 - Math.exp(-dt * (this.beamTarget > this.beam ? 5 : 3)));
+    if (this.starfall > 0 && Math.random() < dt * 40) {
+      this.spark(Math.random() * this.w, -2, (Math.random() - 0.3) * 20, 40 + Math.random() * 50, RAINBOW[Math.floor(Math.random() * RAINBOW.length)], 2 + Math.random(), 10, Math.random() < 0.5);
+    }
+    if (this.halo) {
+      this.haloT -= dt;
+      const hl = this.halo;
+      if (this.haloT <= 0) {
+        this.haloT = hl.tier === 'epic' ? 0.02 : 0.04;
+        const a = Math.random() * Math.PI * 2;
+        const x = hl.x + Math.cos(a) * hl.r * 0.8, y = hl.y + Math.sin(a) * hl.r;
+        this.spark(x, y, -Math.sin(a) * 14, Math.cos(a) * 14 - 6, this.color(hl.tier, Math.random() < 0.6, Math.floor(Math.random() * 5)), 0.8 + Math.random() * 0.6, -6, Math.random() < 0.5);
+      }
+    }
     // Idle motes drift up around the chest; more of them in the tier colour while charging.
     this.moteT -= dt;
     if (this.moteT <= 0 && this.gone < 1) {
@@ -293,6 +353,7 @@ export class ChestFx {
 
     // Rays behind everything once open.
     if (this.rays > 0.01) this.drawRays(m.x, m.y - 6);
+    if (this.beam > 0.01) this.drawBeam(m.x, m.y);
 
     // Soft light behind the chest while charging.
     if (this.tier && this.glow > 0.01 && this.gone < 1) {
@@ -384,6 +445,34 @@ export class ChestFx {
       g.fillRect(Math.round(x) + 20, Math.round(y) + 2, 1, 1);
     }
     g.globalAlpha = 1;
+  }
+
+  /** A column of light from the chest to the top of the screen, flickering, with a bright core. */
+  private drawBeam(x: number, y: number): void {
+    const g = this.g;
+    const tier = this.rayTier;
+    const wide = Math.round((10 + Math.sin(this.t * 30) * 1.5) * this.beam * (tier === 'epic' ? 1.4 : 1));
+    g.globalCompositeOperation = 'lighter';
+    for (let i = 3; i >= 0; i--) {
+      const w = wide * (1 + i * 0.7);
+      g.globalAlpha = this.beam * (i ? 0.16 : 0.9);
+      g.fillStyle = i ? this.color(tier, false, i) : this.color(tier, true, Math.floor(this.t * 4));
+      g.fillRect(Math.round(x - w / 2), 0, Math.round(w), Math.round(y));
+    }
+    g.globalAlpha = this.beam;
+    g.fillStyle = '#ffffff';
+    g.fillRect(Math.round(x - Math.max(1, wide / 5)), 0, Math.max(2, Math.round(wide / 2.5)), Math.round(y));
+    // Rising sparks inside the column.
+    if (Math.random() < this.beam) this.spark(x + (Math.random() - 0.5) * wide * 2, y - Math.random() * 10, 0, -120 - Math.random() * 120, this.color(tier, true, Math.floor(Math.random() * 5)), 0.6, 0, Math.random() < 0.3);
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
+  }
+
+  /** Lets the dark and the beam go (the burst takes over). */
+  release(): void {
+    this.beamTarget = 0;
+    this.starfall = 0;
+    this.dimTarget = this.center ? 0.62 : 0;
   }
 
   /** Rotating light rays from the open chest. */

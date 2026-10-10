@@ -9,7 +9,9 @@ export type Sfx =
   | 'select' | 'back' | 'equip' | 'confirm' | 'cork' | 'gulp' | 'glass' | 'firebomb'
   // Skin chests
   | 'rattle' | 'tierUp' | 'chestOpen' | 'flip' | 'gems'
-  | 'revealRare' | 'revealMythic' | 'revealLegendary' | 'revealEpic';
+  | 'revealRare' | 'revealMythic' | 'revealLegendary' | 'revealEpic'
+  // Big pulls and the forge
+  | 'omen' | 'slam' | 'forge' | 'meld';
 
 class AudioEngine {
   private ctx: AudioContext | null = null;
@@ -253,6 +255,35 @@ class AudioEngine {
         [330, 415, 494, 659, 831, 988].forEach((f, i) => this.tone('square', f, f, t + 0.1 + i * 0.06, 0.4, 0.05));
         [659, 831, 988, 1319].forEach((f) => this.tone('triangle', f, f * 1.003, t + 0.5, 1.8, 0.08));
         for (let i = 0; i < 10; i++) this.tone('sine', 1760 + (i % 5) * 330, 1760 + (i % 5) * 330, t + 0.5 + i * 0.09, 0.3, 0.035);
+        break;
+      // A swell under the chest before a legendary or epic: `intensity` 2 for epic.
+      case 'omen': {
+        const d = k > 1 ? 1.5 : 1.1;
+        this.tone('sawtooth', 55, 110 * k, t, d, 0.12);
+        this.tone('sine', 41, 82, t, d, 0.5);
+        this.burst(t, d, 0.25, 'bandpass', 200, 3200, 3);
+        for (let i = 0; i < 8; i++) this.tone('square', 220 * Math.pow(2, i / 6), 220 * Math.pow(2, i / 6), t + (i / 8) * d, 0.08, 0.03);
+        break;
+      }
+      // The tier name lands.
+      case 'slam':
+        this.tone('sine', 90, 30, t, 0.7, 0.9);
+        this.burst(t, 0.45, 0.6, 'lowpass', 3000, 90, 0.8);
+        this.tone('square', 196, 98, t, 0.25, 0.08);
+        this.burst(t + 0.01, 0.25, 0.25, 'highpass', 6000, 9000, 0.7);
+        break;
+      // Spares melting together: three anvil strikes.
+      case 'forge':
+        for (let i = 0; i < 3; i++) {
+          const at = t + i * 0.16;
+          this.tone('triangle', 1180 + i * 90, 1150 + i * 90, at, 0.35, 0.09);
+          this.tone('square', 2350 + i * 170, 2300 + i * 170, at, 0.12, 0.03);
+          this.burst(at, 0.08, 0.3, 'bandpass', 3500, 2500, 6);
+        }
+        break;
+      case 'meld':
+        this.burst(t, 0.5, 0.3, 'bandpass', 500, 4000, 2);
+        this.tone('sine', 220, 880, t, 0.5, 0.12);
         break;
     }
   }
