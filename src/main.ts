@@ -77,7 +77,8 @@ function loadRival(): PlayerCharacter | null {
   const raw = store<Record<string, unknown> | null>('al.rival', null);
   if (!raw || typeof raw.name !== 'string') return null;
   const b = sanitizeBuild(raw, DEFAULT_BUILDS[1]);
-  return { ...b, look: sanitizeAppearance(raw.look) };
+  // Rivals always fight Balanced, including ones saved before that rule.
+  return { ...b, look: sanitizeAppearance(raw.look), style: 'balanced' };
 }
 function setRival(r: PlayerCharacter): void {
   rival = r;
