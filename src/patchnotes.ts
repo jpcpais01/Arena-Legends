@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.57.0',
+    date: '2026-10-10',
+    title: 'Arena rotation',
+    notes: [
+      'Emberforge Caldera has been retired. Fights now take place on Skygrove Isle or Astral Sanctum.',
+      'The arena setting now starts on Random, so you get both arenas in rotation. You can still pick one in Settings.',
+    ],
+  },
+  {
     version: '0.56.0',
     date: '2026-10-10',
     title: 'A real forge',

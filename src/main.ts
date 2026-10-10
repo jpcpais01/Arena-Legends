@@ -73,9 +73,10 @@ let hideSmall = store<boolean>('al.hideSmallNumbers', true) !== false;
 let camMode = store<string>('al.camera', 'classic') as CamMode;
 if (!CAM_MODES.some((m) => m.id === camMode)) camMode = 'classic';
 const camName = () => CAM_MODES.find((m) => m.id === camMode)!.name;
-// Arena for every fight and the menu backdrop: Skygrove Isle unless the player picks another (or random).
-let arenaPick = store<string>('al.arena', 'isle');
-if (arenaPick !== 'random' && !THEMES.some((t) => t.id === arenaPick)) arenaPick = 'isle';
+// Arena for every fight and the menu backdrop: Random unless the player picks one.
+// A pick of an arena that no longer exists (Emberforge Caldera) falls back to Random.
+let arenaPick = store<string>('al.arena', 'random');
+if (arenaPick !== 'random' && !THEMES.some((t) => t.id === arenaPick)) arenaPick = 'random';
 const arenaFor = (seed: number): Theme => THEMES.find((t) => t.id === arenaPick) ?? THEMES[seed % THEMES.length];
 applyVolume();
 

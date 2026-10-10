@@ -67,17 +67,3 @@ export function occlude(p: Pix, rx: number, up: number, strength: number, shade:
     }
   }
 }
-
-/**
- * Value noise that wraps around horizontally: `gx` is in cells and repeats
- * every `n` cells, so a layer painted with it tiles seamlessly (drifting lava).
- */
-export function wnoise(gx: number, y: number, n: number, cy: number, s: number): number {
-  const gy = y / cy;
-  const ix = Math.floor(gx), iy = Math.floor(gy);
-  const fx = gx - ix, fy = gy - iy;
-  const ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy);
-  const i0 = ((ix % n) + n) % n, i1 = (i0 + 1) % n;
-  const a = hash(i0, iy, s), b = hash(i1, iy, s), c = hash(i0, iy + 1, s), d = hash(i1, iy + 1, s);
-  return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
-}

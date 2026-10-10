@@ -1,5 +1,4 @@
 import type { Pix } from './pixel/paint';
-import { buildCaldera } from './calderaArt';
 import { buildCosmos } from './cosmosArt';
 import { buildIsle } from './isleArt';
 
@@ -17,7 +16,7 @@ export interface Theme {
   id: string;
   name: string;
   /** Which painter builds it. */
-  kind: 'isle' | 'caldera' | 'cosmos';
+  kind: 'isle' | 'cosmos';
   /** Sky swatch (top to horizon), also used by the arena picker. */
   sky: number[];
   /** Where the main light sits (fractions of the screen) and the sun's radius. */
@@ -40,14 +39,6 @@ export const THEMES: Theme[] = [
     fire: 0x8ef0d6,
   },
   {
-    id: 'caldera', name: 'Emberforge Caldera', kind: 'caldera',
-    sky: [0x140a1e, 0x3a1026, 0x6e1c22, 0xb03a1a, 0xf07a28],
-    body: { r: 0, x: 0.62, y: 0.7 },
-    mountFar: 0x3a2030, snow: null,
-    floor: 0x3a2c36,
-    fire: 0xff8a2a,
-  },
-  {
     id: 'astral', name: 'Astral Sanctum', kind: 'cosmos',
     sky: [0x03020a, 0x070616, 0x0c0c28, 0x15163c, 0x221e50],
     body: { r: 0, x: 0.16, y: 0.24 },
@@ -66,7 +57,7 @@ export interface Layer {
   /** Slow wind drift in px/s (the layer must tile horizontally). */
   drift?: number;
   /** Ambient things drawn right after this layer. */
-  after?: 'birds' | 'floaters' | 'falls' | 'stars';
+  after?: 'birds' | 'floaters' | 'stars';
 }
 
 /** A rock floating near the arena, bobbing gently. */
@@ -121,30 +112,6 @@ export interface Ambience {
   bird: number;
 }
 
-/** A lavafall pouring down a cliff, in the coordinates of the layer whose `after` is 'falls'. */
-export interface Fall {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
-/** A molten arena: what moves and glows at runtime, growing angrier as the round goes on. */
-export interface Heat {
-  /** Scrolling lava texture for the falls (tiles vertically every `tile` rows). */
-  fallTex: Pix;
-  tile: number;
-  falls: Fall[];
-  /** Pulsing glows: screen x at camera 0, screen y, parallax factor, radius. */
-  glows: { x: number; y: number; factor: number; r: number }[];
-  /** The distant volcano's crater, where lava bombs and lightning come from. */
-  crater: { x: number; y: number; factor: number };
-  /** Volcanic lightning bolts that flash in the ash plume. */
-  bolts: Pix[];
-  /** Colour of the light thrown up by the lava. */
-  glow: number;
-}
-
 /** A deep-space arena: what twinkles, streaks and glows at runtime. */
 export interface Cosmos {
   /** Bright stars that twinkle, flat x, y, size (the sky never scrolls, so screen coordinates). */
@@ -165,7 +132,7 @@ export interface ArenaArt {
   floorTop: number;
   wallFactor: number;
   layers: Layer[];
-  /** Two frames of the back edge's living details (swaying grass, shimmering magma), same placement as the wall layer. */
+  /** Two frames of the back edge's living details (swaying grass, twinkling stars), same placement as the wall layer. */
   crowd: [Pix, Pix];
   crowdLayer: Layer;
   /** Floor texture: u = world px (centre at w/2), v = depth row. */
@@ -184,15 +151,12 @@ export interface ArenaArt {
   cycle: DayCycle | null;
   floaters: Floater[];
   ambience: Ambience | null;
-  /** Lava, embers and the volcano's moods; arenas without one ignore it. */
-  heat: Heat | null;
   /** Twinkles, shooting stars and starlight; arenas without one ignore it. */
   cosmos: Cosmos | null;
 }
 
 /** `travel`: how far (px) the camera can travel from centre. */
 export function buildArena(theme: Theme, W: number, H: number, gy: number, travel: number, seed = 7): ArenaArt {
-  if (theme.kind === 'caldera') return buildCaldera(theme, W, H, gy, travel, seed);
   if (theme.kind === 'cosmos') return buildCosmos(theme, W, H, gy, travel, seed);
   return buildIsle(theme, W, H, gy, travel, seed);
 }

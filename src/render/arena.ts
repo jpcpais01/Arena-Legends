@@ -101,10 +101,8 @@ export class ArenaView {
   private sky: { stars: HTMLCanvasElement; rainbow: HTMLCanvasElement; moon: HTMLCanvasElement; lamp: HTMLCanvasElement; firefly: HTMLCanvasElement } | null;
   /** Share of the round gone by (0 noon … 1 night) for arenas with a day cycle. */
   private day = 0;
-  /** The same, unclamped (past 1 in overtime): how angry a molten arena is. */
+  /** The same, unclamped (past 1 in overtime): how far a deep-space arena's sky has stirred. */
   private round = 0;
-  /** Live parts of a molten arena: lavafall strip, lightning, the lava's glow. */
-  private heat: { falls: HTMLCanvasElement; bolts: HTMLCanvasElement[]; glow: HTMLCanvasElement } | null;
   /** A deep-space arena's glow sprites, one per colour. */
   private stars: Map<number, HTMLCanvasElement> | null;
   /** This frame's screen shake, applied to the arena's near parts only. */
@@ -131,8 +129,6 @@ export class ArenaView {
     this.crowd = this.art.crowd.map(canvasOf);
     this.floor = canvasOf(this.art.floor);
     this.pillar = canvasOf(this.art.pillar);
-    const h = this.art.heat;
-    this.heat = h && { falls: canvasOf(h.fallTex), bolts: h.bolts.map(canvasOf), glow: glowSprite(h.glow) };
     const co = this.art.cosmos;
     this.stars = co && new Map(co.glows.map((l) => [l.color, glowSprite(l.color)]));
     this.torch = flameFrames(theme.fire, false);
@@ -245,18 +241,16 @@ export class ArenaView {
     const off = (img: HTMLCanvasElement, f: number) => Math.round(-(img.width - W) / 2 - (f >= wf ? near : cam) * f);
     const layer = (l: LayerImg) => {
       const x = off(l.img, l.factor), y = l.y + (l.factor >= wf ? shakeY : 0);
-      if (!l.drift) { g.drawImage(l.img, x, y); return x; }
+      if (!l.drift) { g.drawImage(l.img, x, y); return; }
       // Drifting layers tile: two copies cover the screen at any offset.
       const dx = x + Math.round((t * l.drift) % l.img.width);
       g.drawImage(l.img, dx, y);
       g.drawImage(l.img, dx - l.img.width, y);
-      return x;
     };
     for (const l of this.layers) {
-      const x = layer(l);
+      layer(l);
       if (l.after === 'birds' && this.amb && this.day < 0.8) this.drawBirds(g, cam, t);
       else if (l.after === 'floaters') this.drawFloaters(g, cam, t, false);
-      else if (l.after === 'falls') this.drawFalls(g, x, l.y, t);
       else if (l.after === 'stars') this.drawStars(g, t);
     }
     const cx = off(this.crowd[0], wf);
@@ -303,7 +297,6 @@ export class ArenaView {
    * adds what glows at night.
    */
   light(g: CanvasRenderingContext2D, cam: number, t: number): void {
-    if (this.heat) { this.lightHeat(g, cam, t); return; }
     if (this.stars) { this.lightCosmos(g, cam, t); return; }
     const cy = this.art.cycle, sk = this.sky;
     if (!cy || !sk) return;
@@ -569,115 +562,6 @@ export class ArenaView {
     }
     g.globalAlpha = 1;
     g.globalCompositeOperation = 'source-over';
-  }
-
-  /** Lavafalls: the strip scrolls down through each fall. */
-  private drawFalls(g: CanvasRenderingContext2D, x0: number, y0: number, t: number): void {
-    const h = this.art.heat!, tex = this.heat!.falls;
-    const sy = h.tile - 1 - Math.floor((t * 26) % h.tile);
-    for (const f of h.falls) g.drawImage(tex, 0, sy, tex.width, f.h, x0 + f.x, y0 + f.y, f.w, f.h);
-  }
-
-  /**
-   * A molten arena's light, after the fighters: everything warmed from below
-   * by the lava, glows that breathe, and the volcano growing angrier as the
-   * round goes on (lava bombs, lightning in the plume, more embers) until it
-   * erupts in overtime.
-   */
-  private lightHeat(g: CanvasRenderingContext2D, cam: number, t: number): void {
-    const W = this.W, H = this.H, gy = this.gy, art = this.art, h = art.heat!, lv = this.heat!;
-    const p = this.round;
-    const rage = 0.25 + 0.75 * smooth(0.05, 1, p);
-    const erupt = smooth(1, 1.06, p);
-    const throb = 0.5 + 0.5 * Math.sin(t * (1.6 + erupt * 3));
-    // Lava light rising over everything already drawn.
-    g.globalCompositeOperation = 'source-atop';
-    const top = gy - 110;
-    const ug = g.createLinearGradient(0, H, 0, top);
-    const a = 0.26 + 0.1 * rage + 0.06 * throb * rage;
-    ug.addColorStop(0, css(h.glow, a));
-    ug.addColorStop(0.4, css(h.glow, a * 0.35));
-    ug.addColorStop(1, css(h.glow, 0));
-    g.fillStyle = ug;
-    g.fillRect(0, top, W, H - top);
-    if (erupt > 0) {
-      g.globalAlpha = erupt * (0.08 + 0.06 * throb);
-      g.fillStyle = '#ff3010';
-      g.fillRect(0, 0, W, H);
-      g.globalAlpha = 1;
-    }
-    g.globalCompositeOperation = 'lighter';
-    // Glows: lavafalls, the furnace, braziers, vents, the crater.
-    for (let i = 0; i < h.glows.length; i++) {
-      const l = h.glows[i];
-      const near = l.factor >= art.wallFactor;
-      const x = l.x - (near ? cam - this.shake[0] : cam) * l.factor, y = l.y + (near ? this.shake[1] : 0);
-      const r = l.r * (1 + 0.5 * erupt);
-      if (x < -r || x > W + r) continue;
-      g.globalAlpha = Math.min(1, (0.4 + 0.4 * rage) * (0.82 + 0.18 * Math.sin(t * 2.1 + i * 1.3)));
-      g.drawImage(lv.glow, x - r, y - r, r * 2, r * 2);
-    }
-    // The volcano: crater glow, lava bombs, lightning in the plume.
-    const c = h.crater;
-    const cx = c.x - cam * c.factor, cy = c.y;
-    const cr = 30 + 26 * rage + 40 * erupt;
-    g.globalAlpha = 0.5 + 0.3 * throb * rage;
-    g.drawImage(lv.glow, cx - cr, cy - cr, cr * 2, cr * 2);
-    const bombs = Math.round(3 + 9 * rage + 16 * erupt);
-    for (let i = 0; i < bombs; i++) {
-      const T = 1.7 + (i % 5) * 0.41;
-      const k = t / T + i * 0.618;
-      const n = Math.floor(k);
-      if (hash(n, i, 901) > 0.25 + 0.6 * rage + erupt) continue;
-      const s = (k - n) * 2.4;
-      const x = cx + (hash(n, i, 902) - 0.5) * 70 * (1 + erupt) * s;
-      const y = cy - (60 + hash(n, i, 903) * 50 + 50 * erupt) * s + 44 * s * s;
-      if (y > cy + 70) continue;
-      g.globalAlpha = 1;
-      g.fillStyle = '#ffe9a0';
-      g.fillRect(Math.round(x), Math.round(y), 2, 2);
-      g.globalAlpha = 0.6;
-      g.fillStyle = '#ff6a1a';
-      const px = cx + (x - cx) * 0.94, py = cy - (60 + hash(n, i, 903) * 50 + 50 * erupt) * (s - 0.06) + 44 * (s - 0.06) ** 2;
-      g.fillRect(Math.round(px), Math.round(py), 1, 1);
-    }
-    if (rage > 0.5) {
-      for (let k = 0; k < 3; k++) {
-        const f = t * 0.21 + k * 0.37, n = Math.floor(f);
-        if (f - n > 0.03 || hash(n, k, 911) > rage - 0.35 + erupt) continue;
-        const b = lv.bolts[(n + k) % lv.bolts.length];
-        g.globalAlpha = Math.sin(t * 60) > -0.4 ? 0.9 : 0.4;
-        g.drawImage(b, Math.round(cx + 12 + (k - 1) * 26 - b.width / 2), Math.round(cy - 70 - k * 22));
-        g.globalAlpha = 0.05;
-        g.fillStyle = '#c8a8ff';
-        g.fillRect(0, 0, W, gy);
-      }
-    }
-    // Embers rising off the lava, thinning out as they climb.
-    const span = W + 40, rise = H * 0.9;
-    const count = Math.round(28 + 26 * rage + 30 * erupt);
-    for (let i = 0; i < count; i++) {
-      const sp = 12 + (i % 7) * 5;
-      const y = H + 6 - ((t * sp + i * 97.3) % rise);
-      const fade = Math.min(1, (y - H * 0.1) / (H * 0.35));
-      if (fade <= 0) continue;
-      const fl = Math.sin(t * (6 + (i % 5)) + i * 2.1);
-      const x = ((((i * 67.1 + t * (5 + (i % 3) * 3) + Math.sin(t * 0.9 + i) * 10 - cam * (0.6 + (i % 4) * 0.15)) % span) + span) % span) - 20;
-      g.globalAlpha = fade * (0.55 + 0.45 * fl);
-      g.fillStyle = i % 4 === 0 ? '#fff1b0' : i % 4 === 1 ? '#ffb040' : '#ff6a20';
-      const sz = fl > 0.75 ? 2 : 1;
-      g.fillRect(Math.round(x), Math.round(y), sz, sz);
-    }
-    // Ash drifting down.
-    g.globalCompositeOperation = 'source-over';
-    g.fillStyle = '#8e7e7c';
-    for (let i = 0; i < 16; i++) {
-      const y = ((i * 41.3 + t * (6 + (i % 4) * 2)) % (gy + 20)) - 10;
-      const x = ((((i * 113.7 + Math.sin(t * 0.7 + i) * 14 - cam * 0.7) % span) + span) % span) - 20;
-      g.globalAlpha = 0.45;
-      g.fillRect(Math.round(x), Math.round(y), 1, 1);
-    }
-    g.globalAlpha = 1;
   }
 
   private drawFloaters(g: CanvasRenderingContext2D, cam: number, t: number, front: boolean): void {
