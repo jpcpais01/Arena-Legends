@@ -105,6 +105,8 @@ export class ArenaView {
   private round = 0;
   /** Live parts of a molten arena: lavafall strip, lightning, the lava's glow. */
   private heat: { falls: HTMLCanvasElement; bolts: HTMLCanvasElement[]; glow: HTMLCanvasElement } | null;
+  /** A deep-space arena's glow sprites, one per colour. */
+  private stars: Map<number, HTMLCanvasElement> | null;
   /** This frame's screen shake, applied to the arena's near parts only. */
   private shake: [number, number] = [0, 0];
   private torch: HTMLCanvasElement[];
@@ -131,6 +133,8 @@ export class ArenaView {
     this.pillar = canvasOf(this.art.pillar);
     const h = this.art.heat;
     this.heat = h && { falls: canvasOf(h.fallTex), bolts: h.bolts.map(canvasOf), glow: glowSprite(h.glow) };
+    const co = this.art.cosmos;
+    this.stars = co && new Map(co.glows.map((l) => [l.color, glowSprite(l.color)]));
     this.torch = flameFrames(theme.fire, false);
     this.brazier = flameFrames(theme.fire, true);
   }
@@ -142,6 +146,8 @@ export class ArenaView {
 
   /** How far night has fallen (0..1) on arenas with a day cycle; 0 elsewhere. */
   night(): number {
+    // Deep space is always night: gear accents shine, a little softer than a full night on the isle.
+    if (this.art.cosmos) return 0.75;
     return this.art.cycle ? smooth(0.64, 0.9, this.day) : 0;
   }
 
@@ -251,6 +257,7 @@ export class ArenaView {
       if (l.after === 'birds' && this.amb && this.day < 0.8) this.drawBirds(g, cam, t);
       else if (l.after === 'floaters') this.drawFloaters(g, cam, t, false);
       else if (l.after === 'falls') this.drawFalls(g, x, l.y, t);
+      else if (l.after === 'stars') this.drawStars(g, t);
     }
     const cx = off(this.crowd[0], wf);
     g.drawImage(this.crowd[this.crowdFrame], cx, shakeY);
@@ -272,6 +279,7 @@ export class ArenaView {
     for (const l of this.front) layer(l);
     if (this.floaters.length) this.drawFloaters(g, cam, t, true);
     if (this.amb) this.drawAmbience(g, cam, t);
+    if (this.stars) this.drawDust(g, cam, t);
     // Pillars at the arena bounds, with a floating crystal or a fire bowl.
     const gy = this.gy + shakeY;
     for (const side of [-1, 1]) {
@@ -296,6 +304,7 @@ export class ArenaView {
    */
   light(g: CanvasRenderingContext2D, cam: number, t: number): void {
     if (this.heat) { this.lightHeat(g, cam, t); return; }
+    if (this.stars) { this.lightCosmos(g, cam, t); return; }
     const cy = this.art.cycle, sk = this.sky;
     if (!cy || !sk) return;
     const W = this.W, H = this.H, hz = cy.hz, p = this.day;
@@ -452,6 +461,114 @@ export class ArenaView {
     d.globalCompositeOperation = 'multiply';
     d.drawImage(src.c, 0, 0);
     return dst.c;
+  }
+
+  /**
+   * Deep space, right over the sky: bright stars twinkling and shooting stars
+   * streaking behind everything else. They come more often as the round goes
+   * on, and overtime brings a meteor shower from one radiant.
+   */
+  private drawStars(g: CanvasRenderingContext2D, t: number): void {
+    const co = this.art.cosmos!, W = this.W;
+    g.globalCompositeOperation = 'lighter';
+    g.fillStyle = '#dfe8ff';
+    const tw = co.twinkle;
+    for (let i = 0, k = 0; i < tw.length; i += 3, k++) {
+      const s = Math.sin(t * (0.8 + (k % 5) * 0.33) + k * 2.17);
+      if (s < 0.4) continue;
+      const a = (s - 0.4) / 0.6, x = tw[i], y = tw[i + 1];
+      g.globalAlpha = a * 0.85;
+      g.fillRect(x, y, 1, 1);
+      if (tw[i + 2] < 2 || a < 0.45) continue;
+      g.globalAlpha = a * 0.45;
+      g.fillRect(x - 1, y, 1, 1); g.fillRect(x + 1, y, 1, 1); g.fillRect(x, y - 1, 1, 1); g.fillRect(x, y + 1, 1, 1);
+      if (a < 0.85) continue;
+      g.globalAlpha = a * 0.2;
+      g.fillRect(x - 2, y, 1, 1); g.fillRect(x + 2, y, 1, 1); g.fillRect(x, y - 2, 1, 1); g.fillRect(x, y + 2, 1, 1);
+    }
+    const p = this.round;
+    const shower = smooth(1, 1.04, p);
+    const rate = 0.28 + 0.4 * smooth(0, 1, p) + shower;
+    const [b0, b1] = co.meteorBand;
+    const lanes = shower > 0 ? 8 : 3;
+    for (let k = 0; k < lanes; k++) {
+      const T = 2.6 + k * 1.31, ph = t / T + k * 0.618, n = Math.floor(ph), f = ph - n;
+      const dur = 0.17 + 0.1 * shower;
+      if (f > dur || hash(n, k, 1501) > rate) continue;
+      const q = f / dur;
+      // Shower: all from the upper right; otherwise either way, falling gently.
+      const right = shower > 0 || hash(n, k, 1502) < 0.5;
+      const ang = shower > 0 ? 0.62 + (hash(n, k, 1503) - 0.5) * 0.12 : 0.3 + hash(n, k, 1503) * 0.35;
+      const dx = (right ? -1 : 1) * Math.cos(ang), dy = Math.sin(ang);
+      const len = 60 + hash(n, k, 1504) * 90;
+      const x0 = shower > 0 ? W * (0.35 + hash(n, k, 1505) * 0.75) : W * (0.1 + hash(n, k, 1505) * 0.8);
+      const y0 = b0 + hash(n, k, 1506) * (b1 - b0) * (shower > 0 ? 0.5 : 1);
+      const hx = x0 + dx * len * q, hy = y0 + dy * len * q;
+      const fade = Math.sin(q * Math.PI);
+      const trail = Math.min(len * q, 16 + 8 * shower);
+      g.fillStyle = '#bcd0ff';
+      for (let s = 1; s < trail; s++) {
+        g.globalAlpha = fade * (1 - s / trail) * 0.7;
+        g.fillRect(Math.round(hx - dx * s), Math.round(hy - dy * s), 1, 1);
+      }
+      g.fillStyle = '#ffffff';
+      g.globalAlpha = fade;
+      g.fillRect(Math.round(hx), Math.round(hy), 1, 1);
+      g.globalAlpha = fade * 0.5;
+      g.fillRect(Math.round(hx - dx), Math.round(hy), 1, 1);
+    }
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
+  }
+
+  /** Stardust drifting up past the disc's edges, behind the fighters. */
+  private drawDust(g: CanvasRenderingContext2D, cam: number, t: number): void {
+    const W = this.W, gy = this.gy, span = W + 40, rise = 220;
+    const cols = ['#8ef0f0', '#d8a0f0', '#e8f0ff'];
+    for (let i = 0; i < 26; i++) {
+      const sp = 3 + (i % 5) * 1.6;
+      const y = gy + 40 - ((t * sp + i * 53.7) % rise);
+      const fade = Math.min(1, (y - (gy + 40 - rise)) / 60) * Math.min(1, (gy + 40 - y) / 20);
+      const tw = Math.sin(t * (1.4 + (i % 4) * 0.5) + i * 1.9);
+      if (fade <= 0 || tw < -0.3) continue;
+      const x = ((((i * 89.3 + Math.sin(t * 0.4 + i) * 12 - cam * (0.7 + (i % 4) * 0.1)) % span) + span) % span) - 20;
+      g.globalAlpha = fade * (0.35 + 0.45 * (tw + 0.3) / 1.3);
+      g.fillStyle = cols[i % 3];
+      g.fillRect(Math.round(x), Math.round(y), 1, 1);
+    }
+    g.globalAlpha = 1;
+  }
+
+  /**
+   * Starlight, after the fighters: everything sinks a little into the night's
+   * blue, then the captive star, crystals and lamps glow. The star swells as
+   * the round goes on and flares in overtime.
+   */
+  private lightCosmos(g: CanvasRenderingContext2D, cam: number, t: number): void {
+    const W = this.W, H = this.H, co = this.art.cosmos!, art = this.art;
+    const p = this.round;
+    const flare = smooth(1, 1.05, p);
+    g.globalCompositeOperation = 'source-atop';
+    const tg = g.createLinearGradient(0, 0, 0, H);
+    tg.addColorStop(0, css(co.tint, 0.1));
+    tg.addColorStop(0.65, css(co.tint, 0.16));
+    tg.addColorStop(1, css(co.tint, 0.22));
+    g.fillStyle = tg;
+    g.fillRect(0, 0, W, H);
+    g.globalCompositeOperation = 'lighter';
+    const swell = 0.75 + 0.25 * smooth(0, 1, p) + 0.35 * flare;
+    for (let i = 0; i < co.glows.length; i++) {
+      const l = co.glows[i];
+      const near = l.factor >= art.wallFactor;
+      const x = l.x - (near ? cam - this.shake[0] : cam) * l.factor, y = l.y + (near ? this.shake[1] : 0);
+      const big = l.r >= 40;
+      const r = big ? l.r * (swell + 0.06 * Math.sin(t * 1.3)) : l.r;
+      if (x < -r || x > W + r) continue;
+      g.globalAlpha = Math.min(1, (big ? 0.55 + 0.25 * flare : 0.5) * (0.8 + 0.2 * Math.sin(t * 1.7 + i * 1.3)));
+      g.drawImage(this.stars!.get(l.color)!, x - r, y - r, r * 2, r * 2);
+    }
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
   }
 
   /** Lavafalls: the strip scrolls down through each fall. */

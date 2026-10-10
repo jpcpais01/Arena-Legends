@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.54.0',
+    date: '2026-10-10',
+    title: 'New arena: Astral Sanctum',
+    notes: [
+      'A new arena floating in deep space: a polished star-stone disc under a glowing nebula, a ringed giant planet and a golden orrery holding a captive star.',
+      'Stars twinkle, shooting stars streak by more often as the round goes on, and overtime brings a meteor shower while the captive star flares.',
+      'Gear accents glow softly here, like at night on Skygrove Isle.',
+      'Pick it in Settings, or set the arena to Random to get it in the rotation. Skygrove Isle is still the default.',
+    ],
+  },
+  {
     version: '0.53.1',
     date: '2026-10-10',
     title: 'Entrance fix',
