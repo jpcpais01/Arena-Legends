@@ -22,6 +22,7 @@ import { h, save, store } from './ui/dom';
 import { icon } from './ui/icons';
 import { setupPhoneFullscreen } from './ui/fullscreen';
 import { chestScreen } from './ui/gacha';
+import { forgeScreen } from './ui/forge';
 import { shopScreen } from './ui/shop';
 import { gearSheet } from './ui/gear';
 import { Hud } from './ui/hud';
@@ -293,14 +294,31 @@ function openShop(): void {
 
 /** Skin chests and the forge (the shop's other tabs): spend gems on random skins, melt spares. */
 function openChests(tab: 'chests' | 'forge' = 'chests'): void {
+  if (tab === 'forge') { openForge(); return; }
   closeSheet();
   sfx.play('ui');
   sheet = chestScreen({
     onClose: () => { closeSheet(); refreshMenu(); },
     onShop: () => openShop(),
+    onForge: () => openForge(),
     onEquip: (s: SkinDef) => wearPulled(s),
     player: () => player,
-  }, tab);
+  });
+  ui.append(sheet.el);
+  setCovered(true);
+}
+
+/** The forge (the shop's third tab): melt three spares into a skin of the next rarity. */
+function openForge(): void {
+  closeSheet();
+  sfx.play('ui');
+  sheet = forgeScreen({
+    onClose: () => { closeSheet(); refreshMenu(); },
+    onShop: () => openShop(),
+    onChests: () => openChests(),
+    onEquip: (s: SkinDef) => wearPulled(s),
+    player: () => player,
+  });
   ui.append(sheet.el);
   setCovered(true);
 }

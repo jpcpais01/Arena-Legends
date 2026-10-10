@@ -13,7 +13,7 @@ export type Sfx =
   // Pre-fight entrances
   | 'entStep' | 'entSlam' | 'entPoof' | 'entRise' | 'entChoir' | 'entFall' | 'entCheer' | 'entIgnite'
   // Big pulls and the forge
-  | 'omen' | 'slam' | 'forge' | 'meld'
+  | 'omen' | 'slam' | 'forge' | 'meld' | 'clang' | 'fire' | 'steam'
   // Super attacks: the callout stingers, the power gathering, the blade ring on release
   | 'superSkill' | 'superUlt' | 'charge' | 'shing';
 
@@ -476,6 +476,27 @@ class AudioEngine {
           this.tone('square', 2350 + i * 170, 2300 + i * 170, at, 0.12, 0.03);
           this.burst(at, 0.08, 0.3, 'bandpass', 3500, 2500, 6);
         }
+        break;
+      // A hammer blow on hot metal: `intensity` 1..3, each a little brighter and heavier.
+      case 'clang': {
+        const f = 1040 * Math.pow(2, (k - 1) * 2 / 12);
+        this.tone('triangle', f, f * 0.98, t, 0.5 + k * 0.1, 0.1 + k * 0.02);
+        this.tone('square', f * 2.01, f * 2, t, 0.14, 0.035);
+        this.tone('sine', f * 2.76, f * 2.7, t, 0.35, 0.05);
+        this.burst(t, 0.07, 0.35 + k * 0.08, 'bandpass', 3800, 2600, 5);
+        this.tone('sine', 140, 60, t, 0.18, 0.25 + k * 0.08);
+        break;
+      }
+      // The furnace roaring up.
+      case 'fire':
+        this.burst(t, 1.1, 0.4, 'lowpass', 400, 1600, 0.7);
+        this.burst(t + 0.05, 0.9, 0.12, 'bandpass', 1800, 900, 1.5);
+        this.tone('sine', 55, 70, t, 1, 0.3);
+        break;
+      // Quenching: a long hiss.
+      case 'steam':
+        this.burst(t, 0.9, 0.35, 'highpass', 5000, 2500, 0.8);
+        this.burst(t, 0.25, 0.25, 'bandpass', 1200, 600, 2);
         break;
       case 'meld':
         this.burst(t, 0.5, 0.3, 'bandpass', 500, 4000, 2);
