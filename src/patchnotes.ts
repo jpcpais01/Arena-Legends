@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.55.1',
+    date: '2026-10-10',
+    title: 'Easier to read text',
+    notes: [
+      'Menus, item info, stats and buttons now use a clean, bold font that reads clearly even small on a phone.',
+      'Big titles, names, the Fight button and battle banners keep the pixel lettering.',
+    ],
+  },
+  {
     version: '0.55.0',
     date: '2026-10-10',
     title: 'New arena: Astral Sanctum',

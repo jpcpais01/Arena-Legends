@@ -1,6 +1,9 @@
 import '@fontsource/pixelify-sans/500.css';
 import '@fontsource/pixelify-sans/600.css';
 import '@fontsource/pixelify-sans/700.css';
+import '@fontsource/rubik/latin-500.css';
+import '@fontsource/rubik/latin-600.css';
+import '@fontsource/rubik/latin-700.css';
 import './ui/styles.css';
 import { music } from './audio/music';
 import { sfx } from './audio/sfx';
