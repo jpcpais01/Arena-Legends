@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.56.0',
+    date: '2026-10-10',
+    title: 'A real forge',
+    notes: [
+      'The Forge is its own smithy now, with no chest: a stone furnace with a living fire and a smoking chimney, an anvil on its stump and a smith\'s hammer.',
+      'Forging plays out for real: your three spares drop into the fire, the flames roar up in their colour, molten metal leaps onto the anvil, and three hammer blows shape it in showers of sparks.',
+      'A hiss of steam quenches the new skin, and it is shown on your fighter.',
+      'Forging a legendary or an epic still gets the big show: a pillar of light out of the metal and its name slammed on screen.',
+    ],
+  },
+  {
     version: '0.55.2',
     date: '2026-10-10',
     title: 'Hide small numbers',

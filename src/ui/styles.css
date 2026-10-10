@@ -1777,7 +1777,7 @@ input.fr-input { flex: 1; min-width: 0; height: 2.5rem; font-size: 1.05rem; }
 }
 .tier-banner.r-epic { --rc: var(--skin-epic); }
 .scr.gacha > .tier-banner.on { display: grid; }
-.tier-banner b { filter: drop-shadow(0 calc(var(--px) * 2) 0 var(--ink)) drop-shadow(calc(var(--px) * 2) 0 0 var(--ink)) drop-shadow(calc(var(--px) * -2) 0 0 var(--ink)) drop-shadow(0 calc(var(--px) * -2) 0 var(--ink)) drop-shadow(0 0 0.8rem color-mix(in srgb, var(--rc) 60%, transparent)); display: flex; justify-content: center; font: 700 clamp(2.8rem, 11vw, 5.6rem)/1 var(--font); letter-spacing: 0.06em; text-transform: uppercase; }
+.tier-banner b { filter: drop-shadow(0 calc(var(--px) * 2) 0 var(--ink)) drop-shadow(calc(var(--px) * 2) 0 0 var(--ink)) drop-shadow(calc(var(--px) * -2) 0 0 var(--ink)) drop-shadow(0 calc(var(--px) * -2) 0 var(--ink)) drop-shadow(0 0 0.8rem color-mix(in srgb, var(--rc) 60%, transparent)); display: flex; justify-content: center; font: 700 clamp(2.8rem, 11vw, 5.6rem)/1 var(--font-pixel); letter-spacing: 0.06em; text-transform: uppercase; }
 .tier-banner b span {
   display: inline-block; color: var(--rc);
   animation: letter-slam 420ms calc(var(--i) * 45ms) cubic-bezier(0.2, 1.7, 0.4, 1) both, letter-bob 1.2s calc(500ms + var(--i) * 80ms) steps(2) infinite;
@@ -1809,5 +1809,8 @@ input.fr-input { flex: 1; min-width: 0; height: 2.5rem; font-size: 1.05rem; }
 /* Armory Undo / Redo: two small keys beside Done. */
 .hist-btns { display: flex; gap: 6px; }
 .hist-btns .btn:disabled { opacity: 0.4; cursor: default; filter: none; transform: none; }
+/* The forge screen: furnace and anvil on the left (drawn on the canvas), spares on the right. */
+.forge-spot { cursor: default; bottom: 16%; }
+.scr.forge-scr { background: radial-gradient(ellipse 34% 46% at 22% 72%, rgba(255, 120, 40, 0.22), transparent 70%), linear-gradient(180deg, rgba(18, 10, 14, 0.92), rgba(8, 5, 10, 0.97)); }
 /* Display text keeps the pixel face: the Fight button, battle banners, the clock, the results banner, the title prompt, the hero name field. */
 .btn.fight, .banner, .clock, .res-banner b, .title-start, input.name { font-family: var(--font-pixel); }
