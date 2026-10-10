@@ -909,14 +909,14 @@ export class BattleView implements View {
       if (!p.alive || p.style !== 'hook') continue;
       const [hx, hy] = this.handAt(p.owner);
       const x = p.px + (p.x - p.px) * this.alpha, y = p.py + (p.y - p.py) * this.alpha;
-      drawChain(g, hx, hy, Math.round(this.sx(x)), Math.round(this.sy(y)), 4);
+      drawChain(g, hx, hy, Math.round(this.sx(x)), Math.round(this.sy(y)), 4, this.fighters[p.owner]?.art.mainSkin?.chain);
     }
     for (const f of b.fighters) {
       const v = this.fighters[f.id];
       const by = v.pulledBy;
       if (f.pullT <= 0 || by === -1) { if (f.pullT <= 0) v.pulledBy = -1; continue; }
       const [hx, hy] = this.handAt(by);
-      drawChain(g, hx, hy, Math.round(this.sx(this.lx(f))), Math.round(this.sy(this.ly(f) + 1.1)), 0);
+      drawChain(g, hx, hy, Math.round(this.sx(this.lx(f))), Math.round(this.sy(this.ly(f) + 1.1)), 0, this.fighters[by]?.art.mainSkin?.chain);
     }
   }
 
@@ -1754,11 +1754,16 @@ function bodyMarks(art: CharacterArt): { shPx: number; topPx: number; spread: nu
   return { shPx, topPx: Math.round(shPx + b.neck + b.headRy * 2), spread: Math.round(b.shoulderSpread) };
 }
 
+/** Chain link colours: lit, mid, dark joints, and the shadow under a turned link. */
+type ChainColors = readonly [string, string, string, string];
+const CHAIN: ChainColors = ['#d8dee8', '#8a92a0', '#3a3a48', '#5a6270'];
+
 /**
  * A chain of alternating light and dark links between two screen points,
  * sagging by `sag` px in the middle (0 = pulled taut).
  */
-function drawChain(g: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, sag: number): void {
+function drawChain(g: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, sag: number, skin?: ChainColors): void {
+  const [lit, mid, dark, under] = skin ?? CHAIN;
   const len = Math.hypot(x1 - x0, y1 - y0);
   const n = Math.max(2, Math.round(len));
   // Links three pixels long, every other one turned (a pixel off the line), lit on top.
@@ -1766,9 +1771,9 @@ function drawChain(g: CanvasRenderingContext2D, x0: number, y0: number, x1: numb
     const t = i / n;
     const x = Math.round(x0 + (x1 - x0) * t), y = Math.round(y0 + (y1 - y0) * t + Math.sin(t * Math.PI) * sag);
     const k = i % 6;
-    g.fillStyle = k === 0 || k === 3 ? '#3a3a48' : k < 3 ? '#d8dee8' : '#8a92a0';
+    g.fillStyle = k === 0 || k === 3 ? dark : k < 3 ? lit : mid;
     g.fillRect(x, y, 1, 1);
-    if (k === 4) { g.fillStyle = '#5a6270'; g.fillRect(x, y + 1, 1, 1); }
+    if (k === 4) { g.fillStyle = under; g.fillRect(x, y + 1, 1, 1); }
   }
 }
 

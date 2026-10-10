@@ -61,6 +61,8 @@ export interface SkinArt {
   boots?: Partial<BootsLook>;
   /** Reshaped usable item (potion, bomb): drawn instead of the stock one, on the belt, in hand and in battle. */
   usable?: () => UsableArt;
+  /** Chain sickle: colours of the thrown chain in battle (lit, mid, dark joints, shadow; CSS). */
+  chain?: readonly [string, string, string, string];
   /** Swing trail colours (bright, dim). */
   trail?: [number, number];
   /**
