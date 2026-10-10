@@ -2,6 +2,7 @@ import { mix } from '../../pixel/color';
 import { material, type Material, type MaterialSpec, type Raster } from '../../pixel/raster';
 import { bands, damascus, glint, grain, hash, lattice, speckle } from '../../pixel/tex';
 import type { BootsLook, ChestLook, LegsLook } from '../look';
+import type { UsableArt } from '../usables';
 import type { WeaponArt } from '../weaponKit';
 import type { Xf } from '../xform';
 import { FOXFIRE } from './foxfire';
@@ -58,6 +59,8 @@ export interface SkinArt {
   chest?: Partial<ChestLook>;
   legs?: Partial<LegsLook>;
   boots?: Partial<BootsLook>;
+  /** Reshaped usable item (potion, bomb): drawn instead of the stock one, on the belt, in hand and in battle. */
+  usable?: () => UsableArt;
   /** Swing trail colours (bright, dim). */
   trail?: [number, number];
   /**
@@ -65,7 +68,7 @@ export interface SkinArt {
    * where the item is: the weapon tip, the head, the body or the feet.
    */
   fx?: SkinFx;
-  /** Special items: particle colours in battle (bright, deep) for its aura, shots and bursts. */
+  /** Special and usable items: particle colours in battle (bright, deep) for its aura, shots, bursts, clouds and drinks. */
   glow?: [number, number];
   /** Epic special items: a reshaped icon, drawn around the frame's origin (about 13 units across each way). */
   icon?: (r: Raster, t: Xf, m: (k: string) => number) => void;
@@ -82,8 +85,8 @@ export interface SkinArt {
 export interface SkinFx {
   spark: number;
   spark2: number;
-  /** Particle shape: twinkling stars (the default) or flickering flames. */
-  kind?: 'twinkle' | 'flame';
+  /** Particle shape: twinkling stars (the default), flickering flames, or drifting petals or snowflakes. */
+  kind?: 'twinkle' | 'flame' | 'petal' | 'flake';
 }
 
 /** A battle sprite drawn pointing +x around the frame origin; `f` is the animation frame. */
