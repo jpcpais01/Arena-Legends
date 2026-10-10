@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.66.0',
+    date: '2026-10-10',
+    title: 'See who is online',
+    notes: [
+      'Friends now shows who is online: a green dot and "Online" next to friends who have the game open, and "Seen 5m ago" (or hours or days) for everyone else.',
+      'Online friends are listed first, and the list title counts how many are online.',
+    ],
+  },
+  {
     version: '0.65.2',
     date: '2026-10-10',
     title: 'Online matches keep your hero',

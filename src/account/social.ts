@@ -2,12 +2,14 @@
 // decline requests, and read the hero a friend shares. Loaded on demand with
 // the rest of the Firebase code, only by signed-in players.
 import {
-  collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, where, writeBatch,
+  collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where, writeBatch,
 } from 'firebase/firestore/lite';
 import { db } from './cloud';
+import { isOnline } from './presence';
 
 export interface Me { uid: string; name: string }
-export interface Friend { uid: string; name: string }
+/** `seen`: when the friend's game last said it was open (0 if never). */
+export interface Friend { uid: string; name: string; seen: number }
 export interface FriendRequest { from: string; to: string; fromName: string; toName: string }
 export interface FriendsData { friends: Friend[]; incoming: FriendRequest[]; outgoing: FriendRequest[] }
 /** A friend's shared hero: the raw saved character (checked by the caller) and their win record. */
@@ -34,11 +36,15 @@ export async function load(me: Me): Promise<FriendsData> {
     getDocs(query(reqs, where('to', '==', me.uid))),
     getDocs(query(reqs, where('from', '==', me.uid))),
   ]);
-  const friends = list.docs.map((d) => ({ uid: d.id, name: str(d.data().name) || '?' }));
+  const friends = list.docs.map((d) => ({ uid: d.id, name: str(d.data().name) || '?', seen: 0 }));
+  // Last seen comes from each friend's shared hero (refreshed once a minute while their game is open).
+  await Promise.all(friends.map((f) => getDoc(doc(db, 'heroes', f.uid)).then((h) => { if (h.exists()) f.seen = int(h.data().at); }, () => {})));
   const known = new Set(friends.map((f) => f.uid));
+  const now = Date.now();
   const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
   return {
-    friends: friends.sort(byName),
+    // Online friends first, then by name.
+    friends: friends.sort((a, b) => Number(isOnline(b.seen, now)) - Number(isOnline(a.seen, now)) || byName(a, b)),
     // A request left over from someone already a friend is just noise.
     incoming: inc.docs.map((d) => asRequest(d.data())).filter((r) => !known.has(r.from)),
     outgoing: out.docs.map((d) => asRequest(d.data())).filter((r) => !known.has(r.to)),
@@ -96,6 +102,11 @@ export async function hero(uid: string): Promise<SharedHero | null> {
   let parsed: unknown = null;
   try { parsed = JSON.parse(str(d.hero)); } catch { /* broken hero: shown as not shared */ }
   return parsed ? { name: str(d.name), hero: parsed, w: int(d.w), l: int(d.l), at: int(d.at) } : null;
+}
+
+/** Presence heartbeat: touches only the time on our shared hero. */
+export async function beat(uid: string): Promise<void> {
+  await updateDoc(doc(db, 'heroes', uid), { at: Date.now() });
 }
 
 /** Shares this player's hero and record so friends can see them. */
