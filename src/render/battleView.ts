@@ -295,7 +295,21 @@ export class BattleView implements View {
   slowmo(scale: number, seconds: number): void {
     this.slow = scale;
     this.slowT = seconds;
+    this.beat = null;
   }
+
+  /**
+   * A super's dramatic beat: time drops to `scale` and eases back to full
+   * speed over `seconds` (real time). Visual only: the sim just runs fewer
+   * steps per frame. Never cuts a deeper slow motion already playing (a KO).
+   */
+  private superBeat(scale: number, seconds: number): void {
+    if (this.quiet || (this.slowT > 0 && this.slow <= scale)) return;
+    this.slow = scale;
+    this.slowT = seconds;
+    this.beat = { scale, len: seconds };
+  }
+  private beat: { scale: number; len: number } | null = null;
 
   // --- Loop ----------------------------------------------------------------------
   frame(realDt: number): void {
@@ -303,7 +317,15 @@ export class BattleView implements View {
     if (!b || !this.arena) return;
     const dt = Math.min(0.1, realDt);
     this.time += dt;
-    if (this.slowT > 0) { this.slowT -= dt; if (this.slowT <= 0) this.slow = 1; }
+    if (this.slowT > 0) {
+      this.slowT -= dt;
+      if (this.slowT <= 0) { this.slow = 1; this.beat = null; }
+      else if (this.beat) {
+        // Held at the bottom for the first half, then eased back up to speed.
+        const k = clamp(1 - this.slowT / this.beat.len, 0, 1), up = k < 0.5 ? 0 : (k - 0.5) / 0.5;
+        this.slow = this.beat.scale + (1 - this.beat.scale) * up * up;
+      }
+    }
     if (!this.paused && !this.hold) {
       this.acc += dt * this.speed * this.slow;
       let steps = 0;
@@ -1836,7 +1858,7 @@ export class BattleView implements View {
     this.play('charge', pan, look.ult ? 0.8 : 1);
     this.fx.pulse('implode', f.x, f.y + 1.1, 1.7, look.hi, 0.4, look.lo);
     this.fx.pulse('groundRing', f.x, 0, 1.6, look.lo, 0.4);
-    if (look.ult) this.flash(look.hi, 0.4);
+    if (look.ult) { this.flash(look.hi, 0.4); this.superBeat(0.35, 0.7); }
     if (v) v.chargeT = 0;
   }
 
@@ -1870,6 +1892,8 @@ export class BattleView implements View {
     fx.burst({ x: f.x, y: cy, count: 10, jitter: 0.1, jitterY: 0.5, dir: f.facing > 0 ? Math.PI : 0, spread: 0.08, speed: [6, 11], life: [0.12, 0.22], color: 0xffffff, color2: look.hi, kind: 'streak' });
     fx.burst({ x: f.x - f.facing * 0.2, y: 0.1, count: 6, jitter: 0.2, dir: Math.PI / 2 - f.facing * 0.9, spread: 0.35, speed: [1.5, 3.5], life: [0.35, 0.6], color: 0xd8c8b0, color2: 0x8a7a70, kind: 'smoke', size: 3, drag: 1.5 });
     if (!this.quiet) sfx.kiai(pan, VOICE[f.form] ?? 1);
+    // Time slows as the strike comes out, and catches up after the impact.
+    this.superBeat(0.3, 0.6);
     if (look.el === 'steel' || look.el === 'wind') this.play('shing', pan);
     this.shake(0.18);
   }
