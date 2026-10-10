@@ -12,6 +12,20 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.39.0',
+    date: '2026-10-10',
+    title: '36 new items and fighting styles',
+    notes: [
+      'New main weapons: Chain Sickle (its chain drags enemies right to you), Soul Scythe (steals energy, and Grave Harvest silences), Duelist Rapier (a fleche that ignores armour), Storm Rod (sparks and a stunning thunderclap), Halberd (the longest chop, an unstoppable crescent) and Grave Staff (soul bolts that heal you, bone spikes that root).',
+      'New secondaries: Hunter\'s Bolas (roots: no walking, dashing or dodging), Trickster Talisman (trade places with the enemy), Tower Shield, Javelins and the Iron Cestus (an uppercut that launches them into the air).',
+      'New special items: Thunder Totem (plant it and fight on your ground), Sands of Time (once per fight, turn back time when you\'re nearly beaten), Ward Stone, a Hunting Hawk that dives and marks, and a Dragon Whelp that breathes fire.',
+      'New usables: Smoke Bomb (vanish, then ambush), Caltrops, Frost Bomb and Troll Tonic.',
+      'New armour, each with its own trick: Seer\'s Blindfold (an attack just misses you every so often), Dread Helm (heavy blows cause fear), Hawkeye Hood, Gladiator Helm (momentum), Juggernaut Plate (unstoppable above half health), Heartwood Armor (heals out of combat), Shadow Garb, Runic Mail, Ghoststep Leggings (walk through the enemy), Charger Cuisses, Acrobat Trousers, Warlord Faulds, Warp Boots (teleport behind them), Earthshaker Boots (a quake stomp instead of a dodge), Frostwalkers and Savate Boots.',
+      'New effects in fights: silence, root, fear, smoke, regeneration and momentum, all shown on the fighters and in the status bar.',
+      'Fighting style: a new step in hero creation. Pick Balanced, Relentless, Tactician, Skirmisher or Guardian to set how your hero likes to fight. Rivals pick one too. Edit your hero to choose yours.',
+    ],
+  },
+  {
     version: '0.38.2',
     date: '2026-10-10',
     title: 'Room code keypad',
