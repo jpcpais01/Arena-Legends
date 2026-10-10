@@ -32,8 +32,8 @@ export const HAWK_DIVE: AbilityDef = {
 /** The dragon whelp's breath: a short cone of fire. */
 export const WHELP_BREATH: AbilityDef = {
   id: 'whelp_breath', name: 'Whelp Breath', slot: 'item', kind: 'projectile',
-  range: 4.5, cost: 0, cooldown: 5, windup: 0.4, active: 0, recovery: 0,
-  power: 0.45, damageType: 'magic', stagger: 0.08,
+  range: 5, cost: 0, cooldown: 4.5, windup: 0.4, active: 0, recovery: 0,
+  power: 0.5, damageType: 'magic', stagger: 0.08,
   applies: [{ status: 'burn', duration: 2.5, stacks: 2 }],
   projectile: { speed: 11, radius: 0.55, style: 'breath' },
   anim: 'item', desc: 'The whelp breathes fire.',
@@ -401,7 +401,7 @@ export class Battle {
 
     let dir: number = f.facing;
     let through = !!ab.dash?.through;
-    if (ab.slot === 'evade' && f.has.has('shadow_garb')) f.garbT = 1.5 + (ab.windup + ab.active) / spd;
+    if (ab.slot === 'evade' && f.has.has('shadow_garb')) f.garbT = 2 + (ab.windup + ab.active) / spd;
     if (ab.slot === 'evade' && ab.dash && ab.kind === 'dash') {
       // Backstep by default; roll through when cornered, or whenever the enemy
       // is in reach if the boots allow it (Shadow Treads).
@@ -1053,7 +1053,7 @@ export class Battle {
     // Seer's Blindfold: saw it coming, and simply isn't there when it lands.
     if (tgt.has.has('seer_blindfold') && tgt.foresightCd <= 0 && !blocked
       && (ab.heavy || ab.power * att.stats.power >= tgt.stats.maxHp * 0.03)) {
-      tgt.foresightCd = 9;
+      tgt.foresightCd = 10;
       this.emit({ type: 'foresight', f: tgt.id, x: tgt.x, y: tgt.y + 1.3 });
       return;
     }
