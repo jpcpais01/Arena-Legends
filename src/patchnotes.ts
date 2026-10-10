@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.38.1',
+    date: '2026-10-10',
+    title: 'Gear on in hero creation, smoother Online popup',
+    notes: [
+      'Hero creation now shows your fighter with their gear from the start. Tap the bag to see them in plain clothes.',
+      'The Play online popup fits on a sideways phone without scrolling: Host and Join sit side by side.',
+      'Typing a room code with the phone keyboard open now shows just the code box and Join, in the part of the screen the keyboard leaves free.',
+    ],
+  },
+  {
     version: '0.38.0',
     date: '2026-10-10',
     title: 'The Shop',
