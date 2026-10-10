@@ -129,7 +129,7 @@ export const DEFAULT_BUILDS: [CharacterBuild, CharacterBuild] = [
   {
     name: 'Aren', form: 'balanced',
     gear: { main: 'longsword', secondary: 'kite_shield', special: 'phantom_blade', usable: 'healing_potion', head: 'storm_crown', chest: 'plate_armor', legs: 'chain_leggings', boots: 'leather_boots' },
-    look: { species: 'kitsu', skin: 0, hair: 0, hairColor: 2, eyes: 1, outfit: 0, accent: 0 },
+    look: { species: 'human', skin: 0, hair: 0, hairColor: 2, eyes: 1, outfit: 0, accent: 0 },
   },
   {
     name: 'Vesper', form: 'ethereal',

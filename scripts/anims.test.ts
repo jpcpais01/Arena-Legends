@@ -12,15 +12,15 @@ import { Sheet, writePng } from './png';
 const OUT = process.env.OUT ?? '/tmp/anims.png';
 
 const BUILDS: [FormId, Partial<Appearance>, CharacterBuild['gear']][] = [
-  ['balanced', { species: 'kitsu' }, { main: 'longsword', secondary: 'kite_shield', chest: 'plate_armor', boots: 'leather_boots', head: 'duelist_band' }],
+  ['balanced', { species: 'human' }, { main: 'longsword', secondary: 'kite_shield', chest: 'plate_armor', boots: 'leather_boots', head: 'duelist_band' }],
   ['mighty', { species: 'ogrin', hair: 3 }, { main: 'warhammer', secondary: 'parrying_dagger', chest: 'thornmail', boots: 'iron_greaves' }],
-  ['agile', { species: 'lop', hair: 2 }, { main: 'longbow', secondary: 'throwing_knives', chest: 'leather_jerkin', boots: 'zephyr_boots' }],
+  ['agile', { species: 'myco', hair: 2 }, { main: 'longbow', secondary: 'throwing_knives', chest: 'leather_jerkin', boots: 'zephyr_boots' }],
   ['slender', { species: 'imp', hair: 1 }, { main: 'spear', secondary: 'hand_crossbow', chest: 'phase_cloak', boots: 'shadow_treads' }],
   ['ethereal', { species: 'wisp', hair: 5 }, { main: 'arcane_staff', secondary: 'war_horn', chest: 'mage_robe', head: 'chrono_circlet' }],
   ['robust', { species: 'golem' }, { main: 'greataxe', secondary: 'buckler', chest: 'mirror_mail', boots: 'colossus_boots', head: 'iron_helm' }],
-  ['agile', { species: 'kitsu', hair: 0 }, { main: 'dagger', secondary: 'frost_wand', head: 'executioner_hood', boots: 'leaping_boots' }],
+  ['agile', { species: 'wisp', hair: 0 }, { main: 'dagger', secondary: 'frost_wand', head: 'executioner_hood', boots: 'leaping_boots' }],
   ['balanced', { species: 'imp', hair: 4 }, { main: 'katana', secondary: 'wind_chakram', head: 'berserker_mask' }],
-  ['slender', { species: 'lop', hair: 1 }, { main: 'ember_wand', secondary: 'kite_shield', chest: 'mage_robe' }],
+  ['slender', { species: 'wisp', hair: 1 }, { main: 'ember_wand', secondary: 'kite_shield', chest: 'mage_robe' }],
 ];
 
 /** Dev preview: every clip of one build, one clip per row (`BUILD=0 OUT=... npm run ...`). */

@@ -13,7 +13,7 @@ it('app icons', () => {
   const art = makeArt({
     name: 'x', form: 'balanced',
     gear: { main: 'longsword', secondary: 'kite_shield', chest: 'plate_armor', boots: 'leather_boots', head: 'duelist_band' },
-    look: { ...DEFAULT_LOOK, species: 'kitsu' },
+    look: { ...DEFAULT_LOOK, species: 'human' },
   });
   const c = clipsFor(art).clips.get('slash')!;
   const r = new Raster(160, 140);

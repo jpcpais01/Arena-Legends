@@ -6,18 +6,21 @@ import type { FormId } from '../sim/types';
  * but each species only grows into the body forms that suit it.
  */
 
-export type SpeciesId = 'human' | 'kitsu' | 'ogrin' | 'wisp' | 'lop' | 'imp' | 'golem' | 'saurin' | 'ursin' | 'myco';
+export type SpeciesId = 'human' | 'imp' | 'myco' | 'ogrin' | 'wisp' | 'golem';
 
-export const SPECIES_IDS: SpeciesId[] = ['human', 'kitsu', 'lop', 'imp', 'saurin', 'myco', 'ogrin', 'ursin', 'wisp', 'golem'];
+export const SPECIES_IDS: SpeciesId[] = ['human', 'imp', 'myco', 'ogrin', 'wisp', 'golem'];
 
 export interface SpeciesDef {
   id: SpeciesId;
   name: string;
   blurb: string;
-  /** Skin (or fur, stone, spirit) base colours to choose from. */
+  /** Skin (or stone, spirit) base colours to choose from. */
   skins: number[];
-  /** Has hair (golems grow crystals, saurin a crest, myco a cap instead). */
+  /** Has hair (golems grow crystals, myco a cap instead). */
   hair: boolean;
+  /** Hairless species: the shapes their crown comes in (picked with `Appearance.hair`), and what it's called. */
+  styles?: readonly string[];
+  styleLabel?: string;
   /** Body forms this species can take, in display order. */
   forms: FormId[];
 }
@@ -28,49 +31,31 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     skins: [0xf6dcc4, 0xe8b893, 0xc98c62, 0x9a6440, 0x6a4230], hair: true,
     forms: ['robust', 'agile', 'balanced', 'slender', 'mighty', 'stout'],
   },
-  kitsu: {
-    id: 'kitsu', name: 'Kitsu', blurb: 'Fox-folk with tall ears and a brush of a tail.',
-    skins: [0xf2c9a0, 0xe8a77a, 0xd98a5a, 0xf6e2c8], hair: true,
-    forms: ['agile', 'balanced', 'slender', 'ethereal', 'feral'],
-  },
-  lop: {
-    id: 'lop', name: 'Lop', blurb: 'Rabbit-folk with long drooping ears. Quick to bolt, quicker to bite.',
-    skins: [0xf6dcc6, 0xe9c2a6, 0xc99a7a, 0xfaf0e6], hair: true,
-    forms: ['agile', 'balanced', 'slender', 'stout', 'feral'],
-  },
   imp: {
-    id: 'imp', name: 'Imp', blurb: 'Horned and mischievous, with a whip of a tail.',
-    skins: [0xd2584a, 0xa04ab0, 0x5a6ad0, 0xe07a3a], hair: true,
-    forms: ['agile', 'balanced', 'mighty', 'stout', 'feral'],
+    id: 'imp', name: 'Imp', blurb: 'Little devils with curling horns, burning eyes, bat wings and a spade-tipped tail.',
+    skins: [0xd2584a, 0xa04ab0, 0x5a6ad0, 0xe07a3a, 0x3a3448], hair: true,
+    forms: ['agile', 'balanced', 'slender', 'mighty', 'stout', 'feral'],
+  },
+  myco: {
+    id: 'myco', name: 'Myco', blurb: 'Mushroom-folk under a glowing cap, trailing spores and sprouting little mushrooms of their own.',
+    skins: [0xf2e6d0, 0xe6d6ee, 0xd8ead0, 0xc8b49a], hair: false,
+    styles: ['Dome', 'Cone', 'Parasol'], styleLabel: 'Cap',
+    forms: ['agile', 'balanced', 'stout', 'ethereal'],
   },
   ogrin: {
-    id: 'ogrin', name: 'Ogrin', blurb: 'Tusked and broad. Green-skinned brawlers from the bogs.',
-    skins: [0x7ab060, 0x5a9a7a, 0x9aa858, 0x6a8ab0], hair: true,
+    id: 'ogrin', name: 'Ogrin', blurb: 'Huge-jawed bog brawlers with jutting tusks, heavy brows, war paint and gold in their ears.',
+    skins: [0x7ab060, 0x5a9a7a, 0x9aa858, 0x6a8ab0, 0xa8865a], hair: true,
     forms: ['robust', 'balanced', 'mighty', 'stout', 'feral', 'titan'],
   },
   wisp: {
-    id: 'wisp', name: 'Wisp', blurb: 'Spirit-folk with glowing eyes and hair that burns like cold flame.',
+    id: 'wisp', name: 'Wisp', blurb: 'Spirit-folk crowned with cold flame and a floating halo, motes of light drifting around them.',
     skins: [0xcfe4ff, 0xe2d4ff, 0xc8fff0, 0xffe0f0], hair: true,
     forms: ['agile', 'balanced', 'slender', 'ethereal'],
   },
   golem: {
-    id: 'golem', name: 'Golem', blurb: 'Living stone with crystals growing from the shoulders and crown.',
-    skins: [0x9a9488, 0x7a8494, 0xb0906a, 0x6e7a6a], hair: false,
-    forms: ['robust', 'balanced', 'mighty', 'stout', 'titan'],
-  },
-  saurin: {
-    id: 'saurin', name: 'Saurin', blurb: 'Lizard-folk with a long snout, a spiny crest and a heavy, sweeping tail.',
-    skins: [0x5aa060, 0x3a9a90, 0xc8a860, 0xb85040, 0x6a7ac0], hair: false,
-    forms: ['agile', 'balanced', 'slender', 'mighty', 'feral'],
-  },
-  myco: {
-    id: 'myco', name: 'Myco', blurb: 'Mushroom-folk under a broad spotted cap that glows softly in the dark.',
-    skins: [0xf2e6d0, 0xe6d6ee, 0xd8ead0, 0xc8b49a], hair: false,
-    forms: ['agile', 'balanced', 'stout', 'ethereal'],
-  },
-  ursin: {
-    id: 'ursin', name: 'Ursin', blurb: 'Bear-folk: round ears, a broad muzzle and the strength to match.',
-    skins: [0x8a5a36, 0x5a3e2c, 0x2e2a2c, 0xece6da, 0xb08a5a], hair: true,
+    id: 'golem', name: 'Golem', blurb: 'Carved stone woken by runes: a glowing visor for eyes, moss on the shoulders and crystals for a crown.',
+    skins: [0x9a9488, 0x7a8494, 0xb0906a, 0x6e7a6a, 0x5a5662], hair: false,
+    styles: ['Crown', 'Spire', 'Shards'], styleLabel: 'Crystals',
     forms: ['robust', 'balanced', 'mighty', 'stout', 'titan'],
   },
 };
@@ -133,7 +118,7 @@ export interface Appearance {
   backdrop?: number;
 }
 
-export const DEFAULT_LOOK: Appearance = { species: 'kitsu', skin: 0, hair: 0, hairColor: 2, eyes: 1, outfit: 0, accent: 0 };
+export const DEFAULT_LOOK: Appearance = { species: 'human', skin: 0, hair: 0, hairColor: 2, eyes: 1, outfit: 0, accent: 0 };
 
 const idx = (v: unknown, n: number, fb: number) =>
   typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < n ? v : fb;

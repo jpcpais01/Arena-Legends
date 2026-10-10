@@ -55,7 +55,7 @@ const RANGE = new Map(FORM_STATS.map(([k]) => {
   return [k, [Math.min(...vs), Math.max(...vs)]] as const;
 }));
 
-const SKIN_LABEL: Partial<Record<SpeciesId, string>> = { golem: 'Stone', wisp: 'Spirit', saurin: 'Scales', ursin: 'Fur' };
+const SKIN_LABEL: Partial<Record<SpeciesId, string>> = { golem: 'Stone', wisp: 'Spirit' };
 
 /** The character in plain clothes with just their weapon, so species and colours read clearly. */
 const bare = (c: CharacterBuild): CharacterBuild => ({ ...c, gear: { main: c.gear.main }, skins: {} });
@@ -358,8 +358,9 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
       body.replaceChildren(
         swatches(SKIN_LABEL[L.species] ?? 'Skin', sp.skins, () => c.look.skin, (i) => setLook({ skin: i })),
         swatches('Eyes', EYE_COLORS, () => c.look.eyes, (i) => setLook({ eyes: i })),
-        sp.hair ? cycler('Hair', HAIR_STYLES, () => c.look.hair, (i) => setLook({ hair: i })) : '',
-        swatches(sp.hair ? 'Hair colour' : L.species === 'saurin' ? 'Crest' : L.species === 'myco' ? 'Cap' : 'Crystals', HAIR_COLORS, () => c.look.hairColor, (i) => setLook({ hairColor: i })),
+        sp.hair ? cycler('Hair', HAIR_STYLES, () => c.look.hair, (i) => setLook({ hair: i }))
+          : sp.styles ? cycler(sp.styleLabel ?? 'Style', sp.styles, () => c.look.hair % sp.styles!.length, (i) => setLook({ hair: i })) : '',
+        swatches(sp.hair ? 'Hair colour' : sp.styleLabel ?? 'Colour', HAIR_COLORS, () => c.look.hairColor, (i) => setLook({ hairColor: i })),
         swatches('Outfit', OUTFIT_COLORS, () => c.look.outfit, (i) => setLook({ outfit: i })),
         swatches('Accent', ACCENT_COLORS, () => c.look.accent, (i) => setLook({ accent: i })),
       );

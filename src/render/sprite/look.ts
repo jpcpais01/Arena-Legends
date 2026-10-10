@@ -195,10 +195,17 @@ const NIGHT: Record<'stock' | SkinRarity, { shine: number; gleam: number; sparkl
 };
 const TIER_ORDER = ['stock', ...SKIN_RARITIES] as const;
 
+/** Materials species features are drawn with (body, not gear). */
+export const SPECIES_KEYS = [
+  'shoe', 'horn', 'hornRidge', 'impWing', 'tusk', 'skinDark', 'paint', 'gem', 'moss', 'stoneCrack', 'cap', 'capSpot', 'gill', 'gillDark',
+  // Keys of retired species features: some skins reuse these names and rely on them counting as body.
+  'fur', 'furTip', 'crystal', 'muzzle', 'nose', 'scale', 'crest',
+] as const;
+
 /** Body materials stay dark at night: only gear has night accents. */
 const BODY_KEYS = new Set([
   'skin', 'hair', 'hairGlow', 'iris', 'eyeGlow', 'white', 'lash', 'mouth', 'inner', 'outfit', 'pants', 'accent', 'scarf', 'brow',
-  'shoe', 'fur', 'furTip', 'horn', 'tusk', 'crystal', 'stoneCrack', 'muzzle', 'nose', 'scale', 'crest', 'cap', 'capSpot', 'gill',
+  ...SPECIES_KEYS,
 ]);
 const HEAD_KEYS = ['mask', 'maskHorn', 'maskEye', 'helm', 'helmDark', 'gold', 'gemPurple', 'hood', 'hoodEye', 'spark', 'band', 'bandTail'];
 const SPECIAL_KEYS = ['plume', 'plumeTip', 'fangTooth', 'fangBlood'];
@@ -268,19 +275,20 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     belt: material({ base: 0x5a3a26 }),
     leather: material({ base: 0x6a4428 }),
     shoe: material({ base: 0x4a3024 }),
-    fur: material({ base: mix(skin, 0xffffff, 0.15) }),
-    furTip: material({ base: 0xf6f0e6 }),
     horn: material({ base: 0x3a2a30, shiny: true }),
+    hornRidge: material({ base: 0x5a4650 }),
+    impWing: material({ base: mix(shade(skin, -0.18), 0x2a1a30, 0.45), step: 0.12 }),
+    skinDark: material({ base: shade(skin, -0.22, 0.04) }),
+    paint: material({ base: accent === 0x2a2a34 ? 0xd03a3a : accent }),
+    gem: material({ base: mix(hair, 0xffffff, 0.35), glow: true }),
+    moss: material({ base: 0x5a8a3a, step: 0.1 }),
     tusk: material({ base: 0xf2ead2 }),
     crystal: material({ base: 0x7ae8ff, glow: true }),
     stoneCrack: material({ base: shade(skin, -0.25) }),
-    muzzle: material({ base: mix(skin, 0xf2e2c8, 0.55) }),
-    nose: material({ base: 0x241a1e, shiny: true }),
-    scale: material({ base: shade(skin, -0.14, 0.05) }),
-    crest: material({ base: hair, shiny: true, step: 0.13 }),
     cap: material({ base: hair, step: 0.13 }),
     capSpot: material({ base: mix(hair, 0xfff8e0, 0.75), glow: true }),
     gill: material({ base: mix(skin, 0xe8d8c0, 0.4) }),
+    gillDark: material({ base: shade(mix(skin, 0xe8d8c0, 0.4), -0.18) }),
     // Chest pieces
     plate: material({ base: 0x9aa6ba, shiny: true, step: 0.15 }),
     plateDark: material({ base: 0x5e687c, shiny: true }),
