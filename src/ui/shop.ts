@@ -11,6 +11,9 @@ import { fmtInt } from './format';
 import { gemTag, shopTabs } from './gacha';
 import { icon } from './icons';
 import { Preview } from './preview';
+import { buyEntrance, entranceOf, ENTRANCE_IDS, ENTRANCES, ownsEntrance, type EntranceDef, type EntranceId } from '../character/entrances';
+import { css } from '../render/pixel/color';
+import { ENTRANCE_ICON, ENTRANCE_TIER } from './entranceUi';
 
 export interface ShopCallbacks {
   onClose(): void;
@@ -19,6 +22,8 @@ export interface ShopCallbacks {
   onEquip(skin: SkinDef): void;
   /** Wears a whole bought set. */
   onEquipSet(set: SkinSetId): void;
+  /** Makes an owned entrance the hero's. */
+  onEntrance(id: EntranceId): void;
   player(): PlayerCharacter | null;
 }
 
@@ -47,6 +52,8 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
   let previews: Preview[] = [];
   let armed: HTMLElement | null = null;
   let armT = 0;
+  /** The entrance last tapped (it plays on the featured stage). */
+  let peek: EntranceId | null = null;
 
   // Gem counter.
   const gemNum = h('b', null, fmtInt(gems()));
@@ -139,6 +146,29 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
     got.replaceChildren();
   }
 
+  function buyEnt(e: EntranceDef): void {
+    if (!buyEntrance(e.id)) return;
+    sfx.play(e.tier === 'legendary' ? 'revealLegendary' : e.tier === 'mythic' ? 'revealMythic' : 'revealRare');
+    const eq = h<HTMLButtonElement>('button.btn.primary', {
+      onclick: () => { cb.onEntrance(e.id); sfx.play('equip'); eq.disabled = true; eq.replaceChildren(icon('check'), 'In use'); render(); },
+    }, icon('boot'), 'Use it');
+    got.replaceChildren(h('div.shop-got', { onclick: (ev: MouseEvent) => { if (ev.target === ev.currentTarget) dismiss(); } },
+      h(`div.shop-got-card.frame.r-${e.tier}`, null,
+        h('div.shop-got-rays'),
+        h('div.ribbon', null, h('span', null, 'Unlocked!')),
+        h('b.shop-got-name', null, e.name),
+        h('div.shop-got-icons', null, h(`span.sock.r-${e.tier}`, { style: { '--d': '120ms', color: css(e.color) } }, icon(ENTRANCE_ICON[e.id]))),
+        h('div.shop-got-foot', null, h('button.btn', { onclick: () => dismiss() }, 'Nice'), eq))));
+    got.classList.add('on');
+  }
+
+  /** Plays an entrance on the featured stage. */
+  function watch(id: EntranceId): void {
+    peek = id;
+    previews[0]?.playEntrance(id);
+    for (const t of shelves.querySelectorAll<HTMLElement>('.offer.ent')) t.classList.toggle('peek', t.dataset.ent === id);
+  }
+
   function featured(): void {
     for (const p of previews) p.dispose();
     previews = [];
@@ -183,6 +213,23 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
           h('b.offer-name', null, s.name),
           h('small.offer-item', null, gearOf(s.gear).name),
           mine ? h('span.owned-tag', null, icon('check'), 'Owned') : buyBtn(SKIN_PRICE[s.rarity], '', () => buyOne(s)));
+      })),
+      h('div.shelf-head', null, h('div.ribbon', null, h('span', null, 'Entrances')), h('small', null, 'Tap one to watch it')),
+      h('div.shelf-picks', null, ...ENTRANCE_IDS.filter((id) => ENTRANCES[id].price > 0).map((id) => {
+        const e = ENTRANCES[id];
+        const mine = ownsEntrance(id);
+        const using = mine && entranceOf(cb.player()?.look, true) === id;
+        return h(`div.offer.ent.r-${e.tier}${mine ? '.mine' : ''}${peek === id ? '.peek' : ''}`, {
+          'data-ent': id, title: e.blurb, style: { '--ent': css(e.color) },
+          onclick: () => { sfx.play('select'); watch(id); },
+        },
+          h('span.offer-tier', null, ENTRANCE_TIER[e.tier]),
+          h('span.sock', null, icon(ENTRANCE_ICON[id])),
+          h('b.offer-name', null, e.name),
+          h('small.offer-item', null, 'Entrance'),
+          !mine ? buyBtn(e.price, '', () => buyEnt(e))
+            : using ? h('span.owned-tag', null, icon('check'), 'In use')
+              : h('button.btn.sm', { onclick: (ev: MouseEvent) => { ev.stopPropagation(); cb.onEntrance(id); sfx.play('equip'); render(); } }, icon('boot'), 'Use'));
       })),
       h('div.shelf-head', null, h('div.ribbon', null, h('span', null, 'Epic sets')), h('small', null, 'Pay only for the pieces you miss')),
       h('div.shelf-sets', null, ...sets.map((o) => {

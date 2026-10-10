@@ -13,6 +13,10 @@ import type { FormId, Stats } from '../sim/types';
 import { h, hex } from './dom';
 import { icon, type IconName } from './icons';
 import { Preview } from './preview';
+import { buyEntrance, entranceOf, ENTRANCE_IDS, ENTRANCES, ownsEntrance, type EntranceId } from '../character/entrances';
+import { gems } from '../character/collection';
+import { ENTRANCE_ICON, ENTRANCE_TIER } from './entranceUi';
+import { gemTag } from './gacha';
 
 export interface CreatorCallbacks {
   onDone(c: PlayerCharacter): void;
@@ -27,10 +31,12 @@ const STEPS: { label: string; icon: IconName; title: string; sub: string }[] = [
   { label: 'Look', icon: 'palette', title: 'Choose your look', sub: 'Colours and hair. Change them any time.' },
   { label: 'Name', icon: 'edit', title: 'Name your legend', sub: 'The crowd will chant it.' },
   { label: 'Backdrop', icon: 'star', title: 'Choose your backdrop', sub: 'The scene behind your portrait on the home screen.' },
+  { label: 'Entrance', icon: 'boot', title: 'Choose your entrance', sub: 'How you step into the arena before every fight. More in the Shop.' },
 ];
 const STYLE = 2;
 const LOOK = 3;
 const NAME = 4;
+const BACKDROP = 5;
 const LAST = STEPS.length - 1;
 /** Steps whose pick the stage arrows flip through. */
 const ARROWS = 3;
@@ -61,8 +67,8 @@ const SKIN_LABEL: Partial<Record<SpeciesId, string>> = { golem: 'Stone', wisp: '
 const bare = (c: CharacterBuild): CharacterBuild => ({ ...c, gear: { main: c.gear.main }, skins: {} });
 
 /**
- * Character creation, a full screen in six steps like a game's character
- * select: species, body, fighting style, look, the name, then the portrait backdrop. The fighter stands big on a lit
+ * Character creation, a full screen in seven steps like a game's character
+ * select: species, body, fighting style, look, the name, the portrait backdrop, then the entrance. The fighter stands big on a lit
  * dais and updates live; arrows beside them flip through species or bodies.
  * Editing an existing fighter unlocks every step and can save from any of them.
  */
@@ -411,13 +417,70 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     return [grid];
   }
 
+  /** Entrances: tap one to watch it on the stage; owned ones are picked, the rest can be bought here or in the Shop. */
+  function entranceStep(): HTMLElement[] {
+    const detail = h('div.detail.frame.iron');
+    const tiles = new Map<string, HTMLElement>();
+    const grid = h('div.card-grid.entrances');
+    let shown: EntranceId = entranceOf(c.look, true);
+    let armed = false;
+    const draw = () => {
+      for (const id of ENTRANCE_IDS) {
+        const e = ENTRANCES[id], mine = ownsEntrance(id);
+        const t = tiles.get(id)!;
+        t.classList.toggle('locked', !mine);
+        t.querySelector('small')!.replaceChildren(...(mine ? [ENTRANCE_TIER[e.tier]] : [icon('lock'), ` ${e.price}`]));
+      }
+      const e = ENTRANCES[shown], mine = ownsEntrance(shown);
+      const buy = mine ? null : h<HTMLButtonElement>(`button.btn.buy-btn${gems() >= e.price ? '' : '.short'}`, {
+        title: gems() >= e.price ? `Buy for ${e.price} gems` : 'Not enough gems yet: win fights to earn more',
+        onclick: () => {
+          if (gems() < e.price) { sfx.play('back'); return; }
+          if (!armed) { armed = true; sfx.play('select'); buy!.replaceChildren(h('span', null, 'Buy?'), gemTag(e.price)); return; }
+          if (!buyEntrance(shown)) return;
+          sfx.play('revealMythic');
+          pick(shown);
+        },
+      }, h('span', null, 'Unlock'), gemTag(e.price));
+      detail.replaceChildren(
+        h('div.detail-head', null, h('b', { style: { color: css(e.color) } }, e.name), h('span', null, mine ? ENTRANCE_TIER[e.tier] : `${ENTRANCE_TIER[e.tier]} · Shop`)),
+        h('p', null, e.blurb),
+        h('div.ent-foot', null, h('button.btn.sm', { onclick: () => { sfx.play('select'); preview.playEntrance(shown); } }, icon('replay'), 'Watch again'), buy));
+    };
+    const pick = (id: EntranceId) => {
+      shown = id;
+      armed = false;
+      if (ownsEntrance(id)) c = { ...c, look: { ...c.look, entrance: id } };
+      preview.playEntrance(id);
+      refresh();
+    };
+    for (const id of ENTRANCE_IDS) {
+      const e = ENTRANCES[id];
+      const t = h<HTMLButtonElement>(`button.card-tile.ent.r-${e.tier}`, {
+        style: { '--seg': css(e.color) },
+        onclick: () => { sfx.play('select'); pick(id); },
+      }, h('div.portrait.style-ic', { style: { color: css(e.color) } }, icon(ENTRANCE_ICON[id])), h('b', null, e.name), h('small'));
+      tiles.set(id, t);
+      grid.append(t);
+    }
+    refresh = () => {
+      mark(tiles, entranceOf(c.look, true));
+      tiles.get(shown)?.classList.add('peek');
+      for (const [id, t] of tiles) if (id !== shown) t.classList.remove('peek');
+      draw();
+    };
+    refresh();
+    preview.playEntrance(shown);
+    return [grid, detail];
+  }
+
   function render(dir = 0): void {
     clearCards();
     refresh = () => {};
     const s = STEPS[step];
     headTool = null;
     panelBody.replaceChildren(...(step === 0 ? speciesStep() : step === 1 ? formStep() : step === STYLE ? styleStep()
-      : step === LOOK ? lookStep() : step === NAME ? nameStep() : backdropStep()));
+      : step === LOOK ? lookStep() : step === NAME ? nameStep() : step === BACKDROP ? backdropStep() : entranceStep()));
     panelHead.replaceChildren(
       h('div.step-title', null, h('div.ribbon', null, h('span', null, s.title)), headTool),
       h('p', null, s.sub));

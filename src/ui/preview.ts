@@ -7,6 +7,11 @@ import { css } from '../render/pixel/color';
 import { drawSetAura, SET_FX } from '../render/setAura';
 import type { SkinFx } from '../render/sprite/skins';
 import { fitPixels } from './pixelfit';
+import { sfx } from '../audio/sfx';
+import type { EntranceId } from '../character/entrances';
+import { Entrance, type EntrancePose } from '../render/entrance';
+import { Fx } from '../render/fx';
+import { PPM } from '../render/sprite/animator';
 
 export interface PreviewOptions {
   flip?: boolean;
@@ -60,6 +65,15 @@ export class Preview {
   private sparkT = 0;
   /** Seconds since the preview started (set auras). */
   private clock = 0;
+  /** An entrance being shown, its effects, and the screen flash and shake it asks for. */
+  private ent: Entrance | null = null;
+  private fx: Fx | null = null;
+  private flashT = 0;
+  private flashCol = 0xffffff;
+  private shakeT = 0;
+  private shakeA = 0;
+  private shakeX = 0;
+  private readonly view = { sx: (x: number) => Math.round(this.w / 2) + x * PPM + this.shakeX, sy: (y: number) => this.h - this.ground - y * PPM };
 
   private still: boolean;
   private ground: number;
@@ -117,6 +131,23 @@ export class Preview {
     this.draw(this.bank.get(this.out));
   }
 
+  /** Plays a pre-fight entrance on the spot (creator and shop previews), with its sounds. */
+  playEntrance(id: EntranceId): void {
+    if (this.still) return;
+    this.fx ??= new Fx();
+    this.fx.clear();
+    this.playing = null;
+    this.ent = new Entrance(id, {
+      fx: this.fx,
+      shake: (a) => { this.shakeA = Math.max(this.shakeA, a); this.shakeT = 0.25 + a * 0.3; },
+      flash: (c, a) => { this.flashCol = c; this.flashT = Math.max(this.flashT, a * 0.12); },
+      sound: (name, k) => sfx.play(name, 0, k),
+    }, 0, this.flip ? -1 : 1, 0.15);
+    // Hold off the next random move until it's over.
+    this.t = 0;
+    if (this.next > 0) this.next = 4.5;
+  }
+
   /** Plays a move (a given clip, or a random one). */
   showcase(clip?: string): void {
     this.playing = clip ?? this.clips[Math.floor(Math.random() * this.clips.length)] ?? null;
@@ -125,6 +156,7 @@ export class Preview {
 
   dispose(): void {
     this.alive = false;
+    this.ent = null;
     cancelAnimationFrame(this.raf);
     this.unfit?.();
   }
@@ -133,6 +165,23 @@ export class Preview {
     this.t += dt;
     this.clock += dt;
     const o = this.out;
+    if (this.shakeT > 0) {
+      this.shakeT -= dt;
+      this.shakeX = this.shakeT > 0 ? Math.round((Math.random() - 0.5) * this.shakeA * 6 * Math.min(1, this.shakeT * 3)) : 0;
+    }
+    const pose = this.ent ? this.ent.update(dt) : null;
+    if (this.ent && !pose) this.ent = null;
+    this.fx?.update(dt);
+    if (pose) {
+      const c = this.bank.set.clips.get(pose.clip) ? pose.clip : 'idle';
+      o.clip = c;
+      o.frame = pose.frame % clipLength(this.bank.set.clips.get(c)!);
+      o.face = pose.face;
+      o.key = `${o.clip}.${o.frame}.${o.face ?? ''}`;
+      this.drawEntrance(dt, pose);
+      return;
+    }
+    o.face = null;
     if (this.playing) {
       const c = this.bank.set.clips.get(this.playing)!;
       const n = clipLength(c);
@@ -149,7 +198,57 @@ export class Preview {
     o.key = `${o.clip}.${o.frame}.`;
     const s = this.bank.get(o);
     const [gx, gy] = this.draw(s);
+    if (this.fx) this.fx.draw(this.g, this.view);
     this.drawSparks(dt, s, gx, gy);
+  }
+
+  /** One frame of an entrance: the effects around the fighter, who may be faded, washed or half in the ground. */
+  private drawEntrance(dt: number, pose: EntrancePose): void {
+    const g = this.g, v = this.view, ent = this.ent!, fx = this.fx!;
+    g.clearRect(0, 0, this.w, this.h);
+    const gx = Math.round(this.w / 2) + this.shakeX, gy = this.h - this.ground;
+    if (this.pedestal) drawPedestal(g, gx, gy);
+    fx.drawUnder(g, v);
+    ent.draw(g, v, 'under');
+    const x = Math.round(v.sx(pose.dx)), y = Math.round(v.sy(pose.dy));
+    if (pose.shadow > 0.05) {
+      g.fillStyle = `rgba(0,0,0,${(0.3 * pose.shadow).toFixed(2)})`;
+      const r = Math.round(11 * (0.4 + 0.6 * pose.shadow));
+      g.fillRect(Math.round(v.sx(pose.dx)) - r, gy - 1, r * 2, 3);
+    }
+    if (pose.alpha > 0) {
+      const s = this.bank.get(this.out);
+      const set = this.bank.art.set;
+      if (pose.clipGround) { g.save(); g.beginPath(); g.rect(0, 0, this.w, gy + 1); g.clip(); }
+      if (set && pose.alpha >= 1) drawSetAura(g, set, x, y, this.clock, 'back');
+      g.globalAlpha = pose.alpha;
+      this.blit(s.img, s, x, y);
+      if (pose.tint && pose.tintA > 0) {
+        g.globalAlpha = pose.alpha * Math.min(1, pose.tintA);
+        this.blit(this.bank.flash(this.out, pose.tint).img, s, x, y);
+      }
+      g.globalAlpha = 1;
+      if (set && pose.alpha >= 1) drawSetAura(g, set, x, y, this.clock, 'front');
+      if (pose.clipGround) g.restore();
+    }
+    ent.draw(g, v, 'over');
+    fx.draw(g, v);
+    if (this.flashT > 0) {
+      g.globalAlpha = Math.min(0.5, this.flashT * 4);
+      g.fillStyle = css(this.flashCol);
+      g.fillRect(0, 0, this.w, this.h);
+      g.globalAlpha = 1;
+      this.flashT -= dt;
+    }
+  }
+
+  private blit(img: CanvasImageSource, s: Sprite, x: number, y: number): void {
+    const g = this.g;
+    if (this.flip) {
+      g.save(); g.translate(x + 1, 0); g.scale(-1, 1);
+      g.drawImage(img, -s.ox, y - s.oy);
+      g.restore();
+    } else g.drawImage(img, x - s.ox, y - s.oy);
   }
 
   private draw(s: Sprite): [number, number] {
