@@ -4,6 +4,7 @@ import {
   arc, capsule as capsuleR, circle as circleR, ellipse as ellipseR, intersect, polygon as polyR, union, type Shape,
 } from '../pixel/sdf';
 import { SPECIES } from '../../character/appearance';
+import { stockHead } from './armour2';
 import type { CharacterArt } from './look';
 import { alongWeapon, rotateSkeleton, rotPivot, solve, type P, type Pose, type Skeleton } from './pose';
 import { frameAt, Xf } from './xform';
@@ -100,7 +101,7 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
 
   // --- Behind everything: tail, cape, long hair, slung gear --------------------
   drawTail(r, art, T, m, sway);
-  if (sp === 'human') drawScarfTails(r, art, T, m, sway);
+  if (sp === 'human' && !chest.noScarf) drawScarfTails(r, art, T, m, sway);
   if (chest.cape) drawCape(r, T, body.torso, m(chest.cape), sway);
   chest.back?.(r, T, m, { top: body.torso, sway, body, g: G.cape });
   drawHairBack(r, art, H, m, sway);
@@ -119,7 +120,7 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
   drawTorso(r, art, sk, T, X, Y, m);
   if (hold.sec === 'stowed' && art.secFamily !== 'shield') drawSecHolster(r, art, sk, T, OX, OY, m, false);
   drawLeg(r, art, sk, 'N', X, Y, m);
-  if (sp === 'human') drawScarfWrap(r, art, T, m);
+  if (sp === 'human' && !chest.noScarf) drawScarfWrap(r, art, T, m);
   if (chest.skirt > 0) drawSkirt(r, art, T, sk, m(chest.skirtMat), sway, m(chest.trim ?? chest.skirtMat));
   else drawHem(r, art, T, m);
   chest.over?.(r, T, m, { top: body.torso, sway, body, g: G.cape });
@@ -191,18 +192,20 @@ function drawLeg(r: Raster, art: CharacterArt, sk: Skeleton, side: 'N' | 'F', X:
     r.fill(cap({ x: c.x - nx, y: c.y - ny }, { x: c.x + nx, y: c.y + ny }, 0.9, 0.9), m(boots.trim), { group: g, bevel: 0.8, toneBias: bias });
   }
   if (boots.knee) r.fill(circleR(X(knee) + 0.6, Y(knee), body.kneeR + 0.9), m(boots.knee), { group: g, bevel: 1.8, toneBias: bias });
-  if (boots.wing && !far) {
-    const ax = X(ankle), ay = Y(ankle) - 1;
-    const wing = m(boots.wing);
-    r.fill(polyR([ax - 1, ay, ax - 6, ay - 4, ax - 5, ay - 1.5, ax - 7, ay - 1, ax - 4, ay + 1]), wing, { group: G.legN, bevel: 1.2 });
-  }
-  if (boots.over) {
+  if (L.shin || boots.over) {
     // Foot frame: x toward the toe, y up.
     const len = Math.hypot(knee.x - ankle.x, knee.y - ankle.y);
     const foot = new Xf(X(ankle), Y(ankle), Math.atan2(toe.y - ankle.y, toe.x - ankle.x));
-    boots.over(r, shin, foot, m, { g, bias, far, body, len, top: len * boots.height, w: body.shinR + bulk, toe: Math.hypot(toe.x - ankle.x, toe.y - ankle.y) });
-  }
+    const c = { g, bias, far, body, len, top: len * boots.height, w: body.shinR + bulk, toe: Math.hypot(toe.x - ankle.x, toe.y - ankle.y) };
+    L.shin?.(r, shin, foot, m, c);
+    if (boots.wing && !far) drawBootWing(r, X(ankle), Y(ankle) - 1, m(boots.wing));
+    boots.over?.(r, shin, foot, m, c);
+  } else if (boots.wing && !far) drawBootWing(r, X(ankle), Y(ankle) - 1, m(boots.wing));
   r.space = torsoSpace;
+}
+
+function drawBootWing(r: Raster, ax: number, ay: number, wing: number): void {
+  r.fill(polyR([ax - 1, ay, ax - 6, ay - 4, ax - 5, ay - 1.5, ax - 7, ay - 1, ax - 4, ay + 1]), wing, { group: G.legN, bevel: 1.2 });
 }
 
 function drawArm(r: Raster, art: CharacterArt, sk: Skeleton, side: 'N' | 'F', X: (p: P) => number, Y: (p: P) => number, m: (k: string) => number, lean: number): void {
@@ -501,7 +504,7 @@ function drawFace(r: Raster, art: CharacterArt, H: Xf, face: Expression, m: (k: 
   const sp = art.look.species;
   const glowEyes = sp === 'wisp' || sp === 'golem';
   const hood = art.headgear === 'executioner_hood';
-  const mask = art.headgear === 'berserker_mask';
+  const mask = art.headgear === 'berserker_mask' || !!stockHead(art.headgear)?.face;
   if ((hood || mask) && !art.headFace) return; // drawn by the headgear
   const [nx, ny] = px(H, 1.4, 0.4);
   const [fx, fy] = px(H, 4.8, 0.3);
@@ -593,7 +596,7 @@ export function hairCap(H: Xf, front: number, back: number, grow = 0.9): Shape {
 }
 
 function hidesHair(art: CharacterArt): boolean {
-  return art.headgear === 'iron_helm' || art.headgear === 'executioner_hood';
+  return art.headgear === 'iron_helm' || art.headgear === 'executioner_hood' || !!stockHead(art.headgear)?.hair;
 }
 
 function drawHairBack(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => number, sway: number): void {
@@ -721,7 +724,7 @@ function drawHairFront(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => nu
 
 function drawEarsBehind(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => number): void {
   const sp = art.look.species;
-  if (art.headgear === 'executioner_hood') return;
+  if (art.headgear === 'executioner_hood' || stockHead(art.headgear)?.ears === 'all') return;
   if (sp === 'kitsu') {
     r.fill(H.poly([1.8, 5, 4.6, 11.4, 5.6, 4.2]), m('skin'), { group: G.ears, bevel: 1.5, toneBias: -1 });
   } else if (sp === 'lop') {
@@ -734,8 +737,9 @@ function drawEarsBehind(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => n
 }
 
 function drawEarsFront(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => number, sp: string): void {
-  const hood = art.headgear === 'executioner_hood';
-  const helm = art.headgear === 'iron_helm';
+  const ears = stockHead(art.headgear)?.ears;
+  const hood = art.headgear === 'executioner_hood' || ears === 'all';
+  const helm = art.headgear === 'iron_helm' || ears === 'side';
   if (hood) return;
   if (sp === 'kitsu') {
     r.fill(H.poly([-3.4, 4.4, -1.4, 12.4, 1.8, 5.2]), m('skin'), { group: G.ears, bevel: 1.6 });
@@ -815,6 +819,8 @@ function drawHeadgear(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => num
       r.fill(H.poly([-6.2, 1.6, -10 - s, -3.2, -9 - s, -4, -6, 0.4]), m('bandTail'), { group: g, bevel: 1, toneBias: -1 });
       break;
     }
+    default:
+      stockHead(art.headgear)?.draw(r, H, m, g, sway);
   }
   if (art.gear.special === 'phoenix_feather' && art.headgear !== 'executioner_hood') {
     if (art.specialSkin?.plume) art.specialSkin.plume(r, H, m, g, sway);
