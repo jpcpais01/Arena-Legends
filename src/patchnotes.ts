@@ -12,6 +12,19 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.40.0',
+    date: '2026-10-10',
+    title: '72 skins for the new items',
+    notes: [
+      'Every one of the 36 new items now has two skins: a simple rare colourway and a showpiece mythic or legendary skin.',
+      'Weapon showpieces: Serpent Coil (a viper chain sickle whose hook lunges like a snake), Thanatos, Thornrose, Eye of the Tempest, Dragoon\'s Wing, Crown of the Necropolis, Comet Bolas, the two-faced Janus Mask, Citadel Gate, Sunspear and the Titan Fist.',
+      'Special item showpieces: the Thunderbird Pole, the Astral Orrery, the Aegis Rune, a Sunfire Falcon that dives in flames and a Starwyrm that breathes starfire.',
+      'Usable items can wear skins now: Sakura Smoke bursts into cherry blossom petals, the Snow Globe shatters into a snowburst, plus Thornseeds and the Troll Skull Flask.',
+      'Armour showpieces: Oracle\'s Gaze, Nightmare Crown, Eagle Mask, Champion\'s Laurel, Siegebreaker, Heart of the World Tree, Shinobi Shozoku, Skald\'s Saga Mail, Specter\'s Train, Centaur Barding, Ringmaster\'s Stripes, Kusazuri, Riftwalkers, Tectonic Treads, Glacier Skates and Iron Lotus Slippers.',
+      'As always at night, only each skin\'s own gems, runes and trims glow.',
+    ],
+  },
+  {
     version: '0.39.0',
     date: '2026-10-10',
     title: '36 new items and fighting styles',
