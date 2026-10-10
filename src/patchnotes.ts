@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.61.0',
+    date: '2026-10-10',
+    title: 'A home theme',
+    notes: [
+      'The home screen and menus now have their own music: a calm, hopeful theme for the full orchestra.',
+      'It starts like a sunrise with strings and harp, then the choir and horns bring in the main theme, it rises to a big, warm climax and settles down again before it loops.',
+      'It fades out under the drone when a fight begins and fades back in when you return to the menu. It follows the Music volume slider and starts after your first tap.',
+    ],
+  },
+  {
     version: '0.60.0',
     date: '2026-10-10',
     title: 'Nine new entrances',
