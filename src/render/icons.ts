@@ -2,7 +2,8 @@ import { DEFAULT_LOOK } from '../character/appearance';
 import { gearOf } from '../sim/gear';
 import type { GearId, GearSet, SpecialId, UsableId } from '../sim/types';
 import { material, Raster, type Frame, type Material } from './pixel/raster';
-import { arc } from './pixel/sdf';
+import { arc, intersect, union } from './pixel/sdf';
+import { grain, speckle } from './pixel/tex';
 import { STAND } from './sprite/pose';
 import { drawFigure } from './sprite/draw';
 import { makeArt } from './sprite/look';
@@ -51,6 +52,25 @@ const SM = {
   rock: material({ base: 0x6a4a3a }),
   phantom: material({ base: 0xa8c8ff, glow: true }),
   phantomHot: material({ base: 0xf0f8ff, glow: true }),
+  // Thunder totem, hourglass, ward stone, hawk and whelp.
+  totemWood: material({ base: 0x8a5a36, tex: grain(-1), step: 0.13 }),
+  totemPaint: material({ base: 0x2a9ab8 }),
+  totemRed: material({ base: 0xc8402a }),
+  storm: material({ base: 0x7ad8ff, glow: true }),
+  stormHot: material({ base: 0xf0ffff, glow: true }),
+  glass: material({ base: 0xd8eef4, shiny: true, step: 0.14 }),
+  sand: material({ base: 0xf0c060, glow: true }),
+  wardStone: material({ base: 0x8a9ab0, tex: speckle(0.1, -1), step: 0.12 }),
+  wardRune: material({ base: 0x8ac8ff, glow: true }),
+  silver: material({ base: 0xc8d0dc, shiny: true }),
+  hawk: material({ base: 0x8a5a32, step: 0.13 }),
+  hawkLight: material({ base: 0xf0e0c0 }),
+  beak: material({ base: 0xf0c040, shiny: true }),
+  eye: material({ base: 0x1a1220 }),
+  whelp: material({ base: 0xe0502a, step: 0.13 }),
+  whelpBelly: material({ base: 0xf8d088 }),
+  whelpWing: material({ base: 0xa8302a }),
+  horn: material({ base: 0xf4ecd8, shiny: true }),
 };
 
 const SM_NAME = new Map<Material, string>(Object.entries(SM).map(([k, m]) => [m, k]));
@@ -123,6 +143,109 @@ function special(id: SpecialId, r: Raster, c: number, skin?: string | null): voi
       r.fill(t.circ(0, 0, 4.6), h(SM.ice), { group: 2, bevel: 2.5 });
       r.fill(t.circ(-1, 1, 2), h(SM.iceGlow), { group: 2 });
       break;
+    case 'thunder_totem': {
+      // A carved pole: two stacked faces, thunderbird wings, a storm crystal on top.
+      r.fill(t.poly([-13, 5, -4, 3.4, -4, 6.6, -10, 8.4]), h(SM.totemPaint), { group: 1, bevel: 1.5 });
+      r.fill(t.poly([13, 5, 4, 3.4, 4, 6.6, 10, 8.4]), h(SM.totemPaint), { group: 1, bevel: 1.5 });
+      r.fill(t.rect(0, -3, 4.6, 10.5, 1), h(SM.totemWood), { group: 2, bevel: 2.5 });
+      r.fill(t.rect(0, 1.2, 5.2, 0.9), h(SM.totemRed), { group: 3, bevel: 1 });
+      r.fill(t.rect(0, -6.8, 5.2, 0.9), h(SM.totemRed), { group: 3, bevel: 1 });
+      for (const fy of [4.4, -3.4]) {
+        for (const ex of [-2.2, 2.2]) {
+          r.fill(t.circ(ex, fy, 1.3), h(SM.hawkLight), { group: 4, bevel: 0.8 });
+          r.dot(t.x(ex, fy), t.y(ex, fy), h(SM.eye), 1, 4);
+        }
+        r.fill(t.rect(0, fy - 2.6, 1.8, 0.6), h(SM.eye), { group: 4, flat: 1 });
+      }
+      r.fill(t.poly([0, 4.6, -2, 2.6, 2, 2.6]), h(SM.beak), { group: 4, bevel: 1 });
+      r.fill(t.poly([0, 14, -3.2, 10.2, 0, 7, 3.2, 10.2]), h(SM.storm), { group: 5 });
+      r.fill(t.poly([0, 12.6, -1.4, 10.2, 0, 8.6, 1.2, 10.2]), h(SM.stormHot), { group: 5 });
+      r.line(t.x(-7, 12), t.y(-7, 12), t.x(-5, 9), t.y(-5, 9), h(SM.stormHot), 3, 6);
+      r.line(t.x(-5, 9), t.y(-5, 9), t.x(-6.6, 7.4), t.y(-6.6, 7.4), h(SM.storm), 3, 6);
+      r.line(t.x(7, 13), t.y(7, 13), t.x(5.4, 10.4), t.y(5.4, 10.4), h(SM.stormHot), 3, 6);
+      r.line(t.x(5.4, 10.4), t.y(5.4, 10.4), t.x(6.8, 8.6), t.y(6.8, 8.6), h(SM.storm), 3, 6);
+      r.fill(t.rect(0, -13.6, 6, 1.2, 0.5), h(SM.totemWood), { group: 7, bevel: 1 });
+      break;
+    }
+    case 'hourglass': {
+      // Gold caps and posts, two glass bulbs, sand falling through the waist.
+      const bulbs = union(t.poly([-6.4, 10, 6.4, 10, 1, 0.6, -1, 0.6]), t.poly([-6.4, -10, 6.4, -10, 1, -0.6, -1, -0.6]));
+      r.fill(bulbs, h(SM.glass), { group: 2, bevel: 2 });
+      r.fill(t.poly([-3.2, 5.2, 3.2, 5.2, 0.8, 1.4, -0.8, 1.4]), h(SM.sand), { group: 3 });
+      r.fill(t.poly([-6, -9.4, 6, -9.4, 3.6, -6, 0.6, -4.6, -0.6, -4.6, -3.6, -6]), h(SM.sand), { group: 3 });
+      r.line(t.x(0, 1), t.y(0, 1), t.x(0, -4.6), t.y(0, -4.6), h(SM.sand), 4, 3);
+      r.dot(t.x(-3.4, 7.2), t.y(-3.4, 7.2), h(SM.glass), 4, 2);
+      r.dot(t.x(-3.8, -2.4), t.y(-3.8, -2.4), h(SM.glass), 4, 2);
+      r.fill(t.rect(-7.6, 0, 0.9, 10.6), h(SM.gold), { group: 4, bevel: 1 });
+      r.fill(t.rect(7.6, 0, 0.9, 10.6), h(SM.gold), { group: 4, bevel: 1 });
+      r.fill(t.rect(0, 11.2, 9.2, 1.4, 0.6), h(SM.gold), { group: 5, bevel: 1.5 });
+      r.fill(t.rect(0, -11.2, 9.2, 1.4, 0.6), h(SM.gold), { group: 5, bevel: 1.5 });
+      r.dot(t.x(0, 11.4), t.y(0, 11.4), h(SM.sand), 4, 5);
+      r.dot(t.x(0, -11), t.y(0, -11), h(SM.sand), 4, 5);
+      break;
+    }
+    case 'ward_stone': {
+      // A smooth river stone bound in silver wire, a ward rune glowing on its face, inside a shield arc.
+      r.fill(arc(c, c, 12.4, 13.6, -Math.PI * 0.95, -Math.PI * 0.05), h(SM.wardRune), { group: 1 });
+      r.fill(arc(c, c, 12.4, 13.6, Math.PI * 0.2, Math.PI * 0.8), h(SM.wardRune), { group: 1 });
+      r.fill(t.ell(0, -0.5, 8, 9.8, 0.15), h(SM.wardStone), { group: 2, bevel: 3.5 });
+      r.fill(intersect(t.ell(0, -0.5, 8, 9.8, 0.15), t.rect(0, 6.2, 9, 0.7)), h(SM.silver), { group: 3, bevel: 1 });
+      r.fill(intersect(t.ell(0, -0.5, 8, 9.8, 0.15), t.rect(0, -7.2, 9, 0.7)), h(SM.silver), { group: 3, bevel: 1 });
+      // Algiz: the warding rune.
+      const ln = (a: number, b: number, x: number, y: number) => r.line(t.x(a, b), t.y(a, b), t.x(x, y), t.y(x, y), h(SM.wardRune), 3, 4);
+      ln(0, 4, 0, -5.4);
+      ln(0.8, 4, 0.8, -5.4);
+      ln(0, -0.4, -3.6, 3.6);
+      ln(0.8, -0.4, 4.4, 3.6);
+      break;
+    }
+    case 'hunter_hawk': {
+      // A hawk perched on a gauntlet's cuff, looking ahead, wings folded.
+      r.fill(t.rect(-1, -11.4, 9, 2, 1), h(SM.cord), { group: 1, bevel: 1.5 });
+      r.fill(t.poly([-9, -2, -14, -9, -10, -10, -4, -6]), h(SM.hawk), { group: 2, bevel: 1.5 });
+      r.fill(t.ell(-1.4, -1, 6.4, 7.6, -0.5), h(SM.hawk), { group: 3, bevel: 3 });
+      r.fill(t.ell(1.6, -2.6, 3.4, 5.2, -0.35), h(SM.hawkLight), { group: 3, bevel: 2 });
+      for (const [x, y] of [[1.4, -1.2], [2.6, -3.6], [0.6, -4.6], [2, -6]]) r.dot(t.x(x, y), t.y(x, y), h(SM.hawk), 1, 3);
+      // Folded wing over the body.
+      r.fill(t.poly([-1, 4, -7.6, 1, -11, -6.4, -3, -3]), h(SM.hawk), { group: 4, bevel: 2, toneBias: -1 });
+      r.line(t.x(-3.4, 1.4), t.y(-3.4, 1.4), t.x(-8.6, -3.4), t.y(-8.6, -3.4), h(SM.hawkLight), 2, 4);
+      r.line(t.x(-2.4, -0.8), t.y(-2.4, -0.8), t.x(-6.4, -4.4), t.y(-6.4, -4.4), h(SM.hawkLight), 2, 4);
+      // Head, hooked beak, eye with a dark stripe.
+      r.fill(t.circ(2.4, 6, 4.2), h(SM.hawk), { group: 5, bevel: 2.4 });
+      r.fill(t.ell(4, 4.6, 2.4, 2, 0.2), h(SM.hawkLight), { group: 5, bevel: 1.2 });
+      r.fill(t.poly([5.4, 7.6, 9.6, 6.2, 8.8, 3.4, 6, 4.8]), h(SM.beak), { group: 6, bevel: 1.2 });
+      r.fill(t.circ(4.2, 6.8, 1.2), h(SM.eye), { group: 6, flat: 2 });
+      r.dot(t.x(4.6, 7.4), t.y(4.6, 7.4), h(SM.hawkLight), 4, 6);
+      // Talons on the cuff.
+      r.fill(t.cap(-1, -8, -1.6, -10, 0.8), h(SM.beak), { group: 6, bevel: 1 });
+      r.fill(t.cap(2, -8, 2.4, -10, 0.8), h(SM.beak), { group: 6, bevel: 1 });
+      break;
+    }
+    case 'dragon_whelp': {
+      // A chubby whelp sitting up, wing raised, a puff of flame at its snout.
+      r.fill(t.cap(-4, -8, -10, -9, 2, 0.8), h(SM.whelp), { group: 1, bevel: 1.4 });
+      r.fill(t.poly([-10.6, -9, -13.4, -7, -12.6, -10.8]), h(SM.whelp), { group: 1, bevel: 1 });
+      r.fill(t.poly([-2, 3, -12, 12, -12.6, 4, -9.6, 0, -6, -1]), h(SM.whelpWing), { group: 2, bevel: 1.5 });
+      r.line(t.x(-2.6, 2.4), t.y(-2.6, 2.4), t.x(-11.6, 11), t.y(-11.6, 11), h(SM.whelp), 1, 2);
+      r.line(t.x(-8.4, 7), t.y(-8.4, 7), t.x(-9.6, 1.2), t.y(-9.6, 1.2), h(SM.whelp), 1, 2);
+      r.fill(t.ell(-1, -3.6, 6, 6.8), h(SM.whelp), { group: 3, bevel: 3 });
+      r.fill(t.ell(1.2, -4, 3.2, 5.2, -0.2), h(SM.whelpBelly), { group: 3, bevel: 2 });
+      r.fill(t.cap(0.4, -9, 3, -10, 1.4), h(SM.whelp), { group: 4, bevel: 1.2 });
+      r.fill(t.cap(-4, -9, -1.6, -10.4, 1.4), h(SM.whelp), { group: 4, bevel: 1.2, toneBias: -1 });
+      r.fill(t.cap(3, -1, 5, -3.6, 1.2), h(SM.whelp), { group: 4, bevel: 1.2 });
+      // Head: big and round, a short snout, horns swept back.
+      r.fill(t.poly([-3.6, 8.4, -8.2, 11.4, -5.4, 6.4]), h(SM.horn), { group: 5, bevel: 1 });
+      r.fill(t.circ(0.6, 5.6, 4.8), h(SM.whelp), { group: 6, bevel: 2.6 });
+      r.fill(t.ell(4.8, 4.2, 3.4, 2.4, -0.15), h(SM.whelp), { group: 6, bevel: 1.6 });
+      r.fill(t.poly([-1.6, 9.4, -5.4, 13, -2.4, 8.2]), h(SM.horn), { group: 7, bevel: 1 });
+      r.fill(t.circ(1.8, 6.6, 1.6), h(SM.eye), { group: 7, flat: 1 });
+      r.dot(t.x(2.2, 7.4), t.y(2.2, 7.4), h(SM.horn), 4, 7);
+      r.dot(t.x(7, 5), t.y(7, 5), h(SM.eye), 1, 7);
+      // A puff of flame.
+      r.fill(t.poly([7.6, 3.6, 13.8, 6.4, 11.4, 3.2, 14, 0.6, 7.8, 2.2]), h(SM.ember), { group: 8 });
+      r.fill(t.poly([8, 3.2, 11.6, 3.6, 8.2, 2.4]), h(SM.emberHot), { group: 8 });
+      break;
+    }
   }
 }
 

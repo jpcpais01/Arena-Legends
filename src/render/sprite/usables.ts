@@ -46,9 +46,124 @@ function neck(r: Raster, t: Xf, m: (k: string) => number, o: UsableDrawOpts, x0:
 }
 
 const ART: Record<UsableId, () => UsableArt> = {
-  // PLACEHOLDERS until their art lands.
-  smoke_bomb: () => ART.fire_bomb(), caltrops: () => ART.fire_bomb(), frost_bomb: () => ART.fire_bomb(),
-  troll_tonic: () => ART.healing_potion(),
+  // A slate-grey clay ball bound in cord, a short fuse fizzing at the top.
+  smoke_bomb: () => ({
+    mats: {
+      glass: material({ base: 0x6a6878, tex: speckle(0.16, -1), step: 0.12 }),
+      band: material({ base: 0xc8b898 }),
+      cork: material({ base: 0x3a3440 }),
+      fuse: material({ base: 0x8a6a4a }),
+      smoke: material({ base: 0xb8b8c4 }),
+      hot: material({ base: 0xfff0b0, glow: true }),
+      flame: material({ base: 0xff9a3a, glow: true }),
+    },
+    glow: [0xd8d8e4, 0x6a6878],
+    draw(r, t, m, o = {}) {
+      const fill = filler(r, o);
+      const g = o.group ?? 7;
+      const k = (o.frame ?? 0) % 3;
+      // A curl of smoke off the fuse, then the fuse itself and its spark.
+      const puff = [[6.4, 1.6], [6.8, 2.2], [6.1, 2.6]][k];
+      fill(t.circ(puff[0], puff[1], 0.95), m('smoke'), 0.6, { noLine: true });
+      fill(t.cap(2.6, 0, 3.9, 0.5, 0.55), m('fuse'), 0.5);
+      fill(t.cap(3.9, 0.5, 4.9, -0.2, 0.5), m('fuse'), 0.5);
+      r.dot(t.x(5.3, -0.2), t.y(5.3, -0.2), m(k === 1 ? 'flame' : 'hot'), 4, g);
+      r.dot(t.x(5.3 + (k === 2 ? 0.9 : 0), 0.7), t.y(5.3 + (k === 2 ? 0.9 : 0), 0.7), m('flame'), 4, g);
+      // Clay nub with a wax plug.
+      fill(t.cap(1.6, 0, 2.8, 0, 1.25, 1.0), m('cork'), 0.8);
+      fill(t.circ(-0.9, 0, 3.6), m('glass'), 2.6);
+      // Cord binding: a cross over the ball.
+      const ball = t.circ(-0.9, 0, 3.6);
+      fill(intersect(ball, t.rect(-0.9, 0, 0.45, 4)), m('band'), 0.5, { noLine: true });
+      fill(intersect(ball, t.rect(-0.9, 0, 4, 0.42)), m('band'), 0.5, { noLine: true });
+      r.dot(t.x(-0.9, 0), t.y(-0.9, 0), m('cork'), 1, g);
+    },
+  }),
+  // A small leather pouch, cinched shut, iron spike points poking out of the mouth.
+  caltrops: () => ({
+    mats: {
+      glass: material({ base: 0x8a5a36, tex: speckle(0.12, -1), step: 0.12 }),
+      band: material({ base: 0x5a3a24 }),
+      cork: material({ base: 0x9aa2ae, shiny: true, step: 0.16 }),
+      cord: material({ base: 0xd8c08a }),
+    },
+    glow: [0xd8dce4, 0x6a7280],
+    draw(r, t, m, o = {}) {
+      const fill = filler(r, o);
+      // Spikes out of the open mouth.
+      fill(t.poly([2.6, -1.0, 5.4, -2.6, 3.0, 0.0]), m('cork'), 0.6);
+      fill(t.poly([2.8, -0.3, 6.3, 0.3, 3.0, 0.9]), m('cork'), 0.6);
+      fill(t.poly([2.6, 0.7, 4.6, 3.0, 2.3, 1.6]), m('cork'), 0.6);
+      // Ruffled mouth of the bag.
+      fill(t.poly([2.0, -1.9, 3.4, -2.4, 3.0, -0.6, 3.5, 0.6, 3.0, 2.2, 1.8, 1.9]), m('glass'), 0.9);
+      // The bag: a soft, heavy bottom.
+      fill(union(t.ell(-1.4, 0, 3.1, 3.5), t.cap(-1, 0, 1.8, 0, 2.9, 1.3)), m('glass'), 2.4);
+      // Drawstring: wraps the neck, a tail with a knot hanging off.
+      fill(t.cap(1.7, -1.6, 1.7, 1.6, 0.5), m('band'), 0.5);
+      fill(t.cap(1.7, 1.5, 0.2, 3.3, 0.38), m('cord'), 0.5);
+      r.dot(t.x(0.1, 3.5), t.y(0.1, 3.5), m('cord'), 3, o.group ?? 7);
+      // Stitched seam down the front.
+      r.line(t.x(-3.6, 1.2), t.y(-3.6, 1.2), t.x(0.6, 1.0), t.y(0.6, 1.0), m('band'), 1, o.group ?? 7);
+    },
+  }),
+  // A pale, frosted flask of liquid winter, ice crystals growing off its sides.
+  frost_bomb: () => ({
+    mats: {
+      glass: material({ base: 0xc8eaf8, shiny: true, step: 0.12 }),
+      liquid: material({ base: 0x5ac8f0, shiny: true, step: 0.13 }),
+      ice: material({ base: 0xe8faff, shiny: true, step: 0.14 }),
+      cork: material({ base: 0xa8c8dc }),
+      hot: material({ base: 0xf0ffff, glow: true }),
+    },
+    glow: [0xe8fbff, 0x5ab8e8],
+    draw(r, t, m, o = {}) {
+      const fill = filler(r, o);
+      const g = o.group ?? 7;
+      neck(r, t, m, o, 1.8, 3.8, 0.9);
+      // Frost crusted on the stopper.
+      if (!o.open) fill(t.cap(4.6, -0.6, 5.5, 0.6, 0.5), m('ice'), 0.5);
+      fill(t.circ(-1, 0, 3.4), m('glass'), 2.2);
+      fill(intersect(t.circ(-1, 0, 2.8), t.rect(-2.2, 0, 2.6, 4)), m('liquid'), 1.8);
+      // Crystals: two shards breaking through the glass.
+      fill(t.poly([-1.4, 2.6, -0.6, 4.9, 0.2, 2.8]), m('ice'), 0.6);
+      fill(t.poly([-3.4, -2.0, -4.6, -3.6, -2.6, -2.8]), m('ice'), 0.6);
+      fill(t.poly([0.4, -2.6, 1.2, -3.7, 1.3, -2.2]), m('ice'), 0.5);
+      // A cold glint swirling inside.
+      const k = (o.frame ?? 0) % 3;
+      const s = [[-1.8, -0.6], [-0.6, -1.4], [-2.4, 0.2]][k];
+      r.dot(t.x(s[0], s[1]), t.y(s[0], s[1]), m('hot'), 4, g);
+      r.dot(t.x(-2.2, 1.4), t.y(-2.2, 1.4), m('ice'), 4, g);
+    },
+  }),
+  // A chunky bottle of murky green troll blood, a curved tusk for a stopper.
+  troll_tonic: () => ({
+    mats: {
+      glass: material({ base: 0x3a5a36, shiny: true, step: 0.12 }),
+      liquid: material({ base: 0x6a7a2a, step: 0.12 }),
+      cork: material({ base: 0xece0c0, shiny: true }),
+      cord: material({ base: 0x7a5a3a }),
+      hot: material({ base: 0xc8ff6a, glow: true }),
+    },
+    glow: [0xb8f070, 0x3a8a2a],
+    draw(r, t, m, o = {}) {
+      const fill = filler(r, o);
+      const g = o.group ?? 7;
+      // Short, thick neck with a twine wrap.
+      fill(t.cap(1.6, 0, 3.4, 0, 1.4, 1.2), m('glass'), 1);
+      fill(t.cap(3.4, 0, 3.7, 0, 1.6), m('glass'), 0.8);
+      fill(t.rect(2.4, 0, 0.45, 1.5), m('cord'), 0.5, { noLine: true });
+      // The tusk: jammed in the neck, curving up and back.
+      if (!o.open) fill(union(t.cap(3.6, 0.2, 5.4, -0.4, 1.0, 0.8), t.cap(5.4, -0.4, 6.6, -2.0, 0.8, 0.35)), m('cork'), 1);
+      // A squat, square-shouldered body.
+      fill(t.rect(-1.3, 0, 3.1, 3.3, 1.4), m('glass'), 2.2);
+      fill(intersect(t.rect(-1.5, 0, 2.5, 2.7, 1), t.rect(-2.2, 0, 2.6, 4)), m('liquid'), 1.6);
+      // Sludge bubbles, one of them faintly glowing.
+      const k = (o.frame ?? 0) % 3;
+      r.dot(t.x(-2.6 + k * 0.6, -1.2), t.y(-2.6 + k * 0.6, -1.2), m('hot'), 3, g);
+      r.dot(t.x(-1.0, 1.1 - k * 0.4), t.y(-1.0, 1.1 - k * 0.4), m('liquid'), 4, g);
+      r.dot(t.x(-3.4, 0.6), t.y(-3.4, 0.6), m('liquid'), 4, g);
+    },
+  }),
   // A round-bellied flask of red healing draught.
   healing_potion: () => ({
     mats: {

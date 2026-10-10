@@ -548,7 +548,17 @@ function usableClip(art: CharacterArt, stance: Pose, anim: string, secOut: Hold[
   else if (twoHand) stow.push(F({}, 'calm', { hold: { use: 'none', oneHand: false } }));
 
   let ph: Phases;
-  if (anim === 'toss') {
+  if (anim === 'toss' && gearOf(art.useId!).abilities?.[0]?.kind === 'buff') {
+    // Smashed at your own feet (smoke bomb): raised high, then dashed down hard in a crouch.
+    ph = {
+      w: [
+        U({ hFx: 0.32, hFy: 0.32, sAng: 2.2, lean: stance.lean - 0.06, head: 0.06 }, 'fierce'),
+        U({ hFx: 0.22, hFy: 0.56, sAng: 2.7, lean: -0.08, head: 0.1, hipY: -0.02, toeF: 0.15 }, 'fierce'),
+      ],
+      a: [done({ hFx: 0.56, hFy: -0.72, elF: 1, lean: 0.4, hipY: -0.17, head: -0.12, fNx: -0.38, fFx: 0.4 }, 'shout')],
+      r: [done({ hFx: 0.48, hFy: -0.6, lean: 0.32, hipY: -0.15, fNx: -0.38, fFx: 0.4 }), done({ hFx: 0.42, hFy: -0.36, lean: 0.16, hipY: -0.06 }, 'calm')],
+    };
+  } else if (anim === 'toss') {
     ph = {
       w: [
         U({ hFx: 0.12, hFy: 0.28, sAng: 2.0, lean: stance.lean - 0.04 }, 'fierce', { useBehind: true }),
@@ -630,14 +640,21 @@ function evadeClips(stance: Pose): Record<string, Phases> {
       a: [roll(0), roll(-Math.PI / 2), roll(-Math.PI), roll(-Math.PI * 1.5)],
       r: [F({ ...crouch, hipY: -0.2, lean: 0.35 }, 'fierce'), F({ hipY: -0.1, lean: 0.18 }, 'calm')],
     },
-    // Quake stomp: the front knee comes up high, then the foot drives into the ground.
+    // Quake stomp: weight sinks onto the back leg, the front knee comes up high with
+    // the arms lifting for balance, a beat at the top, then the foot drives down
+    // with the whole body behind it; the crouch holds as the quake rolls out, then rises.
     stomp: {
       w: [
-        F({ hipY: -0.04, lean: -0.08, fFx: 0.2, fFy: -0.45, toeF: 0.3, hFx: 0.3, hFy: 0.15, sway: -0.4 }, 'fierce'),
-        F({ hipY: 0.02, lean: -0.14, head: 0.06, fFx: 0.26, fFy: -0.28, toeF: 0.5, hFx: 0.38, hFy: 0.3, elF: 1, sway: -0.7 }, 'shout'),
+        F({ hipY: -0.14, lean: 0.18, head: -0.04, fNx: -0.34, fFx: 0.32, hFx: 0.36, hFy: -0.32, sway: 0.3 }, 'fierce'),
+        F({ hipY: 0.0, lean: -0.1, head: 0.04, fNx: -0.3, fFx: 0.18, fFy: -0.44, toeF: 0.35, hFx: 0.34, hFy: 0.2, elF: 1, sway: -0.5 }, 'fierce'),
+        F({ hipY: 0.03, lean: -0.17, head: 0.08, fNx: -0.3, fFx: 0.24, fFy: -0.3, toeF: 0.55, hFx: 0.4, hFy: 0.36, elF: 1, sway: -0.8 }, 'shout'),
       ],
-      a: [F({ hipY: -0.22, lean: 0.24, head: -0.12, fNx: -0.4, fFx: 0.46, toeF: -0.1, hFx: 0.42, hFy: -0.3, sway: 1 }, 'shout')],
-      r: [F({ hipY: -0.16, lean: 0.14, fNx: -0.38, fFx: 0.4 }, 'fierce'), F({ hipY: -0.08, lean: 0.06 }, 'calm')],
+      a: [F({ hipY: -0.27, lean: 0.3, head: -0.14, fNx: -0.45, fFx: 0.5, toeF: -0.1, hFx: 0.52, hFy: -0.42, sway: 1 }, 'shout')],
+      r: [
+        F({ hipY: -0.25, lean: 0.26, head: -0.1, fNx: -0.45, fFx: 0.5, hFx: 0.5, hFy: -0.4, sway: 0.6 }, 'fierce'),
+        F({ hipY: -0.15, lean: 0.15, fNx: -0.4, fFx: 0.44, hFx: 0.44, hFy: -0.3 }, 'fierce'),
+        F({ hipY: -0.08, lean: 0.08 }, 'calm'),
+      ],
     },
     leap: {
       w: [F({ ...crouch, lean: 0.1 }, 'fierce')],
