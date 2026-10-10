@@ -1830,3 +1830,5 @@ input.fr-input { flex: 1; min-width: 0; height: 2.5rem; font-size: 1.05rem; }
 .scr.forge-scr { background: radial-gradient(ellipse 34% 46% at 22% 72%, rgba(255, 120, 40, 0.22), transparent 70%), linear-gradient(180deg, rgba(18, 10, 14, 0.92), rgba(8, 5, 10, 0.97)); }
 /* Display text keeps the pixel face: the Fight button, battle banners, the clock, the results banner, the title prompt, the hero name field. */
 .btn.fight, .banner, .clock, .res-banner b, .title-start, input.name { font-family: var(--font-pixel); }
+.hist-btns .plain { gap: 5px; padding-left: 0.6rem; padding-right: 0.7rem; font-size: 0.75rem; }
+.hist-btns .plain svg { width: 0.85rem; height: 0.85rem; }

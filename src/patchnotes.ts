@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.61.1',
+    date: '2026-10-10',
+    title: 'No skins button',
+    notes: [
+      'A small No skins button next to Undo in the Armory puts every item back to its plain look. Undo brings your skins back.',
+    ],
+  },
+  {
     version: '0.61.0',
     date: '2026-10-10',
     title: 'A home theme',
