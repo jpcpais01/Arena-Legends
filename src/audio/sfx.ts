@@ -11,7 +11,9 @@ export type Sfx =
   | 'rattle' | 'tierUp' | 'chestOpen' | 'flip' | 'gems'
   | 'revealRare' | 'revealMythic' | 'revealLegendary' | 'revealEpic'
   // Pre-fight entrances
-  | 'entStep' | 'entSlam' | 'entPoof' | 'entRise' | 'entChoir' | 'entFall' | 'entCheer' | 'entIgnite';
+  | 'entStep' | 'entSlam' | 'entPoof' | 'entRise' | 'entChoir' | 'entFall' | 'entCheer' | 'entIgnite'
+  // Big pulls and the forge
+  | 'omen' | 'slam' | 'forge' | 'meld';
 
 class AudioEngine {
   private ctx: AudioContext | null = null;
@@ -297,6 +299,35 @@ class AudioEngine {
         this.burst(t, 0.8, 0.55 * k, 'lowpass', 600, 2400, 0.7, pan);
         this.tone('sine', 70, 140, t, 0.6, 0.4 * k, pan);
         this.burst(t + 0.15, 0.6, 0.25 * k, 'highpass', 2500, 5000, 0.8, pan);
+        break;
+      // A swell under the chest before a legendary or epic: `intensity` 2 for epic.
+      case 'omen': {
+        const d = k > 1 ? 1.5 : 1.1;
+        this.tone('sawtooth', 55, 110 * k, t, d, 0.12);
+        this.tone('sine', 41, 82, t, d, 0.5);
+        this.burst(t, d, 0.25, 'bandpass', 200, 3200, 3);
+        for (let i = 0; i < 8; i++) this.tone('square', 220 * Math.pow(2, i / 6), 220 * Math.pow(2, i / 6), t + (i / 8) * d, 0.08, 0.03);
+        break;
+      }
+      // The tier name lands.
+      case 'slam':
+        this.tone('sine', 90, 30, t, 0.7, 0.9);
+        this.burst(t, 0.45, 0.6, 'lowpass', 3000, 90, 0.8);
+        this.tone('square', 196, 98, t, 0.25, 0.08);
+        this.burst(t + 0.01, 0.25, 0.25, 'highpass', 6000, 9000, 0.7);
+        break;
+      // Spares melting together: three anvil strikes.
+      case 'forge':
+        for (let i = 0; i < 3; i++) {
+          const at = t + i * 0.16;
+          this.tone('triangle', 1180 + i * 90, 1150 + i * 90, at, 0.35, 0.09);
+          this.tone('square', 2350 + i * 170, 2300 + i * 170, at, 0.12, 0.03);
+          this.burst(at, 0.08, 0.3, 'bandpass', 3500, 2500, 6);
+        }
+        break;
+      case 'meld':
+        this.burst(t, 0.5, 0.3, 'bandpass', 500, 4000, 2);
+        this.tone('sine', 220, 880, t, 0.5, 0.12);
         break;
     }
   }

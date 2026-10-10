@@ -53,6 +53,9 @@ const MERGERS: Record<string, (local: unknown, cloud: unknown) => unknown> = {
       owned: [...new Set([...list(B.owned), ...list(A.owned)])],
       pity: Math.max(num(A.pity), num(B.pity)),
       paid: [...new Set([...list(B.paid), ...list(A.paid)])].slice(-40),
+      // Spare copies: the larger count of each.
+      spare: Object.fromEntries([...new Set([...Object.keys(o(A.spare)), ...Object.keys(o(B.spare))])]
+        .map((id) => [id, Math.max(num(o(A.spare)[id]), num(o(B.spare)[id]))])),
     };
   },
 };

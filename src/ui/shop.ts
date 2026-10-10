@@ -17,7 +17,7 @@ import { ENTRANCE_ICON, ENTRANCE_TIER } from './entranceUi';
 
 export interface ShopCallbacks {
   onClose(): void;
-  onChests(): void;
+  onChests(tab: 'chests' | 'forge'): void;
   /** Wears a bought skin (equipping its item). */
   onEquip(skin: SkinDef): void;
   /** Wears a whole bought set. */
@@ -68,7 +68,7 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
   const el = h('div.scr.shop', { role: 'dialog', 'aria-label': 'Shop' },
     h('header.scr-head', null,
       h('div.scr-title', null, h('h1', null, 'Shop')),
-      shopTabs('offers', () => { sfx.play('select'); cb.onChests(); }),
+      shopTabs('offers', (t) => { sfx.play('select'); cb.onChests(t === 'forge' ? 'forge' : 'chests'); }),
       h('div.grow'), gemChip,
       h('button.btn.primary.done', { onclick: close }, icon('check'), 'Done')),
     feat, shelves, got);

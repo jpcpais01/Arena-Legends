@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { EPIC_PITY, gems, loadCollection, openChest, owns, pity, PULL_COST, resetCollectionForTests, START_GEMS, TEN_COST, winGems } from './collection';
+import { EPIC_PITY, forge, forgePick, gems, loadCollection, openChest, owns, pity, PULL_COST, resetCollectionForTests, spareCount, START_GEMS, TEN_COST, winGems } from './collection';
 import { SKINS } from './skins';
 
 /** Seeded rng so the rolls are repeatable. */
@@ -19,12 +19,12 @@ describe('skin chests', () => {
     expect(owns(SKINS[1].id)).toBe(false);
   });
 
-  it('charges, refunds duplicates and refuses without gems', () => {
+  it('charges, keeps duplicates as spares and refuses without gems', () => {
     loadCollection();
     const r = rng(7);
     const a = openChest(1, r)!;
     expect(a).toHaveLength(1);
-    expect(gems()).toBe(START_GEMS - PULL_COST + a[0].refund);
+    expect(gems()).toBe(START_GEMS - PULL_COST);
     const ten = openChest(10, r)!;
     expect(ten).toHaveLength(10);
     // Ten always hold a mythic or better.
@@ -46,6 +46,25 @@ describe('skin chests', () => {
     }
     expect(epic).toBe(EPIC_PITY);
     expect(pity()).toBe(0);
+  });
+
+  it('keeps duplicates and forges 3 into the next rarity', () => {
+    loadCollection();
+    (loadCollection() as { gems: number }).gems = 100000;
+    const never = () => 0; // always the same rare
+    for (let i = 0; i < 4; i++) openChest(1, never);
+    const rare = SKINS.find((s) => s.rarity === 'rare')!;
+    expect(owns(rare.id)).toBe(true);
+    expect(spareCount('rare')).toBe(3);
+    expect(forgePick('mythic')).toBeNull();
+    const pick = forgePick('rare')!;
+    expect(pick).toEqual([rare.id, rare.id, rare.id]);
+    const got = forge(pick, never)!;
+    expect(got.skin.rarity).toBe('mythic');
+    expect(owns(got.skin.id)).toBe(true);
+    expect(spareCount('rare')).toBe(0);
+    expect(forge(pick, never)).toBeNull();
+    expect(gems()).toBe(100000 - 4 * PULL_COST);
   });
 
   it('pays more for a cleaner win', () => {
