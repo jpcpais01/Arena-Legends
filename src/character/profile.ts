@@ -1,5 +1,4 @@
 import { DEFAULT_BUILDS, randomBuild, sanitizeBuild, type CharacterBuild } from '../sim/loadout';
-import { FIGHT_STYLE_IDS } from '../sim/styles';
 import { BACKDROPS, fitForm, randomAppearance, sanitizeAppearance, type Appearance } from './appearance';
 import { randomSkins } from './skins';
 
@@ -60,13 +59,12 @@ export function randomName(r: () => number = Math.random): string {
   return r() < 0.4 ? cleanName(`${f} ${EPITHET[Math.floor(r() * EPITHET.length)]}`) : f;
 }
 
-/** A generated rival: random name, form, gear, fighting style, look and item skins. */
+/** A generated rival: random name, form, gear, look and item skins. Rivals always fight Balanced. */
 export function generateRival(avoidName?: string): PlayerCharacter {
   let name = randomName();
   for (let i = 0; i < 4 && name === avoidName; i++) name = randomName();
   const build = randomBuild();
   // The backdrop is rolled here, not in randomBuild, so seeded builds keep their sequence.
   const look = { ...(build.look ?? randomAppearance(Math.random, build.form)), backdrop: Math.floor(Math.random() * BACKDROPS.length) };
-  const style = FIGHT_STYLE_IDS[Math.floor(Math.random() * FIGHT_STYLE_IDS.length)];
-  return { ...build, name, look, skins: randomSkins(build.gear), style };
+  return { ...build, name, look, skins: randomSkins(build.gear), style: 'balanced' };
 }

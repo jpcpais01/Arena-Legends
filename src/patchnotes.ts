@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.48.0',
+    date: '2026-10-10',
+    title: 'Rivals fight Balanced',
+    notes: [
+      'Every rival now uses the Balanced fighting style, including the one you already have. Your own hero keeps the style you picked.',
+    ],
+  },
+  {
     version: '0.47.0',
     date: '2026-10-10',
     title: 'Heat counts your own blows more',
