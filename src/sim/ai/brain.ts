@@ -8,6 +8,7 @@ import {
 } from './kit';
 import { OpponentModel } from './opponent';
 import { derivePersonality, type Personality } from './personality';
+import { FIGHT_STYLES, type FightStyle } from '../styles';
 
 /**
  * Strategic layer. A plan is a high-level intent that biases the tactical
@@ -111,7 +112,7 @@ function effectiveHp(f: Fighter): number {
   if (f.has.has('phoenix_feather') && !f.phoenixUsed) v += 0.3;
   if (f.has.has('hourglass') && !f.rewindUsed) v += 0.12;
   const regen = getStatus(f, 'regen');
-  if (regen) v += 0.025 * regen.remaining * f.stats.healMult;
+  if (regen) v += 0.02 * regen.remaining * f.stats.healMult;
   return v;
 }
 
@@ -174,6 +175,8 @@ export class Brain implements FighterBrain {
   readonly f: Fighter;
   readonly p: Personality;
   readonly kit: Kit;
+  /** The hero's fighting style (habits only). */
+  readonly style: FightStyle;
   plan: Plan = 'pressure';
 
   private ek!: Kit;
@@ -234,6 +237,7 @@ export class Brain implements FighterBrain {
   constructor(f: Fighter, variance: number) {
     this.f = f;
     this.kit = analyzeKit(f);
+    this.style = FIGHT_STYLES[f.profile.style];
     const temper2 = (variance * 7.31 + 0.37) % 1;
     this.p = derivePersonality(f, this.kit, variance, temper2);
     this.hitRate = f.abilities.map(() => 0.65);
@@ -537,12 +541,12 @@ export class Brain implements FighterBrain {
     // barely pause, and nobody rests when the kill or the clock is on the line.
     const p = this.p;
     const tolerance = 0.5 + p.aggression * 0.45 - p.caution * 0.1 + this.behind * 1.2 + pull * 0.25
-      + (enHp < 0.25 ? 0.3 : 0) + (isDisabled(e) ? 0.5 : 0);
+      + (enHp < 0.25 ? 0.3 : 0) + (isDisabled(e) ? 0.5 : 0) + this.style.stamina;
     this.tolerance = tolerance;
     const was = this.winded;
     if (!this.winded && this.heat > tolerance) {
       this.winded = true;
-      this.restDist = clamp(Math.max(liveReach(e, this.ek, 0.4), this.m.engage) + 2.2, 4.2, 6.5);
+      this.restDist = clamp(Math.max(liveReach(e, this.ek, 0.4), this.m.engage) + 2.2 + this.style.rest, 3.6, 7);
     } else if (this.winded && (this.heat < tolerance * 0.55 || this.behind > 0.5)) {
       this.winded = false;
     }
@@ -602,6 +606,7 @@ export class Brain implements FighterBrain {
       breathe: this.winded ? 0.85 + p.caution * 0.25 + rnd() : -1,
     };
     scores[this.plan] += 0.1; // inertia
+    for (const k in this.style.plans) if (scores[k as Plan] > -1) scores[k as Plan] += this.style.plans[k as Plan]!;
 
     let best: Plan = 'pressure';
     for (const k in scores) if (scores[k as Plan] > scores[best]) best = k as Plan;
@@ -890,7 +895,7 @@ export class Brain implements FighterBrain {
       }
       // Prefer the cheaper answer when the damage is small.
       if (t.danger < 0.03) val *= 0.4;
-      val *= this.defendBias;
+      val *= this.defendBias * this.style.defense;
       return { val, why };
     }
 
@@ -981,7 +986,7 @@ export class Brain implements FighterBrain {
       }
       if (s.status === 'regen') {
         const missing = 1 - c.myHp;
-        const total = 0.025 * s.duration;
+        const total = 0.02 * s.duration;
         if (!getStatus(f, 'regen') && (missing > total * 0.9 || c.myHp < 0.35)) {
           val += Math.min(total, missing) * f.stats.healMult * 0.7;
           why = `${ab.name}!`;
@@ -1133,7 +1138,7 @@ export class Brain implements FighterBrain {
     if (hasControl(ab)) val += pHit * ccValue(ab, c.burst);
     if (ab.drainLife) val += pHit * dmg * ab.drainLife * 0.6 * (1.4 - c.myHp);
     // Out of the smoke, the first hit is an ambush.
-    if (getStatus(f, 'hidden')) { val += pHit * dmg * 0.4; why = why || `Ambush — ${ab.name}!`; }
+    if (getStatus(f, 'hidden')) { val += pHit * dmg * 0.5; why = why || `Ambush — ${ab.name}!`; }
     // A pull only helps a fighter who wants them close.
     if (ab.pull && this.kit.ranged && this.m.zone > 0) val -= 0.02;
 

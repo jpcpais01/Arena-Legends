@@ -8,6 +8,7 @@ import { css } from '../render/pixel/color';
 import { FORMS, FORM_IDS } from '../sim/forms';
 import { gearOf } from '../sim/gear';
 import type { CharacterBuild } from '../sim/loadout';
+import { FIGHT_STYLE_IDS, FIGHT_STYLES, type FightStyleId } from '../sim/styles';
 import type { FormId, Stats } from '../sim/types';
 import { h, hex } from './dom';
 import { icon, type IconName } from './icons';
@@ -22,12 +23,22 @@ export interface CreatorCallbacks {
 const STEPS: { label: string; icon: IconName; title: string; sub: string }[] = [
   { label: 'Species', icon: 'paw', title: 'Choose your species', sub: 'Looks only: every species fights the same.' },
   { label: 'Body', icon: 'body', title: 'Choose your body', sub: 'Your body sets your stats and how you move.' },
+  { label: 'Style', icon: 'swords', title: 'Choose your fighting style', sub: 'How your hero likes to fight. No stats: just habits and temper.' },
   { label: 'Look', icon: 'palette', title: 'Choose your look', sub: 'Colours and hair. Change them any time.' },
   { label: 'Name', icon: 'edit', title: 'Name your legend', sub: 'The crowd will chant it.' },
   { label: 'Backdrop', icon: 'star', title: 'Choose your backdrop', sub: 'The scene behind your portrait on the home screen.' },
 ];
-const NAME = 3;
+const STYLE = 2;
+const LOOK = 3;
+const NAME = 4;
 const LAST = STEPS.length - 1;
+/** Steps whose pick the stage arrows flip through. */
+const ARROWS = 3;
+
+const STYLE_ICON: Record<FightStyleId, IconName> = {
+  balanced: 'scale', relentless: 'flame', tactician: 'eye', skirmisher: 'fast', guardian: 'shield',
+};
+const STYLE_BARS = ['Aggression', 'Defense', 'Trickery', 'Stamina'];
 
 /** Form stats shown as bars, scaled between the lowest and highest form. */
 const FORM_STATS: [keyof Stats, string, (v: number) => string][] = [
@@ -50,8 +61,8 @@ const SKIN_LABEL: Partial<Record<SpeciesId, string>> = { golem: 'Stone', wisp: '
 const bare = (c: CharacterBuild): CharacterBuild => ({ ...c, gear: { main: c.gear.main }, skins: {} });
 
 /**
- * Character creation, a full screen in five steps like a game's character
- * select: species, body, look, the name, then the portrait backdrop. The fighter stands big on a lit
+ * Character creation, a full screen in six steps like a game's character
+ * select: species, body, fighting style, look, the name, then the portrait backdrop. The fighter stands big on a lit
  * dais and updates live; arrows beside them flip through species or bodies.
  * Editing an existing fighter unlocks every step and can save from any of them.
  */
@@ -110,7 +121,8 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     plateName.classList.toggle('empty', !n);
     plateTags.replaceChildren(
       h('span.chip', null, SPECIES[c.look.species].name),
-      h('span.chip', { style: { color: css(FORMS[c.form].color) } }, FORMS[c.form].name));
+      h('span.chip', { style: { color: css(FORMS[c.form].color) } }, FORMS[c.form].name),
+      h('span.chip', { style: { color: css(FIGHT_STYLES[styleOf()].color) } }, FIGHT_STYLES[styleOf()].name));
   }
 
   function syncNav(): void {
@@ -128,7 +140,7 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
       : [h('span', null, 'Next'), icon('next')]));
     next.classList.toggle('go', last && !editing);
     save.hidden = !editing || last;
-    const arrows = step < 2;
+    const arrows = step < ARROWS;
     prev.hidden = nextPick.hidden = !arrows;
   }
 
@@ -161,7 +173,7 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     cb.onDone({ ...c, name: n });
   }
 
-  /** Stage arrows: the previous or next species (step 1) or body (step 2). */
+  /** Stage arrows: the previous or next species, body or fighting style. */
   function cycle(dir: 1 | -1): void {
     sfx.play('select');
     if (step === 0) {
@@ -172,6 +184,9 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
       const forms = SPECIES[c.look.species].forms;
       const i = forms.indexOf(c.form);
       pickForm(forms[(i + dir + forms.length) % forms.length]);
+    } else if (step === STYLE) {
+      const i = FIGHT_STYLE_IDS.indexOf(styleOf());
+      pickStyle(FIGHT_STYLE_IDS[(i + dir + FIGHT_STYLE_IDS.length) % FIGHT_STYLE_IDS.length]);
     }
     refresh();
   }
@@ -194,6 +209,15 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     if (c.form === id) return;
     c = { ...c, form: id };
     syncStage();
+    preview.showcase();
+    syncPlate();
+  }
+
+  const styleOf = (): FightStyleId => c.style ?? 'balanced';
+
+  function pickStyle(id: FightStyleId): void {
+    if (styleOf() === id) return;
+    c = { ...c, style: id };
     preview.showcase();
     syncPlate();
   }
@@ -288,6 +312,39 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     return [grid, detail];
   }
 
+  function styleStep(): HTMLElement[] {
+    const detail = h('div.detail.frame.iron');
+    const tiles = new Map<string, HTMLElement>();
+    const grid = h('div.card-grid.styles');
+    for (const id of FIGHT_STYLE_IDS) {
+      const s = FIGHT_STYLES[id];
+      const t = h<HTMLButtonElement>('button.card-tile', {
+        style: { '--seg': css(s.color) },
+        onclick: () => {
+          if (styleOf() === id) return;
+          sfx.play('select');
+          pickStyle(id);
+          refresh();
+        },
+      }, h('div.portrait.style-ic', { style: { color: css(s.color) } }, icon(STYLE_ICON[id])), h('b', null, s.name), h('small', null, s.title));
+      tiles.set(id, t);
+      grid.append(t);
+    }
+    refresh = () => {
+      const s = FIGHT_STYLES[styleOf()];
+      mark(tiles, s.id);
+      detail.replaceChildren(
+        h('div.detail-head', null, h('b', null, s.name), h('span', null, s.title)),
+        h('p', null, s.blurb),
+        h('div.bars', { style: { '--seg': css(s.color) } }, ...STYLE_BARS.flatMap((label, k) => {
+          const n = s.bars[k];
+          return [h('span', null, label), h('div.segs', null, ...Array.from({ length: 10 }, (_, i) => h(i < n ? 'i.on' : 'i'))), h('em', null, String(n))];
+        })));
+    };
+    refresh();
+    return [grid, detail];
+  }
+
   function lookStep(): HTMLElement[] {
     const body = h('div.style-grid');
     const swatches = (label: string, colors: number[], cur: () => number, pick: (i: number) => void) => {
@@ -344,6 +401,7 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
       h('div.name-sum', null,
         h('span', null, h('small', null, 'Species'), h('b', null, sp.name)),
         h('span', null, h('small', null, 'Body'), h('b', { style: { color: css(f.color) } }, f.name)),
+        h('span', null, h('small', null, 'Style'), h('b', { style: { color: css(FIGHT_STYLES[styleOf()].color) } }, FIGHT_STYLES[styleOf()].name)),
         h('span', null, h('small', null, 'Fights with'), h('b', null, gearOf(c.gear.main).name)))),
     ];
   }
@@ -372,7 +430,8 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     refresh = () => {};
     const s = STEPS[step];
     headTool = null;
-    panelBody.replaceChildren(...(step === 0 ? speciesStep() : step === 1 ? formStep() : step === 2 ? lookStep() : step === NAME ? nameStep() : backdropStep()));
+    panelBody.replaceChildren(...(step === 0 ? speciesStep() : step === 1 ? formStep() : step === STYLE ? styleStep()
+      : step === LOOK ? lookStep() : step === NAME ? nameStep() : backdropStep()));
     panelHead.replaceChildren(
       h('div.step-title', null, h('div.ribbon', null, h('span', null, s.title)), headTool),
       h('p', null, s.sub));
@@ -386,8 +445,8 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
 
   const onKey = (e: KeyboardEvent) => {
     if (e.target instanceof HTMLInputElement) return;
-    if (e.key === 'ArrowLeft' && step < 2) { e.preventDefault(); cycle(-1); return; }
-    if (e.key === 'ArrowRight' && step < 2) { e.preventDefault(); cycle(1); return; }
+    if (e.key === 'ArrowLeft' && step < ARROWS) { e.preventDefault(); cycle(-1); return; }
+    if (e.key === 'ArrowRight' && step < ARROWS) { e.preventDefault(); cycle(1); return; }
     if (e.target instanceof HTMLButtonElement) return;
     if (e.key === 'Enter') { e.preventDefault(); advance(); }
     else if (e.key === 'Escape' && cb.onCancel) { sfx.play('back'); cb.onCancel(); }

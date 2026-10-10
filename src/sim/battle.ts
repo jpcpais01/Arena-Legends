@@ -273,7 +273,7 @@ export class Battle {
         }
       }
       if (dots && s.id === 'regen' && f.alive) {
-        s.acc += f.stats.maxHp * 0.025 * DT;
+        s.acc += f.stats.maxHp * 0.02 * DT;
         s.tickT += DT;
         if (s.tickT >= 0.5 || s.remaining <= 0) {
           this.heal(f, s.acc);
@@ -957,7 +957,6 @@ export class Battle {
         this.emit({ type: 'zap', f: owner.id, from: z.x, to: e.x });
         this.zoneHit(owner, e, z.power, 'magic', 'totem');
         if (e.alive) {
-          if (!isUnstoppable(e)) e.stagger = Math.max(e.stagger, 0.12 * (1 - e.stats.tenacity * 0.5));
           this.applyStatus(e, owner, { status: 'chill', duration: 2 });
         }
       } else {
@@ -1054,7 +1053,7 @@ export class Battle {
     // Seer's Blindfold: saw it coming, and simply isn't there when it lands.
     if (tgt.has.has('seer_blindfold') && tgt.foresightCd <= 0 && !blocked
       && (ab.heavy || ab.power * att.stats.power >= tgt.stats.maxHp * 0.03)) {
-      tgt.foresightCd = 7;
+      tgt.foresightCd = 9;
       this.emit({ type: 'foresight', f: tgt.id, x: tgt.x, y: tgt.y + 1.3 });
       return;
     }
@@ -1062,12 +1061,12 @@ export class Battle {
     const heavy = opts.heavyOverride ?? !!ab.heavy;
     let raw = att.stats.power * ab.power * (opts.mult ?? 1) * att.stats.damageMult;
     if (opts.fromProjectile) raw = opts.fromProjectile.power * ab.power * (opts.mult ?? 1) * att.stats.damageMult;
-    if (opts.fromProjectile && att.has.has('hawkeye_hood')) raw *= 1.18;
+    if (opts.fromProjectile && att.has.has('hawkeye_hood')) raw *= 1.2;
     const body = !opts.fromProjectile && (ab.kind === 'melee' || ab.kind === 'dash' || ab.kind === 'aoe') && ab.slot !== 'item';
     // Out of the smoke: the first blow is an ambush.
     const hidden = getStatus(att, 'hidden');
     if (hidden && ab.slot !== 'item') {
-      raw *= 1.4;
+      raw *= 1.5;
       att.statuses.splice(att.statuses.indexOf(hidden), 1);
       this.emit({ type: 'callout', f: att.id, text: 'Ambush!', color: '#d8d8e8' });
     }
@@ -1168,7 +1167,7 @@ export class Battle {
       // Dread Helm: a heavy blow that lands puts the fear in them.
       if (heavy && att.has.has('dread_helm') && att.dreadCd <= 0 && ab.slot !== 'item') {
         att.dreadCd = 7;
-        this.applyStatus(tgt, att, { status: 'fear', duration: 0.9 });
+        this.applyStatus(tgt, att, { status: 'fear', duration: 1.1 });
       }
     } else {
       tgt.vx += (Math.sign(tgt.x - att.x) || att.facing) * 1.5;
@@ -1272,7 +1271,7 @@ export class Battle {
     const i = (f.histI - n) % HISTORY_SIZE;
     const x = f.hist[i * 2], hp = f.hist[i * 2 + 1];
     const from = f.x;
-    f.hp = Math.max(f.hp, Math.min(f.stats.maxHp, hp));
+    f.hp = Math.max(f.hp, Math.min(f.stats.maxHp, hp + f.stats.maxHp * 0.1));
     f.x = f.px = clamp(x, -ARENA_HALF_WIDTH, ARENA_HALF_WIDTH);
     f.vx = 0; f.vy = 0; f.y = Math.max(0, f.y);
     f.action = null;

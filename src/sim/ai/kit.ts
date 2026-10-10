@@ -156,7 +156,7 @@ function onHitBonus(src: Fighter, dst: Fighter, raw: number): number {
 export function estDamage(src: Fighter, ab: AbilityDef, dst: Fighter, withPassives = true): number {
   const s = src.stats;
   let raw = s.power * ab.power * (ab.hits ?? 1) * s.damageMult;
-  if (ab.kind === 'projectile' && src.has.has('hawkeye_hood')) raw *= 1.18;
+  if (ab.kind === 'projectile' && src.has.has('hawkeye_hood')) raw *= 1.2;
   let critMult = s.critMult;
   if (src.has.has('executioner_hood') && dst.hp / dst.stats.maxHp < 0.3) critMult *= 1.5;
   raw *= 1 + s.critChance * (critMult - 1);

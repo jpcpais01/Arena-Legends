@@ -113,7 +113,7 @@ export function createFighter(id: FighterId, cfg: FighterConfig): Fighter {
     look: cfg.look,
     skins: cfg.skins ?? {},
     hands: mainHands(cfg.gear),
-    profile: buildProfile(cfg.form, cfg.gear),
+    profile: buildProfile(cfg.form, cfg.gear, cfg.style),
     abilities,
     cooldowns: abilities.map(() => 0),
     uses: abilities.map((a) => a.uses ?? -1),
