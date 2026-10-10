@@ -49,10 +49,14 @@ export interface Burst {
  * - eye: an eye that opens and closes (foresight);
  * - swirl: dots spiralling in to a point;
  * - coin: a coin flipped up into the air;
- * - icicles: ice spikes that jut out of the ground and melt back.
+ * - icicles: ice spikes that jut out of the ground and melt back;
+ * - slash: a crescent blade arc swept across a point (super strikes), `x2` the facing;
+ * - implode: a ring closing in on a point (a super gathering power);
+ * - rays: speed lines bursting out of a point (a super let loose).
  */
 interface Pulse {
-  kind: 'ring' | 'star' | 'groundRing' | 'crack' | 'pillar' | 'bolt' | 'cloud' | 'clock' | 'runes' | 'eye' | 'swirl' | 'coin' | 'icicles';
+  kind: 'ring' | 'star' | 'groundRing' | 'crack' | 'pillar' | 'bolt' | 'cloud' | 'clock' | 'runes' | 'eye' | 'swirl' | 'coin' | 'icicles'
+    | 'slash' | 'implode' | 'rays';
   x: number; y: number;
   r: number;
   t: number; max: number;
@@ -102,6 +106,29 @@ export class Fx {
   bolt(x: number, y: number, x2: number, y2: number, color: number, life = 0.2, core = 0xffffff): void {
     const q = this.pulse('bolt', x, y, 0, color, life, core);
     q.x2 = x2; q.y2 = y2;
+  }
+
+  /** A crescent slash across (x, y) facing `facing`, swept upward (`rising`) or downward. */
+  slash(x: number, y: number, r: number, facing: number, rising: boolean, color: number, core = 0xffffff, life = 0.2): void {
+    const q = this.pulse('slash', x, y, r, color, life, core);
+    q.x2 = facing; q.y2 = rising ? 1 : -1;
+  }
+
+  /**
+   * Particles drawn in to a point from a ring `r` metres round it, arriving
+   * as they fade (power gathering for a super).
+   */
+  gather(x: number, y: number, r: number, count: number, color: number, color2: number, kind: Particle['kind'] = 'streak'): void {
+    for (let i = 0; i < count && this.ps.length < MAX_PARTICLES; i++) {
+      const a = this.rnd() * Math.PI * 2;
+      const d = r * (0.7 + this.rnd() * 0.3);
+      const life = 0.18 + this.rnd() * 0.12;
+      const sp = d / life;
+      this.ps.push({
+        x: x + Math.cos(a) * d, y: y + Math.sin(a) * d * 0.8, vx: -Math.cos(a) * sp, vy: -Math.sin(a) * sp * 0.8,
+        life, max: life, color, color2, size: 1, gravity: 0, drag: 0, kind, ground: false,
+      });
+    }
   }
 
   pop(text: string, x: number, y: number, style: TextStyle, life = 0.9, vy = 1.6): void {
@@ -267,6 +294,14 @@ export class Fx {
         if (k < 0.8 || (Math.floor(q.t * 30) & 1) === 0) g.drawImage(s.img, cx - s.ox, cy - up - s.oy);
       } else if (q.kind === 'icicles') {
         drawIcicles(g, q, cx, cy, k);
+      } else if (q.kind === 'slash') {
+        drawSlash(g, q, cx, cy, k);
+      } else if (q.kind === 'implode') {
+        // Closing in, brighter as it tightens.
+        const r = q.r * PPM * (1 - k * k);
+        if (r >= 1) ellipseOutline(g, cx, cy, r, r * 0.8, css(k > 0.6 ? q.color2 : q.color), k < 0.3 ? 0.5 : 1);
+      } else if (q.kind === 'rays') {
+        drawRays(g, q, cx, cy, k);
       } else if (q.kind === 'pillar') {
         // Column of light (revive, meteor).
         const w = Math.max(1, Math.round(q.r * PPM * (1 - k)));
@@ -489,6 +524,49 @@ function drawIcicles(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: numb
       g.fillStyle = css(j > hgt - 3 ? 0xffffff : j < 2 ? q.color2 : q.color);
       g.fillRect(x - wd, y0 - j, 1 + wd * 2 - (j & 1 && wd ? 1 : 0), 1);
     }
+  }
+}
+
+/**
+ * A crescent blade arc: thick in the middle, tapering at both tips, a white
+ * core inside a coloured edge. It is swept in over the first third of its
+ * life, then thins and burns away from the tail.
+ */
+function drawSlash(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+  const R = q.r * PPM, face = q.x2 >= 0 ? 1 : -1, up = q.y2 > 0 ? -1 : 1;
+  const span = 2.2, n = Math.max(12, Math.round(R * span * 0.9));
+  const sweep = Math.min(1, k * 3.2), tail = k > 0.45 ? (k - 0.45) / 0.55 : 0;
+  const thick = Math.max(1, R * 0.16 * (1 - tail * 0.7));
+  // Centre of the arc sits behind the strike point so the curve bows through it.
+  const ox = cx - face * R * 0.85, oy = cy;
+  for (let i = 0; i < n; i++) {
+    const u = i / (n - 1);
+    if (u > sweep || u < tail) continue;
+    // From the tip it starts at to the other one (screen y is down: a rising cut starts low).
+    const a = (u * span - span / 2) * up;
+    const w = Math.max(0, Math.sin(u * Math.PI)) * thick;
+    const ca = Math.cos(a) * face, sa = Math.sin(a);
+    for (let j = -Math.ceil(w); j <= Math.ceil(w); j++) {
+      const rr = R + j;
+      const x = Math.round(ox + ca * rr), y = Math.round(oy + sa * rr * 0.85);
+      g.fillStyle = Math.abs(j) < w * 0.45 ? css(q.color2) : css(q.color);
+      g.fillRect(x, y, 1, 1);
+    }
+  }
+}
+
+/** Speed lines bursting out of a point, longer and fainter as they fly. */
+function drawRays(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+  if (k > 0.7 && (Math.floor(q.t * 30) & 1)) return;
+  const R = q.r * PPM;
+  let s = q.seed;
+  for (let i = 0; i < 14; i++) {
+    s = (s * 9301 + 49297) % 233280;
+    const a = (i / 14) * Math.PI * 2 + (s / 233280) * 0.4;
+    const r0 = R * (0.25 + k * 0.8), r1 = r0 + R * (0.2 + (s % 7) * 0.05) * (1 - k * 0.5);
+    g.fillStyle = css(i & 1 ? q.color2 : q.color);
+    pxLine(g, Math.round(cx + Math.cos(a) * r0), Math.round(cy + Math.sin(a) * r0 * 0.75),
+      Math.round(cx + Math.cos(a) * r1), Math.round(cy + Math.sin(a) * r1 * 0.75));
   }
 }
 
