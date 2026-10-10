@@ -91,8 +91,6 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
   gearBtn.setAttribute('aria-pressed', String(showGear));
   gearBtn.title = showGear ? 'Hide gear' : 'Show gear';
 
-  const plateName = h('b');
-  const plateTags = h('div.tags');
   const stepsEl = h('nav.steps', { 'aria-label': 'Steps' });
   const panelBody = h('div.panel-body');
   const panelHead = h('div.step-head');
@@ -104,7 +102,7 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
   const name = h<HTMLInputElement>('input.name', {
     value: c.name, maxlength: String(NAME_MAX), placeholder: 'Your name', autocomplete: 'off', spellcheck: 'false', enterkeyhint: 'done',
     'aria-label': 'Name',
-    oninput: () => { c.name = name.value; name.classList.remove('shake'); syncPlate(); },
+    oninput: () => { c.name = name.value; name.classList.remove('shake'); },
     onkeydown: (e: KeyboardEvent) => { if (e.key === 'Enter') { e.preventDefault(); name.blur(); advance(); } },
   });
 
@@ -113,16 +111,6 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     gearBtn.classList.toggle('on', showGear);
     gearBtn.setAttribute('aria-pressed', String(showGear));
     gearBtn.title = showGear ? 'Hide gear' : 'Show gear';
-  }
-
-  function syncPlate(): void {
-    const n = cleanName(c.name);
-    plateName.textContent = n || '???';
-    plateName.classList.toggle('empty', !n);
-    plateTags.replaceChildren(
-      h('span.chip', null, SPECIES[c.look.species].name),
-      h('span.chip', { style: { color: css(FORMS[c.form].color) } }, FORMS[c.form].name),
-      h('span.chip', { style: { color: css(FIGHT_STYLES[styleOf()].color) } }, FIGHT_STYLES[styleOf()].name));
   }
 
   function syncNav(): void {
@@ -197,7 +185,6 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     c = { ...c, look, form: fitForm(look.species, c.form) };
     syncStage();
     if (move) preview.showcase();
-    syncPlate();
   };
 
   function pickSpecies(id: SpeciesId): void {
@@ -210,7 +197,6 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     c = { ...c, form: id };
     syncStage();
     preview.showcase();
-    syncPlate();
   }
 
   const styleOf = (): FightStyleId => c.style ?? 'balanced';
@@ -219,7 +205,6 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     if (styleOf() === id) return;
     c = { ...c, style: id };
     preview.showcase();
-    syncPlate();
   }
 
   function clearCards(): void {
@@ -392,7 +377,7 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
 
   function nameStep(): HTMLElement[] {
     const dice = h('button.btn.icon.dice', { title: 'Random name', 'aria-label': 'Random name', onclick: () => {
-      name.value = randomName(); c.name = name.value; name.classList.remove('shake'); sfx.play('select'); syncPlate();
+      name.value = randomName(); c.name = name.value; name.classList.remove('shake'); sfx.play('select');
     } }, icon('dice'));
     const sp = SPECIES[c.look.species], f = FORMS[c.form];
     return [h('div.name-step', null,
@@ -453,14 +438,13 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
   };
   window.addEventListener('keydown', onKey);
 
-  syncPlate();
   render();
   const el = h('div.scr.creator', { role: 'dialog', 'aria-label': editing ? 'Edit your hero' : 'Create your hero' },
     h('header.scr-head', null,
       h('div.scr-title', null, h('h1', null, editing ? 'Your hero' : 'New hero')),
       stepsEl,
       cb.onCancel ? h('button.btn.icon.close', { title: 'Close', 'aria-label': 'Close', onclick: () => { sfx.play('back'); cb.onCancel!(); } }, icon('close')) : h('i.close-pad')),
-    h('section.scr-stage', null, h('div.spot'), stageBox, h('div.nameplate', null, plateName, plateTags)),
+    h('section.scr-stage', null, h('div.spot'), stageBox),
     panel,
     h('footer.scr-nav', null, back, h('div.grow'), save, next),
   );
