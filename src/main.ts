@@ -6,6 +6,7 @@ import { music } from './audio/music';
 import { sfx } from './audio/sfx';
 import { sanitizeAppearance } from './character/appearance';
 import { setAllSkins, addGems, gems, loadCollection, onCollection, payRound, PULL_COST, winGems } from './character/collection';
+import { entranceOf } from './character/entrances';
 import { generateRival, loadCharacter, newCharacter, saveCharacter, type PlayerCharacter } from './character/profile';
 import { BattleView, CAM_MODES, type CamMode } from './render/battleView';
 import { THEMES, type Theme } from './render/arenaArt';
@@ -279,6 +280,11 @@ function openShop(): void {
     onChests: () => openChests(),
     onEquip: (s: SkinDef) => wearPulled(s),
     onEquipSet: (id) => { for (const s of setPieces(id)) wearPulled(s); },
+    onEntrance: (id) => {
+      if (!player) return;
+      player = { ...player, look: { ...player.look, entrance: id } };
+      saveCharacter(player);
+    },
     player: () => player,
   });
   ui.append(sheet.el);
@@ -344,6 +350,8 @@ function toMenu(): void {
 
 // --- A fight -----------------------------------------------------------------------------------
 let introT = 0;
+/** Seconds the entrances take before the countdown can start. */
+let introLen = 0;
 let countdown = -1;
 let battle: Battle | null = null;
 
@@ -377,6 +385,9 @@ function beginBattle(seed: number, fighters: [CharacterBuild, CharacterBuild]): 
   hud.setPaused(false);
   hud.show(true);
   hud.showBanner(`${fighters[0].name} VS ${fighters[1].name}`, theme.name, 0);
+  // Each hero walks on their own way (yours only if you own it); the countdown waits for both.
+  const me = session?.you ?? 0;
+  introLen = view.playEntrances([entranceOf(fighters[0].look, me === 0), entranceOf(fighters[1].look, me === 1)]);
   state = 'intro';
   introT = 0;
   countdown = -1;
@@ -427,12 +438,12 @@ function togglePause(): void {
   sfx.play('ui');
 }
 
-/** Intro: names, sprite warm-up, then 3-2-1. The sim holds until FIGHT. */
+/** Intro: names and entrances, sprite warm-up, then 3-2-1. The sim holds until FIGHT. */
 function intro(dt: number): void {
   introT += dt;
   const ready = view.warm(6);
   if (countdown < 0) {
-    if (introT > 1.3 && ready) { countdown = 3; introT = 0; hud.showBanner('3', '', 0); sfx.play('ui'); }
+    if (introT > Math.max(1.3, introLen + 0.15) && ready) { countdown = 3; introT = 0; hud.showBanner('3', '', 0); sfx.play('ui'); }
     return;
   }
   if (introT >= 0.55) {

@@ -40,6 +40,8 @@ const MERGERS: Record<string, (local: unknown, cloud: unknown) => unknown> = {
     const n = (o: unknown, k: string) => Math.max(0, Number((o as Record<string, unknown>)?.[k]) || 0);
     return { w: Math.max(n(a, 'w'), n(b, 'w')), l: Math.max(n(a, 'l'), n(b, 'l')) };
   },
+  // Entrances bought on either side are kept.
+  'al.entrances': (a, b) => [...new Set([...(Array.isArray(b) ? b : []), ...(Array.isArray(a) ? a : [])].filter((v) => typeof v === 'string'))],
   // Skins pulled on either side are kept; the bigger gem purse wins.
   'al.collection': (a, b) => {
     const o = (x: unknown) => (x && typeof x === 'object' ? x as Record<string, unknown> : {});

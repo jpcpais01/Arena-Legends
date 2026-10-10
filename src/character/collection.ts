@@ -90,12 +90,24 @@ export function setAllSkins(f: () => boolean): void {
 }
 
 export const owns = (id: string): boolean => allSkins() || get().owned.includes(id);
+/** Accounts that own every collectible (skins, entrances). */
+export const allUnlocked = (): boolean => allSkins();
 export const pity = (): number => get().pity;
 
 export function addGems(n: number): void {
   const c = get();
   c.gems += Math.max(0, Math.round(n));
   persist();
+}
+
+/** Takes gems for a purchase; false (and nothing taken) when short. */
+export function spendGems(n: number): boolean {
+  const c = get();
+  const cost = Math.max(0, Math.round(n));
+  if (c.gems < cost) return false;
+  c.gems -= cost;
+  persist();
+  return true;
 }
 
 /** Pays a won online round once; returns the gems given (0 if it was paid already). */

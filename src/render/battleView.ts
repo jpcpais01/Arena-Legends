@@ -1,12 +1,14 @@
 import { sfx, type Sfx } from '../audio/sfx';
 import { clamp } from '../core/math';
 import type { Battle } from '../sim/battle';
+import type { EntranceId } from '../character/entrances';
 import { ARENA_HALF_WIDTH, DT, ROUND_TIME } from '../sim/constants';
 import { getStatus, type Fighter } from '../sim/fighter';
 import { HAWK_DIVE, WHELP_BREATH } from '../sim/battle';
 import type { ActionState, BattleEvent, FighterId, Projectile, ProjectileStyle, UsableId, Zone } from '../sim/types';
 import { ArenaView } from './arena';
 import { THEMES, type Theme } from './arenaArt';
+import { Entrance, entranceLength, type EntrancePose } from './entrance';
 import { drawText } from './font';
 import { ellipseOutline, Fx, type View } from './fx';
 import { css, mix } from './pixel/color';
@@ -17,6 +19,7 @@ import {
 import { bottleSprite, isUsableShot, projFrames, projSprite, skinDraws, skinTints } from './projArt';
 import { drawSetAura, SET_FX } from './setAura';
 import type { Screen } from './screen';
+import { clipLength } from './sprite/anims';
 import { Animator, PPM, type AnimOut } from './sprite/animator';
 import { SpriteBank, type Sprite } from './sprite/bank';
 import { makeArt, type CharacterArt } from './sprite/look';
@@ -32,6 +35,9 @@ const STYLE_COLOR: Record<ProjectileStyle, number> = {
 
 interface FighterView {
   art: CharacterArt;
+  /** Pre-fight entrance playing, and this frame's pose from it. */
+  ent: Entrance | null;
+  pose: EntrancePose | null;
   anim: Animator;
   bank: SpriteBank;
   out: AnimOut;
@@ -175,7 +181,7 @@ export class BattleView implements View {
         art, anim, bank: new SpriteBank(art, anim.set), out: anim.update(f, f.x, 0, false, false, false),
         flash: 0, ghosts: [], ghostT: 0, emberT: 0, sparkT: { main: 0, sec: 0, head: 0, body: 0, feet: 0, set: 0, use: 0, item: 0 }, headY: 2,
         ...bodyMarks(art), lastS: null, lastX: 0, lastY: 0, lastFlip: false,
-        hawkFrom: null, hawkAway: 0, landT: 0, breathT: 0, wardT: 0, puffT: 0, pulledBy: -1,
+        hawkFrom: null, hawkAway: 0, landT: 0, breathT: 0, wardT: 0, puffT: 0, pulledBy: -1, ent: null, pose: null,
       };
     });
     clearPatches();
@@ -201,6 +207,30 @@ export class BattleView implements View {
     if (theme === this.theme) return;
     this.theme = theme;
     if (this.battle) this.layout();
+  }
+
+  /**
+   * Starts both fighters' entrances (during the hold before the countdown),
+   * the second a beat after the first. Returns seconds until both are done.
+   */
+  playEntrances(ids: [EntranceId, EntranceId], gap = 0.55): number {
+    const b = this.battle;
+    if (!b) return 0;
+    const host = (id: number) => ({
+      fx: this.fx,
+      shake: (a: number) => this.shake(a),
+      flash: (c: number, a: number) => this.flash(c, a),
+      sound: (name: Sfx, k = 1) => this.play(name, this.pan(b.fighters[id].x), k),
+    });
+    let end = 0;
+    this.fighters.forEach((v, i) => {
+      const f = b.fighters[i];
+      const delay = i * gap;
+      v.ent = new Entrance(ids[i], host(i), f.x, f.facing, delay);
+      v.pose = v.ent.update(0);
+      end = Math.max(end, delay + entranceLength(ids[i]));
+    });
+    return end;
   }
 
   /** Pre-draws sprites within a time budget; true when everything is ready. */
@@ -278,6 +308,11 @@ export class BattleView implements View {
     this.fx.update(vdt);
     this.arena.update(vdt);
     this.updateCamera(dt);
+    for (const v of this.fighters) {
+      if (!v.ent) continue;
+      v.pose = this.paused ? v.pose : v.ent.update(dt);
+      if (!v.pose) v.ent = null;
+    }
     this.draw(vdt);
     this.onFrame?.(dt);
     this.screen.present();
@@ -361,11 +396,14 @@ export class BattleView implements View {
     this.arena!.setDay(b.time / ROUND_TIME);
     this.arena!.draw(g, cam, this.time, this.shakeX, this.shakeY);
     this.fx.drawUnder(g, this);
+    for (const v of this.fighters) v.ent?.draw(g, this, 'under');
     for (const z of b.zones) this.drawZoneGround(g, z);
     // Shadows.
     for (const f of b.fighters) {
-      const x = Math.round(this.sx(this.lx(f))), y = Math.round(this.sy(0));
-      const lift = clamp(this.ly(f) / 2.5, 0, 0.7);
+      const pose = this.fighters[f.id].pose;
+      if (pose && pose.shadow < 0.05) continue;
+      const x = Math.round(this.sx(this.lx(f) + (pose?.dx ?? 0))), y = Math.round(this.sy(0));
+      const lift = Math.max(clamp(this.ly(f) / 2.5, 0, 0.7), pose ? 0.7 * (1 - pose.shadow) : 0);
       this.arena!.shadow(g, x, y, 11 + (f.form === 'titan' ? 4 : f.form === 'robust' || f.form === 'mighty' || f.form === 'stout' ? 2 : 0), 1, lift);
     }
     for (const z of b.zones) if (z.kind === 'totem') this.drawTotem(g, z, dt);
@@ -373,6 +411,7 @@ export class BattleView implements View {
     const order: FighterId[] = b.fighters[0].action && !b.fighters[1].action ? [1, 0] : [0, 1];
     const secOut = (id: FighterId) => b.projectiles.some((p) => p.alive && p.owner === id && p.style === 'chakram');
     for (const id of order) this.drawFighter(g, b.fighters[id], this.fighters[id], dt, secOut(id));
+    for (const v of this.fighters) v.ent?.draw(g, this, 'over');
     for (const f of b.fighters) this.drawItem(g, f);
     this.drawChains(g);
     for (const p of b.projectiles) if (p.alive) this.drawProjectile(g, p);
@@ -434,15 +473,45 @@ export class BattleView implements View {
     g.globalCompositeOperation = 'source-over';
   }
 
+  /** The fighter's body during an entrance: faded, washed with a colour, or cut off at the ground. */
+  private blitEntrance(g: CanvasRenderingContext2D, v: FighterView, o: AnimOut, s: Sprite, pose: EntrancePose, px: number, py: number, flip: boolean): void {
+    const ground = pose.clipGround;
+    if (ground) {
+      g.save();
+      g.beginPath();
+      g.rect(0, 0, this.screen.w, Math.round(this.sy(0)) + 1);
+      g.clip();
+    }
+    g.globalAlpha = pose.alpha;
+    blit(g, s, px, py, flip);
+    if (pose.tint && pose.tintA > 0) {
+      g.globalAlpha = pose.alpha * Math.min(1, pose.tintA);
+      blit(g, v.bank.flash(o, pose.tint), px, py, flip);
+    }
+    g.globalAlpha = 1;
+    if (ground) g.restore();
+  }
+
   private drawFighter(g: CanvasRenderingContext2D, f: Fighter, v: FighterView, dt: number, secOut: boolean): void {
     const b = this.battle!;
     this.lastDt = dt;
-    const x = this.lx(f), y = this.ly(f);
+    let x = this.lx(f), y = this.ly(f);
     const over = b.over;
     // The belt is empty once every use of the usable item is spent.
     const useOut = f.uses.some((u, i) => u === 0 && f.abilities[i].from === 'usable');
     v.out = v.anim.update(f, x, dt, over, b.winner === f.id, secOut, useOut);
-    const o = v.out;
+    let o = v.out;
+    const pose = v.pose;
+    if (pose) {
+      // Entrance: its own clip and frame, moved off the spot; hidden until it begins.
+      if (pose.alpha <= 0) return;
+      const clip = v.bank.set.clips.has(pose.clip) ? pose.clip : 'idle';
+      const frame = pose.frame % clipLength(v.bank.set.clips.get(clip)!);
+      o = { ...o, clip, frame, face: pose.face, jitter: 0, hop: 0 };
+      o.key = `${o.clip}.${o.frame}.${o.face ?? ''}${o.secOut ? '.o' : ''}${o.useOut ? '.u' : ''}`;
+      x += pose.dx;
+      y += pose.dy;
+    }
     const s = v.bank.get(o);
     const flip = f.facing < 0;
     const alive = f.alive;
@@ -485,7 +554,8 @@ export class BattleView implements View {
     if (set) drawSetAura(g, set, px, py + o.hop, this.time, 'back');
     if (hidden) g.globalAlpha = 0.38 + 0.06 * Math.sin(this.time * 7);
     else if (f.invuln > 0 && alive && Math.floor(this.time * 30) % 2 === 0) g.globalAlpha = 0.55;
-    blit(g, s, px, py, flip);
+    if (pose) this.blitEntrance(g, v, o, s, pose, px, py, flip);
+    else blit(g, s, px, py, flip);
     if (hidden) {
       // A grey wash over what shows, so the shape reads as seen through smoke.
       g.globalAlpha = 0.16;

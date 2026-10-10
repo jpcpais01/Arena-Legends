@@ -9,7 +9,9 @@ export type Sfx =
   | 'select' | 'back' | 'equip' | 'confirm' | 'cork' | 'gulp' | 'glass' | 'firebomb'
   // Skin chests
   | 'rattle' | 'tierUp' | 'chestOpen' | 'flip' | 'gems'
-  | 'revealRare' | 'revealMythic' | 'revealLegendary' | 'revealEpic';
+  | 'revealRare' | 'revealMythic' | 'revealLegendary' | 'revealEpic'
+  // Pre-fight entrances
+  | 'entStep' | 'entSlam' | 'entPoof' | 'entRise' | 'entChoir' | 'entFall' | 'entCheer' | 'entIgnite';
 
 class AudioEngine {
   private ctx: AudioContext | null = null;
@@ -253,6 +255,48 @@ class AudioEngine {
         [330, 415, 494, 659, 831, 988].forEach((f, i) => this.tone('square', f, f, t + 0.1 + i * 0.06, 0.4, 0.05));
         [659, 831, 988, 1319].forEach((f) => this.tone('triangle', f, f * 1.003, t + 0.5, 1.8, 0.08));
         for (let i = 0; i < 10; i++) this.tone('sine', 1760 + (i % 5) * 330, 1760 + (i % 5) * 330, t + 0.5 + i * 0.09, 0.3, 0.035);
+        break;
+      // Entrances: a boot in the sand, a heavy landing, a smoke pop, a dark swell,
+      // a heavenly chord, something big falling in, the crowd, a fire whoomph.
+      case 'entStep':
+        this.burst(t, 0.07, 0.16 * k, 'lowpass', 900, 200, 0.8, pan);
+        this.tone('sine', 120, 70, t, 0.08, 0.18 * k, pan);
+        break;
+      case 'entSlam':
+        this.tone('sine', 110, 32, t, 0.55, 0.95 * k, pan);
+        this.burst(t, 0.45, 0.7 * k, 'lowpass', 1800, 70, 0.6, pan);
+        this.burst(t, 0.08, 0.35 * k, 'highpass', 3000, 1500, 0.8, pan);
+        break;
+      case 'entPoof':
+        this.burst(t, 0.05, 0.4 * k, 'highpass', 4000, 2500, 1, pan);
+        this.burst(t + 0.02, 0.55, 0.45 * k, 'bandpass', 1400, 300, 0.6, pan);
+        this.tone('sine', 180, 60, t, 0.25, 0.35 * k, pan);
+        break;
+      case 'entRise':
+        this.tone('sawtooth', 55, 110, t, 0.9, 0.14 * k, pan);
+        this.tone('sine', 110, 220, t, 0.9, 0.2 * k, pan);
+        this.burst(t, 0.9, 0.22 * k, 'bandpass', 300, 1200, 2, pan);
+        break;
+      case 'entChoir':
+        [262, 330, 392, 523].forEach((f, i) => {
+          this.tone('triangle', f, f * 1.004, t + i * 0.04, 1.6, 0.07 * k, pan);
+          this.tone('sine', f * 2, f * 2.01, t + 0.1 + i * 0.04, 1.4, 0.03 * k, pan);
+        });
+        this.burst(t, 1.4, 0.08 * k, 'highpass', 6000, 9000, 1, pan);
+        break;
+      case 'entFall':
+        this.burst(t, 0.7, 0.3 * k, 'bandpass', 3000, 400, 0.9, pan);
+        this.tone('sawtooth', 900, 150, t, 0.65, 0.06 * k, pan);
+        break;
+      case 'entCheer':
+        // A crowd swelling and fading: wide noise bands that rise a little.
+        this.burst(t, 1.1, 0.16 * k, 'bandpass', 700, 1100, 0.7, pan * 0.5);
+        this.burst(t + 0.08, 0.9, 0.1 * k, 'bandpass', 1800, 2600, 0.9, -pan * 0.5);
+        break;
+      case 'entIgnite':
+        this.burst(t, 0.8, 0.55 * k, 'lowpass', 600, 2400, 0.7, pan);
+        this.tone('sine', 70, 140, t, 0.6, 0.4 * k, pan);
+        this.burst(t + 0.15, 0.6, 0.25 * k, 'highpass', 2500, 5000, 0.8, pan);
         break;
     }
   }

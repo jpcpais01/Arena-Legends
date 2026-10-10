@@ -481,6 +481,21 @@ h1, h2, h3, p { margin: 0; }
 .card-grid.styles { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .card-tile .portrait.style-ic { aspect-ratio: 1; display: grid; place-items: center; }
 .card-tile .portrait.style-ic .ic { width: 52%; height: 52%; filter: drop-shadow(0 var(--px) 0 var(--ink)) drop-shadow(0 calc(var(--px) * -1) 0 var(--ink)); }
+/* Entrances: a glyph per entrance; locked ones are dimmed with their price, the one being watched gets a dashed edge. */
+.card-grid.entrances { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.card-tile.ent .portrait.style-ic { aspect-ratio: 2 / 1; }
+.card-tile.ent small { display: inline-flex; align-items: center; justify-content: center; gap: 2px; }
+.card-tile.ent small .ic { width: 0.7em; height: 0.7em; }
+.card-tile.ent.r-rare small { color: var(--rare); } .card-tile.ent.r-mythic small { color: var(--mythic); } .card-tile.ent.r-legendary small { color: var(--legendary); }
+.card-tile.ent.locked .portrait .ic { opacity: 0.45; }
+.card-tile.ent.locked small { color: var(--muted); }
+.card-tile.ent.peek:not(.on) { outline: calc(var(--px) * 1) dashed var(--seg); outline-offset: calc(var(--px) * -3); }
+.ent-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.4rem; }
+.ent-foot .btn.buy-btn { min-height: 2.1rem; font-size: 0.8125rem; }
+/* Shop shelf of entrances. */
+.offer.ent .sock .ic { width: 60%; height: 60%; color: var(--ent); filter: drop-shadow(0 var(--px) 0 var(--ink)); }
+.offer.ent { cursor: pointer; }
+.offer.ent.peek { outline: calc(var(--px) * 1) dashed var(--rc); outline-offset: calc(var(--px) * -4); }
 .card-grid.backdrops { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .card-grid.backdrops .portrait { aspect-ratio: 60 / 48; }
 /* Portrait backdrops: one painted scene, pixel for pixel, anchored at the bottom. */
@@ -1676,3 +1691,4 @@ input.fr-input { flex: 1; min-width: 0; height: 2.5rem; font-size: 1.05rem; }
   .scr.gear.inspecting .inspect-area { align-content: start; }
   .inspect { max-height: 100%; }
 }
+.shop-got-icons .sock > .ic { width: 70%; height: 70%; filter: drop-shadow(0 var(--px) 0 var(--ink)); }
