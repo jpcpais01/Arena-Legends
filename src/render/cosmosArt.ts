@@ -3,22 +3,21 @@ import { ARENA_HALF_WIDTH } from '../sim/constants';
 import { mix, unpackHex } from './pixel/color';
 import { bayer, Pix } from './pixel/paint';
 import { PPM } from './sprite/animator';
-import type { ArenaArt, Cosmos, Floater, Layer, Theme } from './arenaArt';
-import { haze, hash, noise, occlude, tone } from './scenery';
+import type { ArenaArt, Cosmos, Layer, Theme } from './arenaArt';
+import { hash, noise, tone } from './scenery';
 
 /**
  * Astral Sanctum: the duel happens on a polished star-stone disc floating in
- * deep space, under a nebula and a ringed giant. Same parallax +
- * perspective-floor scheme as the other arenas, but kept deliberately quiet:
- * a dark sky with one bright band of stars, a few far islands, and a single
- * focal piece on the back edge (a golden armillary sphere around a captive
- * star). Everything that moves (twinkles, shooting stars, stardust, the
- * star's glow) is drawn live, see `Cosmos` and `ArenaView`.
+ * open space. Nothing stands behind the fight (João wants it free and
+ * uncluttered): the sky carries the arena, with a nebula band, a far galaxy's
+ * glow rising behind the disc, a light-star and a ringed giant. Same parallax
+ * + perspective-floor scheme as Skygrove. Everything that moves (twinkles,
+ * shooting stars, stardust, glows) is drawn live, see `Cosmos` and `ArenaView`.
  *
- * Back to front: space, nebula band, stars, the light-star and the ringed
- * planet · far drifting islands · near crystal islands and floating rocks ·
- * the sanctum's back edge (parapet, spires, the orrery) · star-stone floor ·
- * the disc's rim and its crystal underside hanging into the void.
+ * Back to front: space (nebula, galaxy glow, stars, light-star, ringed
+ * planet) · a parallax sheet of faint stars · the disc's gilded back rim ·
+ * star-stone floor · the rim and the crystal-dripping rock under the disc.
+ * A star floats over a low plinth at each end of the arena.
  */
 
 /** Night stone, deep indigo to moonlit lavender. */
@@ -69,30 +68,14 @@ export function buildCosmos(theme: Theme, W: number, H: number, gy: number, trav
   const space = paintSpace(W, H, hz, theme.sky, sun, rng);
   glows.push({ x: sun[0], y: sun[1], factor: 0, r: 34, color: 0xb8c8ff });
 
-  const far = new Pix(lw(0.08), hz + 30);
-  const fog = mix(theme.sky[4], VIOLET[0], 0.35);
-  for (let x = rng.range(20, 90); x < far.w; x += rng.range(130, 210)) {
-    paintIsle(far, rng, x, rng.range(hz * 0.4, hz * 0.95), rng.range(12, 26), 0.62, fog, false);
-  }
+  // A second, nearer sheet of faint stars: when the camera moves it slides
+  // over the sky, so space has depth without anything standing in it.
+  const depth = paintDepthStars(lw(0.07), Math.round(hz * 1.15), rng);
 
-  const mid = new Pix(lw(0.28), floorTop + 30);
-  for (const side of [-1, 1]) {
-    // Kept off the middle, so the fight reads against open sky.
-    const x = mid.w / 2 + side * (W * 0.36 + rng.range(10, 70));
-    const tips = paintIsle(mid, rng, x, rng.range(hz - 110, hz - 50), rng.range(44, 70), 0.22, fog, true);
-    for (const [tx, ty, c] of tips) glow(mid, 0.28, 0, tx, ty, 10, c);
-    if (travel > 40) {
-      const x2 = x + side * rng.range(200, 280);
-      const tips2 = paintIsle(mid, rng, x2, rng.range(hz - 70, hz - 10), rng.range(30, 48), 0.3, fog, rng.chance(0.6));
-      for (const [tx, ty, c] of tips2) glow(mid, 0.28, 0, tx, ty, 9, c);
-    }
-  }
-  occlude(mid, 5, 10, 0.3, 0x05040e);
-
+  // The back edge is only the disc's own gilded rim: nothing stands behind the fight.
   const wall = new Pix(lw(wallFactor), floorTop + 1);
   const twA = new Pix(wall.w, wall.h), twB = new Pix(wall.w, wall.h);
-  const half = Math.min(edgeAt(vTop) * wallFactor, wall.w / 2 - 8);
-  for (const [x, y, r, c] of paintSanctum(wall, twA, twB, rng, floorTop, half)) glow(wall, wallFactor, 0, x, y, r, c);
+  paintBackRim(wall, twA, twB, floorTop, Math.min(edgeAt(vTop) * wallFactor, wall.w / 2 - 8));
 
   const floor = paintStarFloor(Math.ceil(W / 0.65 + 2 * travel * 1.6 + 64), Math.ceil(D) * 2, D, vTop, edgeAt, lipAt);
 
@@ -101,33 +84,22 @@ export function buildCosmos(theme: Theme, W: number, H: number, gy: number, trav
   const under = new Pix(lw(sLip), Math.max(12, H - lipY + lift + 10));
   for (const [x, y, c] of paintUnderside(under, rng, lipEnd * sLip, lift)) glow(under, sLip, lipY - lift, x, y, 12, c);
 
-  for (const sd of [-1, 1]) glows.push({ x: W / 2 + sd * (ARENA_HALF_WIDTH + 0.75) * PPM, y: gy - 104 - 12, factor: 1, r: 22, color: 0xc8d8ff });
-
-  // Rocks drifting around the disc: a couple behind its back corners, a couple below the rim.
-  const floaters: Floater[] = [];
-  for (const side of [-1, 1]) {
-    floaters.push({
-      pix: paintChunk(rng, rng.range(10, 18), fog, 0.2), factor: 0.6, front: false, phase: rng.range(0, 6),
-      x: W / 2 + side * (edgeAt(vTop) * 0.6 + rng.range(40, 110)), y: rng.range(hz - 50, floorTop - 10),
-    });
-    floaters.push({
-      pix: paintChunk(rng, rng.range(7, 13), fog, 0), factor: sLip, front: true, phase: rng.range(0, 6),
-      x: W / 2 + side * (lipEnd * sLip + rng.range(30, 80)), y: lipY + rng.range(6, 40),
-    });
-  }
+  // The arena's bounds: a star floating over a low plinth at each end.
+  const plinth = paintPlinth(), star = paintStar();
+  for (const sd of [-1, 1]) glows.push({ x: W / 2 + sd * (ARENA_HALF_WIDTH + 0.75) * PPM, y: gy - plinth.h - star.h / 2, factor: 1, r: 20, color: 0xc8d8ff });
 
   const L = (pix: Pix, factor: number, y = 0): Layer => ({ pix, factor, y });
   return {
     theme, gy, hy, floorTop, wallFactor,
     layers: [
-      { ...L(space.pix, 0), after: 'stars' }, L(far, 0.08), { ...L(mid, 0.28), after: 'floaters' }, L(wall, wallFactor),
+      { ...L(space.pix, 0), after: 'stars' }, L(depth, 0.07), L(wall, wallFactor),
     ],
     front: [L(under, sLip, lipY - lift)],
     floorEnd: lipY,
     crowd: [twA, twB], crowdLayer: L(twA, wallFactor), floor, torches: [],
-    pillar: paintColumn(),
-    crystal: paintStar(),
-    cycle: null, floaters, ambience: null,
+    pillar: plinth,
+    crystal: star,
+    cycle: null, floaters: [], ambience: null,
     cosmos: {
       twinkle: space.twinkle, glows,
       meteorBand: [Math.round(hz * 0.04), Math.round(hz * 0.7)],
@@ -176,6 +148,14 @@ function paintSpace(W: number, H: number, hz: number, stops: number[], sun: [num
         const wa = along + (noise(x, y, 40, 40, 1306) - 0.5) * 50, wp = perp * bw + (noise(x, y, 30, 30, 1307) - 0.5) * 16;
         const lane = smooth(0.6, 0.8, noise(wa, wp, 70, 14, 1305)) * smooth(0.35, 0.6, noise(x, y, 90, 70, 1308)) * bf;
         c = mix(c, 0x020108, lane * 0.55);
+      }
+      // A deep, soft glow rising from below the disc's horizon, like a far galaxy's heart.
+      const gu = (x + 0.5 - W * 0.5) / (W * 0.62), gv = (y + 0.5 - hz * 1.08) / (hz * 0.42);
+      const gd = gu * gu + gv * gv;
+      if (gd < 1) {
+        const k = (1 - gd) ** 2.2;
+        c = mix(c, mix(0x5a2e8e, 0xb04a8a, smooth(0.3, 1, k) * 0.5), k * 0.42);
+        c = mix(c, 0xe8b8f0, smooth(0.75, 1, k) * 0.18);
       }
       // The light-star's halo.
       const sd = Math.hypot(x - sun[0], y - sun[1]);
@@ -314,258 +294,37 @@ function paintPlanet(p: Pix, cx: number, cy: number, r: number, sun: [number, nu
   }
 }
 
-// --- Islands ----------------------------------------------------------------------
+// --- Depth and the back rim ---------------------------------------------------------
 
-/**
- * A floating island of night stone: flat moonlit top, tapering jagged
- * underside, hazed by `fog`; with `crystals`, a cluster of glowing crystals
- * on top. Returns the crystal tips (layer coordinates and colour).
- */
-function paintIsle(p: Pix, rng: Rng, cx: number, top: number, w: number, fogT: number, fog: number, crystals: boolean): [number, number, number][] {
-  const isle = new Pix(Math.ceil(w * 2 + 8), Math.ceil(w * 1.6 + 30));
-  const ox = isle.w / 2, oy = 22;
-  const seed = Math.floor(rng.range(0, 9999));
-  const depth = w * rng.range(0.9, 1.3);
-  for (let x = 0; x < isle.w; x++) {
-    const u = (x + 0.5 - ox) / w;
-    if (Math.abs(u) >= 1) continue;
-    const t0 = oy + (noise(x, 0, 9, 0, seed) - 0.5) * 3 + u * u * 3;
-    const bot = oy + depth * (1 - Math.abs(u) ** 1.6) ** 0.9 + (noise(x, 0, 4, 0, seed + 1) - 0.5) * 8 * (1 - Math.abs(u));
-    for (let y = Math.floor(t0); y < bot; y++) {
-      const v = (y - t0) / Math.max(1, bot - t0);
-      let c: number;
-      if (y - t0 < 2) c = y - t0 < 1 ? STONE[5] : STONE[4];
-      else {
-        const strata = noise(x * 0.4, y, 6, 3, seed + 2);
-        c = tone(STONE, 0.62 - v * 0.5 - u * 0.25 + (strata - 0.5) * 0.25, x, y, 0.16);
-        if (hash(x, y >> 2, seed + 3) < 0.03 && v > 0.15) c = VIOLET[1];
-      }
-      isle.set(x, y, c);
-    }
+/** Sparse, faint stars on a transparent sheet, a parallax layer just over the sky. */
+function paintDepthStars(w: number, h: number, rng: Rng): Pix {
+  const p = new Pix(w, h);
+  const n = Math.round((w * h) / 900);
+  const cols = [0xc8d4ff, 0xe8eeff, 0xd8c8ff, 0xb8f0f0];
+  for (let i = 0; i < n; i++) {
+    const x = Math.floor(rng.range(0, w)), y = Math.floor(rng.range(0, h));
+    const b = rng.next();
+    const col = cols[Math.floor(rng.next() * cols.length)];
+    p.set(x, y, col, Math.round(70 + 150 * b * b));
+    if (b > 0.93) for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) p.set(x + ox, y + oy, col, 60);
   }
-  const tips: [number, number, number][] = [];
-  if (crystals) {
-    const n = rng.int(3, 5);
-    const at = rng.range(-0.45, 0.45) * w;
-    for (let i = 0; i < n; i++) {
-      const h = rng.range(8, 20) * (i === 0 ? 1.4 : 1) * Math.min(1, w / 50);
-      const bx = ox + at + (i - n / 2) * 4 + rng.range(-2, 2), lean = rng.range(-3, 3);
-      const pal = rng.chance(0.5) ? VIOLET : TEAL;
-      const b0 = oy + 1, cw = 2.5 + h * 0.08;
-      isle.poly([bx - cw, b0, bx + lean - 0.5, b0 - h, bx + lean + 0.5, b0 - h, bx + cw, b0], pal[2]);
-      isle.poly([bx, b0, bx + lean, b0 - h, bx + cw, b0], pal[1]);
-      isle.line(Math.round(bx - 1), b0 - 1, Math.round(bx + lean - 1), Math.round(b0 - h + 2), pal[3]);
-      isle.set(Math.round(bx + lean), Math.round(b0 - h), pal[4]);
-      tips.push([cx - ox + bx + lean, top - oy + b0 - h * 0.6, pal[3]]);
-    }
-  }
-  isle.outline(INK);
-  if (fogT > 0) haze(isle, fog, fogT);
-  p.blit(isle, Math.round(cx - ox), Math.round(top - oy));
-  return tips;
-}
-
-/** A small floating rock with a glint of crystal. */
-function paintChunk(rng: Rng, w: number, fog: number, fogT: number): Pix {
-  const p = new Pix(Math.ceil(w * 2 + 4), Math.ceil(w * 1.5 + 6));
-  const ox = p.w / 2, top = 3, seed = Math.floor(rng.range(0, 9999));
-  for (let x = 0; x < p.w; x++) {
-    const u = (x + 0.5 - ox) / w;
-    if (Math.abs(u) >= 1) continue;
-    const t0 = top + u * u * 2 + (noise(x, 0, 5, 0, seed) - 0.5) * 2;
-    const bot = top + w * 1.2 * (1 - Math.abs(u) ** 1.4) ** 0.9;
-    for (let y = Math.floor(t0); y < bot; y++) {
-      const v = (y - t0) / Math.max(1, bot - t0);
-      p.set(x, y, y - t0 < 1 ? STONE[5] : tone(STONE, 0.6 - v * 0.5 - u * 0.25, x, y, 0.16));
-    }
-  }
-  const cx = Math.round(ox + rng.range(-w * 0.3, w * 0.3));
-  p.set(cx, top, TEAL[3]); p.set(cx, top + 1, TEAL[2]); p.set(cx + 1, top + 1, TEAL[1]);
-  p.outline(INK);
-  if (fogT > 0) haze(p, fog, fogT);
   return p;
 }
 
-// --- The sanctum's back edge ------------------------------------------------------------
-
 /**
- * The back edge: a low gilded parapet with orb lamps, two slender spires with
- * crescent finials at the corners, and the orrery in the middle (a stepped
- * dais, a pedestal and an armillary sphere around a captive star). Twinkles go
- * in `ta`/`tb` (alternate frames). Returns glows: x, y, radius, colour.
+ * The disc's far edge: a fine gold rim over a sliver of polished stone, its
+ * ends curving away. Glints run along it on alternate frames.
  */
-function paintSanctum(p: Pix, ta: Pix, tb: Pix, rng: Rng, floorTop: number, half: number): [number, number, number, number][] {
+function paintBackRim(p: Pix, ta: Pix, tb: Pix, floorTop: number, half: number): void {
   const cx = p.w / 2;
-  const base = floorTop - 2;
-  const glows: [number, number, number, number][] = [];
-  const twinkle = (x: number, y: number, c: number) => (hash(x, y, 1401) < 0.5 ? ta : tb).set(x, y, c);
-  const fx = Math.round(cx);
-  // Parapet.
-  const left = Math.round(cx - half + 8), right = Math.round(cx + half - 8);
-  for (let x = left; x < right; x++) {
-    const end = Math.min(x - left, right - 1 - x);
-    const h = end < 3 ? 3 + end : 6;
-    for (let y = base - h; y <= base; y++) {
-      const k = y === base - h ? 4 : y === base - h + 1 ? 2 : (x - left) % 16 === 8 && y === base - 3 ? -1 : 0;
-      if (k === 4) p.set(x, y, GOLD[3]);
-      else if (k === 2) p.set(x, y, GOLD[1]);
-      else if (k === -1) p.set(x, y, SILVER[2]);
-      else p.set(x, y, y > base - 2 ? STONE[1] : STONE[2]);
-    }
-  }
-  // Orb lamps on short posts, clear of the orrery.
-  for (let x = left + 20; x < right - 16; x += 58) {
-    if (Math.abs(x - fx) < 78) continue;
-    p.rect(x - 1, base - 13, 3, 8, STONE[3]);
-    p.set(x - 1, base - 13, STONE[4]);
-    p.rect(x - 2, base - 14, 5, 1, GOLD[2]);
-    p.rect(x - 1, base - 17, 3, 3, TEAL[2]);
-    p.set(x - 1, base - 17, TEAL[4]); p.set(x, base - 18, TEAL[3]); p.set(x + 1, base - 15, TEAL[1]);
-    twinkle(x - 1, base - 17, 0xffffff);
-    glows.push([x, base - 16, 9, TEAL[2]]);
-  }
-  // Spires at the corners, crescent moons on top.
-  for (const s of [-1, 1]) {
-    const sx = Math.round(cx + s * (half - 34));
-    const h = Math.round(rng.range(92, 112));
-    for (let y = base - h; y <= base - 4; y++) {
-      const t = (y - (base - h)) / h;
-      const hw = 1.5 + t * 4.5;
-      for (let x = Math.round(sx - hw); x <= Math.round(sx + hw); x++) {
-        const u = (x - (sx - hw)) / (2 * hw);
-        p.set(x, y, u < 0.3 ? STONE[4] : u < 0.7 ? STONE[3] : STONE[1]);
-      }
-    }
-    for (const t of [0.35, 0.62, 0.86]) {
-      const y = Math.round(base - h + t * h), hw = Math.round(2 + t * 4.5);
-      p.rect(sx - hw, y, hw * 2 + 1, 1, GOLD[2]);
-      p.rect(sx - hw, y + 1, hw * 2 + 1, 1, GOLD[0]);
-    }
-    p.rect(sx - 8, base - 4, 17, 4, STONE[2]);
-    p.rect(sx - 8, base - 4, 17, 1, GOLD[2]);
-    // Crescent: a disc minus a shifted disc.
-    const my = base - h - 7;
-    for (let y = my - 6; y <= my + 6; y++) for (let x = sx - 6; x <= sx + 6; x++) {
-      const a = Math.hypot(x + 0.5 - sx, y + 0.5 - my), b = Math.hypot(x + 0.5 - sx - s * 3, y + 0.5 - my + 2);
-      if (a <= 5.6 && b > 4.6) p.set(x, y, a > 4.6 ? GOLD[1] : x * -s < -sx * s ? GOLD[3] : GOLD[2]);
-    }
-    p.set(sx + s * 2, my - 1, 0xffffff);
-    twinkle(sx + s * 2, my - 1, 0xffffff);
-    glows.push([sx + s * 2, my - 1, 10, VIOLET[3]]);
-  }
-  // Dais.
-  let top = base;
-  for (const w of [118, 90]) {
-    const y0 = top - 5;
-    p.rect(fx - w / 2, y0, w, 5, STONE[2]);
-    p.rect(fx - w / 2, y0, w, 1, GOLD[3]);
-    p.rect(fx - w / 2, y0 + 1, w, 1, GOLD[1]);
-    p.rect(fx - w / 2, y0 + 4, w, 1, STONE[0]);
-    for (let x = fx - w / 2 + 7; x < fx + w / 2 - 4; x += 12) p.set(x, y0 + 2, SILVER[1]);
-    top = y0;
-  }
-  // Pedestal: a tapering shaft with a glowing rune channel.
-  const R = 38, cy = top - 30 - R;
-  for (let y = cy + R - 2; y < top; y++) {
-    const t = (y - (cy + R - 2)) / (top - cy - R + 2);
-    const hw = 3 + t * 5;
-    for (let x = Math.round(fx - hw); x <= Math.round(fx + hw); x++) {
-      const u = (x - (fx - hw)) / (2 * hw);
-      p.set(x, y, u < 0.3 ? STONE[4] : u < 0.72 ? STONE[3] : STONE[1]);
-    }
-    if (y % 4 !== 0) { p.set(fx, y, TEAL[2]); twinkle(fx, y, TEAL[3]); }
-  }
-  for (const y of [cy + R + 4, top - 4]) {
-    const hw = Math.round(3 + ((y - cy - R + 2) / (top - cy - R + 2)) * 5) + 1;
-    p.rect(fx - hw, y, hw * 2 + 1, 2, GOLD[2]);
-    p.rect(fx - hw, y, hw * 2 + 1, 1, GOLD[3]);
-  }
-  p.outline(INK);
-  occlude(p, 6, 12, 0.35, 0x02010a);
-  paintOrrery(p, ta, tb, fx, cy, R);
-  glows.push([fx, cy, 46, 0x9ad8ff], [fx, cy, 16, 0xffffff]);
-  return glows;
-}
-
-type V3 = [number, number, number];
-const norm = (v: V3): V3 => { const l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; };
-const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-
-/**
- * An armillary sphere: great circles of gold seen in 3D (back halves dim, front
- * halves bright), a bigger silver meridian frame, small planets threaded on the
- * ecliptic and a captive star at the heart.
- */
-function paintOrrery(p: Pix, ta: Pix, tb: Pix, fx: number, cy: number, R: number): void {
-  const back: number[] = [], front: number[] = [];
-  const at = (n: V3, r: number, th: number): V3 => {
-    const e1 = norm(cross(n, Math.abs(n[2]) > 0.9 ? [1, 0, 0] : [0, 0, 1]));
-    const e2 = cross(n, e1);
-    const c = Math.cos(th), s = Math.sin(th);
-    return [r * (c * e1[0] + s * e2[0]), r * (c * e1[1] + s * e2[1]), r * (c * e1[2] + s * e2[2])];
-  };
-  const ring = (nn: V3, r: number, pal: number[], thick: boolean) => {
-    const n = norm(nn);
-    const steps = Math.ceil(Math.PI * 2 * r * 2.2);
-    for (let i = 0; i < steps; i++) {
-      const [x, y, z] = at(n, r, (i / steps) * Math.PI * 2);
-      const sx = Math.round(fx + x), sy = Math.round(cy - y), zz = z / r;
-      const c = zz >= 0 ? pal[zz > 0.45 ? 3 : 2] : pal[zz < -0.45 ? 0 : 1];
-      (zz >= 0 ? front : back).push(sx, sy, c, thick ? 1 : 0, zz >= 0 ? pal[1] : pal[0]);
-    }
-  };
-  const ecl: V3 = [0.42, 1, 0.34];
-  ring([0.18, 0.4, 1], R * 1.1, SILVER, true);
-  ring([0, 1, 0.3], R, GOLD, true);
-  ring(ecl, R * 0.94, GOLD, false);
-  ring([1, 0.12, 0.42], R * 0.9, GOLD, false);
-  ring([-0.7, 0.3, 0.6], R * 0.78, GOLD, false);
-  const put = (list: number[]) => {
-    for (let i = 0; i < list.length; i += 5) {
-      p.set(list[i], list[i + 1], list[i + 2]);
-      if (list[i + 3]) p.set(list[i], list[i + 1] + 1, list[i + 4]);
-    }
-  };
-  // Planets on the ecliptic.
-  const beads = [[0.4, 3, 0xe08a6a], [1.7, 2, TEAL[3]], [2.9, 2.5, 0xf0d082], [4.1, 3.5, VIOLET[3]], [5.3, 2, SILVER[3]]] as const;
-  const bead = (zFront: boolean) => {
-    for (const [th, br, col] of beads) {
-      const [x, y, z] = at(norm(ecl), R * 0.94, th);
-      if ((z >= 0) !== zFront) continue;
-      const bx = fx + x, by = cy - y;
-      for (let yy = Math.floor(by - br); yy <= by + br; yy++) for (let xx = Math.floor(bx - br); xx <= bx + br; xx++) {
-        const u = (xx + 0.5 - bx) / br, v = (yy + 0.5 - by) / br;
-        const d = u * u + v * v;
-        if (d > 1) continue;
-        p.set(xx, yy, d > 0.6 && u + v > 0 ? mix(col, 0x0a0820, 0.55) : u + v < -0.6 ? mix(col, 0xffffff, 0.5) : zFront ? col : mix(col, 0x0a0820, 0.3));
-      }
-      if (zFront) { const hx = Math.round(bx - br * 0.4), hy = Math.round(by - br * 0.4); (hash(hx, hy, 1411) < 0.5 ? ta : tb).set(hx, hy, 0xffffff); }
-    }
-  };
-  put(back);
-  bead(false);
-  // The captive star.
-  const cr = 8;
-  for (let y = cy - cr - 1; y <= cy + cr + 1; y++) for (let x = fx - cr - 1; x <= fx + cr + 1; x++) {
-    const d = Math.hypot(x + 0.5 - fx, y + 0.5 - cy) / cr;
-    if (d > 1.12) continue;
-    if (d > 1) { p.set(x, y, VIOLET[1]); continue; }
-    let c = mix(0xffffff, TEAL[3], smooth(0.15, 0.6, d));
-    c = mix(c, VIOLET[2], smooth(0.7, 1, d));
-    p.set(x, y, c);
-  }
-  put(front);
-  bead(true);
-  // Glints on the front of the rings.
-  for (let i = 0; i < front.length; i += 5 * 23) {
-    if (front[i + 2] === GOLD[3] || front[i + 2] === SILVER[3]) (hash(i, 0, 1413) < 0.5 ? ta : tb).set(front[i], front[i + 1], 0xffffff);
-  }
-  // The cradle holding the sphere: a gilded arc under it.
-  for (let i = 0; i <= 60; i++) {
-    const a = Math.PI * (0.18 + 0.64 * (i / 60));
-    const x = Math.round(fx + Math.cos(a) * R * 1.2), y = Math.round(cy + Math.sin(a) * R * 1.2);
-    p.set(x, y, GOLD[3]);
-    p.set(x, y + 1, GOLD[1]);
+  const y = floorTop;
+  for (let x = Math.round(cx - half + 4); x < cx + half - 4; x++) {
+    const u = (x + 0.5 - cx) / half;
+    const sink = Math.round(Math.max(0, Math.abs(u) - 0.94) * 40);
+    p.set(x, y - 2 + sink, GOLD[3]);
+    p.set(x, y - 1 + sink, GOLD[1]);
+    p.set(x, y + sink, STONE[2]);
+    if (hash(x, 0, 1451) < 0.03) (hash(x, 1, 1452) < 0.5 ? ta : tb).set(x, y - 2 + sink, 0xffffff);
   }
 }
 
@@ -574,9 +333,8 @@ function paintOrrery(p: Pix, ta: Pix, tb: Pix, fx: number, cy: number, R: number
 /**
  * The floor: polished star-stone flagstones laid in rings around the centre,
  * a gold-ringed medallion with a silver compass star under the fighters, a
- * zodiac band, a few constellations inlaid in silver, a gilded rim along the
- * edge, and a faint reflection of the captive star at the back. Transparent
- * past the edge (space shows).
+ * zodiac band, a few constellations inlaid in silver and a gilded rim along
+ * the edge. Transparent past the edge (space shows).
  */
 function paintStarFloor(w: number, h: number, D: number, vTop: number, edgeAt: (v: number) => number, lipAt: (u: number) => number): Pix {
   const p = new Pix(w, h);
@@ -585,11 +343,9 @@ function paintStarFloor(w: number, h: number, D: number, vTop: number, edgeAt: (
   const RINGS = [0, 22, 54, 72, 104, 150, 210, 280, 360, 460, 580];
   const sectors = (ri: number) => (ri < 4 ? 1 : ri < 6 ? 16 : ri < 8 ? 24 : 32);
   const ringOf = (r: number) => { let i = 0; while (i < RINGS.length - 1 && r >= RINGS[i + 1]) i++; return i; };
-  const reflectZ = (D * D) / vTop * 2.6 - zMid - 14;
   for (let v = 0; v < h; v++) {
     const z = v * 2.6, lz = z - zMid;
     const edge = edgeAt(v);
-    const lip = lipAt(0);
     for (let x = 0; x < w; x++) {
       const du = x + 0.5 - cx;
       const e = edge - Math.abs(du);
@@ -646,12 +402,6 @@ function paintStarFloor(w: number, h: number, D: number, vTop: number, edgeAt: (
         const mid = (RINGS[2] + RINGS[3]) / 2;
         if (zd < 0.8 && Math.abs(r - mid) / g < 4) c = GOLD[2];
         else if (Math.abs(za - Math.round(za) - 0.5) < 0.02 && Math.abs(r - mid) / g < 1) c = GOLD[1];
-      }
-      // A soft reflection of the captive star in the polish, at the back.
-      const rd = Math.hypot(du / 52, (lz - reflectZ) / 46);
-      if (rd < 1 && v >= lip) {
-        const k = (1 - rd) ** 2 * 0.5;
-        if (bayer(x, v) < k * 1.4) c = mix(c, TEAL[2], 0.35 + k * 0.4);
       }
       p.set(x, v, c);
     }
@@ -786,31 +536,16 @@ function paintUnderside(p: Pix, rng: Rng, hw: number, lift: number): [number, nu
 
 // --- Props -----------------------------------------------------------------------------
 
-/** A slender star-stone column marking each end of the arena, a star floating over it. */
-function paintColumn(): Pix {
-  const w = 22, h = 104;
+/** A low star-stone plinth banded in gold, marking each end of the arena. */
+function paintPlinth(): Pix {
+  const w = 22, h = 16;
   const p = new Pix(w, h);
-  const cxp = w / 2;
-  for (let y = 8; y < h - 7; y++) {
-    const hw = 5 + ((y - 8) / (h - 15)) * 1.5;
-    const xl = Math.round(cxp - hw), xr = Math.round(cxp + hw);
-    for (let x = xl; x < xr; x++) {
-      const u = (x - xl) / Math.max(1, xr - xl - 1);
-      p.set(x, y, u < 0.25 ? STONE[4] : u < 0.7 ? STONE[3] : STONE[1]);
-      if (Math.abs(u - 0.5) < 0.09) p.set(x, y, STONE[2]);
-    }
-  }
-  // Constellation channel down the face.
-  for (const [y, big] of [[22, 1], [31, 0], [44, 1], [52, 0], [66, 1], [78, 0]] as const) {
-    const x = Math.round(cxp + Math.sin(y * 0.7) * 2) - 1;
-    p.set(x, y, big ? TEAL[3] : TEAL[2]);
-    if (big) p.set(x, y + 1, TEAL[1]);
-  }
-  // Gold capital and base bands, a stone plinth.
-  p.rect(3, 2, 16, 3, GOLD[2]); p.rect(3, 2, 16, 1, GOLD[3]); p.rect(3, 4, 16, 1, GOLD[0]);
-  p.rect(4, 5, 14, 3, STONE[4]); p.rect(4, 7, 14, 1, STONE[1]);
-  p.rect(4, h - 18, 14, 2, GOLD[2]); p.rect(4, h - 18, 14, 1, GOLD[3]);
-  p.rect(2, h - 7, 18, 7, STONE[2]); p.rect(2, h - 7, 18, 1, GOLD[2]); p.rect(2, h - 1, 18, 1, STONE[0]);
+  p.rect(5, 2, 12, 9, STONE[3]);
+  p.rect(5, 2, 3, 9, STONE[4]);
+  p.rect(14, 2, 3, 9, STONE[1]);
+  p.set(10, 6, TEAL[3]); p.set(11, 6, TEAL[2]);
+  p.rect(3, 0, 16, 2, GOLD[2]); p.rect(3, 0, 16, 1, GOLD[3]);
+  p.rect(2, 11, 18, 5, STONE[2]); p.rect(2, 11, 18, 1, GOLD[2]); p.rect(2, 15, 18, 1, STONE[0]);
   p.outline(INK);
   return p;
 }
