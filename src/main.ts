@@ -391,7 +391,7 @@ function beginBattle(seed: number, fighters: [CharacterBuild, CharacterBuild]): 
   state = 'intro';
   introT = 0;
   countdown = -1;
-  music.intro();
+  music.intro(theme.id);
 }
 
 function onBattleEvent(e: BattleEvent): void {

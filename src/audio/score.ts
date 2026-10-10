@@ -50,10 +50,10 @@ const BELLS: Note[][] = [
 const OSTINATO = [0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 1, 0, 3, 0, 2, 0];
 
 /** Intensity where tiers 1, 2 and 3 begin. Dropping back needs a margin below. */
-const TIERS = [0.18, 0.44, 0.7];
+export const TIERS = [0.18, 0.44, 0.7];
 const KEY = 50; // D3
 
-const hz = (midi: number) => 440 * 2 ** ((midi - 69) / 12);
+export const hz = (midi: number) => 440 * 2 ** ((midi - 69) / 12);
 const triad = ([r, q]: Chord) => [r, r + (q === 'm' ? 3 : 4), r + 7];
 
 export class Score {
@@ -66,27 +66,27 @@ export class Score {
   level = 0;
   tier = -1;
 
-  private readonly mix: DynamicsCompressorNode;
-  private readonly tone: BiquadFilterNode;
-  private readonly verb: GainNode;
-  private readonly drums: GainNode;
-  private readonly strings: BiquadFilterNode;
-  private readonly spic: BiquadFilterNode;
-  private readonly choir: GainNode;
-  private readonly brass: GainNode;
-  private readonly bells: GainNode;
+  protected readonly mix: DynamicsCompressorNode;
+  protected readonly tone: BiquadFilterNode;
+  protected readonly verb: GainNode;
+  protected readonly drums: GainNode;
+  protected readonly strings: BiquadFilterNode;
+  protected readonly spic: BiquadFilterNode;
+  protected readonly choir: GainNode;
+  protected readonly brass: GainNode;
+  protected readonly bells: GainNode;
 
-  private next = 0;
-  private step = 0;
-  private bar = 0;
-  private bpm = 96;
-  private shift = 0;
-  private wasOvertime = false;
-  private running = false;
+  protected next = 0;
+  protected step = 0;
+  protected bar = 0;
+  protected bpm = 96;
+  protected shift = 0;
+  protected wasOvertime = false;
+  protected running = false;
   /** Before FIGHT: a low drone only. */
-  private priming = false;
+  protected priming = false;
 
-  constructor(private readonly ctx: BaseAudioContext, private readonly noise: AudioBuffer) {
+  constructor(protected readonly ctx: BaseAudioContext, protected readonly noise: AudioBuffer) {
     const c = ctx;
     this.out = c.createGain();
     this.tone = c.createBiquadFilter();
@@ -197,7 +197,7 @@ export class Score {
     this.timpani(t, KEY + this.shift - 12, 1);
   }
 
-  private reset(t: number): void {
+  protected reset(t: number): void {
     this.next = t;
     this.step = 0;
     this.bar = 0;
@@ -245,18 +245,18 @@ export class Score {
     }
   }
 
-  private stepTime(): number {
+  protected stepTime(): number {
     // Tempo climbs with intensity: 96 bpm calm, 140 at death's door, +8 in overtime.
     const target = 96 + 44 * this.level + (this.overtime ? 8 : 0);
     this.bpm += (target - this.bpm) * 0.08;
     return 15 / this.bpm;
   }
 
-  private progression(): Chord[] {
+  protected progression(): Chord[] {
     return this.tier >= 3 ? CLIMAX : this.tier === 2 ? TENSE : CALM;
   }
 
-  private tick(t: number, d: number): void {
+  protected tick(t: number, d: number): void {
     // Rise fast when someone takes a beating; ease down slowly after a heal.
     const tau = this.target > this.level ? 0.6 : 5;
     this.level += (this.target - this.level) * (1 - Math.exp(-d / tau));
@@ -346,7 +346,7 @@ export class Score {
     }
   }
 
-  private downbeat(t: number, d: number): void {
+  protected downbeat(t: number, d: number): void {
     // A new section only on bar 1 of a phrase, so changes land musically.
     const lv = this.level;
     let tier = this.tier;
@@ -361,15 +361,26 @@ export class Score {
     const otNow = this.overtime && !this.wasOvertime;
     if (otNow) { this.shift = 1; this.wasOvertime = true; }
     if (!this.priming && (tier > this.tier || otNow) && this.tier >= 0) {
-      this.crash(t, 1);
-      this.taiko(t, 1, false);
+      this.lift(t, true);
       // Re-enter the phrase at its start so the new progression begins on its i chord.
       this.bar = 0;
     } else if (!this.priming && this.bar % 4 === 0 && this.bar > 0 && tier >= 2) {
-      this.crash(t, 0.55);
+      this.lift(t, false);
     }
     this.tier = tier;
+    this.voiceBar(t, d);
+  }
 
+  /** A new section (`big`) or a new phrase at high intensity. */
+  protected lift(t: number, big: boolean): void {
+    this.crash(t, big ? 1 : 0.55);
+    if (big) this.taiko(t, 1, false);
+  }
+
+  /** The sustained parts of a bar: pads, strings, choir. */
+  protected voiceBar(t: number, d: number): void {
+    const lv = this.level;
+    const tier = this.tier;
     // Brighten the orchestra with intensity.
     const now = Math.max(t, this.ctx.currentTime);
     this.strings.frequency.setTargetAtTime(this.priming ? 700 : 1100 + 3400 * lv ** 1.4, now, 0.5);
@@ -398,7 +409,7 @@ export class Score {
 
   // --- Instruments ---------------------------------------------------------------
 
-  private env(g: AudioParam, t: number, a: number, hold: number, peak: number, rel: number): number {
+  protected env(g: AudioParam, t: number, a: number, hold: number, peak: number, rel: number): number {
     peak = Math.max(peak, 0.0002);
     g.setValueAtTime(0.0001, t);
     g.exponentialRampToValueAtTime(peak, t + a);
@@ -407,7 +418,7 @@ export class Score {
     return t + a + hold + rel + 0.02;
   }
 
-  private osc(type: OscillatorType, f: number, t: number, end: number, dest: AudioNode, detune = 0): OscillatorNode {
+  protected osc(type: OscillatorType, f: number, t: number, end: number, dest: AudioNode, detune = 0): OscillatorNode {
     const o = this.ctx.createOscillator();
     o.type = type;
     o.frequency.setValueAtTime(f, t);
@@ -418,7 +429,7 @@ export class Score {
     return o;
   }
 
-  private hiss(t: number, end: number, type: BiquadFilterType, f: number, q: number, dest: AudioNode): BiquadFilterNode {
+  protected hiss(t: number, end: number, type: BiquadFilterType, f: number, q: number, dest: AudioNode): BiquadFilterNode {
     const s = this.ctx.createBufferSource();
     s.buffer = this.noise;
     const bq = this.ctx.createBiquadFilter();
@@ -431,7 +442,7 @@ export class Score {
     return bq;
   }
 
-  private gain(dest: AudioNode, pan = 0): GainNode {
+  protected gain(dest: AudioNode, pan = 0): GainNode {
     const g = this.ctx.createGain();
     if (pan) {
       const p = this.ctx.createStereoPanner();
@@ -442,7 +453,7 @@ export class Score {
   }
 
   /** Big war drum (or the higher, drier one). */
-  private taiko(t: number, v: number, high: boolean): void {
+  protected taiko(t: number, v: number, high: boolean): void {
     const f0 = high ? 190 : 82, f1 = high ? 120 : 44;
     const g = this.gain(this.drums);
     const o = this.osc('sine', f0, t, this.env(g.gain, t, 0.003, 0, (high ? 0.5 : 0.95) * v, high ? 0.3 : 0.7), g);
@@ -453,7 +464,7 @@ export class Score {
     this.hiss(t, this.env(r.gain, t, 0.002, 0, 0.45 * v, 0.25), 'lowpass', high ? 1200 : 500, 1, r);
   }
 
-  private timpani(t: number, midi: number, v: number): void {
+  protected timpani(t: number, midi: number, v: number): void {
     while (midi > 50) midi -= 12;
     while (midi < 38) midi += 12;
     const g = this.gain(this.drums);
@@ -466,27 +477,27 @@ export class Score {
     this.hiss(t, this.env(n.gain, t, 0.002, 0, 0.25 * v, 0.12), 'lowpass', 900, 1, n);
   }
 
-  private snare(t: number, v: number): void {
+  protected snare(t: number, v: number): void {
     const g = this.gain(this.drums);
     this.hiss(t, this.env(g.gain, t, 0.002, 0, 0.3 * v, 0.14), 'bandpass', 2200, 0.7, g);
     const r = this.gain(this.verb);
     this.hiss(t, this.env(r.gain, t, 0.002, 0, 0.18 * v, 0.12), 'bandpass', 2200, 0.7, r);
   }
 
-  private shaker(t: number, v: number): void {
+  protected shaker(t: number, v: number): void {
     const g = this.gain(this.drums, 0.25);
     this.hiss(t, this.env(g.gain, t, 0.004, 0, 0.07 * v, 0.05), 'bandpass', 6500, 1.2, g);
   }
 
   /** Struck metal: inharmonic partials ring into the hall. */
-  private anvil(t: number, v: number): void {
+  protected anvil(t: number, v: number): void {
     const g = this.gain(this.mix, -0.2);
     g.connect(this.verb);
     const end = this.env(g.gain, t, 0.001, 0, 0.09 * v, 0.5);
     for (const f of [1180, 2950, 4130]) this.osc('sine', f, t, end, g);
   }
 
-  private crash(t: number, v: number): void {
+  protected crash(t: number, v: number): void {
     const g = this.gain(this.drums);
     this.hiss(t, this.env(g.gain, t, 0.003, 0, 0.16 * v, 2), 'highpass', 4500, 0.5, g);
     const r = this.gain(this.verb);
@@ -494,7 +505,7 @@ export class Score {
   }
 
   /** Reversed-cymbal swell into the next phrase. */
-  private swell(t: number, dur: number): void {
+  protected swell(t: number, dur: number): void {
     const g = this.gain(this.drums);
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(0.14, t + dur);
@@ -502,13 +513,13 @@ export class Score {
     this.hiss(t, t + dur + 0.06, 'highpass', 5000, 0.5, g);
   }
 
-  private heart(t: number, v: number): void {
+  protected heart(t: number, v: number): void {
     const g = this.gain(this.drums);
     const o = this.osc('sine', 62, t, this.env(g.gain, t, 0.004, 0, 0.7 * v, 0.2), g);
     o.frequency.exponentialRampToValueAtTime(38, t + 0.18);
   }
 
-  private riser(t: number, dur: number): void {
+  protected riser(t: number, dur: number): void {
     const g = this.gain(this.mix);
     g.connect(this.verb);
     g.gain.setValueAtTime(0.0001, t);
@@ -519,7 +530,7 @@ export class Score {
   }
 
   /** Cellos and basses: a round low note. */
-  private bass(t: number, midi: number, dur: number, v: number): void {
+  protected bass(t: number, midi: number, dur: number, v: number): void {
     const f = this.ctx.createBiquadFilter();
     f.type = 'lowpass';
     f.frequency.value = 420;
@@ -534,7 +545,7 @@ export class Score {
   }
 
   /** String section: three slightly detuned players per note, spread in the stereo field. */
-  private stringChord(t: number, notes: number[], dur: number, v: number): void {
+  protected stringChord(t: number, notes: number[], dur: number, v: number): void {
     const lo = Math.min(...notes), hi = Math.max(...notes);
     for (const n of notes) {
       const pan = hi > lo ? ((n - lo) / (hi - lo)) * 0.7 - 0.35 : 0;
@@ -550,7 +561,7 @@ export class Score {
     }
   }
 
-  private choirChord(t: number, notes: number[], dur: number, v: number): void {
+  protected choirChord(t: number, notes: number[], dur: number, v: number): void {
     notes.forEach((n, i) => {
       const g = this.gain(this.choir, i % 2 ? 0.3 : -0.3);
       const end = this.env(g.gain, t, Math.min(0.6, dur * 0.35), Math.max(0, dur - 0.6), v, 1);
@@ -559,7 +570,7 @@ export class Score {
     });
   }
 
-  private spiccato(t: number, midi: number, len: number, v: number): void {
+  protected spiccato(t: number, midi: number, len: number, v: number): void {
     const g = this.gain(this.spic, -0.15);
     const end = this.env(g.gain, t, 0.005, 0, 0.11 * v, Math.max(0.06, len));
     this.osc('sawtooth', hz(midi), t, end, g, -8);
@@ -567,7 +578,7 @@ export class Score {
   }
 
   /** French horn: the filter opens as the note blooms; long notes swell. */
-  private horn(t: number, midi: number, dur: number, v: number): void {
+  protected horn(t: number, midi: number, dur: number, v: number): void {
     const f = this.ctx.createBiquadFilter();
     f.type = 'lowpass';
     f.Q.value = 1.2;
@@ -590,7 +601,7 @@ export class Score {
   }
 
   /** Celesta / harp: a bright struck tone with a bell partial. */
-  private bell(t: number, midi: number, v: number, len: number): void {
+  protected bell(t: number, midi: number, v: number, len: number): void {
     const g = this.gain(this.bells, 0.3);
     const end = this.env(g.gain, t, 0.003, 0, 0.06 * v, Math.max(0.5, len * 1.4));
     this.osc('triangle', hz(midi), t, end, g);
@@ -598,7 +609,7 @@ export class Score {
     this.osc('sine', hz(midi) * 4.01, t, this.env(p.gain, t, 0.002, 0, 0.015 * v, 0.3), p);
   }
 
-  private trem(t: number, midi: number, v: number): void {
+  protected trem(t: number, midi: number, v: number): void {
     const g = this.gain(this.strings, 0.2);
     const end = this.env(g.gain, t, 0.01, 0, 0.05 * v, 0.08);
     this.osc('sawtooth', hz(midi), t, end, g, -6);

@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.54.0',
+    date: '2026-10-10',
+    title: 'A soundtrack from the stars',
+    notes: [
+      'The cosmic arena gets its own music, different from the orchestra everywhere else: breathing nebula pads, a choir of distant voices, twinkling stars that echo from side to side, deep booms and a pulsing bass.',
+      'It builds the same way as the battle music: floating and calm at full health, then the star arpeggios and the pulse kick in, a glassy call rises, and at the end a soaring theme glides over the drums.',
+      'Near defeat a heartbeat and racing star pings take over, overtime lifts the key, and the fight ends on a shimmering major chord.',
+    ],
+  },
+  {
     version: '0.53.1',
     date: '2026-10-10',
     title: 'Entrance fix',
