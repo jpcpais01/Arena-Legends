@@ -40,6 +40,8 @@ const MERGERS: Record<string, (local: unknown, cloud: unknown) => unknown> = {
     const n = (o: unknown, k: string) => Math.max(0, Number((o as Record<string, unknown>)?.[k]) || 0);
     return { w: Math.max(n(a, 'w'), n(b, 'w')), l: Math.max(n(a, 'l'), n(b, 'l')) };
   },
+  // Hero XP: the side that earned more.
+  'al.progress': (a, b) => ({ xp: Math.max(0, Number((a as { xp?: unknown })?.xp) || 0, Number((b as { xp?: unknown })?.xp) || 0) }),
   // Entrances bought on either side are kept.
   'al.entrances': (a, b) => [...new Set([...(Array.isArray(b) ? b : []), ...(Array.isArray(a) ? a : [])].filter((v) => typeof v === 'string'))],
   // Skins pulled on either side are kept; the bigger gem purse wins.

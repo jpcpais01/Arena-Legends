@@ -5,6 +5,7 @@ import { EVADE } from './abilities';
 import { FORMS, FORM_IDS, type Personality } from './forms';
 import { drawTimes, useTimes, GEAR, GEAR_SLOTS, gearIdsFor, gearOf, type GearDef } from './gear';
 import { FIGHT_STYLES, isFightStyle, type FightStyleId } from './styles';
+import { applyTraining, sanitizeTraining, type Training } from './training';
 import type { AbilityDef, FormId, GearId, GearSet, GearSlot, Stats } from './types';
 
 export type { Appearance };
@@ -22,6 +23,10 @@ export interface CharacterBuild {
   skins?: SkinMap;
   /** How the hero likes to fight (AI habits only). Balanced when absent. */
   style?: FightStyleId;
+  /** Stat points spent on base stats (from levelling up). */
+  train?: Training;
+  /** Hero level, shown on cards and brackets. The sim never reads it. */
+  level?: number;
 }
 
 /** Fighting habits the AI derives from form + gear. */
@@ -85,9 +90,10 @@ export function buildAbilities(gear: GearSet): AbilityDef[] {
   return out;
 }
 
-/** Form base stats + gear additions, then gear multipliers. */
-export function computeBaseStats(form: FormId, gear: GearSet): Stats {
+/** Form base stats + trained points + gear additions, then gear multipliers. */
+export function computeBaseStats(form: FormId, gear: GearSet, train?: Training): Stats {
   const s: Stats = { ...FORMS[form].base };
+  applyTraining(s, train);
   const pieces = equipped(gear);
   const w = s as unknown as Record<string, number>;
   for (const it of pieces) if (it.add) for (const [k, v] of Object.entries(it.add)) w[k] += v;
@@ -171,7 +177,12 @@ export function sanitizeBuild(raw: unknown, fallback: CharacterBuild): Character
   // A species only takes the body forms that suit it (older saves predate that rule).
   if (look) form = fitForm(look.species, form);
   const style = isFightStyle(o.style) ? o.style : fallback.style;
-  return { name, form, gear: gear as unknown as GearSet, look, skins: sanitizeSkins(o.skins), ...(style ? { style } : {}) };
+  const train = sanitizeTraining(o.train);
+  const level = Math.floor(Number(o.level));
+  return {
+    name, form, gear: gear as unknown as GearSet, look, skins: sanitizeSkins(o.skins), ...(style ? { style } : {}),
+    ...(train ? { train } : {}), ...(level > 1 ? { level: Math.min(9999, level) } : {}),
+  };
 }
 
 /** Replaces one slot, keeping the rest. Passing null empties it (not allowed for `main`). */

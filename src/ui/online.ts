@@ -229,7 +229,7 @@ export function inviteLink(code: string): string {
   return u.toString();
 }
 
-async function copy(text: string): Promise<boolean> {
+export async function copy(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
     return true;

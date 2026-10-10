@@ -11,6 +11,9 @@ export interface Verdict {
   hash: string;
   /** State hashes every CHECK_EVERY ticks, to tell where two runs drifted apart. */
   checks: string[];
+  /** Health left (0..1) and damage dealt, per side (the Arena Cup reads them). */
+  hp: [number, number];
+  dmg: [number, number];
 }
 
 const CHECK_EVERY = 600;
@@ -52,5 +55,7 @@ export function judge(seed: number, builds: [CharacterBuild, CharacterBuild]): V
     time: b.time,
     hash: stateHash(b),
     checks,
+    hp: [Math.max(0, b.fighters[0].hp / b.fighters[0].stats.maxHp), Math.max(0, b.fighters[1].hp / b.fighters[1].stats.maxHp)],
+    dmg: [b.fighters[0].totals.damageDealt, b.fighters[1].totals.damageDealt],
   };
 }

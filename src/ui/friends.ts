@@ -15,6 +15,7 @@ import type { AddResult, Friend, FriendRequest, FriendsData, SharedHero } from '
 import { h } from './dom';
 import { icon } from './icons';
 import { Preview } from './preview';
+import { levelBadge } from './xp';
 
 export interface FriendsCallbacks {
   onClose(): void;
@@ -209,7 +210,7 @@ export function friendsSheet(cb: FriendsCallbacks): { el: HTMLElement; dispose()
     return h('div.fr-hero', null,
       stage,
       h('div.fr-info', null,
-        h('div.fr-tag', null, h('span.side-tag', null, account), h('span.rec', null, `${s.w}W ${s.l}L`)),
+        h('div.fr-tag', null, h('span.side-tag', null, account), levelBadge(c.level ?? 1), h('span.rec', null, `${s.w}W ${s.l}L`)),
         h('div.fr-name', null, c.name),
         h('div.fr-sub', null, [SPECIES[c.look.species].name, FORMS[c.form].name, style].filter(Boolean).join(' · ')),
         h('ul.fr-gears', null, ...gear)));

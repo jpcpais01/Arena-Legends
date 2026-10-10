@@ -17,11 +17,15 @@ import { buyEntrance, entranceOf, ENTRANCE_IDS, ENTRANCES, ownsEntrance, type En
 import { gems } from '../character/collection';
 import { ENTRANCE_ICON, ENTRANCE_TIER } from './entranceUi';
 import { gemTag } from './gacha';
+import { heroLevel, levelOf, pointsAt, progress, POINTS_PER_LEVEL } from '../character/progress';
+import { applyTraining, nextPointWorth, spentPoints, TRAIN, TRAIN_IDS, type TrainId } from '../sim/training';
 
 export interface CreatorCallbacks {
   onDone(c: PlayerCharacter): void;
   /** Absent on first launch (there is nothing to go back to). */
   onCancel?(): void;
+  /** Open straight on the Stats step (there are points to spend). */
+  stats?: boolean;
 }
 
 const STEPS: { label: string; icon: IconName; title: string; sub: string }[] = [
@@ -33,11 +37,13 @@ const STEPS: { label: string; icon: IconName; title: string; sub: string }[] = [
   { label: 'Backdrop', icon: 'star', title: 'Choose your backdrop', sub: 'The scene behind your portrait on the home screen.' },
   { label: 'Entrance', icon: 'boot', title: 'Choose your entrance', sub: 'How you step into the arena before every fight. More in the Shop.' },
 ];
+/** Only when editing a hero: spend the points levels give. */
+const STATS_STEP = { label: 'Stats', icon: 'star' as IconName, title: 'Train your stats', sub: 'Every level gives stat points. Spend them on your base stats; take them back any time.' };
 const STYLE = 2;
 const LOOK = 3;
 const NAME = 4;
 const BACKDROP = 5;
-const LAST = STEPS.length - 1;
+const ENTRANCE = 6;
 /** Steps whose pick the stage arrows flip through. */
 const ARROWS = 3;
 
@@ -56,6 +62,34 @@ const FORM_STATS: [keyof Stats, string, (v: number) => string][] = [
   ['attackSpeed', 'Attack speed', (v) => `${Math.round(v * 100)}%`],
   ['critChance', 'Crit', (v) => `${Math.round(v * 100)}%`],
 ];
+/** The stat each training line shows, its label and format. */
+const TRAIN_VIEW: Record<TrainId, [keyof Stats, string, (v: number) => string]> = {
+  health: ['maxHp', 'Health', (v) => String(Math.round(v))],
+  power: ['power', 'Power', (v) => v.toFixed(1).replace(/\.0$/, '')],
+  armor: ['armor', 'Armor', (v) => v.toFixed(1).replace(/\.0$/, '')],
+  resist: ['resist', 'Resist', (v) => v.toFixed(1).replace(/\.0$/, '')],
+  speed: ['attackSpeed', 'Attack speed', (v) => `${(v * 100).toFixed(1).replace(/\.0$/, '')}%`],
+  crit: ['critChance', 'Crit', (v) => `${(v * 100).toFixed(1).replace(/\.0$/, '')}%`],
+};
+const trim = (v: number) => (Math.round(v * 10) / 10).toFixed(1).replace(/\.0$/, '');
+/** What a stat's trained points added, e.g. "60" or "2.4%". */
+function fmtGain(stat: keyof Stats, v: number): string {
+  return stat === 'attackSpeed' || stat === 'critChance' ? `${trim(v * 100)}%` : stat === 'maxHp' ? String(Math.round(v)) : trim(v);
+}
+/** "+20 health a point", scaled down once a stat tapers. */
+function perPoint(id: TrainId, worth: number): string {
+  const a = TRAIN[id].add;
+  const tag = worth < 1 ? ` (${Math.round(worth * 100)}%)` : '';
+  switch (id) {
+    case 'health': return `+${Math.round(a.maxHp! * worth)} health a point${tag}`;
+    case 'power': return `+${trim(a.power! * worth)} power a point${tag}`;
+    case 'armor': return `+${trim(a.armor! * worth)} armor a point${tag}`;
+    case 'resist': return `+${trim(a.resist! * worth)} resist a point${tag}`;
+    case 'speed': return `+${trim(a.attackSpeed! * 100 * worth)}% speed a point${tag}`;
+    case 'crit': return `+${trim(a.critChance! * 100 * worth)}% crit a point${tag}`;
+  }
+}
+
 const RANGE = new Map(FORM_STATS.map(([k]) => {
   const vs = FORM_IDS.map((id) => FORMS[id].base[k] as number);
   return [k, [Math.min(...vs), Math.max(...vs)]] as const;
@@ -74,8 +108,11 @@ const bare = (c: CharacterBuild): CharacterBuild => ({ ...c, gear: { main: c.gea
  */
 export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el: HTMLElement; dispose(): void } {
   const editing = !!cb.onCancel;
+  const steps = editing ? [...STEPS, STATS_STEP] : STEPS;
+  const LAST = steps.length - 1;
+  const STATS = editing ? STEPS.length : -1;
   let c: PlayerCharacter = { ...start, look: { ...start.look } };
-  let step = 0;
+  let step = editing && cb.stats ? STATS : 0;
   let reached = editing ? LAST : 0;
   let showGear = true;
   let cards: Preview[] = [];
@@ -120,7 +157,7 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
   }
 
   function syncNav(): void {
-    stepsEl.replaceChildren(...STEPS.flatMap((s, i) => [
+    stepsEl.replaceChildren(...steps.flatMap((s, i) => [
       ...(i ? [h(`i.step-line${i <= reached ? '.done' : ''}`)] : []),
       h<HTMLButtonElement>(`button.step${i === step ? '.on' : i <= reached ? '.done' : ''}`, {
         disabled: i > reached, 'aria-current': i === step ? 'step' : null, title: s.label,
@@ -474,13 +511,65 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     return [grid, detail];
   }
 
+  /** Level, XP and the stat points: + and - per stat, Reset gives every point back. */
+  function statsStep(): HTMLElement[] {
+    const box = h('div.train');
+    const draw = () => {
+      const lv = levelOf(progress().xp);
+      const earned = pointsAt(heroLevel());
+      const left = earned - spentPoints(c.train);
+      const base = { ...FORMS[c.form].base };
+      applyTraining(base, c.train);
+      const plain = { ...FORMS[c.form].base };
+      box.replaceChildren(
+        h('div.train-head', null,
+          h('div.lv-badge', null, h('small', null, 'LV'), h('b', null, String(lv.level))),
+          h('div.train-xp', null,
+            h('div.xp-bar', null, h('i', { style: { '--w': `${Math.round((lv.into / lv.need) * 100)}%` } })),
+            h('small', null, `${lv.into} / ${lv.need} XP to level ${lv.level + 1} · +${POINTS_PER_LEVEL} points per level`)),
+          h(`div.train-left${left > 0 ? '.has' : ''}`, null, h('b', null, String(Math.max(0, left))), h('small', null, left === 1 ? 'point' : 'points'))),
+        h('div.train-rows', null, ...TRAIN_IDS.map((id) => {
+          const n = c.train?.[id] ?? 0;
+          const worth = nextPointWorth(n);
+          const [stat, , fmt] = TRAIN_VIEW[id];
+          const gain = (base[stat] as number) - (plain[stat] as number);
+          const add = (d: 1 | -1) => {
+            const now = c.train?.[id] ?? 0;
+            if (d > 0 && left <= 0) { sfx.play('back'); return; }
+            if (d < 0 && now <= 0) return;
+            sfx.play(d > 0 ? 'equip' : 'select');
+            const t = { ...c.train, [id]: now + d };
+            if (!t[id]) delete t[id];
+            c = { ...c, train: Object.keys(t).length ? t : undefined };
+            draw();
+          };
+          return h(`div.train-row${n ? '.on' : ''}`, { title: TRAIN[id].blurb },
+            h('div.train-name', null, h('b', null, TRAIN[id].name), h('small', null, perPoint(id, worth))),
+            h('div.train-val', null, h('b', null, fmt(base[stat] as number)), gain ? h('small', null, `+${fmtGain(stat, gain)}`) : null),
+            h('div.train-n', null,
+              h<HTMLButtonElement>('button.btn.icon.sm', { 'aria-label': `Take a point from ${TRAIN[id].name}`, disabled: n <= 0, onclick: () => add(-1) }, h('span', null, '−')),
+              h('b', null, String(n)),
+              h<HTMLButtonElement>(`button.btn.icon.sm${left > 0 ? '.primary' : ''}`, { 'aria-label': `Add a point to ${TRAIN[id].name}`, disabled: left <= 0, onclick: () => add(1) }, h('span', null, '+'))));
+        })),
+        earned ? '' : h('p.train-hint', null, 'Win fights to earn XP. The Arena Cup pays the most.'));
+    };
+    draw();
+    headTool = h('button.btn.sm', { title: 'Take every point back', onclick: () => {
+      if (!spentPoints(c.train)) return;
+      sfx.play('back');
+      c = { ...c, train: undefined };
+      draw();
+    } }, icon('undo'), 'Reset');
+    return [box];
+  }
+
   function render(dir = 0): void {
     clearCards();
     refresh = () => {};
-    const s = STEPS[step];
+    const s = steps[step];
     headTool = null;
     panelBody.replaceChildren(...(step === 0 ? speciesStep() : step === 1 ? formStep() : step === STYLE ? styleStep()
-      : step === LOOK ? lookStep() : step === NAME ? nameStep() : step === BACKDROP ? backdropStep() : entranceStep()));
+      : step === LOOK ? lookStep() : step === NAME ? nameStep() : step === BACKDROP ? backdropStep() : step === ENTRANCE ? entranceStep() : statsStep()));
     panelHead.replaceChildren(
       h('div.step-title', null, h('div.ribbon', null, h('span', null, s.title)), headTool),
       h('p', null, s.sub));

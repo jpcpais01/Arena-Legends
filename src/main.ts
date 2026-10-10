@@ -47,6 +47,18 @@ import { accountSheet } from './ui/account';
 import { friendsSheet } from './ui/friends';
 import { FIGHT_STYLE_IDS } from './sim/styles';
 import { invitePopup, type InvitePopup } from './ui/invite';
+import { addXp, CHAMPION_GEMS, CHAMPION_XP, cupLossXp, cupWinXp, FINALIST_GEMS, heroLevel, pointsAt, quickXp } from './character/progress';
+import { autoTraining, spentPoints, strHash } from './sim/training';
+import {
+  entrantAt, fromBattle, loadCup, matchSeed, newCup, parseCup, ROUND_COUNT, ROUNDS, saveCup, settleRound, statusOf, type Cup, type Judge,
+} from './cup/cup';
+import { CupGuest, CupHost, type CupLobbyError, type LobbyMember } from './net/cupLobby';
+import { CupLobbyScreen, CupScreen, openCupStart, type CupLobbyView, type InviteState, type LobbyFriend } from './ui/cup';
+import { cupResultsSheet } from './ui/results';
+import { judgeRound } from './net/judge';
+import { confirmBox } from './ui/confirm';
+import { isCupCode } from './net/protocol';
+import { isOnline } from './account/presence';
 
 type State = 'menu' | 'intro' | 'battle' | 'results';
 
@@ -66,6 +78,20 @@ const ownsAll = () => /^(joao|tiago|batuca)$/i.test(accountStatus().name ?? '');
 setAllSkins(ownsAll);
 onAccount(() => setAllSkins(ownsAll));
 let record = store<WinLoss>('al.record', { w: 0, l: 0 });
+
+/** Keeps the saved hero's level in step with its XP (friends and cup brackets show it). */
+function syncLevel(): void {
+  if (!player) return;
+  const lv = heroLevel();
+  if ((player.level ?? 1) === lv) return;
+  const next = { ...player };
+  if (lv > 1) next.level = lv; else delete next.level;
+  player = next;
+  saveCharacter(next);
+}
+syncLevel();
+/** Stat points earned and not spent yet. */
+const freePoints = () => (player ? Math.max(0, pointsAt(heroLevel()) - spentPoints(player.train)) : 0);
 let speed = [1, 2, 4].includes(store<number>('al.speed', 1)) ? store<number>('al.speed', 1) : 1;
 let soundOn = store<boolean>('al.sound', true);
 // Volume sliders (0..1). Older saves had a Music on/off switch: off becomes 0.
@@ -89,6 +115,15 @@ function loadRival(): PlayerCharacter | null {
   // Rivals always fight Balanced, including ones saved before that rule.
   return { ...b, look: sanitizeAppearance(raw.look), style: 'balanced' };
 }
+/** The rival as they fight: as many stat points as the hero has earned, spent their own way. */
+function rivalNow(): PlayerCharacter {
+  const lv = heroLevel();
+  const r: PlayerCharacter = { ...rival };
+  const train = autoTraining(pointsAt(lv), strHash(rival.name));
+  if (train) r.train = train; else delete r.train;
+  if (lv > 1) r.level = lv; else delete r.level;
+  return r;
+}
 function setRival(r: PlayerCharacter): void {
   rival = r;
   save('al.rival', r);
@@ -109,7 +144,7 @@ let resultsEl: HTMLElement | null = null;
 const hud = new Hud({
   onSpeed: (s) => { speed = s; save('al.speed', s); view.speed = s; hud.setSpeed(s); sfx.play('ui'); },
   onPause: () => togglePause(),
-  onExit: () => { sfx.play('ui'); if (session) askLeave(); else toMenu(); },
+  onExit: () => { sfx.play('ui'); if (session) askLeave(); else if (cupMatch) backToCup(); else toMenu(); },
   onSettings: () => openSettings(),
   onCamera: () => cycleCamera(),
 }, view);
@@ -129,7 +164,7 @@ view.minNumber = hideSmall ? 50 : 0;
 
 const menu = new Menu({
   onFight: () => startFight(),
-  onEditLook: () => openCreator(),
+  onEditLook: () => openCreator(false, freePoints() > 0),
   onGear: () => openGear(),
   onNewRival: () => { sfx.play('ui'); setRival(generateRival(player?.name)); refreshMenu(); },
   onSound: () => {
@@ -141,10 +176,11 @@ const menu = new Menu({
   onOnline: () => {
     sfx.play('ui');
     if (!player) { openCreator(true); return; }
-    openOnlineSheet(ui, { onHost: () => startOnline('host'), onJoin: (code) => startOnline('guest', code) });
+    openOnlineSheet(ui, { onHost: () => startOnline('host'), onJoin: (code) => (isCupCode(code) ? joinCup(code) : startOnline('guest', code)) });
   },
   onAccount: accountsEnabled ? () => openAccount() : undefined,
   onFriends: accountsEnabled ? () => openFriends() : undefined,
+  onCup: () => openCup(),
 });
 
 function openFriends(): void {
@@ -238,7 +274,7 @@ const seenInvites = new Set<string>();
 async function checkInvites(): Promise<void> {
   const who = me();
   if (!who || document.visibilityState !== 'visible') return;
-  const idle = state === 'menu' && !session && !title;
+  const idle = state === 'menu' && !session && !title && !cupRoom;
   if (!idle) { closeInvite(); return; }
   const list = await social().then((m) => m.invites(who.uid)).catch(() => null);
   if (!list || me()?.uid !== who.uid) return;
@@ -246,21 +282,22 @@ async function checkInvites(): Promise<void> {
   // Generous on age: the two clocks can disagree a little.
   const live = list.filter((i) => now - i.at < (INVITE_SECONDS + 15) * 1000 && !seenInvites.has(`${i.from}:${i.at}`));
   if (invitePop && !live.some((i) => `${i.from}:${i.at}` === shownInvite)) closeInvite(); // they cancelled
-  if (invitePop || !live.length || !(state === 'menu' && !session && !title)) return;
+  if (invitePop || !live.length || !(state === 'menu' && !session && !title && !cupRoom)) return;
   const inv = live.sort((a, b) => b.at - a.at)[0];
   const key = `${inv.from}:${inv.at}`;
   const left = Math.max(10, Math.min(INVITE_SECONDS, INVITE_SECONDS - (now - inv.at) / 1000));
   const answer = (yes: boolean) => social().then((m) => m.answerInvite(inv, yes)).catch(() => {});
   shownInvite = key;
+  const toCup = isCupCode(inv.code);
   invitePop = invitePopup(inv.fromName, left, {
     onAccept: () => {
       seenInvites.add(key); closeInvite();
       void answer(true);
-      startOnline('guest', inv.code);
+      if (toCup) joinCup(inv.code); else startOnline('guest', inv.code);
     },
     onDecline: () => { seenInvites.add(key); closeInvite(); void answer(false); },
     onExpire: () => { seenInvites.add(key); closeInvite(); },
-  });
+  }, toCup);
   ui.append(invitePop.el);
   social().then((m) => m.hero(inv.from)).then((x) => invitePop?.setHero(x), () => {});
 }
@@ -357,14 +394,20 @@ const netBanner = new NetBanner();
 ui.append(menu.el, pick.el, hud.el, badge, lobby.el, netBanner.el);
 
 function refreshMenu(): void {
-  if (player) menu.set(player, rival, record);
+  if (!player) return;
+  syncLevel();
+  menu.set(player, rivalNow(), record);
+  menu.setPoints(freePoints());
+  const st = cup && statusOf(cup);
+  menu.setCup(st?.kind === 'play' ? ROUNDS[st.round].short : null);
 }
 
 function closeSheet(): void {
   sheet?.dispose();
   sheet?.el.remove();
   sheet = null;
-  setCovered(false);
+  cupScreen = null;
+  setCovered(!!cupRoom);
   poke();
   checkFriendRequests();
 }
@@ -375,31 +418,35 @@ function setCovered(on: boolean): void {
   ui.classList.toggle('covered', on);
 }
 
-function openCreator(first = false): void {
+/** `stats`: open on the Stats step. `back`: where to go when it closes (the cup screen). */
+function openCreator(first = false, stats = false, back?: () => void): void {
   closeSheet();
   sfx.play('ui');
   sheet = creatorSheet(player ?? newCharacter(), {
     onDone: (c) => {
       player = c;
       saveCharacter(c);
+      syncLevel();
       closeSheet();
       refreshMenu();
+      if (back) { back(); return; }
       // Opened from an invite link before there was a character.
-      if (pendingRoom) { const code = pendingRoom; pendingRoom = ''; startOnline('guest', code); }
+      if (pendingRoom) { const code = pendingRoom; pendingRoom = ''; if (isCupCode(code)) joinCup(code); else startOnline('guest', code); }
     },
-    onCancel: first ? undefined : () => closeSheet(),
+    onCancel: first ? undefined : () => { closeSheet(); back?.(); },
+    stats,
   });
   ui.append(sheet.el);
   setCovered(true);
 }
 
-function openGear(): void {
+function openGear(back?: () => void): void {
   if (!player) return;
   closeSheet();
   sfx.play('ui');
   sheet = gearSheet(player, {
     onChange: (c) => { player = c; saveCharacter(c); },
-    onClose: () => { closeSheet(); refreshMenu(); },
+    onClose: () => { closeSheet(); refreshMenu(); back?.(); },
     onChests: () => openShop(),
   });
   ui.append(sheet.el);
@@ -530,11 +577,14 @@ function startFight(): void {
   if (!player) { openCreator(true); return; }
   sfx.unlock();
   sfx.play('ui');
-  beginBattle((Math.random() * 2 ** 32) >>> 0, [player, rival]);
+  beginBattle((Math.random() * 2 ** 32) >>> 0, [player, rivalNow()]);
 }
 
-/** Loads a battle and runs the intro (names, warm-up, 3-2-1). */
-function beginBattle(seed: number, fighters: [CharacterBuild, CharacterBuild]): void {
+/** This device's side in the battle on screen. */
+const yourSide = (): 0 | 1 => session?.you ?? cupMatch?.side ?? 0;
+
+/** Loads a battle and runs the intro (names, warm-up, 3-2-1). `sub` replaces the arena name under the VS banner. */
+function beginBattle(seed: number, fighters: [CharacterBuild, CharacterBuild], sub?: string): void {
   closeSheet();
   resultsEl?.remove();
   resultsEl = null;
@@ -546,7 +596,7 @@ function beginBattle(seed: number, fighters: [CharacterBuild, CharacterBuild]): 
   const theme = arenaFor(seed);
   view.quiet = false;
   view.camMode = camMode;
-  view.focus = session?.you ?? 0;
+  view.focus = yourSide();
   view.hold = true;
   view.paused = false;
   view.speed = speed;
@@ -555,9 +605,9 @@ function beginBattle(seed: number, fighters: [CharacterBuild, CharacterBuild]): 
   hud.setup(battle, speed);
   hud.setPaused(false);
   hud.show(true);
-  hud.showBanner(`${fighters[0].name} VS ${fighters[1].name}`, theme.name, 0);
+  hud.showBanner(`${fighters[0].name} VS ${fighters[1].name}`, sub ?? theme.name, 0);
   // Each hero walks on their own way (yours only if you own it); the countdown waits for both.
-  const me = session?.you ?? 0;
+  const me = yourSide();
   introLen = view.playEntrances([entranceOf(fighters[0].look, me === 0), entranceOf(fighters[1].look, me === 1)]);
   state = 'intro';
   introT = 0;
@@ -580,6 +630,7 @@ function onBattleEnd(b: Battle): void {
     showOnlineResults();
     return;
   }
+  if (cupMatch && cup) { endCupFight(b, cupMatch, cup); return; }
   if (b.winner === 0) record = { ...record, w: record.w + 1 };
   else if (b.winner === 1) record = { ...record, l: record.l + 1 };
   save('al.record', record);
@@ -593,11 +644,13 @@ function onBattleEnd(b: Battle): void {
     setTimeout(() => sfx.play('gems'), 450);
   }
   const reason = b.fighters.some((f) => !f.alive) ? 'ko' : 'time';
+  const xp = addXp(quickXp(b.winner === 0, b.winner === -1, Math.max(0, hpRatio(b.fighters[0]))));
+  syncLevel();
   resultsEl = resultsSheet(b, reason, true, {
     onRematch: () => startFight(),
     onNewRival: () => { setRival(generateRival(player?.name)); startFight(); },
     onMenu: () => { sfx.play('ui'); toMenu(); },
-  }, reward);
+  }, reward, xp);
   ui.append(resultsEl);
 }
 
@@ -829,6 +882,329 @@ function showOnlineResults(): void {
   ui.append(resultsEl);
 }
 
+// --- Arena Cup -----------------------------------------------------------------------------------
+// A 32-fighter knockout bracket, solo or with friends. The cup lives in `al.cup`;
+// fights with a player in them are real battles, the rest settle on their own.
+
+let cup: Cup | null = loadCup();
+/** The cup screen while it is the open full screen. */
+let cupScreen: CupScreen | null = null;
+/** The cup fight on screen: round, match and your side. */
+let cupMatch: { r: number; m: number; side: 0 | 1 } | null = null;
+/** Other fights are being settled; and the matches decided since the screen last showed. */
+let cupBusy = false;
+let cupFresh = new Set<string>();
+
+/** Who this player is in cup lobbies: their account, or this device. */
+function myPid(): string {
+  const who = me();
+  if (who) return who.uid;
+  let id = store<string>('al.pid', '');
+  if (!id) { id = 'd' + Math.random().toString(36).slice(2, 12); save('al.pid', id); }
+  return id;
+}
+
+function openCup(): void {
+  if (!player) { openCreator(true); return; }
+  sfx.unlock();
+  if (cup) { sfx.play('ui'); showCup(); return; }
+  sfx.play('ui');
+  openCupStart(ui, { onSolo: () => startSoloCup(), onFriends: () => openCupLobby('host') });
+}
+
+function startSoloCup(): void {
+  if (!player) return;
+  const lv = heroLevel();
+  setCup(newCup([{ build: player, level: lv, pid: myPid() }], lv, false));
+  showCup();
+}
+
+function setCup(c: Cup | null): void {
+  cup = c;
+  cupFresh = new Set();
+  saveCup(c);
+}
+
+/** In a solo cup your slot always shows (and fights with) your hero as it is now. */
+function refreshMySlot(c: Cup): void {
+  if (!c.shared && player) c.entrants[c.me] = { ...c.entrants[c.me], build: player, level: heroLevel() };
+}
+
+function showCup(): void {
+  const c = cup;
+  if (!c) return;
+  refreshMySlot(c);
+  closeSheet();
+  const scr = new CupScreen({
+    onFight: () => startCupFight(),
+    onMenu: () => { closeSheet(); refreshMenu(); },
+    onLeave: () => confirmBox(ui, 'Give up the cup?', 'You leave the bracket. The XP and gems you already won stay yours.', 'Give up', () => {
+      setCup(null); closeSheet(); refreshMenu();
+    }, 'exit'),
+    onGear: () => openGear(() => showCup()),
+    onHero: () => openCreator(false, true, () => showCup()),
+    onNewCup: () => { setCup(null); closeSheet(); refreshMenu(); openCup(); },
+    onFinish: () => void settleCup(ROUND_COUNT - 1),
+  });
+  sheet = { el: scr.el, dispose: () => scr.dispose() };
+  cupScreen = scr;
+  ui.append(scr.el);
+  setCovered(true);
+  renderCup();
+  // Fights that should be settled by now (a reload mid-cup, or knocked out): settle them.
+  const st = statusOf(c);
+  const upto = st.kind === 'play' ? st.round - 1 : st.kind === 'out' ? st.round : ROUND_COUNT - 1;
+  if (upto >= 0 && c.results.slice(0, upto + 1).some((row) => row.some((x) => !x))) void settleCup(upto);
+}
+
+function renderCup(): void {
+  if (!cup || !cupScreen) return;
+  cupScreen.set({ cup, busy: cupBusy, fresh: cupFresh, points: cup.shared ? 0 : freePoints() });
+  cupFresh = new Set();
+}
+
+/** Friends' fights run as headless battles (in a worker), exactly as they play on their devices. */
+const judgeCup: Judge = (seed, builds) => judgeRound(seed, builds).then((v) => ({ winner: v.winner, reason: v.reason, hp: v.hp, dmg: v.dmg }));
+
+/** Settles every round up to `upto` that can be settled without you, then lights up what changed. */
+async function settleCup(upto: number): Promise<void> {
+  const c = cup;
+  if (!c || cupBusy) return;
+  cupBusy = true;
+  renderCup();
+  const known = new Set<string>();
+  c.results.forEach((row, r) => row.forEach((x, m) => { if (x) known.add(`${r}:${m}`); }));
+  try {
+    for (let r = 0; r <= Math.min(upto, ROUND_COUNT - 1); r++) await settleRound(c, r, judgeCup);
+  } catch (e) {
+    console.warn('[cup]', e);
+  }
+  cupBusy = false;
+  if (cup !== c) return;
+  c.results.forEach((row, r) => row.forEach((x, m) => { if (x && !known.has(`${r}:${m}`)) cupFresh.add(`${r}:${m}`); }));
+  saveCup(c);
+  renderCup();
+  if (!cupScreen && !covered && state === 'menu') refreshMenu();
+}
+
+function startCupFight(): void {
+  const c = cup;
+  if (!c || !player) return;
+  const st = statusOf(c);
+  if (st.kind !== 'play') return;
+  const a = entrantAt(c, st.round, st.match, 0), b = entrantAt(c, st.round, st.match, 1);
+  if (a < 0 || b < 0) return;
+  refreshMySlot(c);
+  cupMatch = { r: st.round, m: st.match, side: st.side };
+  sfx.unlock();
+  sfx.play('ui');
+  // The upper slot is always the left corner, so every device plays this match the same way.
+  beginBattle(matchSeed(c, st.round, st.match), [c.entrants[a].build, c.entrants[b].build], ROUNDS[st.round].name);
+}
+
+/** A cup fight ended: record it, pay gems and XP, and show how it went. */
+function endCupFight(b: Battle, cm: NonNullable<typeof cupMatch>, c: Cup): void {
+  const ko = b.fighters.some((f) => !f.alive);
+  const [f0, f1] = b.fighters;
+  const res = fromBattle(b.winner, [Math.max(0, hpRatio(f0)), Math.max(0, hpRatio(f1))], [f0.totals.damageDealt, f1.totals.damageDealt], ko);
+  c.results[cm.r][cm.m] = res;
+  const won = res.w === cm.side;
+  record = won ? { ...record, w: record.w + 1 } : { ...record, l: record.l + 1 };
+  save('al.record', record);
+  const final = cm.r === ROUND_COUNT - 1;
+  const reward: WinReward | null = won ? { gems: winGems(res.hp), hp: res.hp } : null;
+  const bonus = final ? (won ? CHAMPION_GEMS : FINALIST_GEMS) : 0;
+  const gemsWon = (reward?.gems ?? 0) + bonus;
+  if (gemsWon) addGems(gemsWon);
+  const xp = addXp((won ? cupWinXp(cm.r, res.hp) : cupLossXp(cm.r)) + (final && won ? CHAMPION_XP : 0));
+  c.gems += gemsWon;
+  c.xp += xp.gained;
+  saveCup(c);
+  syncLevel();
+  if (won) sfx.play(final ? 'revealLegendary' : 'win');
+  if (gemsWon) setTimeout(() => sfx.play('gems'), 450);
+  cupFresh.add(`${cm.r}:${cm.m}`);
+  // The rest of the round plays out while the results are up.
+  void settleCup(cm.r);
+  resultsEl = cupResultsSheet(b, {
+    you: cm.side, won, round: ROUNDS[cm.r].name, ko, champion: final && won, finalist: final && !won, bonus,
+  }, () => { sfx.play('ui'); backToCup(); }, reward, xp);
+  ui.append(resultsEl);
+}
+
+/** From a cup fight (finished or left) back to the bracket. */
+function backToCup(): void {
+  cupMatch = null;
+  toMenu();
+  showCup();
+}
+
+// --- Cup lobby (with friends) ---------------------------------------------------------------------
+
+interface CupRoom {
+  screen: CupLobbyScreen;
+  host: CupHost | null;
+  guest: CupGuest | null;
+  friends: LobbyFriend[] | null | 'signed-out' | 'error';
+  invites: Map<string, { state: InviteState; at: number }>;
+  poll: number;
+}
+let cupRoom: CupRoom | null = null;
+
+const LOBBY_ERRORS: Record<CupLobbyError, string> = {
+  offline: "Couldn't reach the match server. Check your internet connection and try again.",
+  browser: "This browser can't make direct connections. Try an up-to-date Chrome, Edge, Firefox or Safari.",
+  'no-room': 'No open cup lobby with that code. It closes when its host leaves or starts the cup.',
+  full: 'That cup lobby is full.',
+  version: 'You and the host are on different versions of the game. Both of you reload the game, then try again.',
+  started: 'That cup has already started.',
+  closed: 'The host closed the lobby.',
+};
+
+function lobbyMember(): LobbyMember {
+  const lv = heroLevel();
+  return { pid: myPid(), build: { ...player! }, level: lv };
+}
+
+/** Joins a friend's cup lobby, after asking when it would end a cup in progress. */
+function joinCup(code: string): void {
+  if (!player) { pendingRoom = code; openCreator(true); return; }
+  const st = cup && statusOf(cup);
+  if (st?.kind === 'play') {
+    confirmBox(ui, 'Join a new cup?', `You are in the ${ROUNDS[st.round].name} of your cup. Joining this one ends it.`, 'Join', () => openCupLobby('guest', code), 'trophy');
+    return;
+  }
+  openCupLobby('guest', code);
+}
+
+function openCupLobby(role: 'host' | 'guest', code = ''): void {
+  if (!player || session) return;
+  closeCupRoom();
+  closeSheet();
+  sfx.unlock();
+  const screen = new CupLobbyScreen({
+    onStart: () => beginSharedCup(),
+    onClose: () => { closeCupRoom(); refreshMenu(); },
+    onInvite: (f) => inviteToCup(f),
+    onSignIn: () => { closeCupRoom(); openAccount(); },
+    onRetry: () => { const h = cupRoom?.host; if (h) void h.start(); },
+  });
+  const room: CupRoom = { screen, host: null, guest: null, friends: null, invites: new Map(), poll: 0 };
+  cupRoom = room;
+  if (role === 'host') {
+    const host = new CupHost(lobbyMember());
+    room.host = host;
+    host.onChange = () => { if (cupRoom === room) syncCupRoom(); };
+    void host.start();
+    void loadLobbyFriends(room);
+    room.poll = window.setInterval(() => void watchCupInvites(room), 3000);
+  } else {
+    const guest = new CupGuest(code, lobbyMember());
+    room.guest = guest;
+    guest.onChange = () => { if (cupRoom === room) syncCupRoom(); };
+    guest.onStart = (c) => {
+      if (cupRoom !== room) return;
+      closeCupRoom();
+      setCup(c);
+      sfx.play('confirm');
+      showCup();
+    };
+    guest.start();
+  }
+  ui.append(screen.el);
+  setCovered(true);
+  syncCupRoom();
+}
+
+function syncCupRoom(): void {
+  const r = cupRoom;
+  if (!r) return;
+  let v: CupLobbyView;
+  if (r.host) {
+    const h = r.host;
+    const friends = Array.isArray(r.friends) ? r.friends.map((f) => ({ ...f, invite: r.invites.get(f.uid)?.state })) : r.friends;
+    v = { role: 'host', state: h.state, error: h.error ? LOBBY_ERRORS[h.error] : undefined, code: h.code, members: h.members, friends };
+  } else {
+    const g = r.guest!;
+    v = { role: 'guest', state: g.state === 'in' ? 'in' : g.state === 'error' ? 'error' : 'joining', error: g.error ? LOBBY_ERRORS[g.error] : undefined, code: g.code, members: g.members };
+  }
+  r.screen.set(v);
+}
+
+async function loadLobbyFriends(room: CupRoom): Promise<void> {
+  const who = me();
+  if (!who) { room.friends = 'signed-out'; syncCupRoom(); return; }
+  try {
+    const d = await social().then((m) => m.load(who));
+    const now = Date.now();
+    room.friends = d.friends.map((f) => ({ uid: f.uid, name: f.name, online: isOnline(f.seen, now) }));
+  } catch {
+    room.friends = 'error';
+  }
+  if (cupRoom === room) syncCupRoom();
+}
+
+function inviteToCup(f: LobbyFriend): void {
+  const room = cupRoom, who = me(), host = room?.host;
+  if (!room || !who || !host || host.state !== 'open') return;
+  const code = host.code;
+  room.invites.set(f.uid, { state: 'sending', at: Date.now() });
+  syncCupRoom();
+  social().then((m) => m.invite(who, f.uid, code)).then(() => {
+    room.invites.set(f.uid, { state: 'open', at: Date.now() });
+    if (cupRoom === room) syncCupRoom();
+  }, (e) => {
+    console.warn('[cup invite]', e);
+    room.invites.set(f.uid, { state: 'failed', at: Date.now() });
+    if (cupRoom === room) syncCupRoom();
+  });
+}
+
+/** Host side: notices answers to invites, and lets unanswered ones lapse. */
+async function watchCupInvites(room: CupRoom): Promise<void> {
+  const who = me();
+  if (!who || cupRoom !== room) return;
+  const inRoom = new Set(room.host?.members.map((m) => m.pid) ?? []);
+  for (const [uid, inv] of room.invites) {
+    if (inv.state !== 'open') continue;
+    const drop = () => social().then((m) => m.dropInvite(who.uid, uid)).catch(() => {});
+    if (inRoom.has(uid)) { room.invites.delete(uid); void drop(); continue; }
+    if (Date.now() - inv.at > INVITE_SECONDS * 1000) { inv.state = 'expired'; void drop(); continue; }
+    const got = await social().then((m) => m.inviteState(who.uid, uid)).catch(() => undefined);
+    if (got?.state === 'declined') { inv.state = 'declined'; sfx.play('back'); void drop(); }
+  }
+  if (cupRoom === room) syncCupRoom();
+}
+
+/** Host: draws the cup with everyone in the party and sends it to them. */
+function beginSharedCup(): void {
+  const room = cupRoom, host = room?.host;
+  if (!room || !host || host.state !== 'open') return;
+  const members = host.members;
+  const drawn = newCup(members.map((m) => ({ build: m.build, level: m.level, pid: m.pid })), members[0].level, members.length > 1);
+  // Keep exactly what the others will read back, so every device fights the same builds.
+  const c = parseCup(JSON.parse(JSON.stringify(drawn))) ?? drawn;
+  host.begin(c);
+  closeCupRoom();
+  setCup(c);
+  showCup();
+}
+
+/** Leaves the lobby (a started cup's room closes itself once everyone has it). */
+function closeCupRoom(): void {
+  const r = cupRoom;
+  if (!r) return;
+  cupRoom = null;
+  clearInterval(r.poll);
+  if (r.host && !r.host.isStarted) r.host.close();
+  r.guest?.close();
+  const who = me();
+  if (who) for (const [uid, inv] of r.invites) if (inv.state === 'open' || inv.state === 'sending') void social().then((m) => m.dropInvite(who.uid, uid)).catch(() => {});
+  r.screen.dispose();
+  r.screen.el.remove();
+  setCovered(!!sheet);
+}
+
 // --- Loop ------------------------------------------------------------------------------------
 let last = 0;
 function loop(now: number): void {
@@ -851,11 +1227,11 @@ function loop(now: number): void {
 
 // --- Input -----------------------------------------------------------------------------------
 window.addEventListener('keydown', (e) => {
-  if (e.target instanceof HTMLInputElement || sheet || title) return;
+  if (e.target instanceof HTMLInputElement || sheet || title || cupRoom) return;
   if (state === 'menu' && e.key === 'Enter' && !session) startFight();
   else if (state === 'battle') {
     if (e.key === ' ') { e.preventDefault(); togglePause(); }
-    else if (e.key === 'Escape') { if (session) askLeave(); else toMenu(); }
+    else if (e.key === 'Escape') { if (session) askLeave(); else if (cupMatch) backToCup(); else toMenu(); }
     else if (e.key === 'c' || e.key === 'C') cycleCamera();
     else if (e.key === '1' || e.key === '2' || e.key === '3') {
       speed = [1, 2, 4][Number(e.key) - 1];
@@ -863,7 +1239,7 @@ window.addEventListener('keydown', (e) => {
       view.speed = speed;
       hud.setSpeed(speed);
     }
-  } else if (state === 'results' && e.key === 'Enter' && !session) startFight();
+  } else if (state === 'results' && e.key === 'Enter' && !session) { if (cupMatch) backToCup(); else startFight(); }
 });
 // Browsers only start audio after a gesture.
 window.addEventListener('pointerdown', () => { sfx.unlock(); music.unlocked(); }, { capture: true });
@@ -882,7 +1258,8 @@ toMenu();
     const q = params.toString();
     history.replaceState(null, '', location.pathname + (q ? '?' + q : '') + location.hash);
   }
-  if (code.length === CODE_LENGTH) startOnline('guest', code);
+  if (code.length === CODE_LENGTH && isCupCode(code)) joinCup(code);
+  else if (code.length === CODE_LENGTH) startOnline('guest', code);
   else if (saved && player) startOnline(saved.role, saved.code, saved);
   // Back from a reload after signing in: straight to the menu.
   else if (consumeResume()) { if (!player) openCreator(true); }

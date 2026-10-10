@@ -5,6 +5,7 @@ import { fmtInt } from './format';
 import { gemTag } from './gacha';
 import { icon } from './icons';
 import { scoreLine } from './online';
+import { xpLine, type XpGain } from './xp';
 
 export interface ResultsCallbacks {
   onRematch(): void;
@@ -28,7 +29,7 @@ const ROWS: [keyof FighterTotals, string][] = [
 const KEEP = new Set<keyof FighterTotals>(['damageDealt', 'hits', 'biggestHit']);
 
 /** End-of-fight sheet: who won and how, and a side-by-side stat table. */
-export function resultsSheet(b: Battle, reason: 'ko' | 'time', you: boolean, cb: ResultsCallbacks, reward?: WinReward | null): HTMLElement {
+export function resultsSheet(b: Battle, reason: 'ko' | 'time', you: boolean, cb: ResultsCallbacks, reward?: WinReward | null, xp?: XpGain | null): HTMLElement {
   const w = b.winner;
   const head = w === -1 ? 'Draw' : you ? (w === 0 ? 'Victory!' : 'Defeat') : `${b.fighters[w].name} wins`;
   const sub = w === -1
@@ -37,12 +38,50 @@ export function resultsSheet(b: Battle, reason: 'ko' | 'time', you: boolean, cb:
   const mood = w === -1 ? 'draw' : !you || w === 0 ? 'win' : 'lose';
   return h('div.sheet-wrap', null,
     h(`div.sheet.plate.results.${mood}`, { role: 'dialog', 'aria-label': 'Results' },
-      h('div.res-banner', null, h('b', null, head), h('span', null, sub), rewardLine(reward)),
+      h('div.res-banner', null, h('b', null, head), h('span', null, sub), rewardLine(reward), xpLine(xp)),
       h('div.sheet-body.res-body', null, statTable(b)),
       h('div.sheet-foot', null,
         h('button.btn', { onclick: cb.onMenu }, icon('home'), 'Menu'),
         h('button.btn', { onclick: cb.onNewRival }, icon('dice'), 'New rival'),
         h('button.btn.primary', { onclick: cb.onRematch }, icon('replay'), 'Rematch')),
+    ),
+  );
+}
+
+/** What a cup fight decided, for its results sheet. */
+export interface CupOutcome {
+  /** Your side in the battle. */
+  you: 0 | 1;
+  won: boolean;
+  /** The round's name, e.g. "Quarter-finals". */
+  round: string;
+  ko: boolean;
+  /** Won the final. */
+  champion: boolean;
+  /** Lost the final. */
+  finalist: boolean;
+  /** Cup bonus gems on top of the win's (champion or finalist). */
+  bonus: number;
+}
+
+/** After a cup fight: through to the next round, knocked out, or champion. One button back to the bracket. */
+export function cupResultsSheet(b: Battle, o: CupOutcome, onBracket: () => void, reward?: WinReward | null, xp?: XpGain | null): HTMLElement {
+  const head = o.champion ? 'Champion!' : o.won ? 'Victory!' : 'Knocked out';
+  const rival = b.fighters[o.you === 0 ? 1 : 0].name;
+  const sub = o.champion ? `You won the Arena Cup${o.ko ? ' by K.O.' : ''}!`
+    : o.won ? `${o.round} won ${o.ko ? 'by K.O.!' : 'on remaining health.'} On to the next round.`
+    : `${rival} knocks you out of the ${o.round}${o.finalist ? ': runner-up!' : '.'}`;
+  return h('div.sheet-wrap', null,
+    h(`div.sheet.plate.results.${o.won ? 'win' : 'lose'}${o.champion ? '.champ' : ''}`, { role: 'dialog', 'aria-label': 'Cup results' },
+      h('div.res-banner', null,
+        h('small.chip', null, icon('trophy'), o.round),
+        h('b', null, head), h('span', null, sub),
+        rewardLine(reward),
+        o.bonus ? h('div.res-gems', null, gemTag(`+${o.bonus}`), h('span', null, o.champion ? 'Champion bonus' : 'Finalist bonus')) : null,
+        xpLine(xp)),
+      h('div.sheet-body.res-body', null, statTable(b)),
+      h('div.sheet-foot', null,
+        h('button.btn.primary', { onclick: onBracket }, icon('trophy'), o.won && !o.champion ? 'Next round' : 'Bracket')),
     ),
   );
 }
