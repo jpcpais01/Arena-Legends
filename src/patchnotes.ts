@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.42.1',
+    date: '2026-10-10',
+    title: 'Tiago unlocks everything',
+    notes: [
+      'The Tiago account now owns every skin, including ones added later, just like the Joao account.',
+    ],
+  },
+  {
     version: '0.42.0',
     date: '2026-10-10',
     title: 'New item inspector in the Armory',

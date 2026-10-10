@@ -53,9 +53,10 @@ let player: PlayerCharacter | null = loadCharacter();
 let rival: PlayerCharacter = loadRival() ?? generateRival(player?.name);
 // Gems and owned skins. Whatever the hero already wears stays owned.
 loadCollection(player?.skins);
-// João's own account always has every skin, including ones added later.
-setAllSkins(() => /^joao$/i.test(accountStatus().name ?? ''));
-onAccount(() => setAllSkins(() => /^joao$/i.test(accountStatus().name ?? '')));
+// The owners' accounts (João, Tiago) always have every skin, including ones added later.
+const ownsAll = () => /^(joao|tiago)$/i.test(accountStatus().name ?? '');
+setAllSkins(ownsAll);
+onAccount(() => setAllSkins(ownsAll));
 let record = store<WinLoss>('al.record', { w: 0, l: 0 });
 let speed = [1, 2, 4].includes(store<number>('al.speed', 1)) ? store<number>('al.speed', 1) : 1;
 let soundOn = store<boolean>('al.sound', true);
