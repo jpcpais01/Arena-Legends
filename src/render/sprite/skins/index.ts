@@ -58,6 +58,8 @@ export interface SkinArt {
   chest?: Partial<ChestLook>;
   legs?: Partial<LegsLook>;
   boots?: Partial<BootsLook>;
+  /** Chain sickle: colours of the thrown chain in battle (lit, mid, dark joints, shadow; CSS). */
+  chain?: readonly [string, string, string, string];
   /** Swing trail colours (bright, dim). */
   trail?: [number, number];
   /**
