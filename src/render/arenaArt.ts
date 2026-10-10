@@ -1,5 +1,6 @@
 import type { Pix } from './pixel/paint';
 import { buildCaldera } from './calderaArt';
+import { buildCosmos } from './cosmosArt';
 import { buildIsle } from './isleArt';
 
 /**
@@ -16,7 +17,7 @@ export interface Theme {
   id: string;
   name: string;
   /** Which painter builds it. */
-  kind: 'isle' | 'caldera';
+  kind: 'isle' | 'caldera' | 'cosmos';
   /** Sky swatch (top to horizon), also used by the arena picker. */
   sky: number[];
   /** Where the main light sits (fractions of the screen) and the sun's radius. */
@@ -46,6 +47,14 @@ export const THEMES: Theme[] = [
     floor: 0x3a2c36,
     fire: 0xff8a2a,
   },
+  {
+    id: 'astral', name: 'Astral Sanctum', kind: 'cosmos',
+    sky: [0x03020a, 0x070616, 0x0c0c28, 0x15163c, 0x221e50],
+    body: { r: 0, x: 0.16, y: 0.24 },
+    mountFar: 0x1a1a40, snow: null,
+    floor: 0x1e1d4c,
+    fire: 0xb8a0ff,
+  },
 ];
 
 export interface Layer {
@@ -57,7 +66,7 @@ export interface Layer {
   /** Slow wind drift in px/s (the layer must tile horizontally). */
   drift?: number;
   /** Ambient things drawn right after this layer. */
-  after?: 'birds' | 'floaters' | 'falls';
+  after?: 'birds' | 'floaters' | 'falls' | 'stars';
 }
 
 /** A rock floating near the arena, bobbing gently. */
@@ -136,6 +145,18 @@ export interface Heat {
   glow: number;
 }
 
+/** A deep-space arena: what twinkles, streaks and glows at runtime. */
+export interface Cosmos {
+  /** Bright stars that twinkle, flat x, y, size (the sky never scrolls, so screen coordinates). */
+  twinkle: number[];
+  /** Soft glows: screen x at camera 0, screen y, parallax factor, radius, colour. */
+  glows: { x: number; y: number; factor: number; r: number; color: number }[];
+  /** Screen rows where shooting stars start. */
+  meteorBand: [number, number];
+  /** Cool starlight the whole world sinks into a little. */
+  tint: number;
+}
+
 export interface ArenaArt {
   theme: Theme;
   gy: number;
@@ -165,11 +186,15 @@ export interface ArenaArt {
   ambience: Ambience | null;
   /** Lava, embers and the volcano's moods; arenas without one ignore it. */
   heat: Heat | null;
+  /** Twinkles, shooting stars and starlight; arenas without one ignore it. */
+  cosmos: Cosmos | null;
 }
 
 /** `travel`: how far (px) the camera can travel from centre. */
 export function buildArena(theme: Theme, W: number, H: number, gy: number, travel: number, seed = 7): ArenaArt {
-  return theme.kind === 'caldera' ? buildCaldera(theme, W, H, gy, travel, seed) : buildIsle(theme, W, H, gy, travel, seed);
+  if (theme.kind === 'caldera') return buildCaldera(theme, W, H, gy, travel, seed);
+  if (theme.kind === 'cosmos') return buildCosmos(theme, W, H, gy, travel, seed);
+  return buildIsle(theme, W, H, gy, travel, seed);
 }
 
 /** Floor row mapping: perspective scale and texture row for screen row `y`. */
