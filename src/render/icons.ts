@@ -6,7 +6,7 @@ import { arc, intersect, union } from './pixel/sdf';
 import { grain, speckle } from './pixel/tex';
 import { STAND } from './sprite/pose';
 import { drawFigure } from './sprite/draw';
-import { makeArt } from './sprite/look';
+import { makeArt, SPECIES_KEYS } from './sprite/look';
 import { SKIN_ART, skinMaterials } from './sprite/skins';
 import { usableArt } from './sprite/usables';
 import { weaponArt } from './sprite/weapons';
@@ -250,7 +250,7 @@ function special(id: SpecialId, r: Raster, c: number, skin?: string | null): voi
 }
 
 /** Body materials left out of armour icons (skin, face, clothes under the armour, weapons). */
-const BODY = new Set(['skin', 'hair', 'hairGlow', 'iris', 'eyeGlow', 'white', 'lash', 'mouth', 'inner', 'outfit', 'pants', 'accent', 'scarf', 'brow', 'shoe', 'fur', 'furTip', 'horn', 'tusk', 'crystal', 'stoneCrack', 'muzzle', 'nose', 'scale', 'crest', 'cap', 'capSpot', 'gill']);
+const BODY = new Set(['skin', 'hair', 'hairGlow', 'iris', 'eyeGlow', 'white', 'lash', 'mouth', 'inner', 'outfit', 'pants', 'accent', 'scarf', 'brow', ...SPECIES_KEYS]);
 /** The bare body's belt: part of the look under a helmet or boots, part of the piece on a chest. */
 const BELT = new Set(['belt', 'leather']);
 

@@ -68,15 +68,12 @@ export const FORM_SHAPE: Record<FormId, Shape> = {
 /** Species tweak the build a little on top of the form (looks only). */
 const SPECIES_SHAPE: Record<SpeciesId, Shape> = {
   human: { height: 1, bulk: 1, shoulders: 1.03, limbs: 1, head: 0.98 },
-  kitsu: { height: 1, bulk: 0.97, shoulders: 1, limbs: 1.02, head: 1 },
-  lop: { height: 0.97, bulk: 0.95, shoulders: 0.96, limbs: 1, head: 1.04 },
-  imp: { height: 0.95, bulk: 0.95, shoulders: 1, limbs: 1, head: 1.04 },
-  ogrin: { height: 1.02, bulk: 1.14, shoulders: 1.1, limbs: 0.98, head: 0.98 },
-  wisp: { height: 1.02, bulk: 0.9, shoulders: 0.95, limbs: 1.04, head: 1 },
-  golem: { height: 1.04, bulk: 1.18, shoulders: 1.16, limbs: 0.97, head: 0.94 },
-  saurin: { height: 1.02, bulk: 1, shoulders: 1, limbs: 1.03, head: 0.96 },
+  imp: { height: 0.95, bulk: 0.95, shoulders: 1, limbs: 1, head: 1.06 },
   myco: { height: 0.94, bulk: 1.02, shoulders: 0.94, limbs: 0.96, head: 1.1 },
-  ursin: { height: 1.02, bulk: 1.16, shoulders: 1.08, limbs: 0.96, head: 1, belly: 0.35 },
+  // Ogrin: a wall of shoulders, a gut and a big head.
+  ogrin: { height: 1.02, bulk: 1.2, shoulders: 1.18, limbs: 0.98, head: 1.1, belly: 0.25 },
+  wisp: { height: 1.02, bulk: 0.88, shoulders: 0.94, limbs: 1.05, head: 1 },
+  golem: { height: 1.04, bulk: 1.22, shoulders: 1.2, limbs: 0.96, head: 0.94 },
 };
 
 export function bodyFor(form: FormId, species: SpeciesId): BodySpec {

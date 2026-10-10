@@ -12,6 +12,20 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.43.0',
+    date: '2026-10-10',
+    title: 'Six species, redrawn',
+    notes: [
+      'The roster is down to six species: Human, Imp, Myco, Ogrin, Wisp and Golem. Kitsu, Lop, Saurin and Ursin are gone, and fighters who were one of them are now Human.',
+      'Imp: big curling horns, burning eyes, a fang, long pointed ears, bat wings that flutter as they move and a spade-tipped tail. Imps can now be Slender too.',
+      'Myco: pick your cap (Dome, Cone or Parasol). They also get a frilled collar, a little mushroom sprouting from the shoulder, and glowing spores drifting around them.',
+      'Ogrin: bigger heads with a huge underbite, jutting tusks, a heavy brow, war paint in your accent colour and a gold hoop in the ear. Bulkier shoulders and heavy fists.',
+      'Wisp: cold flame rising off the hair, a floating halo, glowing tear marks, long swept-back ears, a glowing heart through light clothes and motes of light drifting around them.',
+      'Golem: a carved block of a head with a glowing visor slit for eyes, moss on the skull and shoulders, stone shoulder slabs, a rune glowing on the chest and huge fists. Pick your crystals (Crown, Spire or Shards); they now take your crystal colour.',
+      'Every body form is still available to at least one species. If your fighter\'s form doesn\'t suit their species any more, they moved to the closest one that does.',
+    ],
+  },
+  {
     version: '0.42.2',
     date: '2026-10-10',
     title: 'Clear view of your hero',
