@@ -4,7 +4,8 @@ import { MATCH_TIME, MAX_ENERGY, ROUND_TIME } from '../sim/constants';
 import { FORMS } from '../sim/forms';
 import type { BattleEvent, StatusId } from '../sim/types';
 import type { BattleView } from '../render/battleView';
-import { h } from './dom';
+import type { SuperLook } from '../render/supers';
+import { h, hex } from './dom';
 import { fmtHp } from './format';
 import { icon } from './icons';
 import { scoreLine } from './online';
@@ -68,8 +69,45 @@ export class Hud {
   private battle: Battle | null = null;
   private bubbles = true;
 
+  /** Super attack names on screen: one per side, item ultimates in the middle. */
+  private supers: Record<'left' | 'right' | 'mid', HTMLElement | null> = { left: null, right: null, mid: null };
+  private superOf: (HTMLElement | null)[] = [null, null];
+
   constructor(private readonly cb: HudCallbacks, private readonly view: BattleView) {
     this.el = h<HTMLDivElement>('div.hud');
+    view.onSuper = (f, look, side) => this.superCallout(f, look, side);
+    view.onSuperCancel = (f) => this.superCancel(f);
+  }
+
+  /**
+   * A super's name slams onto the screen on its user's side, in its own
+   * colours: weapon skills high on that side, item ultimates big in the
+   * middle. A new one on the same spot replaces the old, so it never piles up.
+   */
+  private superCallout(f: number, look: SuperLook, side: 'left' | 'right'): void {
+    if (this.el.hidden) return;
+    const slot = look.ult ? 'mid' : side;
+    this.supers[slot]?.remove();
+    const text = look.name.toUpperCase() + '!';
+    const el = h('div.super', { class: `${slot}${look.ult ? ' ult' : ''}`, style: { '--hi': hex(look.hi), '--lo': hex(look.lo), '--dur': `${(look.ult ? 1.7 : 1.15) / Math.sqrt(this.speedV)}s` } },
+      h('i.sc-streak'),
+      look.ult ? h('i.sc-rays') : null,
+      h('span.sc-text', null, h('span.sc-ink', null, text), h('span.sc-fill', null, text)),
+    );
+    el.addEventListener('animationend', (e) => {
+      if (e.target !== el) return;
+      el.remove();
+      if (this.supers[slot] === el) this.supers[slot] = null;
+    });
+    this.supers[slot] = el;
+    this.superOf[f] = el;
+    this.el.append(el);
+  }
+
+  /** A feinted super: its name drops away early. */
+  private superCancel(f: number): void {
+    const el = this.superOf[f];
+    if (el?.isConnected) el.classList.add('gone');
   }
 
   setup(b: Battle, speed: number): void {
@@ -117,6 +155,8 @@ export class Hud {
       h('button.btn', { title: 'Leave', 'aria-label': 'Leave', onclick: () => this.cb.onExit() }, icon('close')));
     this.banner = h('div.banner', { hidden: true });
     this.el.replaceChildren(top, ...bubbles, ctrl, this.banner);
+    this.supers = { left: null, right: null, mid: null };
+    this.superOf = [null, null];
     this.setSpeed(speed);
     this.setCamera(this.camName);
     this.lastClock = -1;
@@ -167,6 +207,7 @@ export class Hud {
     this.pauseBtn.replaceChildren(icon(p ? 'play' : 'pause'));
     this.pauseBtn.title = p ? 'Resume' : 'Pause';
     this.pauseBtn.classList.toggle('on', p);
+    this.el.classList.toggle('paused', p);
   }
 
   /** Big centred text; `seconds` 0 keeps it until replaced. */

@@ -13,7 +13,12 @@ export type Sfx =
   // Pre-fight entrances
   | 'entStep' | 'entSlam' | 'entPoof' | 'entRise' | 'entChoir' | 'entFall' | 'entCheer' | 'entIgnite'
   // Big pulls and the forge
-  | 'omen' | 'slam' | 'forge' | 'meld';
+  | 'omen' | 'slam' | 'forge' | 'meld'
+  // Super attacks: the callout stingers, the power gathering, the blade ring on release
+  | 'superSkill' | 'superUlt' | 'charge' | 'shing';
+
+/** Elements of the super attacks, for their impact sounds (see render/supers.ts). */
+export type SfxElement = 'steel' | 'fire' | 'storm' | 'arcane' | 'soul' | 'venom' | 'earth' | 'wind';
 
 class AudioEngine {
   private ctx: AudioContext | null = null;
@@ -94,6 +99,126 @@ class AudioEngine {
     s.connect(bq).connect(g).connect(p).connect(this.master!);
     s.start(t, Math.random() * 0.5);
     s.stop(t + dur + 0.05);
+  }
+
+  /** A brassy stab: a sawtooth through a low-pass that opens and closes (horn hits, stingers). */
+  private brass(f: number, t: number, dur: number, peak: number, pan = 0, bright = 3200): void {
+    const c = this.ctx!;
+    const o = c.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(f * 0.97, t);
+    o.frequency.exponentialRampToValueAtTime(f, t + 0.04);
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.Q.value = 2;
+    lp.frequency.setValueAtTime(f * 1.5, t);
+    lp.frequency.exponentialRampToValueAtTime(bright, t + 0.05);
+    lp.frequency.exponentialRampToValueAtTime(f * 1.2, t + dur);
+    const g = c.createGain();
+    this.env(g, t, 0.012, peak, dur);
+    const p = c.createStereoPanner();
+    p.pan.value = pan;
+    o.connect(lp).connect(g).connect(p).connect(this.master!);
+    o.start(t);
+    o.stop(t + dur + 0.05);
+  }
+
+  /**
+   * A short vowel shout: a buzzy pitch through the formants of an open "ah"
+   * that closes toward "eh", with a breath of noise (a fighter's kiai).
+   */
+  private voice(f0: number, f1: number, t: number, dur: number, peak: number, pan: number): void {
+    const c = this.ctx!;
+    const o = c.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(f0 * 0.85, t);
+    o.frequency.exponentialRampToValueAtTime(f0, t + 0.04);
+    o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    // A little vibrato in the throat.
+    const lfo = c.createOscillator();
+    const lg = c.createGain();
+    lfo.frequency.value = 22;
+    lg.gain.value = f0 * 0.025;
+    lfo.connect(lg).connect(o.frequency);
+    const out = c.createGain();
+    this.env(out, t, 0.02, peak, dur);
+    const p = c.createStereoPanner();
+    p.pan.value = pan;
+    out.connect(p).connect(this.master!);
+    for (const [fa, fb, q, gain] of [[760, 560, 9, 1], [1180, 1700, 10, 0.55], [2500, 2400, 12, 0.25]] as const) {
+      const bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.Q.value = q;
+      bp.frequency.setValueAtTime(fa, t);
+      bp.frequency.linearRampToValueAtTime(fb, t + dur);
+      const fg = c.createGain();
+      fg.gain.value = gain * 2.2;
+      o.connect(bp).connect(fg).connect(out);
+    }
+    o.start(t); lfo.start(t);
+    o.stop(t + dur + 0.05); lfo.stop(t + dur + 0.05);
+    this.burst(t, dur * 0.7, peak * 0.25, 'bandpass', 1400, 900, 1.5, pan);
+  }
+
+  /** A fighter shouts as a super lands; `pitch` 1 is a mid voice (bigger bodies lower). */
+  kiai(pan = 0, pitch = 1): void {
+    if (!this.ready()) return;
+    const t = this.ctx!.currentTime + 0.005;
+    const f = 175 * pitch * (0.96 + Math.random() * 0.08);
+    this.voice(f * 1.12, f * 0.82, t, 0.32, 0.32, Math.max(-0.8, Math.min(0.8, pan)));
+  }
+
+  /** The signature impact of a super, by element; `k` scales it (follow-up hits of a combo are lighter). */
+  superHit(el: SfxElement, pan = 0, k = 1): void {
+    if (!this.ready()) return;
+    const t = this.ctx!.currentTime + 0.005;
+    pan = Math.max(-0.8, Math.min(0.8, pan));
+    // A deep thump under every one of them.
+    this.tone('sine', 150, 34, t, 0.45, 0.75 * k, pan);
+    this.burst(t, 0.3, 0.45 * k, 'lowpass', 2600, 90, 0.7, pan);
+    switch (el) {
+      case 'steel':
+        // A bright blade ring over the crunch.
+        this.tone('triangle', 2350, 2200, t, 0.5, 0.09 * k, pan);
+        this.tone('triangle', 3520, 3400, t + 0.01, 0.4, 0.06 * k, pan);
+        this.burst(t, 0.1, 0.35 * k, 'highpass', 4000, 2500, 1, pan);
+        break;
+      case 'wind':
+        this.burst(t, 0.35, 0.4 * k, 'bandpass', 3000, 600, 1.4, pan);
+        this.tone('triangle', 1800, 1500, t, 0.3, 0.06 * k, pan);
+        break;
+      case 'fire':
+        this.burst(t, 0.7, 0.55 * k, 'lowpass', 3000, 160, 0.6, pan);
+        this.burst(t + 0.05, 0.5, 0.2 * k, 'highpass', 3500, 6000, 0.8, pan);
+        break;
+      case 'storm':
+        for (let i = 0; i < 5; i++) this.burst(t + i * 0.025, 0.05, 0.4 * k, 'highpass', 3000, 1500, 0.6, pan);
+        this.tone('sawtooth', 70, 45, t, 0.5, 0.18 * k, pan);
+        break;
+      case 'arcane':
+        this.tone('sine', 880, 1320, t, 0.35, 0.12 * k, pan);
+        this.tone('sine', 1320, 1980, t + 0.04, 0.35, 0.08 * k, pan);
+        this.tone('square', 220, 110, t, 0.2, 0.06 * k, pan);
+        break;
+      case 'soul':
+        // A hollow wail sliding down.
+        this.tone('sine', 660, 330, t, 0.6, 0.12 * k, pan);
+        this.tone('sine', 668, 334, t, 0.6, 0.1 * k, pan);
+        this.burst(t, 0.5, 0.2 * k, 'bandpass', 900, 400, 4, pan);
+        break;
+      case 'venom':
+        this.burst(t, 0.25, 0.35 * k, 'bandpass', 1400, 500, 3, pan);
+        this.tone('sine', 420, 180, t + 0.03, 0.15, 0.12 * k, pan);
+        break;
+      case 'earth':
+        this.burst(t, 0.6, 0.6 * k, 'lowpass', 900, 60, 0.6, pan);
+        this.tone('square', 70, 40, t, 0.12, 0.12 * k, pan);
+        break;
+    }
+  }
+
+  private ready(): boolean {
+    return !!this.ctx && !this.muted && this.ctx.state === 'running';
   }
 
   /** `pan` in -1..1 (screen position). */
@@ -299,6 +424,33 @@ class AudioEngine {
         this.burst(t, 0.8, 0.55 * k, 'lowpass', 600, 2400, 0.7, pan);
         this.tone('sine', 70, 140, t, 0.6, 0.4 * k, pan);
         this.burst(t + 0.15, 0.6, 0.25 * k, 'highpass', 2500, 5000, 0.8, pan);
+        break;
+      // Super attacks.
+      case 'superSkill':
+        // A swish up into a two-chord brass hit (the name slamming on screen).
+        this.burst(t, 0.16, 0.3, 'bandpass', 600, 4000, 1.2, pan);
+        [293.7, 440, 587.3].forEach((f) => this.brass(f, t + 0.1, 0.18, 0.07, pan));
+        [349.2, 523.3, 698.5].forEach((f) => this.brass(f, t + 0.26, 0.42, 0.08, pan, 4200));
+        this.tone('sine', 98, 49, t + 0.1, 0.4, 0.4, pan);
+        break;
+      case 'superUlt':
+        // A boom, a rising sweep and a big held chord with sparkle on top.
+        this.tone('sine', 70, 28, t, 1.1, 0.9);
+        this.burst(t, 0.9, 0.5, 'lowpass', 1400, 60, 0.6);
+        this.burst(t, 0.45, 0.25, 'bandpass', 400, 5000, 1);
+        [146.8, 220, 293.7, 349.2, 440].forEach((f) => this.brass(f, t + 0.12, 0.9, 0.06, 0, 3800));
+        [1175, 1480, 1760, 2349].forEach((f, i) => this.tone('sine', f, f, t + 0.2 + i * 0.06, 0.4, 0.04));
+        break;
+      case 'charge':
+        // Power gathering: a shimmering rise.
+        this.tone('sawtooth', 160 * k, 640 * k, t, 0.45, 0.05, pan);
+        this.tone('sine', 320 * k, 1280 * k, t, 0.45, 0.12, pan);
+        this.burst(t, 0.45, 0.12, 'bandpass', 800, 5000, 2, pan);
+        break;
+      case 'shing':
+        this.burst(t, 0.08, 0.4, 'highpass', 5000, 3000, 1, pan);
+        this.burst(t, 0.22, 0.35, 'bandpass', 900, 3600, 1.1, pan);
+        this.tone('triangle', 2640, 2500, t, 0.35, 0.07, pan);
         break;
       // A swell under the chest before a legendary or epic: `intensity` 2 for epic.
       case 'omen': {

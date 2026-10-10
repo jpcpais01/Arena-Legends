@@ -956,6 +956,52 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
 .banner { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); font: 700 4rem/1 var(--font); color: var(--gold); text-shadow: 0 4px 0 var(--ink), 4px 0 0 var(--ink), -4px 0 0 var(--ink), 0 -4px 0 var(--ink), 4px 4px 0 var(--ink), -4px 4px 0 var(--ink); pointer-events: none; white-space: nowrap; }
 .banner small { display: block; text-align: center; font-size: 1.35rem; color: var(--text); margin-top: 10px; }
 
+/* Super attack callouts: the move's name slams on screen in its colours, on its user's side
+   (item ultimates big in the middle). Transforms and opacity only. */
+.super { position: absolute; top: 30%; display: grid; place-items: center; pointer-events: none; z-index: 2; --out: 0px; animation: sc-life var(--dur, 1.15s) linear forwards; }
+.hud > .super { pointer-events: none; }
+.super.left { left: calc(var(--safe-l) + 2vw); --out: -28px; }
+.super.right { right: calc(var(--safe-r) + 2vw); --out: 28px; }
+.super.mid { left: 50%; top: 47%; translate: -50% -50%; }
+.sc-text { position: relative; display: grid; font: 700 clamp(1.1rem, 3.4vw, 2.3rem)/1 var(--font); letter-spacing: 0.04em; animation: sc-slam var(--dur, 1.15s) cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+.super.mid .sc-text { font-size: clamp(1.8rem, 6vw, 4rem); }
+.sc-text > span { grid-area: 1 / 1; white-space: nowrap; padding: 0 0.12em; }
+.sc-ink {
+  color: var(--ink);
+  text-shadow: 3px 0 0 var(--ink), -3px 0 0 var(--ink), 0 3px 0 var(--ink), 0 -3px 0 var(--ink), 3px 3px 0 var(--ink), -3px 3px 0 var(--ink), 3px -3px 0 var(--ink), -3px -3px 0 var(--ink),
+    0 6px 0 var(--lo), 3px 6px 0 var(--lo), -3px 6px 0 var(--lo), 0 9px 0 var(--ink), 3px 9px 0 var(--ink), -3px 9px 0 var(--ink);
+}
+.sc-fill {
+  color: transparent;
+  background: linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, 0.95) 50%, transparent 58%) 120% 0 / 300% 100% no-repeat,
+    linear-gradient(180deg, #fff 0 28%, var(--hi) 28% 60%, var(--lo) 60% 100%);
+  -webkit-background-clip: text; background-clip: text;
+  animation: sc-shine var(--dur, 1.15s) linear forwards;
+}
+.sc-streak { position: absolute; left: -12%; right: -12%; top: 22%; bottom: 14%; background: linear-gradient(90deg, transparent, var(--lo) 18%, var(--hi) 50%, var(--lo) 82%, transparent); border-block: 2px solid var(--ink); opacity: 0.8; transform-origin: left center; animation: sc-wipe var(--dur, 1.15s) cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+.super.right .sc-streak { transform-origin: right center; }
+.super.mid .sc-streak { transform-origin: center; }
+.sc-rays { position: absolute; left: 50%; top: 50%; width: 150%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; opacity: 0.7;
+  background: repeating-conic-gradient(color-mix(in srgb, var(--hi) 70%, transparent) 0 5deg, transparent 5deg 15deg);
+  -webkit-mask: radial-gradient(closest-side, #000 25%, transparent 100%); mask: radial-gradient(closest-side, #000 25%, transparent 100%);
+  animation: sc-rays var(--dur, 1.7s) ease-out forwards; }
+.super.gone { animation: sc-gone 0.22s ease-in forwards; }
+.super.gone .sc-text, .super.gone .sc-streak, .super.gone .sc-rays, .super.gone .sc-fill { animation-play-state: paused; }
+.hud.paused .super, .hud.paused .super * { animation-play-state: paused; }
+@keyframes sc-life { 0% { opacity: 0; } 3% { opacity: 1; } 84% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes sc-slam {
+  0% { transform: skewX(-12deg) scale(2.3); opacity: 0; }
+  10% { transform: skewX(-12deg) scale(0.9); opacity: 1; }
+  17% { transform: skewX(-12deg) scale(1.06); }
+  25%, 82% { transform: skewX(-12deg) scale(1) translateX(0); }
+  100% { transform: skewX(-12deg) scale(1) translateX(var(--out)); }
+}
+@keyframes sc-shine { 0%, 14% { background-position: 120% 0, 0 0; } 44%, 100% { background-position: -20% 0, 0 0; } }
+@keyframes sc-wipe { 0% { transform: skewX(-24deg) scaleX(0); } 14%, 84% { transform: skewX(-24deg) scaleX(1); } 100% { transform: skewX(-24deg) scaleX(1.15); opacity: 0; } }
+@keyframes sc-rays { 0% { transform: rotate(0) scale(0.3); opacity: 0; } 12% { opacity: 0.75; } 100% { transform: rotate(40deg) scale(1.15); opacity: 0; } }
+@keyframes sc-gone { to { opacity: 0; transform: translateY(14px); } }
+@media (prefers-reduced-motion: reduce) { .sc-text, .sc-streak, .sc-rays, .sc-fill { animation: none; } .sc-text { transform: skewX(-12deg); } }
+
 /* ===================================================================================================
  * Layouts
  * =================================================================================================== */
