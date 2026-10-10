@@ -9,7 +9,7 @@ import type { AbilityDef, ActionState, BattleEvent, FighterId, FormId, Projectil
 import { ArenaView } from './arena';
 import { bodyMarks } from './companions';
 import { THEMES, type Theme } from './arenaArt';
-import { Entrance, entranceLength, type EntrancePose } from './entrance';
+import { Entrance, entranceLength, wrapFrame, type EntrancePose } from './entrance';
 import { drawText } from './font';
 import { ellipseOutline, Fx, type View } from './fx';
 import { css, mix } from './pixel/color';
@@ -553,7 +553,7 @@ export class BattleView implements View {
       // Entrance: its own clip and frame, moved off the spot; hidden until it begins.
       if (pose.alpha <= 0) return;
       const clip = v.bank.set.clips.has(pose.clip) ? pose.clip : 'idle';
-      const frame = pose.frame % clipLength(v.bank.set.clips.get(clip)!);
+      const frame = wrapFrame(pose.frame, clipLength(v.bank.set.clips.get(clip)!));
       o = { ...o, clip, frame, face: pose.face, jitter: 0, hop: 0 };
       o.key = `${o.clip}.${o.frame}.${o.face ?? ''}${o.secOut ? '.o' : ''}${o.useOut ? '.u' : ''}`;
       x += pose.dx;

@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.53.1',
+    date: '2026-10-10',
+    title: 'Entrance fix',
+    notes: [
+      'Fixed the hero vanishing after watching the Shadow Rise entrance in hero creation and the Shop. The same glitch could also freeze a fight\'s intro, and that is fixed too.',
+    ],
+  },
+  {
     version: '0.53.0',
     date: '2026-10-10',
     title: 'Slow motion on supers',

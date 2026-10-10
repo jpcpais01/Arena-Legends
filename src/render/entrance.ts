@@ -11,6 +11,9 @@ import type { Expression } from './sprite/draw';
  * sprites. The same player runs in battle and in the menu previews.
  */
 
+/** A pose's frame wrapped into a clip of `n` frames (never negative). */
+export const wrapFrame = (frame: number, n: number): number => (Number.isFinite(frame) ? ((Math.floor(frame) % n) + n) % n : 0);
+
 /** What to draw for the fighter this frame. */
 export interface EntrancePose {
   clip: string;
@@ -102,7 +105,7 @@ export class Entrance {
   cheer(p: EntrancePose, t: number, from: number): void {
     if (this.at(from)) this.sound('entCheer');
     p.clip = 'victory';
-    p.frame = Math.floor((t - from) * 5) % 2;
+    p.frame = Math.floor(Math.max(0, t - from) * 5) % 2;
   }
 
   /** Effects that aren't particles (pools, beams, the meteor), behind or in front of the fighter. */
@@ -210,6 +213,7 @@ const STEPS: Record<EntranceId, Step> = {
     }
     if (e.at(UP)) { e.fx.pulse('ring', e.x, 1, 1.0, 0x9a50e0, 0.35); e.sound('cast'); }
     p.tint = '#2a1048'; p.tintA = Math.max(0, 0.55 - (t - UP) * 2);
+    if (t < UP + 0.05) { p.clip = 'land'; p.frame = 1; return; }
     e.cheer(p, t, UP + 0.05);
   },
 
