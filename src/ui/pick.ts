@@ -106,7 +106,7 @@ export class PickScreen {
     const sec = i.deadline === Infinity ? -2 : Math.max(0, Math.ceil((i.deadline - performance.now()) / 1000));
     if (sec === this.lastSec) return;
     this.lastSec = sec;
-    this.clock.textContent = sec === -2 ? '--' : String(sec);
+    this.clock.textContent = sec === -2 ? '--' : sec >= 60 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : String(sec);
     this.clock.classList.toggle('low', sec >= 0 && sec <= 10);
   }
 

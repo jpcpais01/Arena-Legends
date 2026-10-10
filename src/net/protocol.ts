@@ -5,8 +5,8 @@ export const PROTOCOL = 1;
 /** Victories needed to take the match (best of five). */
 export const WINS_NEEDED = 3;
 /** Seconds to pick a build: longer for the first round. */
-export const PICK_SECONDS_FIRST = 60;
-export const PICK_SECONDS = 40;
+export const PICK_SECONDS_FIRST = 180;
+export const PICK_SECONDS = 180;
 
 export type Side = 0 | 1;
 
