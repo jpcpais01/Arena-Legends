@@ -33,7 +33,7 @@ function sheet(parent: HTMLElement, title: string, body: HTMLElement, onClose?: 
     wrap.remove();
     onClose?.();
   };
-  const wrap: HTMLDivElement = h<HTMLDivElement>('div.sheet-wrap', { onclick: (e: Event) => { if (e.target === wrap) { sfx.play('ui'); close(); } } },
+  const wrap: HTMLDivElement = h<HTMLDivElement>('div.sheet-wrap', { onclick: (e: Event) => { if (e.target === wrap && !wrap.classList.contains('typing')) { sfx.play('ui'); close(); } } },
     h('div.sheet.plate', { role: 'dialog', 'aria-label': title, style: { width: `min(${width}px, 100%)` } },
       h('div.sheet-head', null, h('h2', null, title),
         h('button.btn.icon', { title: 'Close', 'aria-label': 'Close', onclick: () => { sfx.play('ui'); close(); } }, icon('close'))),
@@ -71,9 +71,9 @@ export function openOnlineSheet(parent: HTMLElement, cb: OnlineSheetCallbacks, p
   input.addEventListener('input', sync);
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
   sync();
-  const body = h('div.sheet-body.online-body', null,
-    h('p.muted', null, 'Duel a friend. Best of five: the first to three victories takes the match. You both pick a new build before every round.'),
-    h('section.online-opt', null,
+  const body = h('div.sheet-body.online-body.online-pick', null,
+    h('p.muted.online-intro', null, 'Duel a friend. Best of five: the first to three victories takes the match. You both pick a new build before every round.'),
+    h('section.online-opt.host', null,
       h('b', null, 'Host a match'),
       h('p.muted', null, 'Get a room code and a link to send to your friend.'),
       h('button.btn.primary', { onclick: () => { sfx.play('ui'); close(); cb.onHost(); } }, icon('globe'), 'Create room')),
@@ -82,7 +82,26 @@ export function openOnlineSheet(parent: HTMLElement, cb: OnlineSheetCallbacks, p
       h('p.muted', null, 'Type the code from their screen.'),
       h('div.opts', null, input, join)),
   );
-  const close = sheet(parent, 'Play online', body);
+  const close = sheet(parent, 'Play online', body, () => stopKeyboard(), 680);
+  // While typing the code on a phone, the keyboard covers most of the screen: show just the
+  // code row and keep the sheet inside the part of the screen that is still visible.
+  const wrap = body.closest<HTMLElement>('.sheet-wrap')!;
+  const vv = window.visualViewport;
+  const fit = () => {
+    if (!vv) return;
+    const typing = wrap.classList.contains('typing');
+    wrap.style.top = typing ? `${vv.offsetTop}px` : '';
+    wrap.style.height = typing ? `${vv.height}px` : '';
+    wrap.style.bottom = typing ? 'auto' : '';
+  };
+  const setTyping = (on: boolean) => { wrap.classList.toggle('typing', on); fit(); if (on) input.scrollIntoView({ block: 'nearest' }); };
+  input.addEventListener('focus', () => { if (matchMedia('(pointer: coarse)').matches) setTyping(true); });
+  // Wait for the tap that closed the keyboard to land before the full sheet comes back,
+  // so it doesn't hit the backdrop and close the sheet.
+  input.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== input) setTyping(false); }, 350));
+  vv?.addEventListener('resize', fit);
+  vv?.addEventListener('scroll', fit);
+  function stopKeyboard(): void { vv?.removeEventListener('resize', fit); vv?.removeEventListener('scroll', fit); }
   if (!matchMedia('(pointer: coarse)').matches) setTimeout(() => input.focus(), 50);
 }
 

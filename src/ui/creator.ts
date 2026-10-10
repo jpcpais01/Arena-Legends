@@ -60,7 +60,7 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
   let c: PlayerCharacter = { ...start, look: { ...start.look } };
   let step = 0;
   let reached = editing ? LAST : 0;
-  let showGear = false;
+  let showGear = true;
   let cards: Preview[] = [];
   /** Updates the open step after a pick made outside it (stage arrows). */
   let refresh: () => void = () => {};
@@ -68,7 +68,7 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
   let headTool: HTMLElement | null = null;
 
   const stageBox = h('div.stage-box');
-  const preview = new Preview(bare(c), 100, 90, { autoplay: true, pedestal: true, fit: stageBox });
+  const preview = new Preview(showGear ? c : bare(c), 100, 90, { autoplay: true, pedestal: true, fit: stageBox });
   const gearBtn = h<HTMLButtonElement>('button.btn.sm.icon', {
     title: 'Show gear', 'aria-label': 'Show gear', 'aria-pressed': 'false',
     onclick: () => { showGear = !showGear; sfx.play('select'); syncStage(); preview.showcase(); },
@@ -76,6 +76,9 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
   const prev = h<HTMLButtonElement>('button.arrow.l', { title: 'Previous', 'aria-label': 'Previous', onclick: () => cycle(-1) }, icon('play', 'flip'));
   const nextPick = h<HTMLButtonElement>('button.arrow.r', { title: 'Next', 'aria-label': 'Next', onclick: () => cycle(1) }, icon('play'));
   stageBox.append(preview.el, prev, nextPick, h('div.stage-tools', null, gearBtn));
+  gearBtn.classList.toggle('on', showGear);
+  gearBtn.setAttribute('aria-pressed', String(showGear));
+  gearBtn.title = showGear ? 'Hide gear' : 'Show gear';
 
   const plateName = h('b');
   const plateTags = h('div.tags');
