@@ -2,13 +2,15 @@ rules_version = '2';
 
 // Arena Legends accounts. Each player reads and writes only their own save;
 // usernames are claimed once, by the account whose sign-in address carries them.
+// Friends: any signed-in player can look a name up and see a shared hero;
+// friend requests and friend lists are only seen by the two players involved.
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // usernames/{lowercase name} -> { uid, name }
     match /usernames/{name} {
-      allow get: if request.auth != null
-        && (resource == null || resource.data.uid == request.auth.uid);
+      // Any signed-in player can look a name up (adding a friend by name).
+      allow get: if request.auth != null;
       allow create: if request.auth != null
         && name.matches('^[a-z0-9_]{3,16}$')
         && request.auth.token.email == name + '@users.arenalegends.app'
@@ -32,6 +34,57 @@ service cloud.firestore {
         && request.resource.data.save.size() <= 64
         && request.resource.data.at is int;
       allow list, delete: if false;
+    }
+
+    // heroes/{uid} -> { name, hero: the hero as a JSON string, w, l, at }: what friends see.
+    match /heroes/{uid} {
+      allow get: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'hero', 'w', 'l', 'at'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 16
+        && request.resource.data.hero is string
+        && request.resource.data.hero.size() <= 8000
+        && request.resource.data.w is int
+        && request.resource.data.l is int
+        && request.resource.data.at is int;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+      allow list: if false;
+    }
+
+    // requests/{from}_{to} -> { from, to, fromName, toName, at }: a pending friend request.
+    match /requests/{id} {
+      allow get: if request.auth != null
+        && (resource == null || resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+      allow list, delete: if request.auth != null
+        && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['from', 'to', 'fromName', 'toName', 'at'])
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.to is string
+        && request.resource.data.to != request.auth.uid
+        && id == request.auth.uid + '_' + request.resource.data.to
+        && request.resource.data.fromName is string
+        && request.resource.data.toName is string
+        && request.resource.data.at is int
+        && get(/databases/$(database)/documents/usernames/$(request.resource.data.fromName.lower())).data.uid == request.auth.uid
+        && get(/databases/$(database)/documents/usernames/$(request.resource.data.toName.lower())).data.uid == request.resource.data.to;
+      allow update: if false;
+    }
+
+    // friends/{uid}/list/{other} -> { name, at }: written for both players by the one who accepts a request.
+    match /friends/{uid}/list/{other} {
+      allow get, list: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['name', 'at'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 16
+        && request.resource.data.at is int
+        && ((request.auth.uid == uid && exists(/databases/$(database)/documents/requests/$(other + '_' + uid)))
+          || (request.auth.uid == other && exists(/databases/$(database)/documents/requests/$(uid + '_' + other))));
+      allow delete: if request.auth != null && (request.auth.uid == uid || request.auth.uid == other);
+      allow update: if false;
     }
   }
 }

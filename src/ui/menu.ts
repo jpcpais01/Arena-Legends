@@ -24,6 +24,8 @@ export interface MenuCallbacks {
   onChests(): void;
   /** Account button (only when accounts are switched on). */
   onAccount?(): void;
+  /** Friends button (only when accounts are switched on). */
+  onFriends?(): void;
 }
 
 export interface Record { w: number; l: number }
@@ -44,18 +46,21 @@ export class Menu {
   private you = h('div.home-slot.you');
   private rival = h('div.home-slot.rival');
   private chestBtn: HTMLButtonElement;
+  private friendsBtn: HTMLButtonElement | null = null;
 
   constructor(cb: MenuCallbacks) {
     this.chestBtn = h<HTMLButtonElement>('button.btn.chest-btn.go', { title: 'Shop', onclick: () => cb.onChests() });
     this.soundBtn = h<HTMLButtonElement>('button.btn.icon.sm', { title: 'Sound', 'aria-label': 'Sound', onclick: () => cb.onSound() });
     const mark = h('div.menu-logo.home-logo', { 'aria-label': 'Arena Legends' });
     void logo().then((c) => { mark.append(c); fitPixels(c, mark); });
+    if (cb.onFriends) this.friendsBtn = h<HTMLButtonElement>('button.btn.icon.sm', { title: 'Friends', 'aria-label': 'Friends', onclick: () => cb.onFriends!() }, icon('friends'));
     const side = (ic: Parameters<typeof icon>[0], label: string, fn: () => void) =>
       h('button.btn.sm.home-side', { title: label, onclick: fn }, icon(ic), h('span', null, label));
     this.el = h('div.menu.home', null,
       h('div.home-top', null, this.you, mark, this.rival),
       h('div.home-tools', null,
         cb.onAccount && h('button.btn.icon.sm', { title: 'Account', 'aria-label': 'Account', onclick: () => cb.onAccount!() }, icon('user')),
+        this.friendsBtn,
         this.soundBtn,
         h('button.btn.icon.sm', { title: 'Settings', 'aria-label': 'Settings', onclick: () => cb.onSettings() }, icon('settings'))),
       h('div.home-actions', null,
@@ -79,6 +84,12 @@ export class Menu {
   setGems(n: number, canOpen: boolean): void {
     this.chestBtn.replaceChildren(icon('shop'), h('span', null, 'Shop'), gemTag(n));
     this.chestBtn.classList.toggle('unseen', canOpen);
+  }
+
+  /** A dot on the friends button while friend requests are waiting. */
+  setFriendRequests(n: number): void {
+    this.friendsBtn?.classList.toggle('unseen', n > 0);
+    if (this.friendsBtn) this.friendsBtn.title = n > 0 ? `Friends (${n} new request${n > 1 ? 's' : ''})` : 'Friends';
   }
 
   set(player: PlayerCharacter, rival: PlayerCharacter, rec: Record): void {

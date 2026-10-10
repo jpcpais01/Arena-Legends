@@ -67,6 +67,14 @@ function set(next: Partial<AccountStatus>): void {
 }
 
 const cloud = () => (cloudMod ??= import('./cloud'));
+let socialMod: Promise<typeof import('./social')> | null = null;
+/** Friends code (Firestore lite, loaded with the rest of Firebase). */
+export const social = () => (socialMod ??= import('./social'));
+
+/** The signed-in player, for friend requests; null for a guest. */
+export function me(): { uid: string; name: string } | null {
+  return link.uid && status.name ? { uid: link.uid, name: link.name } : null;
+}
 
 export function accountStatus(): AccountStatus { return status; }
 
@@ -209,9 +217,33 @@ function stop(): void {
 const onHide = () => { if (document.visibilityState === 'hidden') void push(); };
 const onOnline = () => void push();
 
+/** Hero + record last shared with friends, and when a failed share may retry. */
+let shared = '';
+let sharing = false;
+let shareAfter = 0;
+
+/** Shares the hero and record with friends when they changed (its own doc, so the save never waits on it). */
+function shareHero(): void {
+  const who = me();
+  if (!who || sharing || Date.now() < shareAfter) return;
+  let hero = '', rec: { w?: unknown; l?: unknown } = {};
+  try {
+    hero = localStorage.getItem('al.character') ?? '';
+    rec = JSON.parse(localStorage.getItem('al.record') ?? '{}') ?? {};
+  } catch { /* storage blocked */ }
+  const key = `${who.uid}|${hero}|${rec.w}|${rec.l}`;
+  if (!hero || hero.length > 8000 || key === shared) return;
+  sharing = true;
+  social().then((m) => m.share(who, hero, Number(rec.w) || 0, Number(rec.l) || 0))
+    .then(() => { shared = key; })
+    .catch(() => { shareAfter = Date.now() + 5 * 60_000; })
+    .finally(() => { sharing = false; });
+}
+
 /** Writes the local save to the account if it changed since the last sync. */
 export function push(force = false): Promise<void> {
   if (!link.uid || pending) return Promise.resolve();
+  shareHero();
   if (pushing) return pushing;
   const s = snapshot();
   if (!force && hashSave(s) === link.hash) return Promise.resolve();

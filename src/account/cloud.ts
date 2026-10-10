@@ -16,7 +16,7 @@ export interface CloudSave { name: string; save: SaveMap; at: number }
 const app = initializeApp(firebaseConfig);
 // No popup/redirect resolver: username + password never needs one, and it keeps the bundle small.
 const auth = initializeAuth(app, { persistence: [indexedDBLocalPersistence, browserLocalPersistence] });
-const db = getFirestore(app);
+export const db = getFirestore(app);
 
 export function errorCode(e: unknown): AccountError {
   const code = String((e as { code?: string })?.code ?? '');
