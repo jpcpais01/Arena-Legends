@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.53.0',
+    date: '2026-10-10',
+    title: 'Slow motion on supers',
+    notes: [
+      'When a fighter lets loose a super attack, time drops into slow motion for a dramatic beat as the strike comes out, then speeds back up after the impact.',
+      'Item ultimates like Meteor and Phantom Flurry get the same slow-motion moment as they start.',
+    ],
+  },
+  {
     version: '0.52.0',
     date: '2026-10-10',
     title: 'Entrances',
