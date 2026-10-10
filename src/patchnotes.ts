@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.48.1',
+    date: '2026-10-10',
+    title: 'Undo and Redo in the Armory',
+    notes: [
+      'Two small Undo and Redo buttons next to Done take back gear, skin and body form changes made in the Armory (Ctrl+Z and Ctrl+Y on a keyboard).',
+    ],
+  },
+  {
     version: '0.48.0',
     date: '2026-10-10',
     title: 'Rivals fight Balanced',
