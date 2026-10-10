@@ -3,6 +3,7 @@
 import { sfx } from '../audio/sfx';
 import { accountStatus, me, onAccount, social, type AccountStatus } from '../account/account';
 import { SPECIES } from '../character/appearance';
+import { isOnline, seenAgo } from '../account/presence';
 import { parseCharacter, type PlayerCharacter } from '../character/profile';
 import { skinOn } from '../character/skins';
 import { applyBackdrop } from '../render/backdrops';
@@ -119,7 +120,8 @@ export function friendsSheet(cb: FriendsCallbacks): { el: HTMLElement; dispose()
   const friendRow = (f: Friend) => h(`li.fr-row.friend${picked?.uid === f.uid ? '.on' : ''}`, null,
     h('button.fr-pick', { onclick: () => { sfx.play('select'); pick(f); } },
       h('span.sock', null, icon('user')),
-      h('div.fr-who', null, h('b', null, f.name)),
+      h('div.fr-who', null, h('b', null, f.name),
+        isOnline(f.seen) ? h('span.fr-seen.on', null, h('i'), 'Online') : h('span.fr-seen', null, seenAgo(f.seen))),
       icon('next')));
 
   const section = (title: string, items: HTMLElement[]) => items.length
@@ -137,7 +139,7 @@ export function friendsSheet(cb: FriendsCallbacks): { el: HTMLElement; dispose()
     lists.replaceChildren(...[
       section(`Requests (${incoming.length})`, incoming.map((r) => reqRow(r, true))),
       friends.length
-        ? section(`Friends (${friends.length})`, friends.map(friendRow))
+        ? section(`Friends (${friends.filter((f) => isOnline(f.seen)).length}/${friends.length} online)`, friends.map(friendRow))
         : h('p.muted.fr-note', null, 'No friends yet. Add someone by the name they use to sign in.'),
       section('Sent', outgoing.map((r) => reqRow(r, false))),
     ].filter((x): x is HTMLElement => !!x));

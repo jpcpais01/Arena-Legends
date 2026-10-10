@@ -235,15 +235,26 @@ function shareHero(): void {
   if (!hero || hero.length > 8000 || key === shared) return;
   sharing = true;
   social().then((m) => m.share(who, hero, Number(rec.w) || 0, Number(rec.l) || 0))
-    .then(() => { shared = key; })
+    .then(() => { shared = key; beatAt = Date.now(); })
     .catch(() => { shareAfter = Date.now() + 5 * 60_000; })
     .finally(() => { sharing = false; });
+}
+
+/** Online presence: while the game is open and in view, the shared hero's time is refreshed once a minute. */
+export const BEAT_EVERY = 60_000;
+let beatAt = 0;
+function beat(): void {
+  const who = me();
+  if (!who || !shared || sharing || document.visibilityState !== 'visible' || Date.now() - beatAt < BEAT_EVERY) return;
+  beatAt = Date.now();
+  social().then((m) => m.beat(who.uid)).catch(() => { /* next tick tries again */ });
 }
 
 /** Writes the local save to the account if it changed since the last sync. */
 export function push(force = false): Promise<void> {
   if (!link.uid || pending) return Promise.resolve();
   shareHero();
+  beat();
   if (pushing) return pushing;
   const s = snapshot();
   if (!force && hashSave(s) === link.hash) return Promise.resolve();
