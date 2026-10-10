@@ -1,6 +1,7 @@
 import { css, mix } from './pixel/color';
 import { bayer } from './pixel/paint';
 import { drawText, type TextStyle } from './font';
+import { coinSprite } from './specialArt';
 import { PPM } from './sprite/animator';
 
 /** World (metres, y up) → art pixels. */
@@ -15,7 +16,7 @@ interface Particle {
   color: number; color2: number;
   size: number;
   gravity: number; drag: number;
-  kind: 'dot' | 'streak' | 'smoke' | 'ember' | 'twinkle' | 'flame';
+  kind: 'dot' | 'streak' | 'smoke' | 'ember' | 'twinkle' | 'flame' | 'plus' | 'drop';
   ground: boolean;
 }
 
@@ -38,13 +39,27 @@ export interface Burst {
   jitterY?: number;
 }
 
+/**
+ * One-off shapes that play out over their life:
+ * - ring, star, groundRing, crack, pillar: impacts and auras;
+ * - bolt: a jagged lightning bolt from (x, y) to (x2, y2), flickering;
+ * - cloud: a billowing smoke cloud `r` wide that lingers and thins out;
+ * - clock: a clock face whose hand sweeps backwards (the hourglass);
+ * - runes: a ring of rune glyphs rising around a body (ward stone);
+ * - eye: an eye that opens and closes (foresight);
+ * - swirl: dots spiralling in to a point;
+ * - coin: a coin flipped up into the air;
+ * - icicles: ice spikes that jut out of the ground and melt back.
+ */
 interface Pulse {
-  kind: 'ring' | 'star' | 'groundRing' | 'crack' | 'pillar';
+  kind: 'ring' | 'star' | 'groundRing' | 'crack' | 'pillar' | 'bolt' | 'cloud' | 'clock' | 'runes' | 'eye' | 'swirl' | 'coin' | 'icicles';
   x: number; y: number;
   r: number;
   t: number; max: number;
   color: number;
   seed: number;
+  x2: number; y2: number;
+  color2: number;
 }
 
 interface Pop {
@@ -77,8 +92,16 @@ export class Fx {
     }
   }
 
-  pulse(kind: Pulse['kind'], x: number, y: number, r: number, color: number, life = 0.3): void {
-    this.pulses.push({ kind, x, y, r, t: 0, max: life, color, seed: Math.floor(this.rnd() * 1000) });
+  pulse(kind: Pulse['kind'], x: number, y: number, r: number, color: number, life = 0.3, color2 = color): Pulse {
+    const q: Pulse = { kind, x, y, r, t: 0, max: life, color, seed: Math.floor(this.rnd() * 1000), x2: x, y2: y, color2 };
+    this.pulses.push(q);
+    return q;
+  }
+
+  /** A lightning bolt between two points (world metres). */
+  bolt(x: number, y: number, x2: number, y2: number, color: number, life = 0.2, core = 0xffffff): void {
+    const q = this.pulse('bolt', x, y, 0, color, life, core);
+    q.x2 = x2; q.y2 = y2;
   }
 
   pop(text: string, x: number, y: number, style: TextStyle, life = 0.9, vy = 1.6): void {
@@ -163,6 +186,15 @@ export class Fx {
         // A flickering tongue of fire (epic skins): two pixels tall with a wide base, shrinking to one.
         g.fillRect(x, y, 1, k < 0.55 ? 2 : 1);
         if (k < 0.3 && (Math.floor(p.life * 24) & 1) === 0) g.fillRect(x - 1, y + 1, 3, 1);
+      } else if (p.kind === 'plus') {
+        // A small plus that rises (regeneration), shrinking to a dot.
+        g.fillRect(x, y, 1, 1);
+        if (k < 0.6) { g.fillRect(x - 1, y, 3, 1); g.fillRect(x, y - 1, 1, 3); }
+      } else if (p.kind === 'drop') {
+        // A falling drop (sweat): a dot with a lighter top.
+        g.fillRect(x, y, 1, 2);
+        g.fillStyle = '#fff';
+        g.fillRect(x, y, 1, 1);
       } else if (p.kind === 'twinkle') {
         // A little four-point star that shrinks to a dot (legendary skins).
         g.fillRect(x, y, 1, 1);
@@ -195,6 +227,33 @@ export class Fx {
         g.fillRect(cx - d, cy - 1, d * 2 + 1, 3);
         g.fillRect(cx - 1, cy - d, 3, d * 2 + 1);
         if (r > 4) { g.fillStyle = '#fff'; g.fillRect(cx - 1, cy - 1, 3, 3); }
+      } else if (q.kind === 'bolt') {
+        this.drawBolt(g, q, v, k);
+      } else if (q.kind === 'cloud') {
+        this.drawCloud(g, q, cx, cy, k);
+      } else if (q.kind === 'clock') {
+        drawClock(g, q, cx, cy, k);
+      } else if (q.kind === 'runes') {
+        drawRunes(g, q, cx, cy, k);
+      } else if (q.kind === 'eye') {
+        drawEye(g, q, cx, cy, k);
+      } else if (q.kind === 'swirl') {
+        // Dots spiralling inward, trailing a second colour.
+        const n = 10, R = q.r * PPM * (1 - k * 0.85);
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 2 + k * 9 + q.seed;
+          const r = R * (0.75 + 0.25 * Math.sin(i * 2.3));
+          g.fillStyle = css(i & 1 ? q.color2 : q.color);
+          g.fillRect(Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r * 0.6), 1, 1);
+          if (k < 0.5) g.fillRect(Math.round(cx + Math.cos(a - 0.25) * r), Math.round(cy + Math.sin(a - 0.25) * r * 0.6), 1, 1);
+        }
+      } else if (q.kind === 'coin') {
+        // Flipped up with a spin, hanging at the top before it fades.
+        const s = coinSprite(Math.floor(q.t * 18));
+        const up = Math.round(q.r * PPM * Math.sin(Math.min(1, k * 1.6) * Math.PI * 0.5));
+        if (k < 0.8 || (Math.floor(q.t * 30) & 1) === 0) g.drawImage(s.img, cx - s.ox, cy - up - s.oy);
+      } else if (q.kind === 'icicles') {
+        drawIcicles(g, q, cx, cy, k);
       } else if (q.kind === 'pillar') {
         // Column of light (revive, meteor).
         const w = Math.max(1, Math.round(q.r * PPM * (1 - k)));
@@ -212,10 +271,88 @@ export class Fx {
     }
   }
 
+  /** Jagged lightning, re-forked a few times while it lives, with a coloured halo and a branch. */
+  private drawBolt(g: CanvasRenderingContext2D, q: Pulse, v: View, k: number): void {
+    if (k > 0.55 && (Math.floor(q.t * 40) & 1)) return;
+    const x0 = v.sx(q.x), y0 = v.sy(q.y), x1 = v.sx(q.x2), y1 = v.sy(q.y2);
+    const len = Math.hypot(x1 - x0, y1 - y0);
+    const n = Math.max(2, Math.round(len / 7));
+    const nx = -(y1 - y0) / (len || 1), ny = (x1 - x0) / (len || 1);
+    let seed = q.seed * 7 + Math.floor(q.t * 25) * 131;
+    const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+    const pts = BOLT_PTS;
+    pts.length = 0;
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      const off = i === 0 || i === n ? 0 : (rnd() - 0.5) * Math.min(12, len * 0.18);
+      pts.push(Math.round(x0 + (x1 - x0) * t + nx * off), Math.round(y0 + (y1 - y0) * t + ny * off));
+    }
+    g.fillStyle = css(q.color);
+    for (let i = 0; i + 2 < pts.length; i += 2) {
+      pxLine(g, pts[i] + 1, pts[i + 1], pts[i + 2] + 1, pts[i + 3]);
+      pxLine(g, pts[i] - 1, pts[i + 1], pts[i + 2] - 1, pts[i + 3]);
+    }
+    // One fork off a middle joint.
+    const j = 2 * (1 + Math.floor(rnd() * Math.max(1, n - 1)));
+    if (j + 1 < pts.length && k < 0.7) {
+      const bx = pts[j] + (rnd() - 0.5) * 14 + (x1 - x0) * 0.12, by = pts[j + 1] + (y1 - y0) * 0.15 + (rnd() - 0.5) * 8;
+      pxLine(g, pts[j], pts[j + 1], Math.round(bx), Math.round(by));
+    }
+    g.fillStyle = css(q.color2);
+    for (let i = 0; i + 2 < pts.length; i += 2) pxLine(g, pts[i], pts[i + 1], pts[i + 2], pts[i + 3]);
+  }
+
+  /** Billowing smoke: a few big dithered puffs that swell, drift up and thin away. */
+  private drawCloud(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+    const R = q.r * PPM;
+    const grow = 0.55 + 0.45 * Math.min(1, k * 5);
+    let s = q.seed;
+    for (let i = 0; i < 9; i++) {
+      s = (s * 9301 + 49297) % 233280;
+      const u = s / 233280;
+      s = (s * 9301 + 49297) % 233280;
+      const w = s / 233280;
+      // Puffs low and wide first, the upper ones rising and drifting as it ages.
+      const px = cx + (u - 0.5) * 2 * R * 0.75 * grow + Math.sin(q.t * 0.9 + i) * 2;
+      const py = cy - 6 - w * R * 0.9 * grow - k * 10 * w;
+      const r = Math.max(2, Math.round((5 + w * 7 + (i % 3) * 2) * grow * (1 + k * 0.35)));
+      const tone = i % 3 === 0 ? q.color2 : q.color;
+      // Thins out: the dither pattern gets sparser, then every other frame.
+      if (k > 0.85 && (Math.floor(q.t * 20) + i) & 1) continue;
+      g.drawImage(this.puff(tone, r, k > 0.6 ? 0.45 : k > 0.35 ? 0.7 : 0.88), Math.round(px) - r, Math.round(py) - r);
+    }
+  }
+
   clear(): void {
     this.ps.length = 0;
     this.pulses.length = 0;
     this.pops.length = 0;
+  }
+
+  /**
+   * A cloud puff: solid in the middle, dithering out at the rim, lit from
+   * the upper left and shaded underneath. `density` thins the whole puff.
+   */
+  private puff(col: number, r: number, density: number): HTMLCanvasElement {
+    const key = `p${col}.${r}.${density}`;
+    let c = this.smokeCache.get(key);
+    if (c) return c;
+    c = document.createElement('canvas');
+    c.width = c.height = r * 2 + 1;
+    const g = c.getContext('2d')!;
+    const hi = css(mix(col, 0xffffff, 0.3)), mid = css(col), lo = css(mix(col, 0x2a2838, 0.3));
+    for (let y = 0; y <= r * 2; y++) for (let x = 0; x <= r * 2; x++) {
+      const dx = x - r, dy = y - r;
+      const d = Math.hypot(dx, dy) / (r + 0.5);
+      if (d > 1) continue;
+      const fill = density * (d < 0.55 ? 1 : 1 - (d - 0.55) / 0.45 * 0.85);
+      if (bayer(x, y) >= fill) continue;
+      const light = -(dx * 0.5 + dy * 0.85) / (r + 0.5);
+      g.fillStyle = light > 0.35 ? hi : light < -0.3 ? lo : mid;
+      g.fillRect(x, y, 1, 1);
+    }
+    this.smokeCache.set(key, c);
+    return c;
   }
 
   private smoke(col: number, r: number, thin: boolean): HTMLCanvasElement {
@@ -233,6 +370,112 @@ export class Fx {
     }
     this.smokeCache.set(key, c);
     return c;
+  }
+}
+
+const BOLT_PTS: number[] = [];
+
+/** Pixel line in the current fill colour. */
+function pxLine(g: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number): void {
+  const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+  let err = dx + dy;
+  for (let guard = 0; guard < 400; guard++) {
+    g.fillRect(x0, y0, 1, 1);
+    if (x0 === x1 && y0 === y1) break;
+    const e2 = 2 * err;
+    if (e2 >= dy) { err += dy; x0 += sx; }
+    if (e2 <= dx) { err += dx; y0 += sy; }
+  }
+}
+
+/** A clock face around the body, its hands sweeping backwards. */
+function drawClock(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+  if (k > 0.75 && (Math.floor(q.t * 30) & 1)) return;
+  const r = Math.round(q.r * PPM * (0.6 + 0.4 * Math.min(1, k * 4)));
+  ellipseOutline(g, cx, cy, r, r, css(q.color), k > 0.5 ? 0.5 : 1);
+  g.fillStyle = css(q.color2);
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const x = Math.round(cx + Math.cos(a) * (r - 2)), y = Math.round(cy + Math.sin(a) * (r - 2));
+    g.fillRect(x, y, 1, 1);
+    if (i % 3 === 0) g.fillRect(Math.round(cx + Math.cos(a) * (r - 3)), Math.round(cy + Math.sin(a) * (r - 3)), 1, 1);
+  }
+  // Minute hand: one and a half turns backwards; hour hand: a quarter.
+  const ease = 1 - Math.pow(1 - k, 2);
+  const m = -Math.PI / 2 - ease * Math.PI * 3, hr = -Math.PI / 2 - ease * Math.PI * 0.5;
+  g.fillStyle = css(q.color);
+  pxLine(g, cx, cy, Math.round(cx + Math.cos(hr) * r * 0.45), Math.round(cy + Math.sin(hr) * r * 0.45));
+  g.fillStyle = '#fff';
+  pxLine(g, cx, cy, Math.round(cx + Math.cos(m) * (r - 4)), Math.round(cy + Math.sin(m) * (r - 4)));
+  // A fading wedge trailing the minute hand.
+  g.fillStyle = css(q.color2);
+  for (let i = 1; i <= 3; i++) {
+    const a = m + i * 0.22;
+    g.fillRect(Math.round(cx + Math.cos(a) * (r - 5)), Math.round(cy + Math.sin(a) * (r - 5)), 1, 1);
+  }
+}
+
+/** Rune glyphs (3x3) for the ward ring. */
+const GLYPHS = [0b010111010, 0b101010101, 0b110010011, 0b011010110, 0b111101111, 0b100111001];
+
+/** A flat ring of runes turning and rising up a body, the back half dimmer. */
+function drawRunes(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+  if (k > 0.8 && (Math.floor(q.t * 30) & 1)) return;
+  const rx = q.r * PPM, ry = rx * 0.28;
+  const yc = cy - Math.round(k * 26);
+  const n = 8;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + q.t * 5;
+    const back = Math.sin(a) < 0;
+    const x = Math.round(cx + Math.cos(a) * rx) - 1, y = Math.round(yc + Math.sin(a) * ry) - 1;
+    g.fillStyle = css(back ? q.color2 : q.color);
+    const gl = GLYPHS[(i + q.seed) % GLYPHS.length];
+    for (let b = 0; b < 9; b++) if (gl & (1 << b)) g.fillRect(x + (b % 3), y + ((b / 3) | 0), 1, 1);
+  }
+}
+
+/** An eye that opens wide and shuts again. */
+function drawEye(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+  const open = k < 0.25 ? k / 0.25 : k > 0.7 ? Math.max(0, (1 - k) / 0.3) : 1;
+  const w = 6, h = Math.round(2.6 * open);
+  g.fillStyle = css(q.color);
+  for (let x = -w; x <= w; x++) {
+    const e = Math.round(h * Math.sqrt(1 - (x / (w + 0.5)) ** 2));
+    g.fillRect(cx + x, cy - e, 1, 1);
+    g.fillRect(cx + x, cy + e, 1, 1);
+  }
+  if (open > 0.4) {
+    g.fillStyle = css(q.color2);
+    g.fillRect(cx - 1, cy - 1, 3, 3);
+    g.fillStyle = '#fff';
+    g.fillRect(cx, cy - 1, 1, 1);
+  }
+  // Lashes / rays.
+  if (open > 0.8 && k < 0.6) {
+    g.fillStyle = css(q.color);
+    g.fillRect(cx, cy - h - 3, 1, 2);
+    g.fillRect(cx - 4, cy - h - 2, 1, 1); g.fillRect(cx + 4, cy - h - 2, 1, 1);
+  }
+}
+
+/** Ice spikes jutting from the ground across the ring, then melting back. */
+function drawIcicles(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+  const R = q.r * PPM;
+  const up = k < 0.15 ? k / 0.15 : k > 0.6 ? Math.max(0, (1 - k) / 0.4) : 1;
+  let s = q.seed;
+  for (let i = 0; i < 9; i++) {
+    s = (s * 9301 + 49297) % 233280;
+    const u = s / 233280 * 2 - 1;
+    const x = Math.round(cx + u * R * 0.9);
+    const hgt = Math.round((3 + (1 - Math.abs(u)) * 8 + (i % 3) * 2) * up);
+    if (hgt < 1) continue;
+    const y0 = cy + 1 + (i % 3);
+    for (let j = 0; j < hgt; j++) {
+      const wd = j < hgt * 0.4 ? 1 : 0;
+      g.fillStyle = css(j > hgt - 3 ? 0xffffff : j < 2 ? q.color2 : q.color);
+      g.fillRect(x - wd, y0 - j, 1 + wd * 2 - (j & 1 && wd ? 1 : 0), 1);
+    }
   }
 }
 

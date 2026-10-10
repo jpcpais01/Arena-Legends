@@ -4,6 +4,7 @@ import type { Rng } from '../core/rng';
 import { EVADE } from './abilities';
 import { FORMS, FORM_IDS, type Personality } from './forms';
 import { drawTimes, useTimes, GEAR, GEAR_SLOTS, gearIdsFor, gearOf, type GearDef } from './gear';
+import { FIGHT_STYLES, isFightStyle, type FightStyleId } from './styles';
 import type { AbilityDef, FormId, GearId, GearSet, GearSlot, Stats } from './types';
 
 export type { Appearance };
@@ -19,6 +20,8 @@ export interface CharacterBuild {
   look?: Appearance;
   /** Cosmetic item skins. The sim never reads them. */
   skins?: SkinMap;
+  /** How the hero likes to fight (AI habits only). Balanced when absent. */
+  style?: FightStyleId;
 }
 
 /** Fighting habits the AI derives from form + gear. */
@@ -28,6 +31,7 @@ export interface CombatProfile {
   preferredRange: number;
   /** Prefers to fight from range. */
   ranged: boolean;
+  style: FightStyleId;
 }
 
 /** Equipped gear pieces, in slot order. */
@@ -74,7 +78,10 @@ export function buildAbilities(gear: GearSet): AbilityDef[] {
     }
   }
   const boots = gear.boots ? GEAR.boots[gear.boots] : null;
-  out.push({ ...(boots?.evade ?? EVADE), from: 'boots' });
+  const evade = boots?.evade ?? EVADE;
+  // Acrobat Trousers: the evade recharges faster.
+  const evadeCd = gear.legs === 'acrobat_trousers' ? evade.cooldown * 0.72 : evade.cooldown;
+  out.push({ ...evade, cooldown: evadeCd, from: 'boots' });
   return out;
 }
 
@@ -93,8 +100,12 @@ export function computeBaseStats(form: FormId, gear: GearSet): Stats {
 const clamp01 = (v: number) => Math.min(0.95, Math.max(0.05, v));
 
 /** Temperament and spacing for the AI, from the body and what it carries. */
-export function buildProfile(form: FormId, gear: GearSet): CombatProfile {
+export function buildProfile(form: FormId, gear: GearSet, style: FightStyleId = 'balanced'): CombatProfile {
   const p = { ...FORMS[form].personality };
+  const t = FIGHT_STYLES[style].temper;
+  p.aggression += t.aggression ?? 0;
+  p.caution += t.caution ?? 0;
+  p.cunning += t.cunning ?? 0;
   const weapon = GEAR.main[gear.main].weapon!;
   const tags = new Set(equipped(gear).flatMap((g) => g.tags));
   if (weapon.ranged) { p.aggression -= 0.15; p.caution += 0.1; }
@@ -110,6 +121,7 @@ export function buildProfile(form: FormId, gear: GearSet): CombatProfile {
     },
     preferredRange: weapon.preferredRange,
     ranged: weapon.ranged,
+    style,
   };
 }
 
@@ -158,7 +170,8 @@ export function sanitizeBuild(raw: unknown, fallback: CharacterBuild): Character
   const look = o.look && typeof o.look === 'object' ? sanitizeAppearance(o.look) : fallback.look;
   // A species only takes the body forms that suit it (older saves predate that rule).
   if (look) form = fitForm(look.species, form);
-  return { name, form, gear: gear as unknown as GearSet, look, skins: sanitizeSkins(o.skins) };
+  const style = isFightStyle(o.style) ? o.style : fallback.style;
+  return { name, form, gear: gear as unknown as GearSet, look, skins: sanitizeSkins(o.skins), ...(style ? { style } : {}) };
 }
 
 /** Replaces one slot, keeping the rest. Passing null empties it (not allowed for `main`). */

@@ -178,7 +178,11 @@ export class Animator {
 
   private clipId(ab: AbilityDef, isCounter: boolean): string {
     const has = (k: string) => this.set.clips.has(k);
-    if (ab.slot === 'evade') return ab.dash?.through ? 'roll' : ab.airborne ? 'leap' : 'evade';
+    if (ab.slot === 'evade') {
+      if (ab.kind === 'blink') return 'blink';
+      if (ab.anim === 'stomp') return 'stomp';
+      return ab.dash?.through ? 'roll' : ab.airborne ? 'leap' : 'evade';
+    }
     if (ab.from === 'secondary') return isCounter && has('sec.riposte') ? 'sec.riposte' : 'sec.' + ab.anim;
     if (ab.from === 'chest') return ab.anim;
     if (ab.from === 'usable') return 'use.' + ab.anim;

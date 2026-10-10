@@ -258,7 +258,7 @@ function wandClips(): Record<string, Phases> {
 }
 
 function heavyClips(): Record<string, Phases> {
-  return {
+  const clips: Record<string, Phases> = {
     slash: {
       w: [
         F({ hNx: 0.12, hNy: 0.05, wAng: 2.1, lean: 0.02, hipX: -0.03 }),
@@ -289,7 +289,7 @@ function heavyClips(): Record<string, Phases> {
         F({ hNx: 0.24, hNy: -0.55, wAng: 1.3, lean: 0.14 }, 'calm'),
       ],
     },
-    // Hammer overhead into the floor.
+    // Hammer overhead into the floor (also the halberd's and scythe's overhead chop).
     slam: {
       w: [
         F({ hNx: 0.15, hNy: 0.35, wAng: 1.8, lean: 0.0, hipY: -0.05 }),
@@ -325,6 +325,8 @@ function heavyClips(): Record<string, Phases> {
       ],
     },
   };
+  clips.overhead = clips.slam;
+  return clips;
 }
 
 function polearmClips(): Record<string, Phases> {
@@ -399,7 +401,7 @@ const FAMILY_CLIPS: Record<MainFamily, () => Record<string, Phases>> = {
 function secondaryClip(art: CharacterArt, anim: string): Phases | null {
   const fam = art.secFamily;
   if (!fam) return null;
-  const front = fam === 'shield' || fam === 'buckler';
+  const front = fam === 'shield' || fam === 'buckler' || fam === 'fist';
   const S = (p: PoseKey, face: Expression = 'fierce', hold: Partial<Hold> = {}) => F(p, face, { hold: { sec: 'hand', secFront: front, ...hold } });
   switch (anim) {
     case 'guard':
@@ -415,6 +417,21 @@ function secondaryClip(art: CharacterArt, anim: string): Phases | null {
         r: [S({ hFx: 0.45, hFy: -0.25, sAng: 0.6 }, 'calm')],
       };
     case 'bash':
+      // Cestus uppercut: sink low with the fist at the hip, then drive it up under the chin.
+      if (fam === 'fist') return {
+        w: [
+          S({ hFx: 0.2, hFy: -0.6, sAng: 0.7, lean: 0.24, hipY: -0.15, hipX: -0.03, fNx: -0.36, fFx: 0.38, head: -0.06 }),
+          S({ hFx: 0.12, hFy: -0.72, sAng: 1.0, lean: 0.34, hipY: -0.22, hipX: -0.04, fNx: -0.42, fFx: 0.42, head: -0.1 }),
+        ],
+        a: [
+          S({ hFx: 0.62, hFy: 0.2, sAng: 1.35, lean: 0.02, hipY: -0.04, hipX: 0.06, fNx: -0.3, fFx: 0.44, toeN: -0.3, head: 0.12, sway: -0.6 }, 'shout'),
+          S({ hFx: 0.5, hFy: 0.78, sAng: 1.55, lean: -0.16, hipY: 0.0, hipX: 0.07, fNx: -0.24, fFx: 0.36, toeN: -0.45, toeF: -0.2, head: 0.22, sway: -1 }, 'shout'),
+        ],
+        r: [
+          S({ hFx: 0.48, hFy: 0.6, sAng: 1.45, lean: -0.1, hipY: -0.03, hipX: 0.05 }),
+          S({ hFx: 0.42, hFy: -0.25, sAng: 0.5, lean: 0.12, hipY: -0.08 }, 'calm'),
+        ],
+      };
       return {
         w: [S({ hFx: 0.18, hFy: -0.35, sAng: 0, lean: 0.0, hipX: -0.04 }), S({ hFx: 0.05, hFy: -0.32, sAng: 0, lean: -0.05, hipX: -0.06 })],
         a: [S({ hFx: 1, hFy: -0.15, sAng: 0, lean: 0.36, hipX: 0.1, fFx: 0.5 }, 'shout')],
@@ -479,8 +496,9 @@ function drawFrames(art: CharacterArt): FrameDef[] {
     out.push(F({ hNx: 0.12, hNy: 0.32, wAng: 2.4, lean: 0.06 }, 'calm', { hold: { main: 'hand' } }));
     out.push(F({ ...FREE_NEAR, hNx: 0.05, hNy: 0.3, lean: 0.08 }, 'calm', { hold: { main: 'back' } }));
   }
-  out.push(F({ ...reach }, 'calm', { hold: { sec: 'stowed' } }));
-  out.push(F({ hFx: 0.25, hFy: -0.45, sAng: shield ? -1.2 : 0.3 }, 'calm', { hold: { sec: 'hand', secFront: shield || art.secFamily === 'buckler' } }));
+  // A cestus is already on the fist: just bring it up.
+  if (art.secFamily !== 'fist') out.push(F({ ...reach }, 'calm', { hold: { sec: 'stowed' } }));
+  out.push(F({ hFx: 0.25, hFy: -0.45, sAng: shield ? -1.2 : 0.3 }, 'calm', { hold: { sec: 'hand', secFront: shield || art.secFamily === 'buckler' || art.secFamily === 'fist' } }));
   return out;
 }
 
@@ -489,8 +507,8 @@ function stowFrames(art: CharacterArt, gone: boolean): FrameDef[] {
   const out: FrameDef[] = [];
   const shield = art.secFamily === 'shield';
   const reach: PoseKey = shield ? { hFx: -0.15, hFy: 0.15, elF: -1 } : { hFx: -0.28, hFy: -0.72 };
-  out.push(F({ hFx: 0.2, hFy: -0.5, sAng: shield ? -1.2 : 0.3 }, 'calm', { hold: { sec: gone ? 'gone' : 'hand', secFront: shield || art.secFamily === 'buckler' } }));
-  out.push(F({ ...reach }, 'calm', { hold: { sec: 'stowed' } }));
+  out.push(F({ hFx: 0.2, hFy: -0.5, sAng: shield ? -1.2 : 0.3 }, 'calm', { hold: { sec: gone ? 'gone' : 'hand', secFront: shield || art.secFamily === 'buckler' || art.secFamily === 'fist' } }));
+  out.push(F(art.secFamily === 'fist' ? { hFx: 0.3, hFy: -0.42 } : { ...reach }, 'calm', { hold: { sec: 'stowed' } }));
   if (art.hands === 2) {
     out.push(F({ ...FREE_NEAR, hNx: 0.05, hNy: 0.3, lean: 0.08 }, 'calm', { hold: { main: 'back' } }));
     out.push(F({ hNx: 0.12, hNy: 0.32, wAng: 2.4, lean: 0.06 }, 'calm', { hold: { main: 'hand' } }));
@@ -530,7 +548,17 @@ function usableClip(art: CharacterArt, stance: Pose, anim: string, secOut: Hold[
   else if (twoHand) stow.push(F({}, 'calm', { hold: { use: 'none', oneHand: false } }));
 
   let ph: Phases;
-  if (anim === 'toss') {
+  if (anim === 'toss' && gearOf(art.useId!).abilities?.[0]?.kind === 'buff') {
+    // Smashed at your own feet (smoke bomb): raised high, then dashed down hard in a crouch.
+    ph = {
+      w: [
+        U({ hFx: 0.32, hFy: 0.32, sAng: 2.2, lean: stance.lean - 0.06, head: 0.06 }, 'fierce'),
+        U({ hFx: 0.22, hFy: 0.56, sAng: 2.7, lean: -0.08, head: 0.1, hipY: -0.02, toeF: 0.15 }, 'fierce'),
+      ],
+      a: [done({ hFx: 0.56, hFy: -0.72, elF: 1, lean: 0.4, hipY: -0.17, head: -0.12, fNx: -0.38, fFx: 0.4 }, 'shout')],
+      r: [done({ hFx: 0.48, hFy: -0.6, lean: 0.32, hipY: -0.15, fNx: -0.38, fFx: 0.4 }), done({ hFx: 0.42, hFy: -0.36, lean: 0.16, hipY: -0.06 }, 'calm')],
+    };
+  } else if (anim === 'toss') {
     ph = {
       w: [
         U({ hFx: 0.12, hFy: 0.28, sAng: 2.0, lean: stance.lean - 0.04 }, 'fierce', { useBehind: true }),
@@ -611,6 +639,22 @@ function evadeClips(stance: Pose): Record<string, Phases> {
       w: [F(crouch, 'fierce')],
       a: [roll(0), roll(-Math.PI / 2), roll(-Math.PI), roll(-Math.PI * 1.5)],
       r: [F({ ...crouch, hipY: -0.2, lean: 0.35 }, 'fierce'), F({ hipY: -0.1, lean: 0.18 }, 'calm')],
+    },
+    // Quake stomp: weight sinks onto the back leg, the front knee comes up high with
+    // the arms lifting for balance, a beat at the top, then the foot drives down
+    // with the whole body behind it; the crouch holds as the quake rolls out, then rises.
+    stomp: {
+      w: [
+        F({ hipY: -0.14, lean: 0.18, head: -0.04, fNx: -0.34, fFx: 0.32, hFx: 0.36, hFy: -0.32, sway: 0.3 }, 'fierce'),
+        F({ hipY: 0.0, lean: -0.1, head: 0.04, fNx: -0.3, fFx: 0.18, fFy: -0.44, toeF: 0.35, hFx: 0.34, hFy: 0.2, elF: 1, sway: -0.5 }, 'fierce'),
+        F({ hipY: 0.03, lean: -0.17, head: 0.08, fNx: -0.3, fFx: 0.24, fFy: -0.3, toeF: 0.55, hFx: 0.4, hFy: 0.36, elF: 1, sway: -0.8 }, 'shout'),
+      ],
+      a: [F({ hipY: -0.27, lean: 0.3, head: -0.14, fNx: -0.45, fFx: 0.5, toeF: -0.1, hFx: 0.52, hFy: -0.42, sway: 1 }, 'shout')],
+      r: [
+        F({ hipY: -0.25, lean: 0.26, head: -0.1, fNx: -0.45, fFx: 0.5, hFx: 0.5, hFy: -0.4, sway: 0.6 }, 'fierce'),
+        F({ hipY: -0.15, lean: 0.15, fNx: -0.4, fFx: 0.44, hFx: 0.44, hFy: -0.3 }, 'fierce'),
+        F({ hipY: -0.08, lean: 0.08 }, 'calm'),
+      ],
     },
     leap: {
       w: [F({ ...crouch, lean: 0.1 }, 'fierce')],

@@ -478,6 +478,9 @@ h1, h2, h3, p { margin: 0; }
 .card-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .card-grid.species { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .card-grid.forms { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.card-grid.styles { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.card-tile .portrait.style-ic { aspect-ratio: 1; display: grid; place-items: center; }
+.card-tile .portrait.style-ic .ic { width: 52%; height: 52%; filter: drop-shadow(0 var(--px) 0 var(--ink)) drop-shadow(0 calc(var(--px) * -1) 0 var(--ink)); }
 .card-grid.backdrops { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .card-grid.backdrops .portrait { aspect-ratio: 60 / 48; }
 /* Portrait backdrops: one painted scene, pixel for pixel, anchored at the bottom. */

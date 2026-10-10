@@ -3,6 +3,9 @@ import { material } from '../pixel/raster';
 import { union, type Shape } from '../pixel/sdf';
 import { SKIN_ART } from './skins';
 import { clearShape, fillAll, M, type MainFamily, type SecFamily, type WeaponArt } from './weaponKit';
+import {
+  bolas, chainSickle, graveStaff, halberd, ironCestus, javelin, rapier, soulScythe, stormRod, towerShield, tricksterTalisman,
+} from './weapons2';
 
 export type { MainFamily, SecFamily, WeaponArt, WeaponDrawOpts } from './weaponKit';
 
@@ -315,11 +318,13 @@ function warHorn(): WeaponArt {
 export const MAIN_FAMILY: Record<MainWeaponId, MainFamily> = {
   longsword: 'sword', katana: 'sword', mace: 'sword', dagger: 'sword', ember_wand: 'wand',
   warhammer: 'heavy', greataxe: 'heavy', spear: 'polearm', arcane_staff: 'staff', longbow: 'bow',
+  chain_sickle: 'sword', soul_scythe: 'heavy', rapier: 'sword', storm_rod: 'wand', halberd: 'heavy', grave_staff: 'staff',
 };
 
 export const SEC_FAMILY: Record<SecondaryId, SecFamily> = {
   kite_shield: 'shield', parrying_dagger: 'parry', buckler: 'buckler', throwing_knives: 'knife',
   hand_crossbow: 'crossbow', wind_chakram: 'chakram', frost_wand: 'wand', war_horn: 'horn',
+  bolas: 'knife', trickster_talisman: 'wand', tower_shield: 'shield', javelin: 'knife', iron_cestus: 'fist',
 };
 
 const BUILDERS: Partial<Record<GearId, () => WeaponArt>> = {
@@ -327,6 +332,8 @@ const BUILDERS: Partial<Record<GearId, () => WeaponArt>> = {
   arcane_staff: arcaneStaff, longbow,
   kite_shield: kiteShield, parrying_dagger: parryingDagger, buckler, throwing_knives: throwingKnife,
   hand_crossbow: handCrossbow, wind_chakram: chakram, frost_wand: frostWand, war_horn: warHorn,
+  chain_sickle: chainSickle, soul_scythe: soulScythe, rapier, storm_rod: stormRod, halberd, grave_staff: graveStaff,
+  bolas, trickster_talisman: tricksterTalisman, tower_shield: towerShield, javelin, iron_cestus: ironCestus,
 };
 
 const cache = new Map<string, WeaponArt>();

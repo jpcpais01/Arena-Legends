@@ -6,10 +6,10 @@ import {
   MATCH_TIME, OVERTIME_DAMAGE, ROUND_TIME, START_GAP, WALL_SPLAT_SPEED,
 } from './constants';
 import {
-  createFighter, getStatus, isDisabled, reachOf, refreshStats, type Fighter, type FighterConfig,
+  createFighter, getStatus, isDisabled, isSilenced, isUnstoppable, reachOf, refreshStats, type Fighter, type FighterConfig,
 } from './fighter';
 import type {
-  AbilityDef, BattleEvent, DamageType, FighterId, Projectile, StatusApply, StatusId,
+  AbilityDef, BattleEvent, DamageType, Familiar, FighterId, Projectile, StatusApply, StatusId, Zone, ZoneKind,
 } from './types';
 
 /** The wisp lantern's spirit bolt (familiar shots carry ability index -1). */
@@ -20,11 +20,44 @@ export const WISP_BOLT: AbilityDef = {
   projectile: { speed: 12, radius: 0.3, style: 'wisp' },
   anim: 'item', desc: 'The lantern spirit shoots a small bolt.',
 };
+/** The hunting hawk's dive: marks whoever it strikes. */
+export const HAWK_DIVE: AbilityDef = {
+  id: 'hawk_dive', name: 'Hawk Dive', slot: 'item', kind: 'projectile',
+  range: 9, cost: 0, cooldown: 4.5, windup: 0.3, active: 0, recovery: 0,
+  power: 0.55, damageType: 'physical', stagger: 0.1,
+  applies: [{ status: 'mark', duration: 3 }],
+  projectile: { speed: 15, radius: 0.35, style: 'hawk' },
+  anim: 'item', desc: 'The hawk dives and marks.',
+};
+/** The dragon whelp's breath: a short cone of fire. */
+export const WHELP_BREATH: AbilityDef = {
+  id: 'whelp_breath', name: 'Whelp Breath', slot: 'item', kind: 'projectile',
+  range: 5, cost: 0, cooldown: 4.5, windup: 0.4, active: 0, recovery: 0,
+  power: 0.5, damageType: 'magic', stagger: 0.08,
+  applies: [{ status: 'burn', duration: 2.5, stacks: 2 }],
+  projectile: { speed: 11, radius: 0.55, style: 'breath' },
+  anim: 'item', desc: 'The whelp breathes fire.',
+};
+const FAMILIAR_SHOT: Record<Familiar['kind'], AbilityDef> = { wisp: WISP_BOLT, hawk: HAWK_DIVE, whelp: WHELP_BREATH };
 const FAMILIAR_RANGE = 9;
 /** Gravity on lobbed flasks (m/s²): a lazy, readable arc. */
 const LOB_GRAVITY = 16;
-/** Statuses a cleanse washes off. */
-const HARMFUL: StatusId[] = ['burn', 'poison', 'chill', 'mark', 'vulnerable'];
+/** Statuses a cleanse (or a rewind) washes off. */
+const HARMFUL: StatusId[] = ['burn', 'poison', 'chill', 'mark', 'vulnerable', 'silence', 'root', 'fear'];
+/** Crowd control: interrupts what the target was doing. */
+const CC: StatusId[] = ['stun', 'frozen', 'fear'];
+/** Sands of Time: the past it remembers (seconds per sample, samples). */
+const HISTORY_STEP = 0.25;
+const HISTORY_SIZE = 12;
+/** Caltrops patch: radius, seconds, seconds between cuts, damage per cut (× power). */
+const CALTROPS = { radius: 1.6, life: 8, every: 0.5, power: 0.16 };
+/** Savate Boots: the push kick that opens the evade. */
+const SAVATE_KICK: AbilityDef = {
+  id: 'savate_kick', name: 'Push Kick', slot: 'evade', kind: 'melee',
+  range: 1.9, cost: 0, cooldown: 0, windup: 0, active: 0, recovery: 0,
+  power: 0.6, damageType: 'physical', knockback: 5, stagger: 0.25,
+  anim: 'evade', desc: 'Push kick.',
+};
 
 export interface BattleConfig {
   seed: number;
@@ -58,6 +91,8 @@ export class Battle {
   readonly fighters: [Fighter, Fighter];
   readonly brains: [FighterBrain, FighterBrain];
   readonly projectiles: Projectile[] = [];
+  /** Totems and caltrops on the ground. */
+  readonly zones: Zone[] = [];
   /** Events produced since the consumer last drained them. */
   events: BattleEvent[] = [];
   tick = 0;
@@ -68,6 +103,7 @@ export class Battle {
   /** Seconds since the battle ended (physics keeps running for the KO). */
   endTime = 0;
   private nextProjectileId = 1;
+  private nextZoneId = 1;
 
   constructor(cfg: BattleConfig) {
     this.seed = cfg.seed >>> 0;
@@ -170,6 +206,7 @@ export class Battle {
     this.updateFacing(a);
     this.updateFacing(b);
     this.updateProjectiles();
+    this.updateZones();
     this.checkEnd();
   }
 
@@ -184,8 +221,12 @@ export class Battle {
     if (f.invuln > 0) f.invuln -= DT;
     if (f.mirrorCd > 0) f.mirrorCd -= DT;
     if (f.ironWillCd > 0) f.ironWillCd -= DT;
+    if (f.dreadCd > 0) f.dreadCd -= DT;
+    if (f.foresightCd > 0) f.foresightCd -= DT;
+    if (f.garbT > 0) f.garbT -= DT;
     f.sinceHurt += DT;
     f.sinceHit += DT;
+    this.updatePassives(f);
 
     f.energy = Math.min(MAX_ENERGY, f.energy + BASE_ENERGY_REGEN * f.stats.energyRegen * DT);
 
@@ -231,17 +272,64 @@ export class Battle {
           if (f.statuses !== list) return;
         }
       }
+      if (dots && s.id === 'regen' && f.alive) {
+        s.acc += f.stats.maxHp * 0.02 * DT;
+        s.tickT += DT;
+        if (s.tickT >= 0.5 || s.remaining <= 0) {
+          this.heal(f, s.acc);
+          s.acc = 0;
+          s.tickT = 0;
+        }
+      }
       if (s.remaining <= 0) list.splice(i, 1);
+    }
+  }
+
+  /** Passive gear that ticks on its own: wards, mending wood, the hourglass's memory, a building charge. */
+  private updatePassives(f: Fighter): void {
+    const has = f.has;
+    if (has.has('ward_stone')) {
+      if (f.shield > 0) f.wardCd = Math.max(f.wardCd, 2);
+      else if ((f.wardCd -= DT) <= 0) {
+        f.wardCd = 10;
+        const amount = Math.round(f.stats.maxHp * 0.08);
+        f.shield = amount;
+        this.emit({ type: 'shield', f: f.id, amount });
+      }
+    }
+    if (has.has('heartwood_armor') && f.sinceHurt > 2.5 && f.hp < f.stats.maxHp) {
+      f.mendAcc += f.stats.maxHp * 0.012 * DT;
+      if (f.mendAcc >= f.stats.maxHp * 0.006) { this.heal(f, f.mendAcc); f.mendAcc = 0; }
+    }
+    if (has.has('hourglass') && !f.rewindUsed && (f.histT -= DT) <= 0) {
+      f.histT = HISTORY_STEP;
+      const i = f.histI % HISTORY_SIZE;
+      f.hist[i * 2] = f.x;
+      f.hist[i * 2 + 1] = f.hp;
+      f.histI++;
+    }
+    if (has.has('charger_cuisses')) {
+      const e = this.other(f);
+      const toward = Math.sign(e.x - f.x);
+      const running = !f.action && f.move === toward && f.vx * toward > f.stats.moveSpeed * 0.6;
+      if (running) f.chargeT = Math.min(2, f.chargeT + DT);
+      else if (!f.action) f.chargeT = Math.max(0, f.chargeT - DT * (f.chargeT >= 0.8 ? 0.6 : 2));
     }
   }
 
   applyStatus(target: Fighter, source: Fighter, apply: StatusApply): void {
     if (!target.alive) return;
     let dur = apply.duration;
-    const cc = apply.status === 'stun' || apply.status === 'frozen';
-    const debuff = cc || apply.status === 'chill' || apply.status === 'burn' || apply.status === 'poison'
-      || apply.status === 'mark' || apply.status === 'vulnerable';
-    if (debuff && target.id !== source.id) dur *= 1 - target.stats.tenacity;
+    const cc = CC.includes(apply.status);
+    const debuff = HARMFUL.includes(apply.status) || cc;
+    if (debuff && target.id !== source.id) {
+      if (isUnstoppable(target) && (cc || apply.status === 'root' || apply.status === 'silence')) {
+        this.emit({ type: 'callout', f: target.id, text: 'Unstoppable', color: '#c8ccd8' });
+        return;
+      }
+      dur *= 1 - target.stats.tenacity;
+      if (target.has.has('runic_mail')) dur *= 0.7;
+    }
     if (cc) {
       if (target.has.has('iron_helm') && target.ironWillCd <= 0) {
         target.ironWillCd = 10;
@@ -250,7 +338,7 @@ export class Battle {
       }
       if (target.action && !target.action.feint) target.action = null;
     }
-    const maxStacks: Partial<Record<StatusId, number>> = { burn: 3, poison: 4, chill: 5 };
+    const maxStacks: Partial<Record<StatusId, number>> = { burn: 3, poison: 4, chill: 5, momentum: 5 };
     const existing = getStatus(target, apply.status);
     const add = apply.stacks ?? 1;
     if (existing) {
@@ -265,7 +353,7 @@ export class Battle {
       });
     }
     const st = getStatus(target, apply.status)!;
-    if (apply.status === 'chill' && st.stacks >= 5) {
+    if (apply.status === 'chill' && st.stacks >= 5 && !isUnstoppable(target)) {
       target.statuses.splice(target.statuses.indexOf(st), 1);
       this.applyStatus(target, source, { status: 'frozen', duration: 1.0 });
       return;
@@ -281,8 +369,12 @@ export class Battle {
     const ab = f.abilities[idx];
     if (!f.alive) return false;
     // Item attacks run on their own: the body may be busy or even stunned.
+    // Silence stops everything but basic attacks and the evade, the item's own attacks included.
+    if (ab.slot !== 'basic' && ab.slot !== 'evade' && isSilenced(f)) return false;
     if (ab.slot === 'item') return !f.item && f.cooldowns[idx] <= 0 && f.energy >= ab.cost;
-    if (f.action || isDisabled(f) || f.uses[idx] === 0) return false;
+    if (f.action || isDisabled(f) || f.uses[idx] === 0 || getStatus(f, 'fear')) return false;
+    // Rooted: no dashing, blinking or trading places.
+    if ((ab.kind === 'dash' || ab.kind === 'blink' || ab.kind === 'swap') && getStatus(f, 'root')) return false;
     return f.cooldowns[idx] <= 0 && f.energy >= ab.cost;
   }
 
@@ -309,7 +401,8 @@ export class Battle {
 
     let dir: number = f.facing;
     let through = !!ab.dash?.through;
-    if (ab.slot === 'evade') {
+    if (ab.slot === 'evade' && f.has.has('shadow_garb')) f.garbT = 2 + (ab.windup + ab.active) / spd;
+    if (ab.slot === 'evade' && ab.dash && ab.kind === 'dash') {
       // Backstep by default; roll through when cornered, or whenever the enemy
       // is in reach if the boots allow it (Shadow Treads).
       dir = -f.facing;
@@ -446,8 +539,9 @@ export class Battle {
         this.spawnMeteor(f, ab, a.ability, a.targetX);
         break;
       case 'aoe': {
-        const style = ab.id === 'frost_nova' ? 'nova' : 'slam';
+        const style = ab.id === 'frost_nova' ? 'nova' : ab.id === 'thunderclap' ? 'thunder' : ab.anim === 'stomp' ? 'stomp' : 'slam';
         const radius = reachOf(f, ab);
+        if (ab.iframes) f.invuln = Math.max(f.invuln, ab.iframes);
         this.emit({ type: 'shockwave', x: f.x, radius, f: f.id, style });
         if (Math.abs(e.x - f.x) <= radius && e.y < 1.6) this.abilityHit(f, e, ab, { aoe: true });
         break;
@@ -474,7 +568,10 @@ export class Battle {
       case 'blink': {
         const from = f.x;
         let dest = f.x - f.facing * ab.dash!.distance;
-        if (Math.abs(dest) > ARENA_HALF_WIDTH - 0.5) {
+        // Warp Step: a close enemy gets a visitor right behind them.
+        const behind = ab.dash!.through && Math.abs(e.x - f.x) < 4.5 && e.alive;
+        if (behind) dest = clamp(e.x + Math.sign(e.x - f.x || f.facing) * 1.3, -ARENA_HALF_WIDTH + 0.5, ARENA_HALF_WIDTH - 0.5);
+        else if (Math.abs(dest) > ARENA_HALF_WIDTH - 0.5) {
           // Cornered: appear behind the enemy instead.
           dest = e.x + f.facing * 2.2;
           if (Math.abs(dest) > ARENA_HALF_WIDTH - 0.5) dest = clamp(dest, -ARENA_HALF_WIDTH + 0.5, ARENA_HALF_WIDTH - 0.5);
@@ -488,11 +585,46 @@ export class Battle {
       }
       case 'dash':
         f.invuln = Math.max(f.invuln, ab.dash!.iframes);
+        if (ab.slot === 'evade') this.evadeExtras(f, e);
+        break;
+      case 'swap':
+        this.swapPlaces(f, e, ab);
         break;
       case 'guard':
       case 'melee':
         break;
     }
+  }
+
+  /** Boots whose evade does a little more than step away. */
+  private evadeExtras(f: Fighter, e: Fighter): void {
+    const dist = Math.abs(e.x - f.x);
+    if (f.has.has('frostwalkers')) {
+      this.emit({ type: 'shockwave', x: f.x, radius: 2.2, f: f.id, style: 'frost' });
+      if (dist <= 2.2 && e.y < 1.6 && e.invuln <= 0) this.applyStatus(e, f, { status: 'chill', duration: 3, stacks: 2 });
+    }
+    if (f.has.has('savate_boots') && dist <= SAVATE_KICK.range && Math.sign(e.x - f.x) === f.facing && e.y < 1.8) {
+      // A real hit: it can still be blocked or parried.
+      this.abilityHit(f, e, SAVATE_KICK, {});
+    }
+  }
+
+  /** Trickster Talisman: both fighters trade places; whatever the enemy was winding up is thrown off. */
+  private swapPlaces(f: Fighter, e: Fighter, ab: AbilityDef): void {
+    if (!e.alive || Math.abs(e.x - f.x) > ab.range + 0.5) return;
+    const from = f.x, to = e.x;
+    f.x = f.px = to;
+    e.x = e.px = from;
+    f.vx = e.vx = 0;
+    f.facing = Math.sign(e.x - f.x) >= 0 ? 1 : -1;
+    e.facing = f.facing === 1 ? -1 : 1;
+    f.invuln = Math.max(f.invuln, ab.iframes ?? 0.2);
+    const ea = e.action;
+    if (ea && ea.phase === 'windup' && !e.abilities[ea.ability].hyperArmor && !isUnstoppable(e)) {
+      e.action = null;
+      e.stagger = Math.max(e.stagger, 0.25);
+    }
+    this.emit({ type: 'swap', f: f.id, from, to });
   }
 
   private inMeleeReach(f: Fighter, e: Fighter, range: number): boolean {
@@ -508,10 +640,11 @@ export class Battle {
     if (pr.lob) { this.spawnLob(f, ab, idx); return; }
     const ground = !!pr.ground;
     const y = ground ? 0.25 : 1.25;
+    const speed = pr.speed * (f.has.has('hawkeye_hood') ? 1.2 : 1);
     this.projectiles.push({
       id: this.nextProjectileId++, owner: f.id, style: pr.style, def: ab,
       x: f.x + f.facing * 0.7, y, px: f.x, py: y,
-      vx: f.facing * pr.speed, vy: 0, radius: pr.radius, life: pr.returns ? 4 : 2.2, ability: idx,
+      vx: f.facing * speed, vy: 0, radius: pr.radius, life: pr.returns ? 4 : 2.2, ability: idx,
       power: f.stats.power, ground, reflected: false, targetX: 0, alive: true, back: false, hitOut: false, hitBack: false,
     });
   }
@@ -545,7 +678,9 @@ export class Battle {
     p.alive = false;
     const radius = p.def.projectile!.lob!;
     const y = Math.max(0.2, p.y);
-    this.emit({ type: 'shockwave', x: p.x, radius, f: owner.id, style: 'flask' });
+    const zone = p.def.projectile!.zone;
+    if (zone) this.spawnZone(owner, zone, clamp(p.x, -ARENA_HALF_WIDTH + 0.4, ARENA_HALF_WIDTH - 0.4));
+    else this.emit({ type: 'shockwave', x: p.x, radius, f: owner.id, style: p.style === 'frostflask' ? 'frost' : 'flask' });
     const hit = !this.over && target.alive && target.invuln <= 0 && Math.abs(target.x - p.x) <= radius + 0.35 && target.y < 1.8;
     if (hit) {
       const g = target.action && target.abilities[target.action.ability].guard && target.action.phase === 'active';
@@ -673,31 +808,43 @@ export class Battle {
   // Special items acting on their own
   // ---------------------------------------------------------------------------
 
-  /** The wisp lantern charges, then shoots a spirit bolt whenever the enemy is in range. */
+  /**
+   * Familiars charge, then fire on their own whenever the enemy is in range:
+   * the wisp shoots a spirit bolt, the hawk leaves the shoulder and dives,
+   * the whelp breathes fire up close. None of them can find a fighter hidden in smoke.
+   */
   private updateFamiliar(f: Fighter): void {
     const fam = f.familiar!;
     const e = this.other(f);
+    const def = FAMILIAR_SHOT[fam.kind];
+    if (fam.away > 0) fam.away -= DT;
     if (fam.charge > 0) {
       fam.charge -= DT;
       if (fam.charge <= 0) {
         fam.charge = 0;
         const dir = Math.sign(e.x - f.x) || f.facing;
-        const x = f.x - f.facing * 0.55, y = 2.05;
+        const pr = def.projectile!;
+        const perch = fam.kind === 'wisp' ? -0.55 : 0.1;
+        const x = f.x + f.facing * perch, y = fam.kind === 'hawk' ? 2.9 : fam.kind === 'whelp' ? 1.95 : 2.05;
         const dist = Math.max(0.5, Math.abs(e.x - x));
-        const pr = WISP_BOLT.projectile!;
+        const life = fam.kind === 'whelp' ? Math.min(0.55, (def.range + 0.5) / pr.speed) : 1.6;
+        // Aimed down at the chest (the hawk dives steeply).
+        const vy = ((e.y + 1.25) - y) / (dist / pr.speed);
         this.projectiles.push({
-          id: this.nextProjectileId++, owner: f.id, style: 'wisp', def: WISP_BOLT,
-          x, y, px: x, py: y, vx: dir * pr.speed, vy: -0.8 / (dist / pr.speed), radius: pr.radius, life: 1.6,
-          ability: -1, power: f.stats.power, ground: false, reflected: false, targetX: 0, alive: true,
+          id: this.nextProjectileId++, owner: f.id, style: pr.style, def,
+          x, y, px: x, py: y, vx: dir * pr.speed, vy: fam.kind === 'wisp' ? -0.8 / (dist / pr.speed) : vy,
+          radius: pr.radius, life, ability: -1, power: f.stats.power, ground: false, reflected: false, targetX: 0, alive: true,
           back: false, hitOut: false, hitBack: false,
         });
+        if (fam.kind === 'hawk') fam.away = dist / pr.speed + 0.7;
       }
       return;
     }
     if (fam.cd > 0) { fam.cd -= DT; return; }
-    if (this.over || !e.alive || Math.abs(e.x - f.x) > FAMILIAR_RANGE) return;
-    fam.charge = WISP_BOLT.windup;
-    fam.cd = WISP_BOLT.cooldown;
+    const range = fam.kind === 'whelp' ? def.range : FAMILIAR_RANGE;
+    if (this.over || !e.alive || Math.abs(e.x - f.x) > range || getStatus(e, 'hidden')) return;
+    fam.charge = def.windup;
+    fam.cd = def.cooldown;
     this.emit({ type: 'familiar', f: f.id });
   }
 
@@ -709,6 +856,21 @@ export class Battle {
     const e = this.other(f);
     it.t += DT;
     const homeX = f.x - f.facing * 0.5, homeY = f.y + 2.1;
+
+    if (ab.kind === 'totem') {
+      it.x = homeX; it.y = homeY;
+      if (it.phase === 'windup' && it.t >= ab.windup) {
+        const dir = Math.sign(e.x - f.x) || f.facing;
+        const x = clamp(f.x + dir * Math.min(1.2, Math.abs(e.x - f.x) * 0.5), -ARENA_HALF_WIDTH + 0.6, ARENA_HALF_WIDTH - 0.6);
+        it.targetX = x;
+        this.spawnZone(f, 'totem', x, ab);
+        it.phase = 'return';
+        it.t = 0;
+      } else if (it.phase === 'return' && it.t >= 0.4) {
+        f.item = null;
+      }
+      return;
+    }
 
     if (ab.kind === 'meteor') {
       it.x = homeX; it.y = homeY;
@@ -762,6 +924,56 @@ export class Battle {
         if (Math.abs(homeX - it.x) < 0.2 || it.t > 1.5) f.item = null;
         break;
       }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Zones on the ground
+  // ---------------------------------------------------------------------------
+
+  private spawnZone(f: Fighter, kind: ZoneKind, x: number, ab?: AbilityDef): void {
+    const t = ab?.totem;
+    const z: Zone = kind === 'totem' && t
+      ? { id: this.nextZoneId++, kind, owner: f.id, x, radius: t.radius, life: t.life, span: t.life, tick: 0.5, every: t.every, power: f.stats.power * ab.power }
+      : { id: this.nextZoneId++, kind, owner: f.id, x, radius: CALTROPS.radius, life: CALTROPS.life, span: CALTROPS.life, tick: 0, every: CALTROPS.every, power: f.stats.power * CALTROPS.power };
+    // One of each kind per owner: a new one replaces the old.
+    for (let i = this.zones.length - 1; i >= 0; i--) if (this.zones[i].owner === f.id && this.zones[i].kind === kind) this.zones.splice(i, 1);
+    this.zones.push(z);
+    this.emit({ type: 'zone', f: f.id, kind, x, radius: z.radius });
+  }
+
+  private updateZones(): void {
+    for (let i = this.zones.length - 1; i >= 0; i--) {
+      const z = this.zones[i];
+      z.life -= DT;
+      if (z.life <= 0) { this.zones.splice(i, 1); continue; }
+      if ((z.tick -= DT) > 0) continue;
+      const owner = this.fighters[z.owner];
+      const e = this.other(owner);
+      const inside = e.alive && Math.abs(e.x - z.x) <= z.radius && e.invuln <= 0;
+      if (z.kind === 'totem') {
+        if (!inside || e.y > 2.4 || getStatus(e, 'hidden')) { z.tick = 0.1; continue; }
+        z.tick = z.every;
+        this.emit({ type: 'zap', f: owner.id, from: z.x, to: e.x });
+        this.zoneHit(owner, e, z.power, 'magic', 'totem');
+        if (e.alive) {
+          this.applyStatus(e, owner, { status: 'chill', duration: 2 });
+        }
+      } else {
+        // Caltrops only cut feet on the ground.
+        if (!inside || e.y > 0.3) { z.tick = 0.05; continue; }
+        z.tick = z.every;
+        this.zoneHit(owner, e, z.power, 'physical', 'caltrops');
+        if (e.alive) this.applyStatus(e, owner, { status: 'chill', duration: 1.5 });
+      }
+    }
+  }
+
+  private zoneHit(owner: Fighter, e: Fighter, raw: number, dtype: DamageType, id: string): void {
+    const dealt = this.applyDamage(owner, e, raw * owner.stats.damageMult, dtype);
+    if (dealt > 0) {
+      this.emit({ type: 'hit', attacker: owner.id, target: e.id, amount: dealt, crit: false, dtype, blocked: false,
+        heavy: false, ability: id, x: e.x, y: e.y + (id === 'caltrops' ? 0.3 : 1.4), killing: !e.alive, dot: true });
     }
   }
 
@@ -838,12 +1050,37 @@ export class Battle {
       if (g === 'parry') return;
       if (g === 'block') blocked = true;
     }
+    // Seer's Blindfold: saw it coming, and simply isn't there when it lands.
+    if (tgt.has.has('seer_blindfold') && tgt.foresightCd <= 0 && !blocked
+      && (ab.heavy || ab.power * att.stats.power >= tgt.stats.maxHp * 0.03)) {
+      tgt.foresightCd = 10;
+      this.emit({ type: 'foresight', f: tgt.id, x: tgt.x, y: tgt.y + 1.3 });
+      return;
+    }
 
     const heavy = opts.heavyOverride ?? !!ab.heavy;
     let raw = att.stats.power * ab.power * (opts.mult ?? 1) * att.stats.damageMult;
     if (opts.fromProjectile) raw = opts.fromProjectile.power * ab.power * (opts.mult ?? 1) * att.stats.damageMult;
+    if (opts.fromProjectile && att.has.has('hawkeye_hood')) raw *= 1.2;
+    const body = !opts.fromProjectile && (ab.kind === 'melee' || ab.kind === 'dash' || ab.kind === 'aoe') && ab.slot !== 'item';
+    // Out of the smoke: the first blow is an ambush.
+    const hidden = getStatus(att, 'hidden');
+    if (hidden && ab.slot !== 'item') {
+      raw *= 1.5;
+      att.statuses.splice(att.statuses.indexOf(hidden), 1);
+      this.emit({ type: 'callout', f: att.id, text: 'Ambush!', color: '#d8d8e8' });
+    }
+    // Charger Cuisses: a run-up adds weight to the next melee blow.
+    const charged = body && ab.kind !== 'aoe' && att.chargeT >= 0.8;
+    if (charged) {
+      raw *= 1.35;
+      att.chargeT = 0;
+      this.emit({ type: 'callout', f: att.id, text: 'Charge!', color: '#ffb060' });
+    }
     let crit = false;
-    if (ab.damageType !== 'true' && this.rng.chance(att.stats.critChance)) {
+    const sureCrit = att.garbT > 0 && ab.slot !== 'item' && ab.slot !== 'evade';
+    if (ab.damageType !== 'true' && (sureCrit || this.rng.chance(att.stats.critChance))) {
+      if (sureCrit) att.garbT = 0;
       crit = true;
       raw *= att.stats.critMult;
       if (att.has.has('executioner_hood') && tgt.hp / tgt.stats.maxHp < 0.3) raw *= 1.5;
@@ -869,8 +1106,14 @@ export class Battle {
     else if (crit) this.hitstop = Math.max(this.hitstop, 0.05);
     if (killing) this.hitstop = Math.max(this.hitstop, 0.22);
 
-    // Lifesteal (reduced by poison on the attacker).
-    if (att.stats.lifesteal > 0 && dealt > 0) this.heal(att, dealt * att.stats.lifesteal);
+    // Lifesteal (reduced by poison on the attacker), and weapons that drink life on their own.
+    const steal = att.stats.lifesteal + (ab.drainLife ?? 0);
+    if (steal > 0 && dealt > 0) this.heal(att, dealt * steal);
+    if (ab.drainEnergy && !blocked) {
+      const took = Math.min(tgt.energy, ab.drainEnergy);
+      tgt.energy -= took;
+      att.energy = Math.min(MAX_ENERGY, att.energy + took);
+    }
 
     // Thorns.
     if (tgt.stats.thorns > 0 && !opts.fromProjectile && ab.kind !== 'aoe' && ab.kind !== 'blade' && att.alive && dealt > 0) {
@@ -887,7 +1130,8 @@ export class Battle {
     // Crowd control & displacement.
     if (!blocked) {
       if (ab.stun) this.applyStatus(tgt, att, { status: 'stun', duration: ab.stun });
-      const ironskin = !!getStatus(tgt, 'ironskin');
+      if (charged) this.applyStatus(tgt, att, { status: 'stun', duration: 0.4 });
+      const ironskin = !!getStatus(tgt, 'ironskin') || isUnstoppable(tgt);
       if (ab.stagger && !ironskin) {
         const ta = tgt.action;
         // Light hits only flinch fighters with low poise; strong bodies hit harder.
@@ -903,11 +1147,36 @@ export class Battle {
         if (heavy && kb > 5) tgt.vy = Math.max(tgt.vy, kb * 0.45);
       }
       if (ab.applies) for (const s of ab.applies) this.applyStatus(tgt, att, s);
+      if (ab.launch && !ironskin) {
+        // Thrown up: helpless until they land.
+        tgt.vy = Math.max(tgt.vy, ab.launch * tgt.stats.knockbackTaken);
+        tgt.y = Math.max(tgt.y, 0.05);
+        if (tgt.action && !tgt.abilities[tgt.action.ability].hyperArmor) tgt.action = null;
+        if (!tgt.action) tgt.stagger = Math.max(tgt.stagger, (2 * tgt.vy) / GRAVITY + 0.1);
+      }
+      if (ab.pull && !ironskin) {
+        // The chain drags them to just in front of the thrower.
+        const side = Math.sign(tgt.x - att.x) || att.facing;
+        tgt.pullTo = clamp(att.x + side * 1.3, -ARENA_HALF_WIDTH, ARENA_HALF_WIDTH);
+        tgt.pullT = Math.min(0.35, Math.abs(tgt.x - tgt.pullTo) / 16);
+        tgt.vx = 0;
+        if (tgt.action && !tgt.abilities[tgt.action.ability].hyperArmor) tgt.action = null;
+        if (!tgt.action) tgt.stagger = Math.max(tgt.stagger, tgt.pullT + 0.2);
+        this.emit({ type: 'pull', f: att.id, target: tgt.id });
+      }
+      // Dread Helm: a heavy blow that lands puts the fear in them.
+      if (heavy && att.has.has('dread_helm') && att.dreadCd <= 0 && ab.slot !== 'item') {
+        att.dreadCd = 7;
+        this.applyStatus(tgt, att, { status: 'fear', duration: 1.1 });
+      }
     } else {
       tgt.vx += (Math.sign(tgt.x - att.x) || att.facing) * 1.5;
     }
 
     // On-hit items (only for real ability hits, not DoTs/echoes).
+    if (ab.slot !== 'evade' && !blocked && att.has.has('gladiator_helm') && dealt > 0) {
+      this.applyStatus(att, att, { status: 'momentum', duration: 4 });
+    }
     if (ab.slot !== 'evade' && !blocked) {
       if (att.has.has('frost_core') && this.rng.chance(0.5)) this.applyStatus(tgt, att, { status: 'chill', duration: 2.5 });
       if (att.has.has('ember_core') && this.rng.chance(0.5)) this.applyStatus(tgt, att, { status: 'burn', duration: 2 });
@@ -955,6 +1224,8 @@ export class Battle {
     att.energy = Math.min(MAX_ENERGY, att.energy + dmg * ENERGY_ON_DEAL);
     tgt.energy = Math.min(MAX_ENERGY, tgt.energy + dmg * ENERGY_ON_TAKE);
 
+    if (tgt.has.has('hourglass') && !tgt.rewindUsed && tgt.hp < tgt.stats.maxHp * 0.25 && tgt.histI > 0) this.rewind(tgt);
+
     if (tgt.hp > 0 && !tgt.secondWind && tgt.has.has('bloodrite_wraps') && tgt.hp < tgt.stats.maxHp * 0.35) {
       // Second wind: the wraps drink the blood spilled and give it back.
       tgt.secondWind = true;
@@ -992,6 +1263,27 @@ export class Battle {
     return dmg;
   }
 
+  /** Sands of Time: back to where (and how healthy) the fighter was a few seconds ago. */
+  private rewind(f: Fighter): void {
+    f.rewindUsed = true;
+    // Oldest sample still in the ring.
+    const n = Math.min(f.histI, HISTORY_SIZE);
+    const i = (f.histI - n) % HISTORY_SIZE;
+    const x = f.hist[i * 2], hp = f.hist[i * 2 + 1];
+    const from = f.x;
+    f.hp = Math.max(f.hp, Math.min(f.stats.maxHp, hp + f.stats.maxHp * 0.1));
+    f.x = f.px = clamp(x, -ARENA_HALF_WIDTH, ARENA_HALF_WIDTH);
+    f.vx = 0; f.vy = 0; f.y = Math.max(0, f.y);
+    f.action = null;
+    f.stagger = 0;
+    f.pullT = 0;
+    f.invuln = Math.max(f.invuln, 0.5);
+    f.statuses = f.statuses.filter((s) => !HARMFUL.includes(s.id) && s.id !== 'stun' && s.id !== 'frozen');
+    this.emit({ type: 'rewind', f: f.id, from, to: f.x });
+    this.emit({ type: 'thought', f: f.id, text: 'Turns back the sands!' });
+    this.hitstop = Math.max(this.hitstop, 0.15);
+  }
+
   heal(f: Fighter, amount: number): void {
     if (!f.alive) return;
     const h = Math.min(f.stats.maxHp - f.hp, amount * f.stats.healMult);
@@ -1009,11 +1301,28 @@ export class Battle {
     const a = f.action;
     const ab = a ? f.abilities[a.ability] : null;
     const locked = !!a || isDisabled(f) || !f.alive;
-    if (!locked) {
+    const fear = getStatus(f, 'fear');
+    if (f.pullT > 0) {
+      // Dragged by a chain: slides straight to the spot.
+      f.pullT -= DT;
+      const dx = f.pullTo - f.x;
+      const step = f.pullT <= 0 ? dx : dx * Math.min(1, DT / Math.max(DT, f.pullT));
+      f.x += step;
+      f.vx = 0;
+    } else if (fear && f.alive && !isDisabled(f)) {
+      // Fleeing from whoever scared it.
+      const src = this.fighters[fear.source];
+      const away = Math.sign(f.x - src.x) || -f.facing;
+      const dv = away * f.stats.moveSpeed * 1.1 - f.vx;
+      f.vx += clamp(dv, -28 * DT, 28 * DT);
+    } else if (!locked && !getStatus(f, 'root')) {
       const target = f.move * f.stats.moveSpeed;
       const accel = 28;
       const dv = target - f.vx;
       f.vx += clamp(dv, -accel * DT, accel * DT);
+    } else if (!locked) {
+      // Rooted: feet stay put.
+      f.vx -= f.vx * Math.min(1, 14 * DT);
     } else {
       // Friction on knockback while busy.
       const fr = f.y > 0.01 ? 2 : 10;
@@ -1055,6 +1364,7 @@ export class Battle {
     if (!a.alive || !b.alive) return;
     const passing = (f: Fighter) => !!f.action && f.action.through && f.action.phase !== 'recovery';
     if (passing(a) || passing(b)) return;
+    if (a.has.has('ghoststep_leggings') || b.has.has('ghoststep_leggings')) return;
     if (Math.abs(a.y - b.y) > BODY_HEIGHT * 0.8) return;
     const dx = b.x - a.x;
     const dist = Math.abs(dx);

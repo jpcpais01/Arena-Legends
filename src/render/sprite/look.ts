@@ -7,6 +7,7 @@ import type { ChestId, FormId, GearId, GearSet, HeadId, BootsId, LegsId, MainWea
 import { mix, toHsl, fromHsl } from '../pixel/color';
 import { grain, lattice, speckle } from '../pixel/tex';
 import { material, type Material } from '../pixel/raster';
+import { ARMOUR2 } from './armour2';
 import { bodyFor, type BodySpec } from './body';
 import { SKIN_ART, type SkinArt } from './skins';
 import type { BodyDraw, LegDraw, ShoulderDraw, ThighDraw } from './skins/armour';
@@ -80,6 +81,8 @@ export interface ChestLook {
   back?: BodyDraw | null;
   over?: BodyDraw | null;
   shoulder?: ShoulderDraw | null;
+  /** Its own scarf replaces the human's. */
+  noScarf?: boolean;
 }
 
 export interface LegsLook {
@@ -99,6 +102,8 @@ export interface LegsLook {
   bulk: number;
   /** Reshaped legs from a skin: extra shapes on each thigh. */
   over?: ThighDraw | null;
+  /** Extra shapes on each shin (over the trousers and the top of the boot). */
+  shin?: LegDraw | null;
 }
 
 export interface BootsLook {
@@ -133,7 +138,7 @@ const tunicFor = (chest: ChestId | undefined): ChestLook => {
     case 'mage_robe':
       return { ...base, torso: 'robe', sleeve: 'robe', sleeveLen: 1, forearm: 'robe', skirt: 0.62, skirtMat: 'robe', trim: 'robeTrim', belt: 'robeTrim' };
     default:
-      return base;
+      return { ...base, ...(chest && ARMOUR2[chest]?.chest) };
   }
 };
 
@@ -146,7 +151,7 @@ const legsFor = (l: LegsId | undefined): LegsLook => {
     case 'windrunner_leggings': return { ...base, mat: 'windLeg', trim: 'windTrim', wraps: 'windTrim', bulk: 0.1 };
     case 'runed_leggings': return { ...base, mat: 'runeLeg', trim: 'runeDark', knee: 'runeDark', rune: 'runeGlow', bulk: 0.2 };
     case 'bloodrite_wraps': return { ...base, mat: 'bloodLeg', wraps: 'bloodDark', rune: 'bloodGlow', bulk: 0.15 };
-    default: return base;
+    default: return { ...base, ...(l && ARMOUR2[l]?.legs) };
   }
 };
 
@@ -158,7 +163,7 @@ const bootsFor = (b: BootsId | undefined): BootsLook => {
     case 'shadow_treads': return { mat: 'shadow', height: 0.6, bulk: 0.3, trim: 'shadowGlow', wing: null, knee: null };
     case 'colossus_boots': return { mat: 'colossus', height: 0.62, bulk: 1.1, trim: 'colossusDark', wing: null, knee: null };
     case 'leaping_boots': return { mat: 'leap', height: 0.66, bulk: 0.35, trim: 'leapTrim', wing: 'feather', knee: null };
-    default: return { mat: 'shoe', height: 0.18, bulk: 0.15, trim: null, wing: null, knee: null };
+    default: return { mat: 'shoe', height: 0.18, bulk: 0.15, trim: null, wing: null, knee: null, ...(b && ARMOUR2[b]?.boots) };
   }
 };
 
@@ -195,9 +200,17 @@ const BODY_KEYS = new Set([
 const HEAD_KEYS = ['mask', 'maskHorn', 'maskEye', 'helm', 'helmDark', 'gold', 'gemPurple', 'hood', 'hoodEye', 'spark', 'band', 'bandTail'];
 const SPECIAL_KEYS = ['plume', 'plumeTip', 'fangTooth', 'fangBlood'];
 
+/** Materials of the second-wave stock pieces, built once and shared (night accents copy them). */
+const stockMats = new Map<string, Material>();
+function stockMat(k: string, spec: Parameters<typeof material>[0]): Material {
+  let mt = stockMats.get(k);
+  if (!mt) { mt = material(spec); stockMats.set(k, mt); }
+  return mt;
+}
+
 /** A slot's material keys: the stock piece's, plus whatever its skin brings. */
-const keysOf = (stock: (string | null)[], skin: SkinArt | null) => {
-  const set = new Set([...stock.filter((k): k is string => !!k), ...Object.keys(skin?.mats ?? {})]);
+const keysOf = (stock: (string | null)[], skin: SkinArt | null, id?: GearId | null) => {
+  const set = new Set([...stock.filter((k): k is string => !!k), ...Object.keys(skin?.mats ?? {}), ...Object.keys((id && ARMOUR2[id]?.mats) ?? {})]);
   return (k: string) => set.has(k);
 };
 
@@ -349,6 +362,12 @@ export function makeArt(build: CharacterBuild): CharacterArt {
   let headDraw: HeadDraw | null = null;
   let headFace = false;
   let headMats: string[] = [];
+  // Second-wave stock pieces bring their own materials.
+  for (const slot of ['head', 'chest', 'legs', 'boots'] as const) {
+    const id = build.gear[slot];
+    const a = id ? ARMOUR2[id] : undefined;
+    if (a) for (const [k, spec] of Object.entries(a.mats)) mats[k] = stockMat(k, spec);
+  }
   const worn: Record<'head' | 'chest' | 'legs' | 'boots', SkinArt | null> = { head: null, chest: null, legs: null, boots: null };
   for (const slot of ['head', 'chest', 'legs', 'boots'] as const) {
     const [, art] = skinArt(build.gear[slot]);
@@ -378,10 +397,10 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     [build.gear.main, (k) => k.startsWith('w.')],
     [secId, (k) => k.startsWith('s.')],
     [useId, (k) => k.startsWith('u.')],
-    [build.gear.head, keysOf(HEAD_KEYS, worn.head)],
-    [build.gear.chest, keysOf([chest.torso, chest.sleeve, chest.forearm, chest.pauldron, chest.cape, chest.hood, chest.spikes, chest.trim, chest.skirtMat, chest.belt], worn.chest)],
-    [build.gear.legs, keysOf([legs.mat, legs.trim, legs.knee, legs.tasset, legs.rune, legs.wraps], worn.legs)],
-    [build.gear.boots, keysOf([boots.mat, boots.trim, boots.wing, boots.knee], worn.boots)],
+    [build.gear.head, keysOf(HEAD_KEYS, worn.head, build.gear.head)],
+    [build.gear.chest, keysOf([chest.torso, chest.sleeve, chest.forearm, chest.pauldron, chest.cape, chest.hood, chest.spikes, chest.trim, chest.skirtMat, chest.belt], worn.chest, build.gear.chest)],
+    [build.gear.legs, keysOf([legs.mat, legs.trim, legs.knee, legs.tasset, legs.rune, legs.wraps], worn.legs, build.gear.legs)],
+    [build.gear.boots, keysOf([boots.mat, boots.trim, boots.wing, boots.knee], worn.boots, build.gear.boots)],
     [build.gear.special, (k) => SPECIAL_KEYS.includes(k) || k.startsWith('p.')],
   ], headMats);
   return {
