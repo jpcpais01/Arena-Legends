@@ -12,13 +12,33 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.49.0',
+    version: '0.50.0',
     date: '2026-10-10',
     title: 'Super attacks hit the big screen',
     notes: [
       'Weapon skills and item ultimates now shout their name across the screen in big, shiny letters in the move\'s own colours, with a sound sting. Skills appear on their user\'s side, ultimates like Meteor and Phantom Flurry take the middle with a burst of light.',
       'Supers flow straight into the strike: instead of freezing in the wind-up pose, the fighter draws back while power streams into their weapon, the arena dims, and they let loose with speed lines, an afterimage trail and a battle cry.',
       'Every super has its own impact by element: blade arcs for steel, flames for fire, lightning for storm, runes for arcane, rising souls for death magic, venom splashes and ground cracks, each with its own sound.',
+    ],
+  },
+  {
+    version: '0.49.0',
+    date: '2026-10-10',
+    title: 'The Forge and big reveals',
+    notes: [
+      'Duplicate skins are no longer swapped for gems. Each extra copy is kept as a spare.',
+      'New Forge tab in the Shop: melt 3 spares of one rarity into a random skin of the next rarity up (rare to mythic, mythic to legendary, legendary to epic).',
+      'Your three spares fly into the chest, the anvil rings, and the chest opens on the new skin.',
+      'Legendary and epic pulls get their own show: the room goes dark, a pillar of light bursts from the chest, the rarity is slammed across the screen, and epic adds falling stars.',
+      'Legendary and epic cards keep sparkling and shining after the reveal.',
+    ],
+  },
+  {
+    version: '0.48.1',
+    date: '2026-10-10',
+    title: 'Undo and Redo in the Armory',
+    notes: [
+      'Two small Undo and Redo buttons next to Done take back gear, skin and body form changes made in the Armory (Ctrl+Z and Ctrl+Y on a keyboard).',
     ],
   },
   {
