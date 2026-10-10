@@ -7,6 +7,7 @@ import { getStatus, type Fighter } from '../sim/fighter';
 import { HAWK_DIVE, WHELP_BREATH } from '../sim/battle';
 import type { AbilityDef, ActionState, BattleEvent, FighterId, FormId, Projectile, ProjectileStyle, UsableId, Zone } from '../sim/types';
 import { ArenaView } from './arena';
+import { bodyMarks } from './companions';
 import { THEMES, type Theme } from './arenaArt';
 import { Entrance, entranceLength, type EntrancePose } from './entrance';
 import { drawText } from './font';
@@ -2022,13 +2023,6 @@ function blit(g: CanvasRenderingContext2D, s: Sprite, x: number, y: number, flip
   g.scale(-1, 1);
   g.drawImage(s.img, -s.ox, y - s.oy);
   g.restore();
-}
-
-/** Body landmarks for a character's build, in px above the feet. */
-function bodyMarks(art: CharacterArt): { shPx: number; topPx: number; spread: number } {
-  const b = art.body;
-  const shPx = Math.round((b.footH + b.shin + b.thigh) * 0.94 + b.torso * 0.9);
-  return { shPx, topPx: Math.round(shPx + b.neck + b.headRy * 2), spread: Math.round(b.shoulderSpread) };
 }
 
 /** Chain link colours: lit, mid, dark joints, and the shadow under a turned link. */

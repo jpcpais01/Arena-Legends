@@ -4,8 +4,10 @@ import type { AnimOut } from '../render/sprite/animator';
 import { SpriteBank, type Sprite } from '../render/sprite/bank';
 import { makeArt } from '../render/sprite/look';
 import { css } from '../render/pixel/color';
+import { drawCompanions } from '../render/companions';
 import { drawSetAura, SET_FX } from '../render/setAura';
 import type { SkinFx } from '../render/sprite/skins';
+import type { GearId } from '../sim/types';
 import { fitPixels } from './pixelfit';
 import { sfx } from '../audio/sfx';
 import type { EntranceId } from '../character/entrances';
@@ -63,6 +65,9 @@ export class Preview {
   /** Legendary skin sparkles: position (canvas px), age and colours. */
   private sparks: { x: number; y: number; t: number; a: number; b: number; flame: boolean }[] = [];
   private sparkT = 0;
+  /** The special item riding along (hawk, whelp, ward stone...) and where its sparkles come from this frame. */
+  private special: GearId | undefined;
+  private compSpot: [number, number] | null = null;
   /** Seconds since the preview started (set auras). */
   private clock = 0;
   /** An entrance being shown, its effects, and the screen flash and shake it asks for. */
@@ -107,6 +112,7 @@ export class Preview {
 
   set(build: CharacterBuild): void {
     const art = makeArt(build);
+    this.special = build.gear.special;
     const set = clipsFor(art);
     this.bank = new SpriteBank(art, set);
     this.clips = [...set.clips.keys()].filter((k) => !SHOWCASE_SKIP.has(k));
@@ -261,12 +267,15 @@ export class Preview {
     g.fillRect(gx - 11, gy - 1, 22, 3);
     const set = this.bank.art.set;
     if (set) drawSetAura(g, set, gx, gy, this.clock, 'back');
+    const art = this.bank.art, facing = this.flip ? -1 : 1;
+    drawCompanions(g, art, this.special, gx, gy, this.clock, facing, 'back');
     if (this.flip) {
       g.save(); g.translate(gx + 1, 0); g.scale(-1, 1);
       g.drawImage(s.img, -s.ox, gy - s.oy);
       g.restore();
     } else g.drawImage(s.img, gx - s.ox, gy - s.oy);
     if (set) drawSetAura(g, set, gx, gy, this.clock, 'front');
+    this.compSpot = drawCompanions(g, art, this.special, gx, gy, this.clock, facing, 'front');
     return [gx, gy];
   }
 
@@ -283,6 +292,8 @@ export class Preview {
       [art.bootsSkin?.fx, [gx, gy - 1], 12],
       [art.useSkin?.fx, fl([4, -26]), 4],
       [art.set ? SET_FX[art.set] : undefined, [gx, gy - 1], 30],
+      [art.specialSkin?.fx, this.compSpot, 5],
+      [this.special === 'ember_core' ? EMBER : this.special === 'frost_core' ? FROST : undefined, [gx, gy - 28], 18],
     ];
     if ((this.sparkT -= dt) <= 0) {
       this.sparkT = this.playing ? 0.05 : 0.14;
@@ -310,6 +321,10 @@ export class Preview {
   }
 
 }
+
+/** The ember and frost cores' aura in battle: embers rising, frost glinting round the body. */
+const EMBER: SkinFx = { spark: 0xffb040, spark2: 0xc83a1a, kind: 'flame' };
+const FROST: SkinFx = { spark: 0xe8fbff, spark2: 0x7ac8f0 };
 
 /** A round stone dais, its top face centred on (x, y): a lit top with a gold inlay over a darker side. */
 function drawPedestal(g: CanvasRenderingContext2D, x: number, y: number): void {
