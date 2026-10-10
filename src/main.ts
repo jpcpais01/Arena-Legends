@@ -37,8 +37,9 @@ import { withGear, type CharacterBuild } from './sim/loadout';
 import { MATCH_TIME } from './sim/constants';
 import { gearOf } from './sim/gear';
 import { setPieces, type SkinDef } from './character/skins';
-import { accountStatus, accountsEnabled, consumeResume, onAccount, poke, restoreAccount, setReloadGate } from './account/account';
+import { accountStatus, accountsEnabled, consumeResume, me, onAccount, poke, restoreAccount, setReloadGate, social } from './account/account';
 import { accountSheet } from './ui/account';
+import { friendsSheet } from './ui/friends';
 
 type State = 'menu' | 'intro' | 'battle' | 'results';
 
@@ -132,7 +133,30 @@ const menu = new Menu({
     openOnlineSheet(ui, { onHost: () => startOnline('host'), onJoin: (code) => startOnline('guest', code) });
   },
   onAccount: accountsEnabled ? () => openAccount() : undefined,
+  onFriends: accountsEnabled ? () => openFriends() : undefined,
 });
+
+function openFriends(): void {
+  closeSheet();
+  sfx.play('ui');
+  sheet = friendsSheet({
+    onClose: () => closeSheet(),
+    onAccount: () => openAccount(),
+    onIncoming: (n) => { requestsAt = Date.now(); menu.setFriendRequests(n); },
+  });
+  ui.append(sheet.el);
+}
+
+/** Checks for friend requests now and then (the dot on the menu's friends button). */
+let requestsAt = 0;
+function checkFriendRequests(): void {
+  const who = me();
+  if (!who) { menu.setFriendRequests(0); return; }
+  if (Date.now() - requestsAt < 60_000) return;
+  requestsAt = Date.now();
+  social().then((m) => m.incomingCount(who.uid)).then((n) => menu.setFriendRequests(n), () => {});
+}
+onAccount((s) => { if (!s.name) requestsAt = 0; if (!s.restoring) checkFriendRequests(); });
 
 function openAccount(): void {
   closeSheet();
@@ -204,6 +228,7 @@ function closeSheet(): void {
   sheet = null;
   setCovered(false);
   poke();
+  checkFriendRequests();
 }
 
 /** A full screen is up: the arena freezes behind it and the menu and version label step aside. */

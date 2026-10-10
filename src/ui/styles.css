@@ -1211,6 +1211,87 @@ input.acct-input { height: 2.8rem; font-size: 1.2rem; }
   input.acct-input, .acct-peek, .acct-go { height: 2.4rem; min-height: 2.4rem; font-size: 1.05rem; }
   .acct-sheet { width: min(34rem, 100%) !important; }
 }
+/* --- Friends sheet ------------------------------------------------------------------------------ */
+/* Two columns: the list (add box, requests, friends) and the picked friend's hero with their gear. */
+.fr-sheet { width: min(50rem, 100%); height: min(34rem, 100%); }
+.fr-head-btns { display: flex; gap: 6px; }
+.fr-body { display: grid; grid-template-columns: minmax(14rem, 0.9fr) minmax(0, 1.25fr); overflow: hidden; }
+.fr-side, .fr-view { overflow: auto; min-height: 0; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--gold-lo) transparent; }
+.fr-side { padding: 0.6rem 0.6rem 0.75rem 0.75rem; display: grid; gap: 8px; align-content: start; border-right: var(--px) solid var(--ink); box-shadow: var(--px) 0 0 rgba(92, 74, 140, 0.35); }
+.fr-view { padding: 0.6rem 0.75rem 0.75rem; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 8px; }
+.fr-form { display: flex; gap: 6px; }
+input.fr-input { flex: 1; min-width: 0; height: 2.5rem; font-size: 1.05rem; }
+.fr-add { min-height: 2.5rem; }
+.fr-msg { font-size: 0.8125rem; line-height: 1.3; color: var(--gold-hi); text-shadow: 0 var(--px) 0 var(--ink); }
+.fr-msg.bad { color: var(--red); }
+.fr-msg[hidden] { display: none; }
+.fr-note { font-size: 0.8125rem; line-height: 1.4; }
+.fr-note.pad { padding: 1rem; }
+.fr-lists { display: grid; gap: 8px; align-content: start; }
+.fr-sec { display: grid; gap: 4px; }
+.fr-sec h3 { font: 700 0.75rem/1 var(--font); color: var(--gold); text-transform: uppercase; letter-spacing: 0.12em; text-shadow: 0 var(--px) 0 var(--ink); padding: 4px 0 2px; }
+.fr-list { list-style: none; display: grid; gap: 4px; margin: 0; padding: 0; }
+.fr-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.fr-row.req { padding: 4px; background: rgba(0, 0, 0, 0.22); border: var(--px) solid var(--ink); }
+.fr-row .sock { width: 2rem; height: 2rem; }
+.fr-who { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.fr-who b { font: 700 1rem/1.05 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 var(--px) 0 var(--ink); }
+.fr-who .muted { font-size: 0.6875rem; }
+.fr-pick {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 4px 8px 4px 4px; cursor: pointer; color: inherit; font: inherit; text-align: left;
+  background: rgba(0, 0, 0, 0.22); border: var(--px) solid var(--ink); box-shadow: inset 0 var(--px) 0 rgba(92, 74, 140, 0.35);
+}
+.fr-pick:hover { filter: brightness(1.2); }
+.fr-pick > .ic { color: var(--muted); flex: none; }
+.fr-row.on .fr-pick { background: linear-gradient(180deg, rgba(255, 210, 110, 0.22), rgba(255, 210, 110, 0.08)); box-shadow: inset 0 0 0 var(--px) var(--gold); }
+.fr-row.on .fr-pick > .ic, .fr-row.on .fr-who b { color: var(--gold-hi); }
+.fr-empty, .fr-guest { display: grid; place-items: center; align-content: center; gap: 10px; text-align: center; padding: 1rem; min-height: 100%; }
+.fr-empty .sock, .fr-guest .sock { width: 3rem; height: 3rem; }
+.fr-empty b { font: 700 1.3rem/1 var(--font); color: var(--gold-hi); text-shadow: var(--outline); }
+.fr-empty p, .fr-guest p { font-size: 0.875rem; line-height: 1.4; max-width: 22rem; }
+.fr-body:has(> .fr-guest) { grid-template-columns: 1fr; }
+.fr-hero { display: grid; grid-template-columns: minmax(7rem, 40%) minmax(0, 1fr); gap: 10px; min-height: 0; }
+.fr-stage { display: grid; place-items: end center; min-height: 9rem; overflow: hidden; background-size: cover; background-position: center; border: var(--px) solid var(--ink); cursor: pointer; image-rendering: pixelated; }
+.fr-stage canvas { align-self: end; }
+.fr-info { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.fr-tag { display: flex; gap: 6px; align-items: center; font: 700 0.6875rem/1 var(--font); letter-spacing: 0.1em; text-transform: uppercase; min-width: 0; }
+.fr-tag .side-tag { --side: #3f6fd8; --side-lo: #22408a; padding: 1px 0.35rem 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: none; letter-spacing: 0.04em; }
+.fr-tag .rec { color: var(--gold); letter-spacing: 0.06em; text-shadow: 0 var(--px) 0 var(--ink); }
+.fr-name { font: 700 1.4rem/1.05 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 var(--px) 0 var(--ink), var(--px) 0 0 var(--ink); }
+.fr-sub { font-size: 0.75rem; color: var(--muted); }
+.fr-gears { list-style: none; margin: 4px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, auto); grid-auto-flow: column; gap: 4px 8px; }
+.fr-gear { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.fr-gear .sock { width: 1.9rem; height: 1.9rem; }
+.fr-gear canvas { width: 100%; height: 100%; }
+.fr-gear > div { display: grid; gap: 1px; min-width: 0; }
+.fr-gear b { font: 700 0.8125rem/1.1 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fr-gear .muted { font-size: 0.625rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fr-gear.empty b { color: var(--muted); }
+.fr-foot { display: flex; gap: 6px; justify-content: flex-end; }
+.fr-back { display: none; margin-right: auto; }
+.fr-remove.armed { --face: #8a2034; --hi: #c23a50; --lo: #4f1220; }
+/* Phones held sideways (the main layout): tighter everything, the gear list shrinks to fit beside the fighter. */
+@media (max-height: 500px) {
+  .fr-sheet { height: 100%; }
+  .fr-side { padding: 0.4rem 0.5rem 0.5rem 0.6rem; gap: 6px; }
+  .fr-view { padding: 0.4rem 0.6rem 0.5rem; gap: 6px; }
+  input.fr-input, .fr-add { height: 2.2rem; min-height: 2.2rem; font-size: 0.95rem; }
+  .fr-name { font-size: 1.15rem; }
+  .fr-gear .sock { width: 1.6rem; height: 1.6rem; }
+  .fr-gears { gap: 3px 6px; }
+}
+/* Portrait phones: one column; picking a friend swaps the list for their hero (matches NARROW in friends.ts). */
+@media (orientation: portrait) and (max-width: 720px) {
+  .fr-sheet { height: min(40rem, 100%); }
+  .fr-body { grid-template-columns: 1fr; }
+  .fr-side { border-right: 0; box-shadow: none; }
+  .fr-body .fr-view { display: none; }
+  .fr-body.viewing .fr-side { display: none; }
+  .fr-body.viewing .fr-view { display: grid; }
+  .fr-back { display: inline-flex; }
+  .fr-hero { grid-template-columns: 1fr; }
+  .fr-stage { min-height: 12rem; }
+}
 .title-acct { position: absolute; right: calc(var(--safe-r) + 0.75rem); bottom: calc(var(--safe-b) + 0.75rem); animation: fade-in 500ms 600ms both; }
 
 /* --- Skin chests (gacha) ---------------------------------------------------------------------------- */

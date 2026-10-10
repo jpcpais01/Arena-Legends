@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.44.0',
+    date: '2026-10-10',
+    title: 'Friends',
+    notes: [
+      'New Friends button on the home screen, next to Account. Signed-in players can add friends by the name they sign in with.',
+      'Friend requests: accept or decline the ones you get, and cancel the ones you sent. A red dot on the Friends button tells you when someone asked.',
+      'Tap a friend to see their hero: species, body form, fighting style, wins and losses, and all eight gear slots with the skins they have on. Tap the hero to see a move.',
+      'Your own hero and record are shared with your friends automatically while you play signed in.',
+    ],
+  },
+  {
     version: '0.43.0',
     date: '2026-10-10',
     title: 'Six species, redrawn',

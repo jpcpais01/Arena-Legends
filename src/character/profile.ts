@@ -23,16 +23,20 @@ export function cleanName(raw: string): string {
 export function loadCharacter(): PlayerCharacter | null {
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return null;
-    const o = JSON.parse(raw) as Record<string, unknown>;
-    const name = typeof o?.name === 'string' ? cleanName(o.name) : '';
-    if (!name) return null;
-    const b = sanitizeBuild(o, { ...DEFAULT_BUILDS[0], name });
-    const look = sanitizeAppearance(o.look);
-    return { ...b, name, form: fitForm(look.species, b.form), look };
+    return raw ? parseCharacter(JSON.parse(raw)) : null;
   } catch {
     return null;
   }
+}
+
+/** A strict copy of a saved character (this device's, or a friend's shared hero); null if it has no name. */
+export function parseCharacter(raw: unknown): PlayerCharacter | null {
+  const o = raw as Record<string, unknown> | null;
+  const name = typeof o?.name === 'string' ? cleanName(o.name) : '';
+  if (!name) return null;
+  const b = sanitizeBuild(o, { ...DEFAULT_BUILDS[0], name });
+  const look = sanitizeAppearance(o!.look);
+  return { ...b, name, form: fitForm(look.species, b.form), look };
 }
 
 export function saveCharacter(c: PlayerCharacter): void {
