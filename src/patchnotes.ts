@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.64.0',
+    date: '2026-10-10',
+    title: 'Fighting styles online',
+    notes: [
+      'Online matches now use your fighting style. Before each round, tap the Style button next to Build to switch it, the same way you change gear.',
+      "Both corners show each fighter's style, and the round is fought with the styles you both lock in.",
+    ],
+  },
+  {
     version: '0.63.2',
     date: '2026-10-10',
     title: 'Damage in team colours',

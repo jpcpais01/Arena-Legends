@@ -45,6 +45,7 @@ import { setPieces, type SkinDef } from './character/skins';
 import { accountStatus, accountsEnabled, consumeResume, me, onAccount, poke, restoreAccount, setReloadGate, social } from './account/account';
 import { accountSheet } from './ui/account';
 import { friendsSheet } from './ui/friends';
+import { FIGHT_STYLE_IDS } from './sim/styles';
 import { invitePopup, type InvitePopup } from './ui/invite';
 
 type State = 'menu' | 'intro' | 'battle' | 'results';
@@ -339,6 +340,14 @@ menu.setSound(soundOn);
 const badge = versionBadge(__APP_VERSION__, () => ui);
 const pick = new PickScreen({
   onGear: () => openDraftGear(),
+  onStyle: () => {
+    const s = session;
+    if (!s?.snap || s.snap.phase !== 'pick' || s.snap.ready[s.you]) return;
+    const i = FIGHT_STYLE_IDS.indexOf(s.draft.style ?? 'balanced');
+    s.draft = { ...s.draft, style: FIGHT_STYLE_IDS[(i + 1) % FIGHT_STYLE_IDS.length] };
+    pick.show(pickInfo(s, s.snap));
+    refreshDemo();
+  },
   onReady: () => { if (session) session.lock(session.draft); },
   onUnready: () => session?.unlock(),
   onLeave: () => askLeave(),
@@ -642,7 +651,7 @@ function startOnline(role: 'host' | 'guest', code = '', resume?: ReturnType<type
   if (!player) { pendingRoom = role === 'guest' ? code : ''; openCreator(true); return; }
   endOnline(false, false);
   sfx.unlock();
-  const me: CharacterBuild = { name: player.name, form: player.form, gear: { ...player.gear }, look: { ...player.look }, skins: { ...player.skins } };
+  const me: CharacterBuild = { name: player.name, form: player.form, gear: { ...player.gear }, look: { ...player.look }, skins: { ...player.skins }, style: player.style ?? 'balanced' };
   const s: OnlineSession = role === 'host' ? new HostSession(me, resume ?? undefined) : new GuestSession(code, me, resume ?? undefined);
   session = s;
   netMatch = ''; netRound = 0; netPick = ''; resultsKey = '';
