@@ -1,9 +1,10 @@
 import { sfx, type Sfx } from '../audio/sfx';
 import {
-  DUPE_GEMS, EPIC_PITY, gems, ODDS, onCollection, openChest, owns, pity, progress, PULL_COST, TEN_COST, WIN_BASE, WIN_HP_BONUS, type Pull,
+  EPIC_PITY, forge, FORGE_COST, forgeInto, forgePick, gems, ODDS, onCollection, openChest, owns, pity, progress, PULL_COST, spareCount, spares,
+  TEN_COST, WIN_BASE, WIN_HP_BONUS, type Pull,
 } from '../character/collection';
 import type { PlayerCharacter } from '../character/profile';
-import { setPieces, SKIN_RARITIES, SKIN_SET_BY_ID, type SkinDef, type SkinRarity } from '../character/skins';
+import { setPieces, SKIN_BY_ID, SKIN_RARITIES, SKIN_SET_BY_ID, type SkinDef, type SkinRarity } from '../character/skins';
 import { iconCanvas } from '../render/icons';
 import { gearOf, SLOT_NAMES } from '../sim/gear';
 import { withGear } from '../sim/loadout';
@@ -23,11 +24,17 @@ export interface ChestCallbacks {
   onShop?(): void;
 }
 
-/** The shop's two tabs (offers and chests), for the screen headers. */
-export function shopTabs(on: 'offers' | 'chests', go: (t: 'offers' | 'chests') => void): HTMLElement {
-  const tab = (id: 'offers' | 'chests', ic: Parameters<typeof icon>[0], label: string) =>
-    h(`button.shop-tab${id === on ? '.on' : ''}`, { 'aria-pressed': String(id === on), onclick: () => { if (id !== on) go(id); } }, icon(ic), h('span', null, label));
-  return h('nav.shop-tabs', null, tab('offers', 'star', 'Offers'), tab('chests', 'chest', 'Chests'));
+export type ShopTab = 'offers' | 'chests' | 'forge';
+
+/** The shop's tabs (offers, chests, forge), for the screen headers. */
+export function shopTabs(on: ShopTab, go: (t: ShopTab) => void): HTMLElement {
+  const tab = (id: ShopTab, ic: Parameters<typeof icon>[0], label: string) => {
+    const b = h(`button.shop-tab${id === on ? '.on' : ''}`, { 'aria-pressed': String(id === on), onclick: () => { if (id !== on) go(id); } }, icon(ic), h('span', null, label));
+    // A dot when the forge has something to melt.
+    if (id === 'forge' && SKIN_RARITIES.some((r) => forgeInto(r) && spareCount(r) >= FORGE_COST)) b.classList.add('ready');
+    return b;
+  };
+  return h('nav.shop-tabs', null, tab('offers', 'star', 'Offers'), tab('chests', 'chest', 'Chests'), tab('forge', 'anvil', 'Forge'));
 }
 
 const REVEAL: Record<SkinRarity, Sfx> = { rare: 'revealRare', mythic: 'revealMythic', legendary: 'revealLegendary', epic: 'revealEpic' };
@@ -46,7 +53,8 @@ export function gemTag(n: number | string, cls = ''): HTMLElement {
  * inside, the lid blows off, and the skins are revealed on cards (ten flip
  * one by one, the rare ones teased first). Tap to skip ahead.
  */
-export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): void } {
+export function chestScreen(cb: ChestCallbacks, startTab: 'chests' | 'forge' = 'chests'): { el: HTMLElement; dispose(): void } {
+  let tab = startTab;
   const fx = new ChestFx();
   let dead = false;
   let busy = false;
@@ -97,10 +105,51 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
     pityLine,
     h('div.chest-buy', null, buy1, buy10),
     h('p.chest-note', null, h('b', null, 'Open 10'), ' costs one chest less and always holds a mythic or better.'),
-    h('p.chest-note', null, 'Already own a skin? You get gems back: ',
-      ...SKIN_RARITIES.flatMap((r, i) => [h(`b.r-${r}`, null, `${DUPE_GEMS[r]}`), i < SKIN_RARITIES.length - 1 ? ' / ' : '.'])),
+    h('p.chest-note', null, 'Already own a skin? The copy goes to your spares: melt ', h('b', null, `${FORGE_COST} of a rarity`), ' in the ', h('b', null, 'Forge'), ' for one of the next.'),
     h('p.chest-note.earn', null, icon('swords'), ` Win fights to earn gems: ${WIN_BASE} per win, plus up to ${WIN_HP_BONUS} more for the health you keep.`),
   );
+
+  // --- Forge panel: spare copies, three of a rarity melt into one of the next -----------------
+  const forgePanel = h('section.scr-panel.frame.chest-panel.forge-panel');
+  function renderForge(): void {
+    const all = spares();
+    const rows = SKIN_RARITIES.slice().reverse().map((r) => {
+      const mine = all.filter(([s]) => s.rarity === r);
+      const n = mine.reduce((k, [, c]) => k + c, 0);
+      const into = forgeInto(r);
+      const strip = h('div.forge-strip', null, ...(mine.length
+        ? mine.map(([s, c]) => h(`span.sock.r-${r}`, { title: `${s.name} (${gearOf(s.gear).name}) x${c}`, 'data-id': s.id }, skinArt(s, 40), c > 1 ? h('i.forge-x', null, `x${c}`) : null))
+        : [h('small.forge-none', null, 'No spares')]));
+      const pips = into ? h('span.forge-pips', null, ...Array.from({ length: FORGE_COST }, (_, i) => h(`i${i < n ? '.on' : ''}`))) : null;
+      const btn = into
+        ? h<HTMLButtonElement>(`button.btn.forge-btn${n >= FORGE_COST ? '.primary' : ''}`, {
+          disabled: n < FORGE_COST, title: `Melt ${FORGE_COST} ${TIER_NAME[r]} spares into one random ${TIER_NAME[into]} skin`,
+          onclick: () => void melt(r),
+        }, icon('anvil'), h('span', null, `${FORGE_COST}`), icon('play'), h(`b.r-${into}`, null, TIER_NAME[into]))
+        : h('small.forge-top', null, 'Top tier');
+      return h(`div.forge-row.${r}`, null,
+        h('div.forge-tier', null, h(`b.tier.r-${r}`, null, TIER_NAME[r]), h('small', null, `${n} spare${n === 1 ? '' : 's'}`), pips),
+        strip, btn);
+    });
+    forgePanel.replaceChildren(
+      h('div.ribbon', null, h('span', null, 'Forge')),
+      h('p.chest-blurb', null, `Duplicates from chests are kept here. Melt ${FORGE_COST} spares of one rarity into a random skin of the next rarity up.`),
+      h('div.forge-rows', null, ...rows),
+    );
+  }
+
+  function showTab(t: 'chests' | 'forge'): void {
+    tab = t;
+    const nav = el.querySelector('.shop-tabs');
+    if (nav) nav.replaceWith(tabs()!);
+    panel.style.display = t === 'chests' ? '' : 'none';
+    forgePanel.style.display = t === 'forge' ? '' : 'none';
+    if (t === 'forge') renderForge(); else renderShop();
+  }
+
+  const tabs = () => cb.onShop
+    ? shopTabs(tab, (t) => { if (busy) return; sfx.play('select'); if (t === 'offers') cb.onShop!(); else showTab(t); })
+    : null;
 
   function renderShop(): void {
     const prog = progress();
@@ -128,14 +177,14 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
   const el = h('div.scr.gacha', { role: 'dialog', 'aria-label': 'Skin chests' },
     fx.canvas,
     h('header.scr-head', null, h('div.scr-title', null, h('h1', null, cb.onShop ? 'Shop' : 'Skin Chests')),
-      cb.onShop ? shopTabs('chests', () => { if (!busy) { sfx.play('select'); cb.onShop!(); } }) : null, h('div.grow'), gemChip, done),
-    stage, panel, reveal,
+      ...(cb.onShop ? [tabs()!] : []), h('div.grow'), gemChip, done),
+    stage, panel, forgePanel, reveal,
   );
   // Taps on the darkened screen skip the opening too.
   fx.canvas.addEventListener('click', skip);
 
-  const unlisten = onCollection(() => { countTo(gems()); if (!busy) renderShop(); });
-  renderShop();
+  const unlisten = onCollection(() => { countTo(gems()); if (!busy) { renderShop(); if (tab === 'forge') renderForge(); } });
+  showTab(tab);
 
   const layout = () => { fx.resize(); fx.anchor(spot); };
   const onResize = () => layout();
@@ -155,6 +204,7 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
   }
 
   function clearReveal(): void {
+    fx.setHalo(null);
     for (const p of previews) p.dispose();
     previews = [];
     reveal.replaceChildren();
@@ -166,7 +216,7 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
     el.classList.remove('opening', 'revealed');
     fx.setCentered(false);
     fx.reset();
-    renderShop();
+    showTab(tab);
   }
 
   // --- The opening ---------------------------------------------------------------------------
@@ -187,13 +237,25 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
     sfx.play('confirm');
     fx.reset();
     fx.setCentered(true);
+    await wait(0.45);
+    await play(pulls, 0, count === 1 ? againChest(1) : againChest(10));
+  }
+
+  const againChest = (n: 1 | 10) => () => h<HTMLButtonElement>('button.btn.primary.go.buy', { disabled: gems() < (n === 1 ? PULL_COST : TEN_COST), onclick: () => void open(n) },
+    h('span.buy-l', null, n === 1 ? 'Open another' : 'Open 10 more'), gemTag(n === 1 ? PULL_COST : TEN_COST));
+
+  /**
+   * The show: the chest charges from tier `from` up to the best pull, a
+   * legendary or epic gets its omen (darkness, a pillar of light, the tier name
+   * slammed on screen), then the lid blows and the cards come out.
+   */
+  async function play(pulls: Pull[], from: number, again: () => HTMLElement | null): Promise<void> {
     const top = pulls.reduce((m, p) => Math.max(m, rank(p.skin.rarity)), 0);
     const topTier = SKIN_RARITIES[top];
 
     // Charge: the chest rattles and its light climbs one tier at a time.
-    await wait(0.45);
     rattle = window.setInterval(() => sfx.play('rattle', (Math.random() - 0.5) * 0.6), 150);
-    for (let i = 0; i <= top && !dead; i++) {
+    for (let i = from; i <= top && !dead; i++) {
       if (skipping) { fx.tier = topTier; fx.glow = 1; break; }
       fx.pulse(SKIN_RARITIES[i]);
       fx.glow = 0.45 + i * 0.18;
@@ -204,21 +266,102 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
     clearInterval(rattle);
     if (dead) return;
 
+    // The omen: only for the two best tiers, and never when skipping.
+    if (top >= rank('legendary') && !skipping) await omen(topTier);
+    if (dead) return;
+
     // Burst.
+    fx.release();
     fx.burst(topTier);
     fx.rays = 1;
     sfx.play('chestOpen');
     await wait(0.3);
+    banner.classList.remove('on');
     if (dead) return;
     el.classList.add('revealed');
-    if (count === 1) showOne(pulls[0]);
-    else await showTen(pulls);
+    if (pulls.length === 1) showOne(pulls[0], again());
+    else await showTen(pulls, again());
     if (dead) return;
     busy = false;
     skipping = false;
   }
 
-  function showOne(p: Pull): void {
+  // The big tier name for the omen.
+  const banner = h('div.tier-banner', { 'aria-hidden': 'true' });
+  el.append(banner);
+
+  /** The forge: three spares fly into the chest, melt, and the chest opens on the next tier. */
+  async function melt(r: SkinRarity): Promise<void> {
+    if (busy) return;
+    const pick = forgePick(r);
+    const into = forgeInto(r);
+    if (!pick || !into) return;
+    // Where the spares sit now, before the panel fades.
+    const host = el.getBoundingClientRect();
+    const socks = [...forgePanel.querySelectorAll<HTMLElement>(`.forge-row.${r} .forge-strip .sock`)];
+    const from = pick.map((id, i) => (socks.find((x) => x.dataset.id === id) ?? socks[i] ?? socks[0])?.getBoundingClientRect());
+    const pull = forge(pick);
+    if (!pull) return;
+    busy = true;
+    skipping = false;
+    clearReveal();
+    el.classList.remove('revealed');
+    el.classList.add('opening');
+    sfx.play('confirm');
+    fx.reset();
+    fx.setCentered(true);
+    const flyers = pick.map((id, i) => {
+      const b = from[i] ?? { left: host.width / 2, top: host.height / 2, width: 40, height: 40 };
+      // Copies of the same skin fan out a little so all three show.
+      const dup = pick.slice(0, i).filter((x) => x === id).length * 8;
+      const f = h(`div.forge-fly.sock.r-${r}`, { style: { left: `${b.left - host.left + dup}px`, top: `${b.top - host.top - dup}px`, width: `${b.width}px`, height: `${b.height}px` } },
+        skinArt(SKIN_BY_ID.get(id)!, 40));
+      el.append(f);
+      return f;
+    });
+    await wait(0.5);
+    // Into the chest, one after another.
+    const m = fx.mouth, cr = fx.canvas.getBoundingClientRect();
+    flyers.forEach((f, i) => {
+      const b = f.getBoundingClientRect();
+      const dx = m.x * fx.k + cr.left - (b.left + b.width / 2), dy = m.y * fx.k + cr.top - (b.top + b.height / 2);
+      f.style.transitionDelay = `${i * 110}ms`;
+      f.style.transform = `translate(${dx}px, ${dy}px) scale(0.25) rotate(${(i - 1) * 140}deg)`;
+      f.style.opacity = '0.2';
+    });
+    sfx.play('meld');
+    await wait(0.85);
+    for (const f of flyers) f.remove();
+    if (dead) return;
+    fx.pulse(r);
+    fx.shake = 1.4;
+    sfx.play('forge');
+    await wait(0.6);
+    await play([pull], rank(into), () => (forgePick(r)
+      ? h<HTMLButtonElement>('button.btn.primary.go.buy', { onclick: () => { backToShop(); void melt(r); } }, h('span.buy-l', null, icon('anvil'), 'Forge again'))
+      : null));
+    for (const f of flyers) f.remove();
+  }
+  async function omen(tier: SkinRarity): Promise<void> {
+    const epic = tier === 'epic';
+    fx.omen(tier);
+    sfx.play('omen', 0, epic ? 2 : 1);
+    await wait(epic ? 1.3 : 0.95);
+    if (dead || skipping) return;
+    const word = `${TIER_NAME[tier]}!`;
+    banner.className = `tier-banner r-${tier}`;
+    banner.replaceChildren(h('b', null, ...[...word].map((ch, i) => h('span', { style: { '--i': `${i}` } }, ch))),
+      h('small', null, epic ? 'The rarest skin of all' : 'A legendary skin'));
+    void banner.offsetWidth;
+    banner.classList.add('on');
+    el.classList.remove('quake'); void el.offsetWidth; el.classList.add('quake');
+    fx.slam(tier);
+    sfx.play('slam');
+    sfx.play(REVEAL[tier]);
+    await wait(epic ? 1.5 : 1.1);
+  }
+
+  function showOne(p: Pull, again: HTMLElement | null): void {
     const s = p.skin;
     sfx.play(REVEAL[s.rarity]);
     const pl = cb.player();
@@ -239,14 +382,14 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
     const equip = h<HTMLButtonElement>('button.btn', {
       onclick: () => { cb.onEquip(s); sfx.play('equip'); equip.disabled = true; equip.replaceChildren(icon('check'), 'Equipped'); },
     }, icon('bag'), 'Equip');
-    const again = h<HTMLButtonElement>('button.btn.primary.go.buy', { disabled: gems() < PULL_COST, onclick: () => void open(1) },
-      h('span.buy-l', null, 'Open another'), gemTag(PULL_COST));
     const big = card(p, true);
     setTimeout(() => {
       if (dead) return;
       big.classList.add('flipped');
       const at = fx.pointOf(big);
       fx.pop(at.x, at.y, s.rarity, 40);
+      // The best two tiers keep sparkling around the card.
+      if (rank(s.rarity) >= rank('legendary')) setTimeout(() => { if (!dead && big.isConnected) fx.setHalo(big, s.rarity); }, 520);
     }, 60);
     reveal.replaceChildren(
       h('div.reveal-one', null, stageEl, big),
@@ -254,7 +397,7 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
     );
   }
 
-  async function showTen(pulls: Pull[]): Promise<void> {
+  async function showTen(pulls: Pull[], again: HTMLElement | null): Promise<void> {
     const m = fx.mouth;
     const grid = h('div.reveal-ten');
     const cards = pulls.map((p, i) => {
@@ -298,19 +441,17 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
       sfx.play(REVEAL[best.skin.rarity]);
     }
     const fresh = pulls.filter((p) => p.fresh).length;
-    const back = pulls.reduce((n, p) => n + p.refund, 0);
-    const again = h<HTMLButtonElement>('button.btn.primary.go.buy', { disabled: gems() < TEN_COST, onclick: () => void open(10) },
-      h('span.buy-l', null, 'Open 10 more'), gemTag(TEN_COST));
     foot.replaceChildren(
       h('p.reveal-sum', null, h('b', null, `${fresh} new`),
-        fresh < pulls.length ? ` · ${pulls.length - fresh} owned already ` : '', fresh < pulls.length ? gemTag(`+${back}`) : ''),
+        fresh < pulls.length ? ` · ${pulls.length - fresh} to your spares` : ''),
       h('button.btn', { onclick: () => { sfx.play('back'); backToShop(); } }, icon('back'), 'Back'),
-      again);
+      ...(again ? [again] : []));
   }
 
   function flip(c: HTMLElement, p: Pull, loud: boolean): void {
     c.classList.remove('tease');
     c.classList.add('flipped');
+    if (rank(p.skin.rarity) >= rank('legendary')) c.classList.add('glory');
     const r = p.skin.rarity;
     if (loud) {
       sfx.play(r === 'rare' ? 'flip' : REVEAL[r]);
@@ -340,6 +481,12 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
  * A pulled skin's card. Big: the single reveal (pops in face up). Small: one
  * of ten, dealt face down with its back glowing in its tier's colour.
  */
+function skinArt(s: SkinDef, px: number): HTMLCanvasElement {
+  const c = iconCanvas(s.gear, px, s.id);
+  c.className = 'icon';
+  return c;
+}
+
 function card(p: Pull, big: boolean): HTMLElement {
   const s = p.skin;
   const g = gearOf(s.gear);
@@ -356,7 +503,7 @@ function card(p: Pull, big: boolean): HTMLElement {
     big && set ? h('div.gc-set', null, h('span', null, set.name),
       h(`span.sk-pips${setOwned === pieces.length ? '.full' : ''}`, { title: `${setOwned} of ${pieces.length} pieces owned` }, ...pieces.map((x) => h(`i${owns(x.id) ? '.on' : ''}`))),
       h('small', null, setOwned === pieces.length ? 'Set complete!' : `${setOwned}/${pieces.length} owned`)) : null,
-    p.fresh ? h('span.gc-new', null, 'New!') : h('span.gc-dupe', null, big ? 'Owned · ' : '', gemTag(`+${p.refund}`)),
+    p.fresh ? h('span.gc-new', null, 'New!') : h('span.gc-dupe', null, icon('anvil'), big ? 'Owned · +1 spare' : '+1 spare'),
   );
   const backFace = h('div.gc-face.gc-back', null, icon('chest'));
   return h(`div.gcard.r-${s.rarity}${big ? '.big' : ''}`, { title: `${s.name} (${s.rarity}) for ${g.name}` },

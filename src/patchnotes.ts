@@ -12,6 +12,18 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.49.0',
+    date: '2026-10-10',
+    title: 'The Forge and big reveals',
+    notes: [
+      'Duplicate skins are no longer swapped for gems. Each extra copy is kept as a spare.',
+      'New Forge tab in the Shop: melt 3 spares of one rarity into a random skin of the next rarity up (rare to mythic, mythic to legendary, legendary to epic).',
+      'Your three spares fly into the chest, the anvil rings, and the chest opens on the new skin.',
+      'Legendary and epic pulls get their own show: the room goes dark, a pillar of light bursts from the chest, the rarity is slammed across the screen, and epic adds falling stars.',
+      'Legendary and epic cards keep sparkling and shining after the reveal.',
+    ],
+  },
+  {
     version: '0.48.0',
     date: '2026-10-10',
     title: 'Rivals fight Balanced',
