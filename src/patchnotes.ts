@@ -23,6 +23,14 @@ export const PATCH_NOTES: PatchNote[] = [
     ],
   },
   {
+    version: '0.55.2',
+    date: '2026-10-10',
+    title: 'Hide small numbers',
+    notes: [
+      'New setting, on by default: Hide small numbers. Damage, heal and energy numbers under 50 no longer pop up in battle, so the big hits stand out. Turn it off in Settings to see every number again.',
+    ],
+  },
+  {
     version: '0.55.1',
     date: '2026-10-10',
     title: 'Easier to read text',
