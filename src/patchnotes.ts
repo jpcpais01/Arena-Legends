@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.58.0',
+    date: '2026-10-10',
+    title: 'Astral Sanctum, wide open',
+    notes: [
+      'Astral Sanctum is reworked to feel open and free: the golden orrery, the spires, the lamps and the floating islands are gone, so nothing stands behind the fight.',
+      'The sky carries the arena now: a far galaxy glows softly behind the disc, a second sheet of faint stars drifts past as the camera moves, and the nebula and ringed planet stay.',
+      'The tall columns at each end are now low plinths with a floating star.',
+    ],
+  },
+  {
     version: '0.57.0',
     date: '2026-10-10',
     title: 'Arena rotation',
