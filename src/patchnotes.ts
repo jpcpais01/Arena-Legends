@@ -12,11 +12,21 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.64.1',
+    version: '0.65.1',
     date: '2026-10-10',
     title: 'More time to prepare online',
     notes: [
       'Online matches now give you 3 minutes to pick your build before every round (it was 60 seconds for the first round and 40 after that). The clock shows minutes and seconds.',
+    ],
+  },
+  {
+    version: '0.65.0',
+    date: '2026-10-10',
+    title: 'Builds on screen',
+    notes: [
+      'During a fight you can now see both builds: each side shows its gear icons small under the bars.',
+      'Key stats sit right below them: power, armor, magic resist, attack speed, speed and crit.',
+      'The stats are live: they turn green when buffed and red when lowered, so you can see rage, chill and the rest at work.',
     ],
   },
   {

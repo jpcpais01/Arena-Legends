@@ -1,13 +1,17 @@
 import { Brain, PLAN_LABELS, type Plan } from '../sim/ai/brain';
 import type { Battle } from '../sim/battle';
 import { MATCH_TIME, MAX_ENERGY, ROUND_TIME } from '../sim/constants';
+import { skinOn } from '../character/skins';
+import { iconCanvas } from '../render/icons';
+import type { Fighter } from '../sim/fighter';
 import { FORMS } from '../sim/forms';
-import type { BattleEvent, StatusId } from '../sim/types';
+import { gearOf } from '../sim/gear';
+import type { BattleEvent, Stats, StatusId } from '../sim/types';
 import type { BattleView } from '../render/battleView';
 import type { SuperLook } from '../render/supers';
 import { h, hex } from './dom';
 import { fmtHp } from './format';
-import { icon } from './icons';
+import { icon, type IconName } from './icons';
 import { scoreLine } from './online';
 
 /** Online: the round and score shown under the clock. */
@@ -23,6 +27,33 @@ const STATUS: Record<StatusId, [string, string]> = {
   regen: ['REGEN', '#7ae07a'], momentum: ['MOMENTUM', '#ffc040'],
 };
 
+/** Key stats shown small under each side's bars: health is already in the bar. */
+const BUILD_STATS: [keyof Stats, IconName, string, (v: number) => number][] = [
+  ['power', 'swords', 'Power', Math.round],
+  ['armor', 'shield', 'Armor', Math.round],
+  ['resist', 'gem', 'Magic resist', Math.round],
+  ['attackSpeed', 'fast', 'Attack speed %', (v) => Math.round(v * 100)],
+  ['moveSpeed', 'boot', 'Speed', (v) => Math.round(v * 10) / 10],
+  ['critChance', 'star', 'Crit %', (v) => Math.round(v * 100)],
+];
+
+/** The fighter's gear icons (skins applied) and their live key stats, small. */
+function buildStrip(f: Fighter): { el: HTMLElement; vals: HTMLElement[] } {
+  const gear = h('div.bgear', null, ...f.gearIds.map((id) => {
+    const skin = skinOn(f.skins, id);
+    const c = iconCanvas(id, undefined, skin?.id);
+    c.title = skin ? `${gearOf(id).name} · ${skin.name}` : gearOf(id).name;
+    return h('span.bsock', null, c);
+  }));
+  const vals: HTMLElement[] = [];
+  const stats = h('div.bstats', null, ...BUILD_STATS.map(([, ic, label]) => {
+    const v = h('b');
+    vals.push(v);
+    return h('span.bst', { title: label }, icon(ic), v);
+  }));
+  return { el: h('div.side-build', null, gear, stats), vals };
+}
+
 interface SideEls {
   hpBar: HTMLElement;
   fill: HTMLElement;
@@ -37,6 +68,9 @@ interface SideEls {
   /** DEBUG (temporary): AI heat bar with its tolerance mark. */
   heat: HTMLElement; heatBar: HTMLElement; heatTick: HTMLElement; heatKey: string;
   statuses: HTMLElement;
+  /** Live key stats in BUILD_STATS order, and the last values shown. */
+  statVals: HTMLElement[];
+  statLast: number[];
   bubble: HTMLElement;
   bubbleT: number;
   /** Displayed (trailing) health for the ghost bar. */
@@ -133,6 +167,7 @@ export class Hud {
       const enBar = h('div.enbar', null, h('div.track', null, en, h('i.cells')));
       const plan = h('span.plan', null, PLAN_LABELS[b.brains[side].plan]);
       const statuses = h('div.statuses');
+      const build = buildStrip(f);
       const heat = h('i.fill'), heatTick = h('i.tick');
       const heatBar = h('div.heat', null, heat, heatTick);
       const bubble = h('div.bubble', { hidden: true });
@@ -143,10 +178,11 @@ export class Hud {
         enBar,
         heatBar,
         h('div.side-state', null, plan),
+        build.el,
         statuses,
       );
       this.sides.push({
-        hpBar, fill, ghost, shield, hpNow, hpMax, enBar, en, plan, heat, heatBar, heatTick, heatKey: '', statuses, bubble, bubbleT: 0, ghostV: 1,
+        hpBar, fill, ghost, shield, hpNow, hpMax, enBar, en, plan, heat, heatBar, heatTick, heatKey: '', statuses, statVals: build.vals, statLast: BUILD_STATS.map(() => NaN), bubble, bubbleT: 0, ghostV: 1,
         last: { hp: -1, hpTxt: '', ghost: -1, shield: -1, en: -1, st: '-', band: '' },
       });
       if (side === 0) top.append(el);
@@ -175,6 +211,7 @@ export class Hud {
     this.setSpeed(speed);
     this.setCamera(this.camName);
     this.lastClock = -1;
+    this.statT = 0;
     this.bannerT = 0;
     this.setMatch(this.match);
   }
@@ -306,6 +343,7 @@ export class Hud {
           s.heatTick.hidden = br.tolerance >= 1; // past full: this fighter won't rest now
         }
       }
+      if (this.statT <= 0) this.updateStats(f, s);
       let st = '';
       for (const x of f.statuses) st += x.id + x.stacks;
       if (st !== s.last.st) {
@@ -325,6 +363,8 @@ export class Hud {
         }
       }
     }
+    if (this.statT <= 0) this.statT = 0.25;
+    this.statT -= dt;
     // Regular time counts down to 0, then overtime counts down its own 30s.
     const ot = b.time >= ROUND_TIME;
     const left = Math.max(0, Math.ceil((ot ? MATCH_TIME : ROUND_TIME) - b.time));
@@ -338,6 +378,23 @@ export class Hud {
     if (this.bannerT > 0) {
       this.bannerT -= dt;
       if (this.bannerT <= 0) this.banner.hidden = true;
+    }
+  }
+
+  /** Seconds until the build stats refresh (they move with buffs, so a few times a second is plenty). */
+  private statT = 0;
+
+  /** Writes the key stats that changed, tinted up or down against the fighter's own build. */
+  private updateStats(f: Fighter, s: SideEls): void {
+    for (let k = 0; k < BUILD_STATS.length; k++) {
+      const [key, , , fmt] = BUILD_STATS[k];
+      const v = fmt(f.stats[key] as number);
+      if (v === s.statLast[k]) continue;
+      s.statLast[k] = v;
+      const el = s.statVals[k];
+      el.textContent = String(v);
+      const b = fmt(f.base[key] as number);
+      el.className = v > b ? 'up' : v < b ? 'down' : '';
     }
   }
 
