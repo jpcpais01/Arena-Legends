@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.61.2',
+    date: '2026-10-10',
+    title: 'Batuca unlocks everything',
+    notes: [
+      'The Batuca account now owns every skin and every entrance, including ones added later, just like the Joao and Tiago accounts.',
+    ],
+  },
+  {
     version: '0.61.1',
     date: '2026-10-10',
     title: 'No skins button',
