@@ -207,7 +207,7 @@ export const SKINS: readonly SkinDef[] = [
   S('hourglass', 'legendary', 'orrery', 'Astral Orrery'),
   S('ward_stone', 'rare', 'moonstone', 'Moonstone Ward'),
   S('ward_stone', 'legendary', 'aegis', 'Aegis Rune'),
-  S('hunter_hawk', 'rare', 'snowy', 'Snowy Owl'),
+  S('hunter_hawk', 'rare', 'snowy', 'Snow Gyrfalcon'),
   S('hunter_hawk', 'legendary', 'sunfalcon', 'Sunfire Falcon'),
   S('dragon_whelp', 'rare', 'emerald', 'Emerald Whelp'),
   S('dragon_whelp', 'legendary', 'starwyrm', 'Starwyrm'),

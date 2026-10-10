@@ -12,7 +12,7 @@ import { ellipseOutline, Fx, type View } from './fx';
 import { css, mix } from './pixel/color';
 import {
   boneRootSprite, caltropsPatch, charmSprite, clearPatches, hawkSprite, hourglassSprite, silenceSprite, skullSprite,
-  TOTEM_TOP, totemSprite, wardSprite, whelpSprite, type HawkPose,
+  totemSprite, totemTop, wardSprite, whelpSprite, type HawkPose,
 } from './specialArt';
 import { bottleSprite, projFrames, projSprite, skinDraws } from './projArt';
 import { drawSetAura, SET_FX } from './setAura';
@@ -45,7 +45,7 @@ interface FighterView {
   ghostT: number;
   emberT: number;
   /** Legendary skin sparkle timers, per place they shed from. */
-  sparkT: { main: number; sec: number; head: number; body: number; feet: number; set: number };
+  sparkT: { main: number; sec: number; head: number; body: number; feet: number; set: number; item: number };
   headY: number;
   /** Body landmarks in px above the feet: the shoulders and the top of the head; the shoulder spread. */
   shPx: number;
@@ -169,7 +169,7 @@ export class BattleView implements View {
       const anim = new Animator(art);
       return {
         art, anim, bank: new SpriteBank(art, anim.set), out: anim.update(f, f.x, 0, false, false, false),
-        flash: 0, ghosts: [], ghostT: 0, emberT: 0, sparkT: { main: 0, sec: 0, head: 0, body: 0, feet: 0, set: 0 }, headY: 2,
+        flash: 0, ghosts: [], ghostT: 0, emberT: 0, sparkT: { main: 0, sec: 0, head: 0, body: 0, feet: 0, set: 0, item: 0 }, headY: 2,
         ...bodyMarks(art), lastS: null, lastX: 0, lastY: 0, lastFlip: false,
         hawkFrom: null, hawkAway: 0, landT: 0, breathT: 0, wardT: 0, puffT: 0, pulledBy: -1,
       };
@@ -614,6 +614,7 @@ export class BattleView implements View {
     const flip = f.facing < 0;
     const perchX = px - f.facing * (v.spread + 7), perchY = py - v.shPx + 2;
     const flap: HawkPose = Math.floor(this.time * 16) & 1 ? 'up' : 'down';
+    const skin = v.art.specialSkinId;
     if (fam.away > 0) {
       for (const p of this.battle!.projectiles) if (p.alive && p.owner === f.id && p.style === 'hawk') return;
       if (!v.hawkFrom) return;
@@ -622,7 +623,8 @@ export class BattleView implements View {
       const sx = Math.round(this.sx(v.hawkFrom[0])), sy = Math.round(this.sy(v.hawkFrom[1]));
       const hx = Math.round(sx + (perchX - sx) * k), hy = Math.round(sy + (perchY - sy) * k - Math.sin(k * Math.PI) * 14);
       const pose: HawkPose = k > 0.8 ? flap : Math.floor(this.time * 8) % 3 === 0 ? 'up' : 'glide';
-      this.put(g, hawkSprite(pose), hx, hy, perchX < sx);
+      this.put(g, hawkSprite(pose, skin), hx, hy, perchX < sx);
+      this.itemSparks(v, hx, hy - 4);
       v.landT = 0.3;
       return;
     }
@@ -632,14 +634,17 @@ export class BattleView implements View {
       const k = clamp(1 - fam.charge / HAWK_DIVE.windup, 0, 1);
       const top = Math.round(this.sy(f.y + 2.9));
       const lift = k < 0.35 ? 0 : ((k - 0.35) / 0.65) ** 2;
-      this.put(g, hawkSprite(flap), perchX, Math.round(perchY + (top - perchY) * lift), flip);
+      const hy = Math.round(perchY + (top - perchY) * lift);
+      this.put(g, hawkSprite(flap, skin), perchX, hy, flip);
+      this.itemSparks(v, perchX, hy - 4);
       return;
     }
-    if (v.landT > 0) { v.landT -= dt; this.put(g, hawkSprite(flap), perchX, perchY - (v.landT > 0.15 ? 1 : 0), flip); return; }
+    if (v.landT > 0) { v.landT -= dt; this.put(g, hawkSprite(flap, skin), perchX, perchY - (v.landT > 0.15 ? 1 : 0), flip); return; }
     // Idle on the perch: looks about every few seconds, rouses its wings now and then.
     const t = (this.time + f.id * 1.7) % 6;
     const pose: HawkPose = t > 5.5 ? (t > 5.75 ? 'down' : 'up') : t > 2.4 && t < 3.3 ? 'perch1' : 'perch0';
-    this.put(g, hawkSprite(pose), perchX, perchY, flip);
+    this.put(g, hawkSprite(pose, skin), perchX, perchY, flip);
+    this.itemSparks(v, perchX, perchY - 5);
   }
 
   /**
@@ -663,7 +668,20 @@ export class BattleView implements View {
       pose = 'breath';
       wx += f.facing * 2;
     }
-    this.put(g, whelpSprite(pose), wx, wy, flip);
+    this.put(g, whelpSprite(pose, v.art.specialSkinId), wx, wy, flip);
+    this.itemSparks(v, wx, wy);
+  }
+
+  /** A legendary special item sheds sparkles (or flames) from where it rides, at screen point (x, y). */
+  private itemSparks(v: FighterView, x: number, y: number): void {
+    const fx = v.art.specialSkin?.fx, dt = this.lastDt;
+    if (!fx || dt <= 0 || (v.sparkT.item -= dt) > 0) return;
+    v.sparkT.item = 0.16;
+    const flame = fx.kind === 'flame';
+    this.fx.burst({
+      x: this.wx(x), y: this.wy(y), jitter: 0.12, jitterY: 0.12, count: 1, dir: Math.PI / 2, spread: flame ? 0.3 : 0.7,
+      speed: flame ? [0.5, 1.1] : [0.1, 0.4], life: [0.35, 0.7], color: fx.spark, color2: fx.spark2, kind: fx.kind ?? 'twinkle',
+    });
   }
 
   /** The thunder totem's charm, floating at the back shoulder until it is planted. */
@@ -675,9 +693,11 @@ export class BattleView implements View {
     const charge = it ? clamp(it.t / f.abilities[it.ability].windup, 0, 1) : 0;
     const cx = px - f.facing * 12 + (charge > 0.5 ? (Math.floor(this.time * 30) & 1) : 0);
     const cy = Math.round(py - v.shPx - 6 + Math.sin(this.time * 2.6 + f.id) * 1.5 - charge * 8);
-    this.put(g, charmSprite(), cx, cy, f.facing < 0);
+    this.put(g, charmSprite(v.art.specialSkinId), cx, cy, f.facing < 0);
+    this.itemSparks(v, cx, cy);
     if (it && dt > 0 && Math.random() < 0.5) {
-      this.fx.burst({ x: this.wx(cx), y: this.wy(cy - 3), count: 1, jitter: 0.08, speed: [0.5, 1.5], life: [0.1, 0.25], color: 0xf0ffff, color2: 0x4ac0ff, kind: 'streak' });
+      const c = this.glow(f.id, 0xf0ffff, 0x4ac0ff);
+      this.fx.burst({ x: this.wx(cx), y: this.wy(cy - 3), count: 1, jitter: 0.08, speed: [0.5, 1.5], life: [0.1, 0.25], color: c[0], color2: c[1], kind: 'streak' });
     }
   }
 
@@ -686,8 +706,9 @@ export class BattleView implements View {
     const used = f.rewindUsed;
     const cx = px - f.facing * 12, cy = Math.round(py - v.shPx - 4 + Math.sin(this.time * 2.2 + f.id) * 1.5);
     if (used) g.globalAlpha = 0.6;
-    this.put(g, hourglassSprite(used ? 0 : Math.floor(this.time * 5)), cx, cy, false);
+    this.put(g, hourglassSprite(used ? 0 : Math.floor(this.time * 5), v.art.specialSkinId), cx, cy, false);
     g.globalAlpha = 1;
+    if (!used) this.itemSparks(v, cx, cy);
   }
 
   /** The ward stone circles the chest; `back` draws it only on the far half of its orbit. */
@@ -697,8 +718,9 @@ export class BattleView implements View {
     const lit = v.wardT > this.time;
     const x = Math.round(px + Math.cos(a) * 13), y = Math.round(py - v.shPx * 0.72 + Math.sin(a) * 3 + Math.sin(this.time * 3) );
     if (back) g.globalAlpha = 0.85;
-    this.put(g, wardSprite(lit || (f.shield > 0 && Math.floor(this.time * 3) % 4 === 0)), x, y, false);
+    this.put(g, wardSprite(lit || (f.shield > 0 && Math.floor(this.time * 3) % 4 === 0), v.art.specialSkinId, Math.floor(this.time * 6)), x, y, false);
     g.globalAlpha = 1;
+    if (!back) this.itemSparks(v, x, y);
   }
 
   /** Marks over the head: silenced (a struck-out seal), afraid (a small skull), side by side. */
@@ -797,17 +819,19 @@ export class BattleView implements View {
     // Totem: a faint dashed circle with sparks crawling round it.
     const rx = z.radius * PPM, ry = Math.min(rx * 0.22, 8);
     const hot = this.zoneHot.get(z.id) ?? 0;
+    const sk = this.fighters[z.owner]?.art.specialSkin?.glow;
+    const mid = sk ? css(mix(sk[0], sk[1], 0.45)) : '#7ad8ff', light = sk ? css(mix(sk[0], sk[1], 0.15)) : '#d8f8ff', hi = sk ? css(sk[0]) : '#f0ffff';
     g.globalAlpha = a * (0.5 + (hot > 0 ? 0.4 : 0));
-    ellipseOutline(g, cx, cy + 1, rx, ry, '#7ad8ff', 1);
+    ellipseOutline(g, cx, cy + 1, rx, ry, mid, 1);
     g.globalAlpha = a * 0.3;
-    ellipseOutline(g, cx, cy + 1, rx - 3, ry - 1, '#d8f8ff', 0.5);
+    ellipseOutline(g, cx, cy + 1, rx - 3, ry - 1, light, 0.5);
     g.globalAlpha = a;
     for (let i = 0; i < 3; i++) {
       const t = this.time * 1.4 + (i * Math.PI * 2) / 3;
       const sx = Math.round(cx + Math.cos(t) * rx), sy = Math.round(cy + 1 + Math.sin(t) * ry);
-      g.fillStyle = '#f0ffff';
+      g.fillStyle = hi;
       g.fillRect(sx, sy, 1, 1);
-      g.fillStyle = '#7ad8ff';
+      g.fillStyle = mid;
       g.fillRect(sx - Math.sign(Math.sin(t)), sy, 1, 1);
     }
     g.globalAlpha = 1;
@@ -823,16 +847,22 @@ export class BattleView implements View {
     this.arena!.shadow(g, cx, cy, 6, 0.8);
     const a = this.zoneAlpha(z);
     if (a <= 0) return;
-    const s = totemSprite(hot > 0 || (Math.floor(this.time * 7) % 9 === 0));
+    const skin = this.fighters[z.owner]?.art.specialSkinId;
+    const s = totemSprite(hot > 0 || (Math.floor(this.time * 7) % 9 === 0), skin, Math.floor(this.time * 6));
     g.globalAlpha = Math.min(1, a + 0.2);
     blit(g, s, cx, cy - drop, false);
     if (a > 0.5) this.glowList.push({ s, x: cx, y: cy - drop, flip: false });
     g.globalAlpha = 1;
     if (dt <= 0 || drop) return;
     // Crackling: sparks off the crystal, and now and then a little arc to the ground.
-    const top = (TOTEM_TOP - 2) / PPM;
-    if (Math.random() < dt * 9 * a) this.fx.burst({ x: z.x, y: top, count: 1, jitter: 0.12, speed: [0.6, 1.8], life: [0.12, 0.3], color: 0xf0ffff, color2: 0x4ab8ff, kind: Math.random() < 0.5 ? 'twinkle' : 'streak' });
-    if (Math.random() < dt * 1.2 * a) this.fx.bolt(z.x, top, z.x + (Math.random() - 0.5) * 1.2, top + 0.3 + Math.random() * 0.4, 0x4ab8ff, 0.09, 0xd8f8ff);
+    const top = (totemTop(skin) - 2) / PPM;
+    const sk = this.fighters[z.owner]?.art.specialSkin;
+    const c = sk?.glow ?? [0xf0ffff, 0x4ab8ff];
+    if (Math.random() < dt * 9 * a) this.fx.burst({ x: z.x, y: top, count: 1, jitter: 0.12, speed: [0.6, 1.8], life: [0.12, 0.3], color: c[0], color2: c[1], kind: Math.random() < 0.5 ? 'twinkle' : 'streak' });
+    if (Math.random() < dt * 1.2 * a) this.fx.bolt(z.x, top, z.x + (Math.random() - 0.5) * 1.2, top + 0.3 + Math.random() * 0.4, c[1], 0.09, sk?.glow ? mix(c[0], c[1], 0.15) : 0xd8f8ff);
+    // A legendary pole sheds its own sparkles from the carving.
+    const lfx = sk?.fx;
+    if (lfx && Math.random() < dt * 5 * a) this.fx.burst({ x: z.x + (Math.random() - 0.5) * 0.5, y: Math.random() * top, count: 1, jitter: 0.05, dir: Math.PI / 2, spread: 0.5, speed: [0.2, 0.6], life: [0.4, 0.8], color: lfx.spark, color2: lfx.spark2, kind: lfx.kind ?? 'twinkle' });
   }
 
   /** Spike tips glinting on a caltrops patch (drawn after the light, so they still catch it at night). */
@@ -997,8 +1027,8 @@ export class BattleView implements View {
     if (style === 'flask') ang = 0; // tumbles on its own
     if (style === 'flamewave' || style === 'groundwave') ang = p.vx < 0 ? Math.PI : 0;
     const thrower = this.fighters[p.owner]?.art;
-    // Meteors and wisp shots come from the special item, in its skin's colours.
-    const fromItem = style === 'meteor' || style === 'wisp';
+    // Meteors, wisp shots, the hawk's dive and the whelp's breath come from the special item, in its skin's colours.
+    const fromItem = style === 'meteor' || style === 'wisp' || style === 'hawk' || style === 'breath';
     const skin = fromItem ? thrower?.specialSkinId : null;
     // Epic weapons can reshape what they throw.
     const wid = p.def.from === 'main' ? thrower?.mainId : p.def.from === 'secondary' ? thrower?.secId : null;
@@ -1123,7 +1153,7 @@ export class BattleView implements View {
       }
       case 'hit': {
         if (e.dot) {
-          if (e.amount >= 1) fx.pop(fmt(e.amount), e.x + (Math.random() - 0.5) * 0.3, e.y, { color: e.ability === 'poison' ? '#9cff4a' : e.ability === 'thorns' ? '#7ad870' : e.ability === 'totem' ? '#9fe0ff' : e.ability === 'caltrops' ? '#d0d6e0' : '#ffb040' }, 0.7, 1.2);
+          if (e.amount >= 1) fx.pop(fmt(e.amount), e.x + (Math.random() - 0.5) * 0.3, e.y, { color: e.ability === 'poison' ? '#9cff4a' : e.ability === 'thorns' ? '#7ad870' : e.ability === 'totem' ? css(this.glow(e.attacker, 0x9fe0ff, 0)[0]) : e.ability === 'caltrops' ? '#d0d6e0' : '#ffb040' }, 0.7, 1.2);
           break;
         }
         const tv = this.fighters[e.target];
@@ -1198,8 +1228,9 @@ export class BattleView implements View {
         this.play('shield', this.pan(f.x));
         // The ward stone raised it: a ring of runes climbs the body and the stone lights up.
         if (f.has.has('ward_stone') && f.wardCd > 9.5) {
-          fx.pulse('runes', f.x, f.y + 0.15, 0.5, 0x9ad8ff, 0.55, 0x3a6aa8);
-          fx.burst({ x: f.x, y: f.y + 1.0, count: 10, jitter: 0.35, jitterY: 0.7, dir: Math.PI / 2, spread: 0.6, speed: [0.6, 1.6], life: [0.35, 0.6], color: 0xe0f4ff, color2: 0x5a9ae0, kind: 'twinkle' });
+          const sk = this.fighters[e.f]?.art.specialSkin?.glow;
+          fx.pulse('runes', f.x, f.y + 0.15, 0.5, sk ? mix(sk[0], sk[1], 0.3) : 0x9ad8ff, 0.55, sk ? mix(sk[1], 0x101828, 0.3) : 0x3a6aa8);
+          fx.burst({ x: f.x, y: f.y + 1.0, count: 10, jitter: 0.35, jitterY: 0.7, dir: Math.PI / 2, spread: 0.6, speed: [0.6, 1.6], life: [0.35, 0.6], color: sk ? sk[0] : 0xe0f4ff, color2: sk ? sk[1] : 0x5a9ae0, kind: 'twinkle' });
           this.fighters[e.f].wardT = this.time + 0.6;
         }
         break;
@@ -1323,12 +1354,14 @@ export class BattleView implements View {
         const kind = f.familiar?.kind;
         if (kind === 'hawk') {
           // A shriek and a couple of loose feathers as it rouses.
-          fx.burst({ x: f.x - f.facing * 0.2, y: f.y + 1.6, count: 3, jitter: 0.15, dir: Math.PI / 2, spread: 1, speed: [0.5, 1.5], life: [0.5, 0.8], color: 0xb07a42, color2: 0x7a4a2a, gravity: 2, drag: 2, size: 2 });
+          const c = this.glow(f.id, 0xb07a42, 0x7a4a2a);
+          fx.burst({ x: f.x - f.facing * 0.2, y: f.y + 1.6, count: 3, jitter: 0.15, dir: Math.PI / 2, spread: 1, speed: [0.5, 1.5], life: [0.5, 0.8], color: c[0], color2: c[1], gravity: 2, drag: 2, size: 2 });
           this.play('whoosh', this.pan(f.x), 0.4);
         } else if (kind === 'whelp') {
           // Smoke curls from the nostrils as it draws breath.
           fx.burst({ x: f.x + f.facing * 0.1, y: f.y + 2.2, count: 4, jitter: 0.1, dir: Math.PI / 2, spread: 0.5, speed: [0.3, 0.8], life: [0.4, 0.7], color: 0x9a8a88, color2: 0x5a4a50, kind: 'smoke', size: 2 });
-          fx.burst({ x: f.x + f.facing * 0.1, y: f.y + 2.0, count: 3, jitter: 0.08, speed: [0.5, 1.5], life: [0.2, 0.4], color: 0xffd060, color2: 0xd83a1a, kind: 'ember' });
+          const c = this.glow(f.id, 0xffd060, 0xd83a1a);
+          fx.burst({ x: f.x + f.facing * 0.1, y: f.y + 2.0, count: 3, jitter: 0.08, speed: [0.5, 1.5], life: [0.2, 0.4], color: c[0], color2: c[1], kind: 'ember' });
           this.play('roar', this.pan(f.x), 0.25);
         } else {
           const c = this.glow(f.id, 0xf0ffff, 0x3ac8e8);
@@ -1339,15 +1372,17 @@ export class BattleView implements View {
       case 'zone': {
         if (e.kind === 'totem') {
           // Planted with a thunderclap: a bolt from the sky onto the crystal.
-          const top = TOTEM_TOP / PPM;
-          fx.bolt(e.x + (Math.random() - 0.5) * 0.6, 7, e.x, top, 0x7ad8ff, 0.24);
-          fx.pulse('groundRing', e.x, 0, e.radius, 0x7ad8ff, 0.45);
-          fx.pulse('star', e.x, top, 0.5, 0xd8f8ff, 0.16);
+          const sk = this.fighters[e.f]?.art.specialSkin?.glow;
+          const top = totemTop(this.fighters[e.f]?.art.specialSkinId) / PPM;
+          const mid = sk ? mix(sk[0], sk[1], 0.45) : 0x7ad8ff, light = sk ? mix(sk[0], sk[1], 0.15) : 0xd8f8ff;
+          fx.bolt(e.x + (Math.random() - 0.5) * 0.6, 7, e.x, top, mid, 0.24);
+          fx.pulse('groundRing', e.x, 0, e.radius, mid, 0.45);
+          fx.pulse('star', e.x, top, 0.5, light, 0.16);
           fx.burst({ x: e.x, y: 0.15, count: 10, jitter: 0.3, dir: Math.PI / 2, spread: 1.2, speed: [1, 3], life: [0.4, 0.8], color: 0xb0a090, color2: 0x6a5a60, kind: 'smoke', size: 3, drag: 1.5 });
-          fx.burst({ x: e.x, y: top, count: 14, speed: [2, 5], life: [0.2, 0.4], color: 0xf0ffff, color2: 0x4ab8ff, drag: 2, kind: 'streak' });
+          fx.burst({ x: e.x, y: top, count: 14, speed: [2, 5], life: [0.2, 0.4], color: sk ? sk[0] : 0xf0ffff, color2: sk ? sk[1] : 0x4ab8ff, drag: 2, kind: 'streak' });
           this.play('lightning', this.pan(e.x), 0.6);
           this.play('hitHeavy', this.pan(e.x), 0.5);
-          this.flash(0xc8e8ff, 0.35);
+          this.flash(sk ? mix(sk[0], 0xffffff, 0.4) : 0xc8e8ff, 0.35);
           this.shake(0.25);
         } else {
           // Caltrops strewn: iron bits skitter out and a puff of dust.
@@ -1362,12 +1397,14 @@ export class BattleView implements View {
         // The totem strikes: a bolt from its crystal to the enemy's chest.
         const tgt = b.other(b.fighters[e.f]);
         const ty = tgt.y + 1.1;
-        fx.bolt(e.from, (TOTEM_TOP - 2) / PPM, e.to, ty, 0x7ad8ff, 0.2);
-        fx.pulse('star', e.to, ty, 0.4, 0xd8f8ff, 0.12);
-        fx.burst({ x: e.to, y: ty, count: 10, speed: [2, 5], life: [0.15, 0.3], color: 0xffffff, color2: 0x7ad8ff, drag: 2, kind: 'streak' });
+        const sk = this.fighters[e.f]?.art.specialSkin?.glow;
+        const mid = sk ? mix(sk[0], sk[1], 0.45) : 0x7ad8ff;
+        fx.bolt(e.from, (totemTop(this.fighters[e.f]?.art.specialSkinId) - 2) / PPM, e.to, ty, mid, 0.2);
+        fx.pulse('star', e.to, ty, 0.4, sk ? mix(sk[0], sk[1], 0.15) : 0xd8f8ff, 0.12);
+        fx.burst({ x: e.to, y: ty, count: 10, speed: [2, 5], life: [0.15, 0.3], color: 0xffffff, color2: mid, drag: 2, kind: 'streak' });
         for (const z of b.zones) if (z.owner === e.f && z.kind === 'totem') this.zoneHot.set(z.id, 0.18);
         this.play('lightning', this.pan(e.to), 0.45);
-        this.flash(0xc8e8ff, 0.18);
+        this.flash(sk ? mix(sk[0], 0xffffff, 0.4) : 0xc8e8ff, 0.18);
         break;
       }
       case 'swap': {
@@ -1532,24 +1569,28 @@ export class BattleView implements View {
    */
   private rewindFx(id: FighterId, from: number, to: number): void {
     const fx = this.fx, v = this.fighters[id], f = this.battle!.fighters[id];
+    // In the hourglass skin's colours: bright, deep and the tones between.
+    const sk = v.art.specialSkin?.glow;
+    const tone = (k: number, stock: number) => (sk ? mix(sk[0], sk[1], k) : stock);
     if (v.lastS) {
       const n = 6;
+      const near = css(tone(0.1, 0xffe8a0)), far = css(tone(0.3, 0xffc860));
       for (let i = 0; i < n; i++) {
         const k = i / (n - 1);
         // From the old spot to the new one, each echo appearing a moment after the last.
-        v.ghosts.push({ x: Math.round(this.sx(from + (to - from) * k)), y: v.lastY, s: v.lastS, flip: v.lastFlip, t: -k * 0.18, col: k < 0.5 ? '#ffe8a0' : '#ffc860', life: 0.45, a: 0.25 + 0.4 * k });
+        v.ghosts.push({ x: Math.round(this.sx(from + (to - from) * k)), y: v.lastY, s: v.lastS, flip: v.lastFlip, t: -k * 0.18, col: k < 0.5 ? near : far, life: 0.45, a: 0.25 + 0.4 * k });
       }
     }
     const y = f.y + 1.1;
-    fx.pulse('clock', to, y, 0.85, 0xffd060, 0.7, 0xa87a20);
-    fx.pulse('swirl', to, y, 1.1, 0xfff0b0, 0.5, 0xe0a030);
-    fx.pulse('swirl', from, y, 0.8, 0xfff0b0, 0.35, 0xe0a030);
-    fx.burst({ x: to, y: 0.4, count: 26, jitter: 0.5, dir: Math.PI / 2, spread: 0.5, speed: [1, 3], life: [0.5, 0.9], color: 0xfff0b0, color2: 0xd09030, drag: 1.5, kind: 'twinkle' });
-    fx.burst({ x: (from + to) / 2, y, count: 14, jitter: Math.abs(to - from) / 2 + 0.2, jitterY: 0.6, speed: [0.3, 1], life: [0.4, 0.7], color: 0xf0c060, color2: 0xa07020, drag: 1 });
-    fx.pop('REWIND!', to, v.headY + 0.45, { color: '#ffe08a', scale: 2, shade: '#b07a20' }, 1.1);
+    fx.pulse('clock', to, y, 0.85, tone(0.3, 0xffd060), 0.7, tone(1, 0xa87a20));
+    fx.pulse('swirl', to, y, 1.1, tone(0, 0xfff0b0), 0.5, tone(0.6, 0xe0a030));
+    fx.pulse('swirl', from, y, 0.8, tone(0, 0xfff0b0), 0.35, tone(0.6, 0xe0a030));
+    fx.burst({ x: to, y: 0.4, count: 26, jitter: 0.5, dir: Math.PI / 2, spread: 0.5, speed: [1, 3], life: [0.5, 0.9], color: tone(0, 0xfff0b0), color2: tone(0.8, 0xd09030), drag: 1.5, kind: 'twinkle' });
+    fx.burst({ x: (from + to) / 2, y, count: 14, jitter: Math.abs(to - from) / 2 + 0.2, jitterY: 0.6, speed: [0.3, 1], life: [0.4, 0.7], color: tone(0.35, 0xf0c060), color2: tone(1, 0xa07020), drag: 1 });
+    fx.pop('REWIND!', to, v.headY + 0.45, { color: css(tone(0.15, 0xffe08a)), scale: 2, shade: css(tone(1, 0xb07a20)) }, 1.1);
     this.play('revive', this.pan(to), 0.6);
     this.play('gems', this.pan(to));
-    this.flash(0xffe0a0, 0.7);
+    this.flash(sk ? mix(sk[0], 0xffffff, 0.3) : 0xffe0a0, 0.7);
     this.slowmo(0.45, 0.35);
     this.punchIn(1, 0.4, to);
     this.arena?.cheer(0.6);
