@@ -14,7 +14,7 @@ import {
   boneRootSprite, caltropsPatch, charmSprite, clearPatches, hawkSprite, hourglassSprite, silenceSprite, skullSprite,
   TOTEM_TOP, totemSprite, wardSprite, whelpSprite, type HawkPose,
 } from './specialArt';
-import { bottleSprite, projFrames, projSprite, skinDraws } from './projArt';
+import { bottleSprite, projFrames, projSprite, skinDraws, skinTints } from './projArt';
 import { drawSetAura, SET_FX } from './setAura';
 import type { Screen } from './screen';
 import { Animator, PPM, type AnimOut } from './sprite/animator';
@@ -1003,7 +1003,7 @@ export class BattleView implements View {
     // Epic weapons can reshape what they throw.
     const wid = p.def.from === 'main' ? thrower?.mainId : p.def.from === 'secondary' ? thrower?.secId : null;
     const wskin = !fromItem && wid ? thrower?.skins[wid] ?? null : null;
-    const look = skin ?? (skinDraws(style, wskin) ? wskin : null);
+    const look = skin ?? (skinDraws(style, wskin) || skinTints(wskin) ? wskin : null);
     const frame = Math.floor(this.time * (style === 'chakram' || style === 'knife' ? 24 : 12)) % projFrames(style, look);
     let s = projSprite(style, frame, ang, look);
     const sx = Math.round(this.sx(x)), sy = Math.round(this.sy(y));

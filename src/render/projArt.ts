@@ -407,6 +407,19 @@ export function skinDraws(id: ProjArtId, skin?: string | null): boolean {
 }
 
 const M_NAME = new Map<Material, string>(Object.entries(M).map(([k, m]) => [m, k]));
+const M_KEYS = new Set(Object.keys(M));
+const tints = new Map<string, boolean>();
+
+/** Whether a (rare) weapon skin recolours its thrown sprite: its `mats` name some of the stock sprite materials above. */
+export function skinTints(skin?: string | null): boolean {
+  if (!skin) return false;
+  let v = tints.get(skin);
+  if (v === undefined) {
+    v = Object.keys(SKIN_ART[skin]?.mats ?? {}).some((k) => M_KEYS.has(k));
+    tints.set(skin, v);
+  }
+  return v;
+}
 
 const cache = new Map<string, Sprite>();
 let raster: Raster | null = null;
