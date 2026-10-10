@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.62.1',
+    date: '2026-10-10',
+    title: 'Clearer invite errors',
+    notes: [
+      "When a duel invite can't be sent, the lobby now shows the server's reason in brackets, so problems are easy to report.",
+    ],
+  },
+  {
     version: '0.62.0',
     date: '2026-10-10',
     title: 'Duel your friends',
