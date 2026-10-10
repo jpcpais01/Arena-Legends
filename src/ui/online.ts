@@ -121,7 +121,7 @@ const ERRORS: Record<SessionError, string> = {
 
 export type LobbyView =
   | { kind: 'opening' }
-  | { kind: 'waiting'; code: string; invited?: { name: string; state: 'sending' | 'open' | 'declined' | 'expired' | 'failed' } }
+  | { kind: 'waiting'; code: string; invited?: { name: string; state: 'sending' | 'open' | 'declined' | 'expired' | 'failed'; error?: string } }
   | { kind: 'joining'; code: string }
   | { kind: 'error'; code: string; error: SessionError; canRetry: boolean };
 
@@ -183,7 +183,7 @@ export class Lobby {
           : inv.state === 'open' ? `${inv.name} got your invite. The duel starts when they accept.`
           : inv.state === 'declined' ? `${inv.name} declined. You can still send them the code.`
           : inv.state === 'expired' ? `${inv.name} didn't answer in time. You can still send them the code.`
-          : `Couldn't send the invite to ${inv.name}. Send them the code instead.`);
+          : `Couldn't send the invite to ${inv.name}. Send them the code instead.${inv.error ? ` (${inv.error})` : ''}`);
         content = [
           invNote || null,
           h('button.room-code', { title: 'Copy the code', 'aria-label': `Room code ${v.code.split('').join(' ')}`, onclick: () => { sfx.play('ui'); void copy(v.code); } }, ...codeTiles(v.code)),

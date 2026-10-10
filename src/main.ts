@@ -165,7 +165,7 @@ function openFriends(): void {
 /** How long an invite stands, from when it was sent. */
 const INVITE_SECONDS = 60;
 /** The friend we invited to the room we host, and how they answered. */
-let sentInvite: { to: string; name: string; code: string; state: 'sending' | 'open' | 'declined' | 'expired' | 'failed'; at: number } | null = null;
+let sentInvite: { to: string; name: string; code: string; state: 'sending' | 'open' | 'declined' | 'expired' | 'failed'; at: number; error?: string } | null = null;
 let invitePoll = 0;
 
 function inviteFriend(uid: string, name: string): void {
@@ -195,7 +195,7 @@ function syncInvite(s: OnlineSession): void {
     invitePoll = window.setInterval(() => void watchInvite(inv), 3000);
   }, (e) => {
     console.warn('[invite]', e);
-    if (sentInvite === inv) { inv.state = 'failed'; syncOnline(); }
+    if (sentInvite === inv) { inv.state = 'failed'; inv.error = String((e as { code?: string })?.code ?? (e as Error)?.message ?? e); syncOnline(); }
   });
 }
 
@@ -676,7 +676,7 @@ function syncOnline(): void {
     else if (s.role === 'host') {
       syncInvite(s);
       const inv = sentInvite;
-      lobby.show(s.conn === 'starting' ? { kind: 'opening' } : { kind: 'waiting', code: s.code, invited: inv ? { name: inv.name, state: inv.state } : undefined });
+      lobby.show(s.conn === 'starting' ? { kind: 'opening' } : { kind: 'waiting', code: s.code, invited: inv ? { name: inv.name, state: inv.state, error: inv.error } : undefined });
     }
     else lobby.show({ kind: 'joining', code: s.code });
     return;
