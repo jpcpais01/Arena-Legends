@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.49.0',
+    date: '2026-10-10',
+    title: 'An epic new battle soundtrack',
+    notes: [
+      'The battle music is now played by a full orchestra in a grand hall: strings, a choir, horns, celesta, timpani, war drums and anvils.',
+      'It still builds as the weaker fighter loses health. Calm strings and bells at first, then a harp and a driving string rhythm, then the horns call out, and finally the heroic theme with the choir and every drum in the arena.',
+      'Near defeat a heartbeat and trembling strings take over, night overtime lifts the key and adds more war drums, and the fight ends on a big triumphant chord.',
+    ],
+  },
+  {
     version: '0.48.1',
     date: '2026-10-10',
     title: 'Undo and Redo in the Armory',
