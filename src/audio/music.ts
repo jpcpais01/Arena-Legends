@@ -1,4 +1,9 @@
+import { CosmicScore } from './cosmic';
 import { Score } from './score';
+
+type Style = 'orchestra' | 'cosmic';
+/** Arenas with a soundtrack of their own; every other arena gets the orchestra. */
+const styleFor = (arena = ''): Style => (/cosm|celest|astral|star|void/i.test(arena) ? 'cosmic' : 'orchestra');
 import { sfx } from './sfx';
 
 /**
@@ -8,6 +13,8 @@ import { sfx } from './sfx';
  */
 class Music {
   private score: Score | null = null;
+  private readonly scores = new Map<Style, Score>();
+  private style: Style = 'orchestra';
   private timer = 0;
   private soundOn = true;
   private paused = false;
@@ -19,12 +26,20 @@ class Music {
   private ensure(): Score | null {
     const ctx = sfx.context, noise = sfx.noiseBuffer;
     if (!ctx || !noise) return null;
-    if (!this.score) {
-      this.score = new Score(ctx, noise);
-      this.score.out.gain.value = this.on ? this.volume : 0;
-      this.score.out.connect(ctx.destination);
+    let s = this.scores.get(this.style);
+    if (!s) {
+      s = this.style === 'cosmic' ? new CosmicScore(ctx, noise) : new Score(ctx, noise);
+      s.out.gain.value = this.on ? this.volume : 0;
+      s.out.connect(ctx.destination);
+      this.scores.set(this.style, s);
     }
-    return this.score;
+    if (this.score && this.score !== s) {
+      // Switching arenas: let the other score go quiet.
+      this.score.stop();
+      this.score.out.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
+    }
+    this.score = s;
+    return s;
   }
 
   private run(): void {
@@ -47,8 +62,9 @@ class Music {
     if (!this.on) this.score?.stop();
   }
 
-  /** Names on screen and the 3-2-1: a low drone. */
-  intro(): void {
+  /** Names on screen and the 3-2-1: a low drone. `arena` (a theme id) picks the soundtrack. */
+  intro(arena?: string): void {
+    if (arena !== undefined) this.style = styleFor(arena);
     if (!this.on) return;
     const s = this.ensure();
     if (!s) return;
