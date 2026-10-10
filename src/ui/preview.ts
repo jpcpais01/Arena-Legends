@@ -227,11 +227,16 @@ export class Preview {
       const set = this.bank.art.set;
       if (pose.clipGround) { g.save(); g.beginPath(); g.rect(0, 0, this.w, gy + 1); g.clip(); }
       if (set && pose.alpha >= 1) drawSetAura(g, set, x, y, this.clock, 'back');
+      const flip = this.flip !== pose.flip;
+      for (let k = pose.ghosts; k >= 1; k--) {
+        g.globalAlpha = pose.alpha * 0.55 * (1 - k / (pose.ghosts + 1));
+        this.blit((pose.ghostCol ? this.bank.flash(this.out, pose.ghostCol) : s).img, s, x - Math.round(pose.ghostDx * k * PPM), y, flip);
+      }
       g.globalAlpha = pose.alpha;
-      this.blit(s.img, s, x, y);
+      this.blit(s.img, s, x, y, flip);
       if (pose.tint && pose.tintA > 0) {
         g.globalAlpha = pose.alpha * Math.min(1, pose.tintA);
-        this.blit(this.bank.flash(this.out, pose.tint).img, s, x, y);
+        this.blit(this.bank.flash(this.out, pose.tint).img, s, x, y, flip);
       }
       g.globalAlpha = 1;
       if (set && pose.alpha >= 1) drawSetAura(g, set, x, y, this.clock, 'front');
@@ -240,17 +245,20 @@ export class Preview {
     ent.draw(g, v, 'over');
     fx.draw(g, v);
     if (this.flashT > 0) {
+      // Only over what's drawn: the canvas is see-through, so a full fill would show as a box.
+      g.globalCompositeOperation = 'source-atop';
       g.globalAlpha = Math.min(0.5, this.flashT * 4);
       g.fillStyle = css(this.flashCol);
       g.fillRect(0, 0, this.w, this.h);
       g.globalAlpha = 1;
+      g.globalCompositeOperation = 'source-over';
       this.flashT -= dt;
     }
   }
 
-  private blit(img: CanvasImageSource, s: Sprite, x: number, y: number): void {
+  private blit(img: CanvasImageSource, s: Sprite, x: number, y: number, flip = this.flip): void {
     const g = this.g;
-    if (this.flip) {
+    if (flip) {
       g.save(); g.translate(x + 1, 0); g.scale(-1, 1);
       g.drawImage(img, -s.ox, y - s.oy);
       g.restore();

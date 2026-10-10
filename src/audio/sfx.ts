@@ -12,6 +12,7 @@ export type Sfx =
   | 'revealRare' | 'revealMythic' | 'revealLegendary' | 'revealEpic'
   // Pre-fight entrances
   | 'entStep' | 'entSlam' | 'entPoof' | 'entRise' | 'entChoir' | 'entFall' | 'entCheer' | 'entIgnite'
+  | 'entWind' | 'entCannon' | 'entBats' | 'entCoins' | 'entRumble' | 'entPortal' | 'entStars' | 'entPhoenix'
   // Big pulls and the forge
   | 'omen' | 'slam' | 'forge' | 'meld' | 'clang' | 'fire' | 'steam'
   // Super attacks: the callout stingers, the power gathering, the blade ring on release
@@ -419,6 +420,47 @@ class AudioEngine {
         // A crowd swelling and fading: wide noise bands that rise a little.
         this.burst(t, 1.1, 0.16 * k, 'bandpass', 700, 1100, 0.7, pan * 0.5);
         this.burst(t + 0.08, 0.9, 0.1 * k, 'bandpass', 1800, 2600, 0.9, -pan * 0.5);
+        break;
+      case 'entWind':
+        this.burst(t, 1.1, 0.3 * k, 'bandpass', 300, 1400, 2.5, pan);
+        this.burst(t + 0.2, 0.9, 0.18 * k, 'bandpass', 1600, 700, 3, -pan);
+        break;
+      case 'entCannon':
+        this.tone('sine', 140, 35, t, 0.5, 0.9 * k, pan);
+        this.burst(t, 0.35, 0.8 * k, 'lowpass', 2500, 120, 0.7, pan);
+        this.burst(t + 0.05, 0.6, 0.25 * k, 'bandpass', 2400, 600, 1, pan);
+        break;
+      case 'entBats':
+        // Flutter: quick soft wing beats and a few high squeaks.
+        for (let i = 0; i < 9; i++) this.burst(t + i * 0.055, 0.04, 0.16 * k, 'bandpass', 900 + (i % 3) * 300, 700, 2, pan);
+        for (let i = 0; i < 3; i++) this.tone('square', 3200 + i * 500, 2600 + i * 400, t + 0.08 + i * 0.13, 0.05, 0.025 * k, pan);
+        break;
+      case 'entCoins':
+        for (let i = 0; i < 7; i++) {
+          const f = 1800 + ((i * 7) % 5) * 260;
+          this.tone('square', f, f, t + i * 0.07, 0.07, 0.03 * k, pan);
+          this.tone('triangle', f * 1.5, f * 1.5, t + i * 0.07 + 0.02, 0.12, 0.04 * k, pan);
+        }
+        break;
+      case 'entRumble':
+        this.tone('sine', 45, 35, t, 0.9, 0.6 * k, pan);
+        this.burst(t, 0.9, 0.45 * k, 'lowpass', 300, 120, 0.8, pan);
+        break;
+      case 'entPortal':
+        this.tone('sine', 180, 520, t, 0.9, 0.18 * k, pan);
+        this.tone('sawtooth', 90, 260, t, 0.9, 0.06 * k, pan);
+        this.tone('triangle', 1400, 700, t + 0.1, 0.8, 0.05 * k, pan);
+        this.burst(t, 0.9, 0.18 * k, 'bandpass', 500, 3000, 4, pan);
+        break;
+      case 'entStars':
+        [1047, 1319, 1568, 2093, 1568, 2637].forEach((f, i) => this.tone('sine', f, f, t + i * 0.11, 0.35, 0.05 * k, pan));
+        this.tone('triangle', 523, 523, t, 1.2, 0.04 * k, pan);
+        break;
+      case 'entPhoenix':
+        // A screech that rises and cracks, over a roar of fire.
+        this.tone('sawtooth', 900, 2200, t, 0.35, 0.09 * k, pan);
+        this.tone('square', 1300, 2900, t + 0.05, 0.3, 0.04 * k, pan);
+        this.burst(t, 0.8, 0.4 * k, 'lowpass', 900, 2600, 0.7, pan);
         break;
       case 'entIgnite':
         this.burst(t, 0.8, 0.55 * k, 'lowpass', 600, 2400, 0.7, pan);
