@@ -11,7 +11,7 @@ import type { GearId, GearSlot } from '../sim/types';
 import { h } from './dom';
 import { icon } from './icons';
 import { Preview } from './preview';
-import { modText, statDiff, statLines } from './stats';
+import { modText, statCompare, statLines } from './stats';
 
 export interface GearCallbacks {
   onChange(c: PlayerCharacter): void;
@@ -19,6 +19,8 @@ export interface GearCallbacks {
   /** Opens the skin chests (from a locked skin). */
   onChests?(): void;
 }
+
+type Tab = 'stats' | 'skins';
 
 const SHORT: Record<GearSlot, string> = {
   main: 'Main', secondary: 'Second', special: 'Special', usable: 'Usable', head: 'Head', chest: 'Chest', legs: 'Legs', boots: 'Boots',
@@ -37,17 +39,19 @@ function emptyIcon(): HTMLCanvasElement {
 /**
  * Gear screen: the fighter stands big in the middle with the eight slots around
  * them like a paper doll; the items for the chosen slot are a grid of icons.
- * Tapping an item grows it in place into a 3x2 card with its text, skills,
- * stat changes and skins, and equips from there. Changes save at once (through `onChange`).
+ * Tapping an item opens the inspector over the list (stats, skills, skins,
+ * Equip) while the fighter tries it on. Changes save at once (through `onChange`).
  */
 export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { forms?: boolean; title?: string } = {}): { el: HTMLElement; dispose(): void } {
   let c = start;
   let slot: GearSlot = 'main';
-  /** The item whose card is open. */
+  /** The item being inspected. */
   let open: GearId | null = null;
-  /** Grid cell of the tile that was tapped open: the card grows around it. */
-  let anchor = { col: 0, row: 0 };
-  /** A locked skin tapped in the open card: its info shows until another pick. */
+  /** The inspector's tab (kept while browsing items). */
+  let tab: Tab = 'stats';
+  /** The inspector body's scroll, kept across re-renders (picking a skin redraws it). */
+  let bodyScroll = 0;
+  /** A locked skin tapped in the inspector: tried on the fighter until another pick. */
   let peek: SkinDef | null = null;
 
   const stageBox = h('div.stage-box');
@@ -66,7 +70,9 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
       sfx.play('select');
     },
   }, icon('body'), 'Stats');
-  const stage = h('section.scr-stage.doll-stage', null, stageBox, dollL, dollR, h('div.stage-tools', null, statsBtn), stats);
+  const tryTag = h('div.try-tag', { hidden: true }, icon('eye'), 'Preview');
+  const stage = h('section.scr-stage.doll-stage', null, stageBox, dollL, dollR, h('div.stage-tools', null, statsBtn), tryTag, stats);
+  const inspect = h('div.inspect-area');
 
   const forms = h('div.field.forms-row');
   const slotHead = h('div.slot-head');
@@ -150,11 +156,23 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
         have < all ? h('small', null, `${have}/${all} owned`) : null));
   }
 
-  function show(id: GearId | null, from?: Element): void {
-    if (from) anchor = cellOf(from);
+  function show(id: GearId | null): void {
+    if (id && id !== open) bodyScroll = 0;
     open = open === id ? null : id;
     peek = null;
     sfx.play(open ? 'select' : 'back');
+    render();
+  }
+
+  /** Steps to the previous or next item of the slot while inspecting. */
+  function step(d: number): void {
+    if (!open) return;
+    const ids = gearIdsFor(slot) as GearId[];
+    const i = ids.indexOf(open);
+    open = ids[(i + d + ids.length) % ids.length];
+    peek = null;
+    bodyScroll = 0;
+    sfx.play('select');
     render();
   }
 
@@ -162,6 +180,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     if (s === slot) return;
     slot = s;
     open = null;
+    peek = null;
     sfx.play('select');
     panel.scrollTop = 0;
     render();
@@ -176,98 +195,113 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
   }
 
   function tile(id: GearId | null): HTMLElement {
-    if (id && open === id) return card(id);
     const g = id ? gearOf(id) : null;
     const on = id ? c.gear[slot] === id : !c.gear[slot];
     return h(`button.itile.r-${g?.rarity ?? 'none'}${on ? '.on' : ''}`, {
       'aria-pressed': String(on), title: g ? g.name : 'Leave this slot empty',
-      onclick: (e: MouseEvent) => (id ? show(id, e.currentTarget as Element) : equip(null)),
+      onclick: () => (id ? show(id) : equip(null)),
     }, h('span.sock', null, iconOf(id)), h('b', null, g ? g.name : 'None'));
   }
 
-  /** The item grid's resolved tracks (px), read from the live layout. */
-  function tracks(): { cols: number[]; rows: number[]; cg: number; rg: number } {
-    const cs = getComputedStyle(list);
-    const px = (v: string) => v.split(' ').map(parseFloat).filter((n) => !Number.isNaN(n));
-    return { cols: px(cs.gridTemplateColumns), rows: px(cs.gridTemplateRows), cg: parseFloat(cs.columnGap) || 0, rg: parseFloat(cs.rowGap) || 0 };
-  }
-
-  /** Which column and row of the item grid an element sits in. */
-  function cellOf(el: Element): { col: number; row: number } {
-    const t = tracks();
-    const lr = list.getBoundingClientRect(), r = el.getBoundingClientRect();
-    const at = (sizes: number[], gap: number, off: number) => {
-      let acc = 0;
-      for (let i = 0; i < sizes.length; i++) {
-        if (off < acc + sizes[i] + gap / 2) return i;
-        acc += sizes[i] + gap;
-      }
-      return Math.max(0, sizes.length - 1);
-    };
-    return { col: at(t.cols, t.cg, r.left - lr.left + 1), row: at(t.rows, t.rg, r.top - lr.top + 1) };
-  }
-
   /**
-   * Places the open card 3 columns wide and 2 rows tall from the tapped tile's
-   * row: centred on its column, or growing inward from the first/last column.
+   * The item inspector: covers the item list while the fighter stays in view
+   * wearing what is looked at. A head with the item (arrows step through the
+   * slot), Stats and Skins tabs, and Equip at the bottom.
    */
-  function place(el: HTMLElement): void {
-    const n = tracks().cols.length;
-    if (n < 3) { el.style.gridColumn = '1 / -1'; el.style.gridRow = `${anchor.row + 1} / span 2`; return; }
-    const start = Math.min(Math.max(anchor.col - 1, 0), n - 3);
-    el.style.gridColumn = `${start + 1} / span 3`;
-    el.style.gridRow = `${anchor.row + 1} / span 2`;
-  }
-
-  /** The open item: grows in place to 3x2 cells with its text, stat changes, skins and Equip. */
-  function card(id: GearId): HTMLElement {
+  function inspector(id: GearId): HTMLElement {
     const g = gearOf(id);
     const on = c.gear[slot] === id;
-    const abil = [...(g.abilities ?? []), ...(g.evade ? [g.evade] : [])];
-    // Not equipped: what would change. Equipped: the item's own stats.
-    const diff = on ? [] : statDiff(c.form, c.gear, withGear(c, slot, id).gear);
-    const mods = on ? modText(g.add, g.mul) : '';
     const skins = skinsFor(id);
     const cur = skinOf(id);
-    const chip = (sk: SkinDef | null) => {
-      const ic = iconCanvas(id, 40, sk?.id);
-      ic.className = 'icon';
-      const sel = (cur?.id ?? null) === (sk?.id ?? null);
-      const locked = !!sk && !owns(sk.id);
-      return h(`button.sk.${sk ? sk.rarity : 'plain'}${sel ? '.on' : ''}${locked ? '.locked' : ''}`, {
-        title: sk ? `${sk.name} (${sk.rarity}${sk.set ? `, ${SKIN_SET_BY_ID.get(sk.set)!.name} set` : ''})${locked ? ', locked' : ''}: ${RARITY_INFO[sk.rarity]}` : 'Default: the plain item',
-        'aria-label': sk ? `${sk.name}${locked ? ' (locked)' : ''}` : 'Default', 'aria-pressed': String(sel),
-        onclick: () => wear(id, sk),
-      }, ic, locked ? icon('lock', 'sk-lock') : null);
-    };
-    const hands = g.weapon ? `${g.weapon.hands === 2 ? '2' : '1'}-handed${g.weapon.ranged ? ', ranged' : ''}` : '';
-    // Tapping the card again closes it; its own buttons (skins, Equip) keep their job.
-    const el = h(`div.icard.r-${g.rarity}${on ? '.on' : ''}`, {
-      role: 'group', 'aria-label': g.name,
-      onclick: (e: MouseEvent) => { if (!(e.target as Element).closest('button')) show(id); },
-    },
-      h('div.icard-head', null,
-        h('span.sock', null, iconOf(id)),
-        h('div.icard-title', null,
+    const shown = peek ?? cur;
+    if (tab === 'skins' && !skins.length) tab = 'stats';
+    const big = iconCanvas(id, 64, shown?.id);
+    big.className = 'icon';
+    const hands = g.weapon ? `${g.weapon.hands === 2 ? '2' : '1'}-handed${g.weapon.ranged ? ' · ranged' : ''}` : SLOT_NAMES[slot];
+    const many = (gearIdsFor(slot) as GearId[]).length > 1;
+    const arrow = (d: number) => h('button.btn.icon.sm.ins-arrow', { title: d < 0 ? 'Previous item' : 'Next item', 'aria-label': d < 0 ? 'Previous item' : 'Next item', onclick: () => step(d) }, icon(d < 0 ? 'back' : 'next'));
+    const tabBtn = (t: Tab, label: string, ic: Parameters<typeof icon>[0], extra?: string) =>
+      h(`button.ins-tab${tab === t ? '.on' : ''}`, { role: 'tab', 'aria-selected': String(tab === t), onclick: () => { if (tab !== t) { tab = t; bodyScroll = 0; sfx.play('select'); render(); } } },
+        icon(ic), label, extra ? h('small', null, extra) : null);
+    const got = skins.filter((sk) => owns(sk.id)).length;
+
+    let body: HTMLElement[];
+    if (tab === 'stats') {
+      // Equipped: what the item gives (against the slot left empty). Not equipped: what would change.
+      const from = on ? (slot === 'main' ? c.gear : withGear(c, slot, null).gear) : c.gear;
+      const to = on ? c.gear : withGear(c, slot, id).gear;
+      const abil = [...(g.abilities ?? []), ...(g.evade ? [g.evade] : [])];
+      const mods = modText(g.add, g.mul);
+      body = [
+        h('div.ins-sub', null, on ? 'Your stats with it' : 'If you equip it'),
+        h('div.ins-stats', null, ...statCompare(c.form, from, to)),
+        mods ? h('p.ins-mods', null, mods) : null,
+        abil.length || g.passive ? h('div.ins-sub', null, 'Skills') : null,
+        ...abil.map((a) => h('div.ins-ab', null,
+          h('div.ins-ab-head', null, h('b', null, a.name),
+            h('small', null, a.slot === 'basic' ? 'Basic' : a.uses ? `${a.uses} uses` : a.cooldown ? `${a.cooldown}s` : '')),
+          a.desc ? h('p', null, a.desc) : null)),
+        g.passive ? h('div.ins-ab.passive', null, h('div.ins-ab-head', null, h('b', null, 'Passive')), h('p', null, g.passive)) : null,
+        h('p.ins-desc', null, g.desc),
+      ].filter(Boolean) as HTMLElement[];
+    } else {
+      const cell = (sk: SkinDef | null) => {
+        const ic = iconCanvas(id, 40, sk?.id);
+        ic.className = 'icon';
+        const sel = (cur?.id ?? null) === (sk?.id ?? null);
+        const locked = !!sk && !owns(sk.id);
+        const trying = !!sk && peek?.id === sk.id;
+        return h(`button.skc.${sk ? sk.rarity : 'plain'}${sel ? '.on' : ''}${locked ? '.locked' : ''}${trying ? '.try' : ''}`, {
+          title: sk ? `${sk.name} (${sk.rarity}${sk.set ? `, ${SKIN_SET_BY_ID.get(sk.set)!.name} set` : ''})${locked ? ', locked: tap to try it on' : ''}` : 'Default: the plain item',
+          'aria-label': sk ? `${sk.name}${locked ? ' (locked)' : ''}` : 'Default', 'aria-pressed': String(sel),
+          onclick: () => wear(id, sk),
+        }, h('span.skc-ic', null, ic, locked ? icon('lock', 'sk-lock') : null), h('small', null, sk ? sk.name : 'Default'));
+      };
+      body = [h('div.skc-grid', null, cell(null), ...skins.map(cell))];
+    }
+
+    const foot = on
+      ? h('div.ins-foot', null, h('span.eq', null, icon('check'), 'Equipped'),
+        slot !== 'main' ? h('button.btn.sm.ghost', { onclick: () => equip(null) }, 'Unequip') : null)
+      : h('div.ins-foot', null, h('button.btn.primary.ins-equip', { onclick: () => equip(id) }, icon('check'), 'Equip'));
+
+    const scroller = h('div.ins-body', { role: 'tabpanel' }, ...body);
+    scroller.addEventListener('scroll', () => { bodyScroll = scroller.scrollTop; }, { passive: true });
+    requestAnimationFrame(() => { scroller.scrollTop = bodyScroll; });
+    return h(`section.inspect.frame.r-${g.rarity}${on ? '.on' : ''}`, { role: 'dialog', 'aria-label': g.name },
+      h('div.ins-head', null,
+        many ? arrow(-1) : null,
+        h(`span.sock.ins-sock${shown ? `.sk-${shown.rarity}` : ''}`, null, big),
+        many ? arrow(1) : null,
+        h('div.ins-title', null,
           h('b', null, g.name),
-          h('small', null, h(`span.r-${g.rarity}`, null, g.rarity), hands ? ` · ${hands}` : '', g.passive ? ` · Passive: ${g.passive}` : ''))),
-      h('div.icard-body', null,
-        h('p.desc', null, g.desc),
-        ...abil.map((a) => h('p.ab', null, h('i', null, a.name),
-          a.slot !== 'basic' && a.cooldown ? h('small', null, a.uses ? ` ${a.uses} uses · ${a.cooldown}s` : ` ${a.cooldown}s`) : '', a.desc ? ` ${a.desc}` : '')),
-        diff.length ? h('div.diff', null, ...diff) : null,
-        mods ? h('p.mods', null, mods) : null),
-      skins.length ? h('div.icard-skins', null,
-        h('div.sk-row', null, icon('star'), chip(null), ...skins.map(chip)),
-        skinInfo(cur, skins)) : null,
-      h('div.icard-foot', null,
-        on
-          ? (slot !== 'main' ? h('button.btn.sm.ghost', { onclick: () => equip(null) }, 'Unequip') : h('span.eq', null, icon('check'), 'Equipped'))
-          : h('button.btn.sm.primary', { onclick: () => equip(id) }, 'Equip')),
-    );
-    place(el);
-    requestAnimationFrame(() => el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
-    return el;
+          h('small', null, h(`span.r-${g.rarity}`, null, g.rarity), ` · ${hands}`),
+          shown ? h(`small.ins-skin.${shown.rarity}`, null, icon('star'), shown.name) : null),
+        h('button.btn.icon.sm.ins-close', { title: 'Back to the items', 'aria-label': 'Close', onclick: () => show(open) }, icon('close'))),
+      skins.length ? h('div.ins-tabs', { role: 'tablist' },
+        tabBtn('stats', 'Stats', 'body'),
+        tabBtn('skins', 'Skins', 'star', `${got}/${skins.length}`)) : null,
+      scroller,
+      tab === 'skins' ? h('div.ins-skin-info', null, skinInfo(cur, skins)) : null,
+      foot);
+  }
+
+  /** What the stage shows: the saved fighter, or the inspected item (and a tried-on skin) on them. */
+  let shownKey = '';
+  function syncPreview(): void {
+    let b: PlayerCharacter = c;
+    if (open) {
+      b = { ...c, ...withGear(c, slot, open) } as PlayerCharacter;
+      if (peek) b = { ...b, skins: { ...c.skins, [open]: peek.id } };
+    }
+    const key = JSON.stringify([b.form, b.gear, b.skins]);
+    const trying = b !== c && key !== JSON.stringify([c.form, c.gear, c.skins]);
+    tryTag.hidden = !trying;
+    if (key === shownKey) return;
+    const fresh = shownKey !== '';
+    shownKey = key;
+    preview.set(b);
+    if (fresh && trying) preview.showcase(slot === 'usable' && open ? (gearOf(open).abilities?.[0]?.anim ? `use.${gearOf(open).abilities![0].anim}` : undefined) : undefined);
   }
 
   function render(): void {
@@ -284,27 +318,26 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     const ids = gearIdsFor(slot) as GearId[];
     list.replaceChildren(...(slot === 'main' ? [] : [tile(null)]), ...ids.map(tile));
     stats.replaceChildren(...statLines(c.form, c.gear));
+    root.classList.toggle('inspecting', !!open);
+    inspect.replaceChildren(...(open ? [inspector(open)] : []));
+    syncPreview();
   }
 
-  render();
   const close = () => { sfx.play('back'); cb.onClose(); };
   const onKey = (e: KeyboardEvent) => {
-    if (e.key !== 'Escape') return;
-    if (open) show(open);
-    else close();
+    if (e.key === 'Escape') { if (open) show(open); else close(); }
+    else if (open && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) step(e.key === 'ArrowLeft' ? -1 : 1);
   };
   window.addEventListener('keydown', onKey);
-  // The column count changes with the window: keep an open card inside the grid.
-  const onResize = () => { const card = list.querySelector<HTMLElement>('.icard'); if (card) place(card); };
-  window.addEventListener('resize', onResize);
-  const el = h('div.scr.gear', { role: 'dialog', 'aria-label': opts.title ?? 'Armory' },
+  const root = h('div.scr.gear', { role: 'dialog', 'aria-label': opts.title ?? 'Armory' },
     h('header.scr-head', null,
       h('div.scr-title', null, h('h1', null, opts.title ?? 'Armory')),
       h('div.grow'),
       h('button.btn.primary.done', { onclick: close }, icon('check'), 'Done')),
-    stage, panel,
+    stage, panel, inspect,
   );
-  return { el, dispose: () => { preview.dispose(); window.removeEventListener('keydown', onKey); window.removeEventListener('resize', onResize); } };
+  render();
+  return { el: root, dispose: () => { preview.dispose(); window.removeEventListener('keydown', onKey); } };
 }
 
 const SLOT_INFO: Record<GearSlot, string> = {

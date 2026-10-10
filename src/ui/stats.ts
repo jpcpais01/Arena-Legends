@@ -39,12 +39,20 @@ export function modText(add?: Partial<Stats>, mul?: Partial<Stats>): string {
   return out.join(' · ');
 }
 
-/** The stats that change between two gear sets, as small "label new" chips marked up or down (for a `.diff` row). */
-export function statDiff(form: FormId, from: GearSet, to: GearSet): HTMLElement[] {
+/**
+ * Every stat of a build as an inspector cell: the value with `to`, and how far
+ * it moved from `from` (for an `.ins-stats` grid). Unchanged stats are dimmed.
+ */
+export function statCompare(form: FormId, from: GearSet, to: GearSet): HTMLElement[] {
   const a = computeBaseStats(form, from), b = computeBaseStats(form, to);
-  return LINES.flatMap(([k, label, f]) => {
+  return LINES.map(([k, label, f]) => {
     const x = a[k] as number, y = b[k] as number;
-    if (f(x) === f(y)) return [];
-    return [h(`span.chg.${y > x ? 'up' : 'down'}`, { title: `${label}: ${f(x)} to ${f(y)}` }, label, ' ', h('b', null, f(y)))];
+    const same = f(x) === f(y);
+    const pct = f(y).endsWith('%');
+    const d = pct ? Math.round(y * 100) - Math.round(x * 100) : k === 'moveSpeed' ? Math.round((y - x) * 10) / 10 : Math.round(y) - Math.round(x);
+    return h(`div.st${same ? '.same' : y > x ? '.up' : '.down'}`, { title: same ? `${label}: ${f(y)}` : `${label}: ${f(x)} to ${f(y)}` },
+      h('span', null, label),
+      h('b', null, f(y)),
+      same ? null : h('i', null, `${d > 0 ? '+' : ''}${d}${pct ? '%' : ''}`));
   });
 }
