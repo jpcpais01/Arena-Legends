@@ -21,6 +21,8 @@ export interface FriendsCallbacks {
   onAccount(): void;
   /** The number of requests waiting changed (the menu's dot). */
   onIncoming?(n: number): void;
+  /** Hosts an online duel and invites this friend to it. */
+  onInvite?(f: Friend): void;
 }
 
 const ADDED: Record<AddResult, string> = {
@@ -170,7 +172,10 @@ export function friendsSheet(cb: FriendsCallbacks): { el: HTMLElement; dispose()
         void act(async () => { await (await social()).remove(me()!, f.uid); say(`${f.name} is no longer your friend.`); pick(null); });
       },
     }, icon('close'), h('span', null, 'Remove friend'));
-    const foot = h('div.fr-foot', null, back, remove);
+    const duel = cb.onInvite && h('button.btn.sm.primary.go.fr-duel', {
+      title: `Invite ${f.name} to an online duel`, onclick: () => { sfx.play('confirm'); cb.onInvite!(f); },
+    }, icon('swords'), h('span', null, 'Invite to duel'));
+    const foot = h('div.fr-foot', null, back, remove, duel);
     const got = heroes.get(f.uid);
     const hero = got && got !== 'error' ? parseCharacter(got.hero) : null;
     if (!hero) {
