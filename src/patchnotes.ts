@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.65.0',
+    date: '2026-10-10',
+    title: 'Builds on screen',
+    notes: [
+      'During a fight you can now see both builds: each side shows its gear icons small under the bars.',
+      'Key stats sit right below them: power, armor, magic resist, attack speed, speed and crit.',
+      'The stats are live: they turn green when buffed and red when lowered, so you can see rage, chill and the rest at work.',
+    ],
+  },
+  {
     version: '0.64.0',
     date: '2026-10-10',
     title: 'Fighting styles online',
