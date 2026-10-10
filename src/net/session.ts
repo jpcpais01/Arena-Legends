@@ -147,6 +147,8 @@ export class HostSession extends OnlineSession {
   private frozenLeft = 0;
   private watchBy = Infinity;
   private guestVerdicts = new Map<number, { hash: string; checks: string[] }>();
+  /** The guest's hero as they joined with it: a rematch starts both players from their own heroes again. */
+  private guestMe: CharacterBuild | null = null;
 
   constructor(me: CharacterBuild, private readonly resume?: Saved) {
     super(resume?.code ?? newRoomCode(), me);
@@ -248,7 +250,8 @@ export class HostSession extends OnlineSession {
     if (this.remote && this.remote !== ch) this.remote.drop();
     this.remote = ch;
     this.conn = 'open';
-    if (!s) this.newMatch([this.me, cleanBuild(m.build, this.me)], PICK_SECONDS_FIRST);
+    this.guestMe = cleanBuild(m.build, this.me);
+    if (!s) this.newMatch([this.me, this.guestMe], PICK_SECONDS_FIRST);
     else this.thaw();
     this.publish();
   }
@@ -365,7 +368,7 @@ export class HostSession extends OnlineSession {
 
   private maybeRematch(): void {
     const s = this.snap!;
-    if (s.rematch[0] && s.rematch[1]) this.newMatch([s.builds[0], s.builds[1]], PICK_SECONDS);
+    if (s.rematch[0] && s.rematch[1]) this.newMatch([this.me, this.guestMe ?? s.builds[1]], PICK_SECONDS);
     else this.advance();
     this.publish();
   }
@@ -483,7 +486,8 @@ export class GuestSession extends OnlineSession {
       const newMatch = this.snap?.id !== s.id;
       if (newMatch) this.verdicts.clear();
       const newRound = newMatch || this.snap?.round !== s.round || this.snap?.phase !== s.phase;
-      if (newRound && s.phase === 'pick') this.draft = s.builds[1];
+      // A new match starts from this player's own hero exactly as it is; later rounds from the build they last locked.
+      if (newRound && s.phase === 'pick') this.draft = newMatch && s.round === 1 ? this.me : s.builds[1];
       const p = this.pending;
       if (p && (s.phase !== 'pick' || p.round !== s.round || s.ready[1] === p.ready)) this.pending = null;
       else if (p) {

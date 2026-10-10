@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.65.2',
+    date: '2026-10-10',
+    title: 'Online matches keep your hero',
+    notes: [
+      "Every online match now starts from your hero exactly as you left them: gear, skins, body form and fighting style. Your saved hero never changes from what you pick in a match.",
+      'A rematch starts both of you from your own heroes again. Between rounds you still keep the build you last locked in.',
+    ],
+  },
+  {
     version: '0.65.1',
     date: '2026-10-10',
     title: 'More time to prepare online',

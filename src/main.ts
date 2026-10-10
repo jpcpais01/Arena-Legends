@@ -651,7 +651,8 @@ function startOnline(role: 'host' | 'guest', code = '', resume?: ReturnType<type
   if (!player) { pendingRoom = role === 'guest' ? code : ''; openCreator(true); return; }
   endOnline(false, false);
   sfx.unlock();
-  const me: CharacterBuild = { name: player.name, form: player.form, gear: { ...player.gear }, look: { ...player.look }, skins: { ...player.skins }, style: player.style ?? 'balanced' };
+  // The hero exactly as it is now (gear, skins, form, style, look): the match starts from it and never writes back.
+  const me: CharacterBuild = { ...player, gear: { ...player.gear }, look: { ...player.look }, skins: { ...player.skins }, style: player.style ?? 'balanced' };
   const s: OnlineSession = role === 'host' ? new HostSession(me, resume ?? undefined) : new GuestSession(code, me, resume ?? undefined);
   session = s;
   netMatch = ''; netRound = 0; netPick = ''; resultsKey = '';
