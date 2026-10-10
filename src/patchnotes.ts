@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.64.1',
+    date: '2026-10-10',
+    title: 'More time to prepare online',
+    notes: [
+      'Online matches now give you 3 minutes to pick your build before every round (it was 60 seconds for the first round and 40 after that). The clock shows minutes and seconds.',
+    ],
+  },
+  {
     version: '0.64.0',
     date: '2026-10-10',
     title: 'Fighting styles online',
