@@ -912,14 +912,13 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
 .bar.en { height: 0.55rem; width: min(14rem, 66%); background: #141030; }
 .bar.en .fill { background: linear-gradient(#a8d8ff 0 40%, #4a8ef0 40%); }
 .bar.en .fill.full { background: linear-gradient(#fff4b0 0 40%, #f2b840 40%); }
-/* DEBUG (temporary): AI heat bar. */
-.heat-row { display: flex; align-items: center; gap: 0.4rem; }
-.side.right .heat-row { flex-direction: row-reverse; }
-.bar.heat { height: 0.45rem; width: min(14rem, 66%); background: #1a1018; }
-.bar.heat .fill { background: linear-gradient(90deg, #f0c040, #ff5a2a); }
-.bar.heat.breathing .fill { background: #5ac8f0; }
-.bar.heat .tick { width: 2px; background: #fff; margin-left: -1px; }
-.heat-num { font: 600 0.6rem/1 var(--font); color: var(--text); text-shadow: 1px 1px 0 var(--ink); white-space: nowrap; }
+/* DEBUG (temporary): AI heat bar; the white mark is the fighter's tolerance. */
+.heat { position: relative; width: 5rem; height: 4px; background: #1a1018; outline: 1px solid var(--ink); }
+.side.right .heat { transform: scaleX(-1); }
+.heat i { position: absolute; top: 0; bottom: 0; left: 0; }
+.heat .fill { width: 100%; transform-origin: left; background: #ff7a2a; }
+.heat.breathing .fill { background: #5ac8f0; }
+.heat .tick { top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: #fff; }
 .side-hp { font: 600 0.75rem/1 var(--font); color: var(--text); text-shadow: 1px 1px 0 var(--ink), 2px 2px 0 var(--ink); }
 .plan { color: var(--gold); }
 .statuses { display: flex; gap: 3px; min-height: 16px; }

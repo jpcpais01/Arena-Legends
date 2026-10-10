@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.46.0',
+    date: '2026-10-10',
+    title: 'Tidier heat meter (temporary debug)',
+    notes: [
+      'The heat meter under each fighter is now a tiny bar instead of a line of text. The white mark is that fighter\'s limit: when the bar passes it they back off to circle, and the bar turns blue until they cool down. No mark means they won\'t rest right now.',
+    ],
+  },
+  {
     version: '0.45.0',
     date: '2026-10-10',
     title: 'Melee fighters close the gap',
