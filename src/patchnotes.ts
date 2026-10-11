@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.88.0',
+    date: '2026-10-11',
+    title: 'Clearer menus on phones, part 2',
+    notes: [
+      'Item skin icons have one clean border tinted by rarity, instead of looking framed twice.',
+      'The Armory gives the item list and the item card more room on a phone, so names and skills stop squeezing.',
+      'Shop offers sit on three tabs: Daily skins, Entrances and Mythic sets, each with its count, instead of one long scroll.',
+      'The Forge shows each rarity with its 0/3 progress once, and the chest panel says less and fits a phone with its browser bar.',
+    ],
+  },
+  {
     version: '0.87.0',
     date: '2026-10-11',
     title: 'Clearer menus on phones, part 1',
