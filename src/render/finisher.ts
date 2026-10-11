@@ -9,6 +9,7 @@ import {
 import type { Fx, View } from './fx';
 import type { Light } from './glfx';
 import { css, mix } from './pixel/color';
+import { PPM } from './sprite/animator';
 
 /**
  * KO finishers: the winner's signature cinematic, played from the knockout
@@ -31,6 +32,8 @@ export interface FinisherOptions {
   /** The winner's own colours (their weapon skin), for the finishers that take them. */
   hi?: number;
   lo?: number;
+  /** World height of the top of the view right now (the sky effects stay in sight under a zoomed camera). */
+  top?: () => number;
 }
 
 /** What to draw for each fighter this frame (null: their normal animation). `clip` '' keeps the animation and only tints. */
@@ -85,11 +88,13 @@ export class Finisher {
   readonly lo: number;
   /** Size of drawn shapes (menu previews are small). */
   readonly scale: number;
+  private readonly top: () => number;
 
   constructor(readonly id: FinisherId, private host: EntranceHost, private winAt: () => Spot, private fallAt: () => Spot, opts: FinisherOptions) {
     this.stage = opts.stage;
     this.quiet = !!opts.quiet;
     this.scale = opts.stage ? 1 : 0.62;
+    this.top = opts.top ?? (() => (opts.stage ? 6.5 : 2.6));
     const sig = FINISHERS[id].color;
     this.hi = opts.hi ?? sig;
     this.lo = opts.lo ?? mix(sig, 0x10081a, 0.55);
@@ -175,6 +180,11 @@ export class Finisher {
   /** The angle of the cut (eclipse, delayed cut), radians, world: down across from the winner's side. */
   get cutAngle(): number {
     return this.dir > 0 ? -0.42 : Math.PI + 0.42;
+  }
+
+  /** A height in the sky (world) that is still in view: `pad` below the top, never above `cap`. */
+  sky(pad = 0.5, cap = 5.6): number {
+    return Math.max(1.6, Math.min(this.top() - pad, cap));
   }
 
   /** The middle of the fallen body (world). */
@@ -335,7 +345,7 @@ const DEFS: Record<FinisherId, Def> = {
       const hit = e.strike('hit', 0.5, 0.95);
       e.pace = t < 0.06 ? 0 : hit < 0 ? 0.4 : t < hit + 0.14 ? 0 : 0.6;
       if (t > 0.18 && (hit < 0 || t < hit + 0.45)) e.win('victory', 0, 'shout');
-      for (const k of [0.28, 0.46]) if (e.at(k)) { e.fx.bolt(e.F[0] - 1.4, 5.2, e.F[0] + 1.1, 5.4, 0x7ac8ff, 0.08); e.flash(0xc8e8ff, 0.25); e.sound('lightning', 0.25); }
+      for (const k of [0.28, 0.46]) if (e.at(k)) { e.fx.bolt(e.F[0] - 1.4, e.sky(0.6), e.F[0] + 1.1, e.sky(0.4), 0x7ac8ff, 0.08); e.flash(0xc8e8ff, 0.25); e.sound('lightning', 0.25); }
       if (hit < 0) {
         if (e.every('crackle', 0.05)) e.fx.burst({ x: e.F[0], y: 0.05, count: 1, jitter: 0.6, jitterY: 0, dir: UP, spread: 0.3, speed: [1, 2.5], life: [0.12, 0.25], color: WHITE, color2: 0x7ac8ff, kind: 'streak' });
         return;
@@ -367,7 +377,7 @@ const DEFS: Record<FinisherId, Def> = {
       const hit = e.mark.hit ?? 99;
       const x = Math.round(v.sx(e.mark.x ?? e.F[0])), gy = Math.round(v.sy(0));
       if (layer === 'under') { if (t > hit) drawScorch(g, x, gy, clamp01(1 - (t - hit - 0.9) / 0.6), t, e.scale, 0x7ac8ff); return; }
-      drawStormCloud(g, Math.round(v.sx(e.F[0])), e.stage ? Math.round(v.sy(5.4)) : 4, t, Math.min(hit, 1.4));
+      drawStormCloud(g, Math.round(v.sx(e.F[0])), Math.round(v.sy(e.sky(e.stage ? 0.45 : 0.15))), t, Math.min(hit, 1.4));
       if (t > hit) drawCrackle(g, Math.round(v.sx(e.F[0])), gy + 30, t, hit, hit + 0.7);
     },
   },
@@ -385,6 +395,8 @@ const DEFS: Record<FinisherId, Def> = {
         e.sound('entWind');
       }
       if (e.at(0.5)) e.sound('gale', 0.6);
+      // A pink glow rides the front of the gust.
+      if (e.at(0.15)) e.light({ kind: 'glow', x: e.F[0], y: 1.2, r0: 1.1, r1: 1.5, hi: 0xffe0f0, lo: 0xc04070, life: 1.5, power: 0.55, fin: 0.15, real: true, follow: () => [gustX(e), 1.2] });
       e.pace = t < 0.08 ? 0 : t < GO ? 0.08 : 0.7;
       if (t > 0.3) { const p = e.win('fin.lower', 0, t > 0.5 && t < GO + 0.2 ? 'blink' : 'calm'); p.flip = false; }
       if (e.at(0.2)) e.glow(e.body[0], e.body[1], 0.6, 1.4, 0xffe0f0, 0xc04070, GO, 0.45, { fin: 0.3 });
@@ -403,8 +415,8 @@ const DEFS: Record<FinisherId, Def> = {
     },
     draw(e, g, v, layer, t) {
       if (layer !== 'over') return;
-      const W = g.canvas.width;
-      drawPetalGust(g, W, Math.round(v.sy(e.stage ? 1.2 : 1.0)), (t - 0.15) / 1.5, t, e.dir, e.scale);
+      const mid = Math.round(v.sx((e.W[0] + e.F[0]) / 2));
+      drawPetalGust(g, mid, GUST * PPM * (e.stage ? 1 : 0.34), Math.round(v.sy(e.stage ? 1.2 : 0.9)), (t - 0.15) / 1.45, t, e.dir, e.scale);
     },
   },
 
@@ -504,8 +516,8 @@ const DEFS: Record<FinisherId, Def> = {
       const big = e.stage && !e.quiet;
       if (layer === 'under') {
         const mid = Math.round(v.sx((e.W[0] + e.F[0]) / 2));
-        if (big) drawEclipseSky(g, g.canvas.width, g.canvas.height, Math.round(v.sy(0)), mid, Math.round(v.sy(3.4)), on, t);
-        else { g.globalAlpha = on; drawBlackSun(g, mid, Math.round(v.sy(e.stage ? 3.2 : 1.6)), Math.round(11 * e.scale), t); g.globalAlpha = 1; }
+        if (big) drawEclipseSky(g, g.canvas.width, g.canvas.height, Math.round(v.sy(0)), mid, Math.round(v.sy(e.sky(1.1, 3.4))), on, t);
+        else { g.globalAlpha = on; drawBlackSun(g, mid, Math.round(v.sy(e.sky(e.stage ? 1.1 : 0.5, 3.2))), Math.round(11 * e.scale), t); g.globalAlpha = 1; }
         return;
       }
       if (t >= CUT && t < OFF) {
@@ -527,7 +539,7 @@ const DEFS: Record<FinisherId, Def> = {
         e.focus((e.W[0] + e.F[0]) / 2, 2.3, 1);
         e.vignette(0x000000, 0.7, CUT + 0.4);
       }
-      e.pace = t < CUT ? 0 : 0.75;
+      e.pace = t < 0.2 ? 0.35 : t < CUT ? 0 : 0.75;
       if (t > 0.22 && t < CUT + 0.7) {
         const p = e.win('fin.lower', 0, t < CUT ? 'blink' : 'calm');
         p.flip = t > 0.38 && t < CUT + 0.5;
@@ -583,7 +595,7 @@ const DEFS: Record<FinisherId, Def> = {
         if (!e.at(at)) continue;
         // Aimed at where the fallen is, give or take.
         const tx = e.F[0] + (big ? 0 : (rnd(i + 1) - 0.5) * 1.6), ty = big ? e.body[1] * 0.5 : Math.max(0, e.F[1] + rnd(i + 4) * 0.8);
-        const sx = tx - e.dir * (1.5 + rnd(i) * 1.5), sy = ty + 5.5 + rnd(i + 2);
+        const sx = tx - e.dir * (1.5 + rnd(i) * 1.5), sy = Math.max(ty + 2, e.sky(-0.6, 6.4) + rnd(i + 2) * 0.6);
         e.bits.push({ x: sx, y: sy, vx: (tx - sx) / FALL, vy: (ty - sy) / FALL, a: 0, va: 0, t: 0, life: FALL, s: big ? 2 : 1, hit: false });
         e.light({ kind: 'glow', x: sx, y: sy, r0: 0.25, r1: 0.4, hi: WHITE, lo: 0x8ab0ff, life: FALL, power: 0.8, fin: 0, follow: () => { const b = e.bits.find((q) => q.life === FALL && q.x === sx && q.t < FALL); return b ? [b.x, b.y] : null; } });
       }
@@ -676,7 +688,7 @@ const DEFS: Record<FinisherId, Def> = {
         pts.push({ x, y, z: p[2] });
       }
       const open = t < DRAGON.lunge[0] - 0.15 ? 0 : 1;
-      drawDragon(g, pts, layer === 'over', fade, open, e.hi, e.lo, e.scale * (e.stage ? 1 : 0.8), t);
+      drawDragon(g, pts, layer === 'over', fade, open, e.hi, e.lo, e.stage ? 1.45 : 0.55, t);
     },
   },
 
@@ -698,7 +710,7 @@ const DEFS: Record<FinisherId, Def> = {
         // Where it will fall: just past the fallen.
         e.mark.x = e.F[0] + e.dir * 0.75;
         e.light({ kind: 'ring', x: e.mark.x, y: 0.04, r0: 1.8, r1: 0.5, w: 0.05, squash: 0.25, hi: 0xffe070, lo: 0xa06818, life: plant - 0.3, power: 0.7, fin: 0.4 });
-        e.light({ kind: 'rays', x: e.mark.x, y: e.stage ? 5.2 : 2.2, r0: 1, r1: 2.4, hi: 0xfff0c0, lo: 0xc8901a, life: plant - 0.2, power: 0.45, fin: 0.3 });
+        e.light({ kind: 'rays', x: e.mark.x, y: e.sky(0.7), r0: 1, r1: 2.4, hi: 0xfff0c0, lo: 0xc8901a, life: plant - 0.2, power: 0.45, fin: 0.3 });
       }
       if (e.at(drop)) {
         e.sound('entFall', 0.9);
@@ -728,7 +740,7 @@ const DEFS: Record<FinisherId, Def> = {
       const { drop, plant } = JUDGE;
       if (t < 0.3) return;
       const x = Math.round(v.sx(e.mark.x)), gy = Math.round(v.sy(0));
-      const sky = e.stage ? Math.round(v.sy(5.2)) : 8;
+      const sky = Math.round(v.sy(e.sky(e.stage ? 0.7 : 0.25)));
       if (layer === 'under') {
         drawRuneRing(g, x, sky, 26 * e.scale, (t - 0.3) / 0.3 * (t > plant ? clamp01(1 - (t - plant) / 0.4) : 1), t);
         return;
@@ -775,7 +787,7 @@ function dragonAt(e: Finisher, t: number, u: number): [number, number, number] |
   const head = t < c1 ? easeOut((t - c0) / (c1 - c0)) : t < l0 ? 1 : 1 + 0.4 * easeIn((t - l0) / (l1 - l0));
   const s = head - (1 - u) * 0.75;
   if (s < 0) return null;
-  const R = e.stage ? 0.85 : 0.5, H = e.stage ? 2.5 : 1.55;
+  const R = e.stage ? 1.0 : 0.5, H = e.stage ? 2.6 : 1.55;
   const wx = e.mark.wx ?? e.W[0];
   if (s <= 1) {
     const a = -UP + s * Math.PI * 3.2;
@@ -788,6 +800,15 @@ function dragonAt(e: Finisher, t: number, u: number): [number, number, number] |
   const [bx, by] = e.body;
   const x = x0 + (bx - x0) * k, y = y0 + (by - y0) * k + Math.sin(k * Math.PI) * (e.stage ? 1.1 : 0.5);
   return [x, y, 1];
+}
+
+/** How far either side of the fighters the petal gust sweeps (m, battle). */
+const GUST = 4.6;
+
+/** Where the front of the petal gust is (world x). */
+function gustX(e: Finisher): number {
+  const R = GUST * (e.stage ? 1 : 0.34), k = (e.time - 0.15) / 1.45;
+  return (e.W[0] + e.F[0]) / 2 + e.dir * (-R + k * 3.3 * R);
 }
 
 /** Judgement timing: the sword starts falling, and plants. */

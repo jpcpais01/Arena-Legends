@@ -2,6 +2,7 @@ import { Brain, PLAN_LABELS, type Plan } from '../sim/ai/brain';
 import type { Battle } from '../sim/battle';
 import { MATCH_TIME, MAX_ENERGY, ROUND_TIME } from '../sim/constants';
 import { skinOn } from '../character/skins';
+import { FINISHERS } from '../character/finales';
 import { iconCanvas } from '../render/icons';
 import type { Fighter } from '../sim/fighter';
 import { FORMS } from '../sim/forms';
@@ -320,7 +321,9 @@ export class Hud {
     } else if (e.type === 'overtime') {
       this.showBanner('OVERTIME!', 'Night falls: double damage', 2.2);
     } else if (e.type === 'ko') {
-      this.showBanner('K.O.!', '', 2);
+      // A finisher's name goes under it, and the banner clears in time for the show.
+      const fin = this.view.finisherFor(e.f);
+      this.showBanner('K.O.!', fin ? FINISHERS[fin].name : '', fin ? 1.1 : 2);
     } else if (e.type === 'end' && e.reason === 'time') {
       this.showBanner('TIME!', e.winner === -1 ? 'Draw' : `${b.fighters[e.winner].name} wins`, 2);
     }

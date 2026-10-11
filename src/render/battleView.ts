@@ -2,6 +2,7 @@ import { sfx, type Sfx } from '../audio/sfx';
 import { clamp } from '../core/math';
 import type { Battle } from '../sim/battle';
 import type { EntranceId } from '../character/entrances';
+import { finisherOf, type FinisherId, type PoseId } from '../character/finales';
 import { ARENA_HALF_WIDTH, DT, ROUND_TIME } from '../sim/constants';
 import { getStatus, type Fighter } from '../sim/fighter';
 import { HAWK_DIVE, WHELP_BREATH } from '../sim/battle';
@@ -9,7 +10,9 @@ import type { AbilityDef, ActionState, BattleEvent, FighterId, FormId, Projectil
 import { ArenaView } from './arena';
 import { bodyMarks } from './companions';
 import { THEMES, type Theme } from './arenaArt';
-import { Entrance, entranceLength, wrapFrame, type EntrancePose } from './entrance';
+import { Entrance, entranceLength, wrapFrame, type EntranceHost, type EntrancePose } from './entrance';
+import { Finisher } from './finisher';
+import { PoseFx } from './victory';
 import { drawText } from './font';
 import { ellipseOutline, Fx, type View } from './fx';
 import { css, mix } from './pixel/color';
@@ -26,7 +29,7 @@ import { Animator, PPM, type AnimOut } from './sprite/animator';
 import { SpriteBank, type Sprite } from './sprite/bank';
 import { makeArt, type CharacterArt } from './sprite/look';
 import type { SkinFx } from './sprite/skins';
-import { isSuper, superLook, type SuperLook } from './supers';
+import { isSuper, skinColours, superLook, type SuperLook } from './supers';
 import { superImpactFx, superRelease as superReleaseFx, superWindup, type SuperHost } from './superFx';
 import { GlFx, type Light } from './glfx';
 import { SoftLights } from './softLight';
@@ -212,6 +215,14 @@ export class BattleView implements View {
   private dim = 0;
   /** Fighter sprites drawn this frame, for their night accents: feet position and facing. */
   private glowList: { s: Sprite; x: number; y: number; flip: boolean }[] = [];
+  /** Each side's KO finisher, the one playing, and seconds since it ended (−1: none played). */
+  private finIds: [FinisherId, FinisherId] = ['clean', 'clean'];
+  private fin: Finisher | null = null;
+  private finAfter = -1;
+  /** World height of the top of the view (finishers keep their skies in sight). */
+  private viewTop = 6;
+  /** The winner's victory pose extras. */
+  private poseFx: PoseFx | null = null;
 
   constructor(readonly screen: Screen) {
     screen.onResize = () => this.layout();
@@ -237,6 +248,9 @@ export class BattleView implements View {
         hawkFrom: null, hawkAway: 0, landT: 0, breathT: 0, wardT: 0, puffT: 0, pulledBy: -1, chargeT: 0, sigT: -9, ent: null, pose: null,
       };
     });
+    this.finIds = [finisherOf(b.fighters[0].look), finisherOf(b.fighters[1].look)];
+    this.fin = this.poseFx = null;
+    this.finAfter = -1;
     clearPatches();
     this.zoneHot.clear();
     this.heard.clear();
@@ -273,8 +287,31 @@ export class BattleView implements View {
   playEntrances(ids: [EntranceId, EntranceId]): number {
     const b = this.battle;
     if (!b) return 0;
+    const host = (id: FighterId) => this.entHost(id);
+    // The second hero comes on as the first strikes their pose, so the camera can show each one.
+    const gap = clamp(entranceLength(ids[0]) - 0.6, 0.55, 1.6);
+    let end = 0;
+    this.fighters.forEach((v, i) => {
+      const f = b.fighters[i];
+      const delay = i * gap;
+      v.ent = new Entrance(ids[i], host(f.id), f.x, f.facing, { delay, stage: true });
+      v.pose = v.ent.update(0);
+      end = Math.max(end, delay + entranceLength(ids[i]));
+    });
+    return end;
+  }
+
+  /** Overrides the heroes' finishers and victory poses (yours fall back to the free ones unless owned). */
+  setFinales(fins: [FinisherId, FinisherId], poses: [PoseId, PoseId]): void {
+    this.finIds = [...fins];
+    this.fighters.forEach((v, i) => v.anim.setPose(poses[i]));
+  }
+
+  /** What entrances and finishers play through: effects, light and the camera, toned down when quiet. */
+  private entHost(id: FighterId): EntranceHost {
+    const b = this.battle!;
     const shader = () => this.gl.ok && !this.quiet;
-    const host = (id: FighterId) => ({
+    return {
       fx: this.fx,
       shake: (a: number) => this.shake(a),
       flash: (c: number, a: number) => this.flash(c, a),
@@ -287,18 +324,27 @@ export class BattleView implements View {
       vignette: (c: number, k: number, life: number) => { if (shader()) this.gl.vignette(c, k, life); },
       focus: (x: number, seconds: number, levels = 1) => this.cinema(levels, seconds, x, 0.8),
       tip: () => this.tipOf(b.fighters[id]) ?? null,
-    });
-    // The second hero comes on as the first strikes their pose, so the camera can show each one.
-    const gap = clamp(entranceLength(ids[0]) - 0.6, 0.55, 1.6);
-    let end = 0;
-    this.fighters.forEach((v, i) => {
-      const f = b.fighters[i];
-      const delay = i * gap;
-      v.ent = new Entrance(ids[i], host(f.id), f.x, f.facing, { delay, stage: true });
-      v.pose = v.ent.update(0);
-      end = Math.max(end, delay + entranceLength(ids[i]));
-    });
-    return end;
+    };
+  }
+
+  /** The finisher a knockout of `fallen` plays, or null for the plain KO (double KO, the free finisher). */
+  finisherFor(fallen: FighterId): FinisherId | null {
+    const b = this.battle;
+    if (!b || this.fin || this.finAfter >= 0 || b.winner === -1 || b.winner === fallen) return null;
+    const id = this.finIds[b.winner];
+    return id === 'clean' ? null : id;
+  }
+
+  /** The winner's finisher takes over the knockout; false when there is none to play (a double KO). */
+  private startFinisher(fallen: FighterId): boolean {
+    const b = this.battle!;
+    const w = b.fighters[fallen === 0 ? 1 : 0], down = b.fighters[fallen];
+    if (this.fin || this.finAfter >= 0 || !b.over || b.winner !== w.id) return false;
+    const [hi, lo] = skinColours(this.fighters[w.id].art.mainSkin) ?? [];
+    // It sets the pace from here: no super's slow motion or punch-in carries over.
+    this.slow = 1; this.slowT = 0; this.beat = null; this.punchT = 0;
+    this.fin = new Finisher(this.finIds[w.id], this.entHost(w.id), () => [this.lx(w), this.ly(w)], () => [this.lx(down), this.ly(down)], { stage: true, quiet: this.quiet, hi, lo, top: () => this.viewTop });
+    return true;
   }
 
   /** Pre-draws sprites within a time budget; true when everything is ready. */
@@ -398,8 +444,18 @@ export class BattleView implements View {
         this.slow = this.beat.scale + (1 - this.beat.scale) * up * up;
       }
     }
+    // A finisher runs on (near) real time and sets the pace the sim is stepped at itself.
+    const fdt = this.paused ? 0 : dt * Math.sqrt(this.speed);
+    if (this.fin && fdt > 0 && !this.fin.update(fdt)) {
+      this.fin = null;
+      this.finAfter = 0;
+      const w = b.winner !== -1 ? b.fighters[b.winner] : undefined;
+      if (w?.alive) this.fighters[w.id].anim.restartPose();
+    }
+    if (this.finAfter >= 0) this.finAfter += fdt;
+    const fin = this.fin;
     if (!this.paused && !this.hold) {
-      this.acc += dt * this.speed * this.slow;
+      this.acc += fin ? fdt * fin.pace : dt * this.speed * this.slow;
       let steps = 0;
       while (this.acc >= DT && steps < 12) {
         b.step();
@@ -408,14 +464,15 @@ export class BattleView implements View {
         steps++;
       }
       if (steps === 12) this.acc = 0;
-      if (b.over && !this.ended && b.endTime > 2.2) {
+      // After a finisher, the results wait for the victory pose to strike.
+      if (b.over && !this.ended && (this.finAfter >= 0 ? this.finAfter > 1.1 : !fin && b.endTime > 2.2)) {
         this.ended = true;
         this.listener?.onEnd?.(b);
       }
     }
     this.alpha = this.acc / DT;
     // Before the fight (entrances, countdown) effects run on real time whatever the battle speed.
-    const vdt = this.paused ? 0 : dt * (this.hold ? 1 : this.speed * this.slow);
+    const vdt = this.paused ? 0 : fin ? fdt : dt * (this.hold ? 1 : this.speed * this.slow);
     for (let i = this.laters.length - 1; i >= 0 && vdt > 0; i--) {
       const l = this.laters[i];
       if ((l.t -= vdt) <= 0) { this.laters.splice(i, 1); l.fn(); }
@@ -505,6 +562,7 @@ export class BattleView implements View {
     const vh = sc.h / this.zoom;
     const cy = this.gy - (this.gy / sc.h - 0.5) * vh - Math.min(this.viewY, 2.5) * PPM * 0.5 * (1 - 1 / this.zoom);
     sc.setView(this.zoom, sc.w / 2 + (this.viewX - this.camX) * PPM, cy);
+    this.viewTop = (this.gy - (cy - vh / 2)) / PPM;
     if (this.shakeT > 0) {
       this.shakeT -= dt;
       const a = this.shakeAmp * PPM * 0.12 * Math.max(0, this.shakeT * 3);
@@ -533,6 +591,7 @@ export class BattleView implements View {
     }
     this.fx.drawUnder(g, this);
     for (const v of this.fighters) v.ent?.draw(g, this, 'under');
+    this.fin?.draw(g, this, 'under');
     for (const z of b.zones) this.drawZoneGround(g, z);
     // Where a meteor is about to land.
     for (const p of b.projectiles) if (p.alive && p.style === 'meteor') this.drawMeteorMark(g, p);
@@ -548,8 +607,12 @@ export class BattleView implements View {
     // The fighter mid-attack draws in front.
     const order: FighterId[] = b.fighters[0].action && !b.fighters[1].action ? [1, 0] : [0, 1];
     const secOut = (id: FighterId) => b.projectiles.some((p) => p.alive && p.owner === id && p.style === 'chakram');
-    for (const id of order) this.drawFighter(g, b.fighters[id], this.fighters[id], dt, secOut(id));
+    this.victoryFx(g);
+    // Under a finisher the bodies keep the sim's pace (a fallen frozen in mid-air holds still).
+    const fdt = this.fin ? dt * this.fin.pace : dt;
+    for (const id of order) this.drawFighter(g, b.fighters[id], this.fighters[id], fdt, secOut(id));
     for (const v of this.fighters) v.ent?.draw(g, this, 'over');
+    this.fin?.draw(g, this, 'over');
     for (const f of b.fighters) this.drawItem(g, f);
     this.drawChains(g);
     for (const p of b.projectiles) if (p.alive) this.drawProjectile(g, p);
@@ -612,6 +675,19 @@ export class BattleView implements View {
     g.globalCompositeOperation = 'source-over';
   }
 
+  /** The winner's victory pose extras (sparkles, light, a rock for the champion's foot), drawn behind the bodies. */
+  private victoryFx(g: CanvasRenderingContext2D): void {
+    const b = this.battle!;
+    const w = b.over && !this.fin && b.winner !== -1 ? b.fighters[b.winner] : undefined;
+    const v = w?.alive ? this.fighters[w.id] : undefined;
+    const t = v ? v.anim.poseT : -1;
+    if (!w || !v || t < 0) return;
+    this.poseFx ??= new PoseFx(v.anim.pose, this.entHost(w.id));
+    const spot = { x: this.lx(w), y: this.ly(w), facing: w.facing, tip: this.tipOf(w) ?? null };
+    if (!this.paused) this.poseFx.update(t, v.out.frame, spot);
+    this.poseFx.drawUnder(g, this, spot);
+  }
+
   /** The fighter's body during an entrance: faded, washed with a colour, or cut off at the ground. */
   private blitEntrance(g: CanvasRenderingContext2D, v: FighterView, o: AnimOut, s: Sprite, pose: EntrancePose, px: number, py: number, flip: boolean): void {
     const ground = pose.clipGround;
@@ -645,16 +721,20 @@ export class BattleView implements View {
     const over = b.over;
     // The belt is empty once every use of the usable item is spent.
     const useOut = f.uses.some((u, i) => u === 0 && f.abilities[i].from === 'usable');
-    v.out = v.anim.update(f, x, dt, over, b.winner === f.id, secOut, useOut);
+    // The winner stands by while their finisher plays; the victory pose follows it.
+    v.out = v.anim.update(f, x, dt, over, b.winner === f.id && !this.fin, secOut, useOut);
     let o = v.out;
-    const pose = v.pose;
+    const fin = this.fin?.frame;
+    const pose = v.pose ?? (fin ? (f.alive ? fin.win : fin.fall) : null);
     if (pose) {
-      // Entrance: its own clip and frame, moved off the spot; hidden until it begins.
+      // Entrance (or finisher): its own clip and frame, moved off the spot; hidden until it begins. No clip: just a wash.
       if (pose.alpha <= 0) return;
-      const clip = v.bank.set.clips.has(pose.clip) ? pose.clip : 'idle';
-      const frame = wrapFrame(pose.frame, clipLength(v.bank.set.clips.get(clip)!));
-      o = { ...o, clip, frame, face: pose.face, jitter: 0, hop: 0 };
-      o.key = `${o.clip}.${o.frame}.${o.face ?? ''}${o.secOut ? '.o' : ''}${o.useOut ? '.u' : ''}`;
+      if (pose.clip) {
+        const clip = v.bank.set.clips.has(pose.clip) ? pose.clip : 'idle';
+        const frame = wrapFrame(pose.frame, clipLength(v.bank.set.clips.get(clip)!));
+        o = { ...o, clip, frame, face: pose.face, jitter: 0, hop: 0 };
+        o.key = `${o.clip}.${o.frame}.${o.face ?? ''}${o.secOut ? '.o' : ''}${o.useOut ? '.u' : ''}`;
+      }
       x += pose.dx;
       y += pose.dy;
     }
@@ -725,8 +805,10 @@ export class BattleView implements View {
       g.globalAlpha = 1;
     };
     // The hit flash runs on real time, so slow motion never leaves a body washed out white.
-    if (v.flash > 0) { tint('#ffffff', Math.min(1, v.flash * 12)); if (dt > 0) v.flash -= this.realDt; }
-    if (v.drink > 0) { tint(v.drinkCol, Math.min(0.65, v.drink * 3)); if (dt > 0) v.drink -= this.realDt; }
+    // (A finisher can hold the bodies still; the flash still fades.)
+    const fade = dt > 0 || !!this.fin;
+    if (v.flash > 0) { tint('#ffffff', Math.min(1, v.flash * 12)); if (fade) v.flash -= this.realDt; }
+    if (v.drink > 0) { tint(v.drinkCol, Math.min(0.65, v.drink * 3)); if (fade) v.drink -= this.realDt; }
     if (getStatus(f, 'frozen')) tint('#bff0ff', 0.6);
     else if (getStatus(f, 'chill')) tint('#8ad8ff', 0.22);
     if (getStatus(f, 'ironskin')) tint('#e8eef8', 0.25 + 0.15 * Math.sin(this.time * 10));
@@ -1833,13 +1915,14 @@ export class BattleView implements View {
       }
       case 'ko': {
         const f = b.fighters[e.f];
+        this.arena?.cheer(1);
+        if (this.startFinisher(e.f)) break;
         fx.pulse('groundRing', f.x, 0, 4, 0xffffff, 0.7);
         fx.pulse('star', f.x, 1.2, 1.2, 0xfff0c0, 0.3);
         fx.burst({ x: f.x, y: 1.2, count: 50, speed: [4, 11], life: [0.4, 0.9], color: 0xffffff, color2: 0xffd27a, gravity: 6, drag: 1, kind: 'streak' });
         this.play('ko', this.pan(f.x));
         this.shake(1.1);
         this.flash(0xffffff, 1.4);
-        this.arena?.cheer(1);
         this.slowmo(0.25, 1.3);
         this.punchIn(2, 2.2, f.x);
         break;

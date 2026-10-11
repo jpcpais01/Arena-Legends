@@ -86,39 +86,58 @@ export function drawScorch(g: CanvasRenderingContext2D, cx: number, gy: number, 
 
 const PETAL = ['#ffd0e4', '#ffb0d0', '#ff90b8', '#fff0f6', '#f070a0'];
 /**
- * A gust of cherry petals sweeping across the view (in `dir`), a band of them
- * swirling round `y0` with wind lines streaking ahead. `k` is the gust's
- * progress (0..1, then it is gone), `t` time for the tumbling.
+ * A gust of cherry petals sweeping across the view (`dir` the way it blows):
+ * curling streams of wind with a thick swarm of petals riding them, densest
+ * at the front, thinning out behind. It crosses the stretch `cx` ± `R`
+ * (screen px) at about the height `y0` as `k` goes 0 to 1.
  */
-export function drawPetalGust(g: CanvasRenderingContext2D, W: number, y0: number, k: number, t: number, dir: number, scale: number): void {
-  if (k <= 0 || k >= 1) return;
-  const n = Math.round(46 + 50 * scale);
-  const front = -0.3 * W + k * W * 1.9;
-  // Wind lines out in front.
-  g.fillStyle = '#fff0f6';
-  for (let i = 0; i < 9; i++) {
-    const L = 14 + rnd(i) * 26;
-    const x = front - rnd(i + 4) * W * 0.5;
-    const y = y0 + (rnd(i + 9) - 0.5) * 70 * scale + Math.sin(x * 0.03 + i) * 4;
-    g.globalAlpha = 0.45 * (1 - Math.abs(k - 0.4));
-    for (let j = 0; j < L; j += 2) {
-      const xx = x - j;
-      g.fillRect(Math.round(dir > 0 ? xx : W - xx), Math.round(y + Math.sin(xx * 0.05 + i) * 2), 2, 1);
+export function drawPetalGust(g: CanvasRenderingContext2D, cx: number, R: number, y0: number, k: number, t: number, dir: number, scale: number): void {
+  if (k <= 0 || k >= 1.4) return;
+  const tail = R * 1.3;
+  const front = -R + k * (2 * R + tail);
+  const X = (x: number) => Math.round(cx + dir * x);
+  const fade = k > 1 ? 1 - (k - 1) / 0.4 : 1;
+  // Streams of wind, each a wavy line that curls over at its head.
+  for (let i = 0; i < 5; i++) {
+    const yb = y0 + (i - 2) * 11 * scale + Math.sin(i * 2.1) * 6 * scale;
+    const head = front - rnd(i + 2) * R * 0.25;
+    const len = tail * (0.5 + rnd(i + 7) * 0.5);
+    for (let j = 0; j < len; j += 1.5) {
+      const x = head - j;
+      const a = (1 - j / len) * 0.55 * fade;
+      if (a <= 0.02) continue;
+      const y = yb + Math.sin((x * 0.045 + i * 1.7) + t * 3) * 5 * scale;
+      g.globalAlpha = a;
+      g.fillStyle = j < 6 ? '#ffffff' : '#ffe4f0';
+      g.fillRect(X(x), Math.round(y), 1, 1);
+    }
+    // The curl: a little loop thrown up at the head.
+    for (let a = 0; a < Math.PI * 1.6; a += 0.25) {
+      const r = (4 + a * 1.4) * scale;
+      g.globalAlpha = 0.6 * fade * (1 - a / (Math.PI * 1.6));
+      g.fillStyle = '#ffffff';
+      g.fillRect(X(head - 2 + Math.sin(a) * r), Math.round(yb - r + Math.cos(a) * r), 1, 1);
     }
   }
-  // Petals: each rides its own swirl behind the front.
+  // The swarm: petals bunched at the front, strung out behind, each tumbling on its own swirl.
+  const n = Math.round(150 * scale + 40);
   for (let i = 0; i < n; i++) {
-    const lag = rnd(i) * W * 0.9;
+    const lag = (rnd(i) ** 1.8) * tail;
     const x = front - lag;
-    if (x < -10 || x > W + 10) continue;
-    const sw = t * (2 + rnd(i + 3) * 2) + i;
-    const y = y0 + (rnd(i + 5) - 0.5) * 90 * scale + Math.sin(sw) * 9 * scale + lag * 0.04;
-    const px = Math.round(dir > 0 ? x : W - x), py = Math.round(y);
-    const flip = (Math.floor(sw * 2) & 1) === 0;
-    g.globalAlpha = 1;
+    if (x < -R * 1.6 || x > R * 1.6) continue;
+    const sw = t * (3 + rnd(i + 3) * 3) + i * 1.3;
+    const spread = (16 + lag * 0.18) * scale;
+    const y = y0 + (rnd(i + 5) - 0.5) * 2 * spread + Math.sin(sw) * 6 * scale + Math.sin(x * 0.03 + i) * 3;
+    const px = X(x + Math.cos(sw) * 3 * scale), py = Math.round(y);
+    const flat = (Math.floor(sw * 1.5) & 1) === 0;
+    g.globalAlpha = fade * (lag < tail * 0.75 ? 1 : 1 - (lag - tail * 0.75) / (tail * 0.25));
+    const big = i % 7 === 0 && lag < tail * 0.3;
     g.fillStyle = PETAL[i % PETAL.length];
-    g.fillRect(px, py, 2, flip ? 1 : 2);
-    if (i % 3 === 0) { g.fillStyle = '#ffffff'; g.fillRect(px + (flip ? 1 : 0), py, 1, 1); }
+    if (big) {
+      g.fillRect(px - 1, py, 3, flat ? 2 : 1);
+      g.fillRect(px, py - 1, 1, flat ? 1 : 3);
+    } else g.fillRect(px, py, 2, flat ? 1 : 2);
+    if (i % 3 === 0) { g.fillStyle = '#fff4f8'; g.fillRect(px + (flat ? 1 : 0), py, 1, 1); }
   }
   g.globalAlpha = 1;
 }
@@ -239,7 +258,7 @@ export interface DragonPt { x: number; y: number; z: number }
  * drops the jaw (the roar).
  */
 export function drawDragon(g: CanvasRenderingContext2D, pts: DragonPt[], front: boolean, alpha: number, open: number, hi: number, lo: number, scale: number, t: number): void {
-  if (alpha <= 0 || pts.length < 2) return;
+  if (alpha <= 0 || pts.length < 3) return;
   const body = css(mix(hi, lo, 0.35)), dark = css(lo), light = css(mix(hi, 0xffffff, 0.45)), white = '#ffffff';
   const n = pts.length;
   for (let i = 0; i < n; i++) {

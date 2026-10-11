@@ -17,6 +17,10 @@ import { Preview } from './preview';
 import { buyEntrance, entranceOf, ENTRANCE_IDS, ENTRANCES, ownsEntrance, type EntranceId } from '../character/entrances';
 import { gems } from '../character/collection';
 import { ENTRANCE_ICON, ENTRANCE_TIER } from './entranceUi';
+import {
+  buyFinisher, buyPose, FINISHER_IDS, finisherOf, FINISHERS, ownsFinisher, ownsPose, POSE_IDS, poseOf, POSES, type FinaleDef, type FinisherId, type PoseId,
+} from '../character/finales';
+import { FINISHER_ICON, POSE_ICON } from './finaleUi';
 import { gemTag } from './gacha';
 import { heroLevel, levelOf, pointsAt, progress, POINTS_PER_LEVEL } from '../character/progress';
 import { applyTraining, nextPointWorth, spentPoints, TRAIN, TRAIN_IDS, type TrainId } from '../sim/training';
@@ -39,6 +43,7 @@ const STEPS: StepDef[] = [
   { label: 'Name', icon: 'edit', title: 'Name your legend', sub: 'The crowd will chant it.' },
   { label: 'Scene', icon: 'star', title: 'Set your scene', sub: 'The backdrop behind your portrait, wherever you show up.' },
   { label: 'Entrance', icon: 'boot', title: 'Make an entrance', sub: 'How you step into the arena before every fight. More in the Shop.' },
+  { label: 'Finale', icon: 'trophy', title: 'Finish in style', sub: 'Your knockout finisher and the pose you strike when you win. More in the Shop.' },
 ];
 /** Only when editing a hero: spend the points levels give. */
 const STATS_STEP: StepDef = { label: 'Stats', icon: 'trophy', title: 'Train your stats', sub: 'Every level gives stat points. Spend them on your base stats; take them back any time.' };
@@ -49,6 +54,7 @@ const LOOK = 3;
 const NAME = 4;
 const BACKDROP = 5;
 const ENTRANCE = 6;
+const FINALE = 7;
 
 export const STYLE_ICON: Record<FightStyleId, IconName> = {
   balanced: 'scale', relentless: 'flame', tactician: 'eye', skirmisher: 'fast', guardian: 'shield',
@@ -135,6 +141,7 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
   let showGear = true;
   let cards: Preview[] = [];
   let lookCat: LookCat = 'skin';
+  let finaleCat: 'finisher' | 'pose' = 'finisher';
   /** Updates the open step after a pick made outside it (stage arrows). */
   let refresh: () => void = () => {};
   /** What the stage arrows do on the open step (null hides them). */
@@ -552,7 +559,7 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     headTool = h('button.btn.sm.lucky', { title: 'Random colours and hair', onclick: () => {
       const r = randomAppearance();
       sfx.play('select');
-      setLook({ ...r, species: c.look.species, skin: Math.floor(Math.random() * SPECIES[c.look.species].skins.length), backdrop: c.look.backdrop, entrance: c.look.entrance }, true);
+      setLook({ ...r, species: c.look.species, skin: Math.floor(Math.random() * SPECIES[c.look.species].skins.length), backdrop: c.look.backdrop, entrance: c.look.entrance, finisher: c.look.finisher, pose: c.look.pose }, true);
       burst();
       say('Whoa. New me!');
       refresh();
@@ -662,6 +669,95 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     return [grid, detail];
   }
 
+  /**
+   * Finisher and victory pose, one kind at a time (a toggle on top), picked
+   * like the entrances: tap to watch it on the stage (a finisher is acted out
+   * on a shadow double of the hero), owned ones are picked, the rest unlock here.
+   */
+  function finaleStep(): HTMLElement[] {
+    interface Kind { label: string; ids: readonly string[]; def(id: string): FinaleDef; owns(id: string): boolean; buy(id: string): boolean; glyph(id: string): IconName; cur(): string; set(id: string): void; play(id: string): void }
+    const kinds: Record<'finisher' | 'pose', Kind> = {
+      finisher: {
+        label: 'Finisher', ids: FINISHER_IDS, def: (id) => FINISHERS[id as FinisherId], owns: (id) => ownsFinisher(id as FinisherId), buy: (id) => buyFinisher(id as FinisherId),
+        glyph: (id) => FINISHER_ICON[id as FinisherId], cur: () => finisherOf(c.look, true), set: (id) => { c = { ...c, look: { ...c.look, finisher: id as FinisherId } }; },
+        play: (id) => preview.playFinisher(id as FinisherId, poseOf(c.look, true)),
+      },
+      pose: {
+        label: 'Victory pose', ids: POSE_IDS, def: (id) => POSES[id as PoseId], owns: (id) => ownsPose(id as PoseId), buy: (id) => buyPose(id as PoseId),
+        glyph: (id) => POSE_ICON[id as PoseId], cur: () => poseOf(c.look, true), set: (id) => { c = { ...c, look: { ...c.look, pose: id as PoseId } }; },
+        play: (id) => preview.playPose(id as PoseId),
+      },
+    };
+    const cats = h('div.hc-cats', { role: 'tablist' });
+    const grid = h('div.hc-grid.entrances.finales');
+    const detail = h('div.hc-info-wrap');
+    const tiles = new Map<string, HTMLElement>();
+    const k = () => kinds[finaleCat];
+    let shown = k().cur();
+    let armed = false;
+    const pick = (id: string) => {
+      shown = id;
+      armed = false;
+      if (k().owns(id)) k().set(id);
+      k().play(id);
+      refresh();
+    };
+    const drawCats = () => cats.replaceChildren(...(['finisher', 'pose'] as const).map((id) => h<HTMLButtonElement>(`button.hc-cat${id === finaleCat ? '.on' : ''}`, {
+      role: 'tab', 'aria-selected': String(id === finaleCat),
+      onclick: () => { if (id === finaleCat) return; sfx.play('select'); finaleCat = id; build(); k().play(shown); },
+    }, h('span', null, kinds[id].label), h('em', null, kinds[id].def(kinds[id].cur()).name))));
+    const build = () => {
+      const kind = k();
+      shown = kind.cur();
+      armed = false;
+      tiles.clear();
+      grid.replaceChildren(...kind.ids.map((id) => {
+        const e = kind.def(id);
+        const t = card(h('div.hc-glyph', { style: { color: css(e.color) } }, icon(kind.glyph(id))), e.name, h('small'), e.color,
+          () => { sfx.play('select'); pick(id); }, `.ent.r-${e.tier}`);
+        tiles.set(id, t);
+        return t;
+      }));
+      refresh();
+    };
+    const draw = () => {
+      const kind = k();
+      for (const id of kind.ids) {
+        const e = kind.def(id), mine = kind.owns(id);
+        const t = tiles.get(id)!;
+        t.classList.toggle('locked', !mine);
+        t.querySelector('small')!.replaceChildren(...(mine ? [ENTRANCE_TIER[e.tier]] : [icon('lock'), ` ${e.price}`]));
+      }
+      const e = kind.def(shown), mine = kind.owns(shown);
+      const buy = mine ? null : h<HTMLButtonElement>(`button.btn.sm.buy-btn${gems() >= e.price ? '' : '.short'}`, {
+        title: gems() >= e.price ? `Buy for ${e.price} gems` : 'Not enough gems yet: win fights to earn more',
+        onclick: () => {
+          if (gems() < e.price) { sfx.play('back'); return; }
+          if (!armed) { armed = true; sfx.play('select'); buy!.replaceChildren(h('span', null, 'Buy?'), gemTag(e.price)); return; }
+          if (!kind.buy(shown)) return;
+          sfx.play('revealMythic');
+          pick(shown);
+        },
+      }, h('span', null, 'Unlock'), gemTag(e.price));
+      detail.replaceChildren(info(e.name, e.color, mine ? ENTRANCE_TIER[e.tier] : `${ENTRANCE_TIER[e.tier]} · locked`,
+        h('p', null, e.blurb),
+        h('div.ent-foot', null, h('button.btn.sm', { onclick: () => { sfx.play('select'); kind.play(shown); } }, icon('replay'), 'Watch again'), buy)));
+    };
+    cycler = (dir) => {
+      const ids = k().ids;
+      pick(ids[(ids.indexOf(shown) + dir + ids.length) % ids.length]);
+    };
+    refresh = () => {
+      drawCats();
+      mark(tiles, k().cur());
+      for (const [id, t] of tiles) t.classList.toggle('peek', id === shown);
+      draw();
+    };
+    build();
+    k().play(shown);
+    return [cats, grid, detail];
+  }
+
   /** Level, XP and the stat points: + and - per stat, Reset gives every point back. */
   function statsStep(): HTMLElement[] {
     const box = h('div.train');
@@ -723,7 +819,7 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
     zoom(false);
     const s = steps[step];
     const body = step === SPECIES_STEP ? speciesStep() : step === BODY ? formStep() : step === STYLE ? styleStep()
-      : step === LOOK ? lookStep() : step === NAME ? nameStep() : step === BACKDROP ? backdropStep() : step === ENTRANCE ? entranceStep() : statsStep();
+      : step === LOOK ? lookStep() : step === NAME ? nameStep() : step === BACKDROP ? backdropStep() : step === ENTRANCE ? entranceStep() : step === FINALE ? finaleStep() : statsStep();
     panelBody.replaceChildren(...body);
     panelBody.dataset.step = s.label.toLowerCase();
     panelHead.replaceChildren(

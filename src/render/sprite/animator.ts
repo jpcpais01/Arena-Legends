@@ -58,8 +58,12 @@ export class Animator {
     this.setPose(poseOf(art.look));
   }
 
+  /** The victory pose picked. */
+  pose: PoseId = 'cheer';
+
   /** Picks the victory pose played after a win; returns its clip name. */
   setPose(id: PoseId): string {
+    this.pose = id;
     this.winClip = ensurePose(this.set, this.art, id);
     return this.winClip;
   }
