@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.70.0',
+    date: '2026-10-11',
+    title: 'Global leaderboard',
+    notes: [
+      'New global leaderboard: the podium button next to Friends on the menu shows the top 100 players, ranked by wins or by level.',
+      'Tap anyone in the top 25 to see their hero, their body and fighting style, and every piece of gear and skin they have equipped. You can send them a friend request from there too.',
+      'Every signed-in player is on the board automatically, and your row updates after your fights. Guests can browse it as well, and sign in to join.',
+    ],
+  },
+  {
     version: '0.69.1',
     date: '2026-10-11',
     title: 'Battles framed a little higher',
