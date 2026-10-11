@@ -640,10 +640,10 @@ const SPECIAL: Catalog['special'] = {
       id: 'meteor', name: 'Meteor', slot: 'item', kind: 'meteor',
       range: 14, cost: 100, cooldown: 10,
       windup: 0.7, active: 0.1, recovery: 0,
-      power: 6.0, damageType: 'magic', heavy: true, knockback: 6, stun: 0.5,
+      power: 4.0, damageType: 'magic', heavy: true, knockback: 6, stun: 0.5,
       applies: [{ status: 'burn', duration: 4, stacks: 3 }],
-      projectile: { speed: 14, radius: 2.5, style: 'meteor' },
-      anim: 'item', desc: 'The sigil calls a meteor on the predicted enemy position.',
+      projectile: { speed: 12, radius: 3.6, style: 'meteor' },
+      anim: 'item', desc: 'The sigil calls a huge meteor down on the predicted enemy position. The blast covers a wide area.',
     }],
   },
   phantom_blade: {

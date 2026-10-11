@@ -28,6 +28,7 @@ import { makeArt, type CharacterArt } from './sprite/look';
 import type { SkinFx } from './sprite/skins';
 import { isSuper, superLook, type SuperLook } from './supers';
 import { superImpactFx, superRelease as superReleaseFx, type SuperHost } from './superFx';
+import { METEOR_GLOW, meteorImpact, meteorMark, meteorStyle, meteorTrail, type ImpactCues } from './meteorFx';
 
 const STYLE_COLOR: Record<ProjectileStyle, number> = {
   arcane: 0xc58cff, hex: 0xa04aff, wave: 0xd8f4ff, groundwave: 0xc8a070, meteor: 0xff7a1a, arrow: 0xf0e0c0,
@@ -497,6 +498,8 @@ export class BattleView implements View {
     this.fx.drawUnder(g, this);
     for (const v of this.fighters) v.ent?.draw(g, this, 'under');
     for (const z of b.zones) this.drawZoneGround(g, z);
+    // Where a meteor is about to land.
+    for (const p of b.projectiles) if (p.alive && p.style === 'meteor') this.drawMeteorMark(g, p);
     // Shadows.
     for (const f of b.fighters) {
       const pose = this.fighters[f.id].pose;
@@ -1271,8 +1274,25 @@ export class BattleView implements View {
     }
   }
 
+  /** The meteor's mark on the ground: the full reach of its blast, the shadow swelling as it falls. */
+  private drawMeteorMark(g: CanvasRenderingContext2D, p: Projectile): void {
+    const c = this.glow(p.owner, METEOR_GLOW[0], METEOR_GLOW[1]);
+    const y = p.py + (p.y - p.py) * this.alpha;
+    const k = clamp(1 - (y - 0.4) / 11.6, 0, 1);
+    meteorMark(g, this, p.targetX, p.radius + 0.4, k, meteorStyle(this.fighters[p.owner]?.art.specialSkinId), c[0], c[1], this.time);
+  }
+
   private drawProjectile(g: CanvasRenderingContext2D, p: Projectile): void {
     const x = p.px + (p.x - p.px) * this.alpha, y = p.py + (p.y - p.py) * this.alpha;
+    if (p.style === 'meteor' && !this.heard.has(p.id)) {
+      // The sigil fires a beam into the sky, and the meteor comes whistling down.
+      this.heard.add(p.id);
+      const owner = this.battle!.fighters[p.owner];
+      const c = this.glow(p.owner, METEOR_GLOW[0], METEOR_GLOW[1]);
+      this.fx.pulse('pillar', owner.x - owner.facing * 0.5, owner.y + 2.8, 0.22, c[0], 0.35);
+      this.fx.burst({ x: owner.x - owner.facing * 0.5, y: owner.y + 2.8, count: 14, speed: [2, 5], life: [0.25, 0.5], color: 0xffffff, color2: c[0], drag: 2, kind: 'twinkle' });
+      this.play('entFall', this.pan(p.targetX), 0.9);
+    }
     if (p.style === 'breath' && !this.heard.has(p.id)) {
       // The whelp's breath: a fiery whoosh as it leaves the jaws.
       this.heard.add(p.id);
@@ -1318,7 +1338,7 @@ export class BattleView implements View {
       const back = Math.atan2(-p.vy, -p.vx);
       if (style === 'meteor') {
         const c = this.glow(p.owner, 0xffd060, 0x8a2a1a);
-        this.fx.burst({ x, y, count: 2, dir: back, spread: 0.4, speed: [1, 3], life: [0.3, 0.6], color: c[0], color2: mix(c[1], 0x200a08, 0.4), kind: 'ember', jitter: 0.2 });
+        meteorTrail(this.fx, meteorStyle(thrower?.specialSkinId), x, y, back, c[0], c[1]);
       }
       else if (style === 'flamewave' || style === 'groundwave') this.fx.burst({ x, y: 0.1, count: 1, dir: Math.PI / 2, spread: 0.6, speed: [0.5, 1.5], life: [0.3, 0.5], color: col, color2: wfx ? wfx.spark2 : 0x5a4a50, kind: style === 'flamewave' ? wfx?.kind ?? 'ember' : 'smoke', size: 3 });
       else if (style !== 'arrow' && style !== 'bolt' && style !== 'knife') this.fx.burst({ x, y, count: 1, dir: back, spread: 0.3, speed: [0.5, 1.5], life: [0.15, 0.3], color: col, color2: mix(col, 0x202040, 0.6) });
@@ -1584,17 +1604,18 @@ export class BattleView implements View {
           break;
         }
         const col = e.style === 'nova' ? 0x9fe8ff : met ? (this.fighters[e.f]?.art.specialSkin?.glow ? mix(met[0], met[1], 0.5) : 0xff6a1a) : e.style === 'whirl' ? 0xe8f4ff : 0xd8a060;
-        fx.pulse('groundRing', e.x, 0, e.radius * 1.2, col, 0.5);
-        if (e.style !== 'nova') fx.pulse('crack', e.x, 0, e.radius * 0.8, mix(col, 0x2a1a20, 0.4), 1.6);
+        if (e.style !== 'meteor') fx.pulse('groundRing', e.x, 0, e.radius * 1.2, col, 0.5);
+        if (e.style !== 'nova' && e.style !== 'meteor') fx.pulse('crack', e.x, 0, e.radius * 0.8, mix(col, 0x2a1a20, 0.4), 1.6);
         if (e.style === 'meteor') {
-          fx.pulse('pillar', e.x, 0, e.radius * 0.25, col, 0.5);
-          fx.burst({ x: e.x, y: 0.3, count: 50, jitter: 0.6, dir: Math.PI / 2, spread: 1.1, speed: [4, 11], life: [0.4, 1.0], color: met![0], color2: met![1], gravity: 10, drag: 1, kind: 'ember' });
-          fx.burst({ x: e.x, y: 0.4, count: 12, jitter: 1, speed: [1, 3], life: [0.8, 1.4], color: 0x7a6a60, color2: 0x3a2a30, kind: 'smoke', size: 6, drag: 1.5 });
-          this.play('explosion', this.pan(e.x));
-          this.shake(0.9);
-          this.flash(this.fighters[e.f]?.art.specialSkin?.glow ? mix(met![0], 0xffffff, 0.3) : 0xffc070, 1);
-          this.arena?.cheer(0.8);
-          this.punchIn(1, 0.5, e.x);
+          const pan = this.pan(e.x);
+          const cues: ImpactCues = {
+            play: (name, k = 1) => this.play(name, pan, k),
+            shake: (a) => this.shake(a),
+            flash: (c, a) => this.flash(c, a),
+          };
+          meteorImpact(fx, cues, meteorStyle(this.fighters[e.f]?.art.specialSkinId), e.x, e.radius + 0.4, met![0], met![1]);
+          this.arena?.cheer(1);
+          this.punchIn(1, 0.6, e.x);
         } else if (e.style === 'nova') {
           fx.burst({ x: e.x, y: 1, count: 36, speed: [4, 9], life: [0.3, 0.6], color: 0xffffff, color2: col, drag: 3, kind: 'streak' });
           this.play('freeze', this.pan(e.x));
@@ -2051,8 +2072,13 @@ export class BattleView implements View {
     if (v) v.sigT = this.time;
     const k = (first ? 1 : 0.45) * (blocked ? 0.5 : 1);
     const { hi, lo } = look, face = att.facing;
-    fx.pulse('ring', x, y, 1.2 * k + 0.3, hi, 0.3, lo);
     if (!this.quiet) sfx.superHit(look.el, this.pan(x), k);
+    // The meteor's landing (the shockwave) already is the show; it just gets the focus lines.
+    if (ab.kind === 'meteor') {
+      if (first && !blocked) fx.pulse('focus', x, y, 3.2, hi, 0.35, lo);
+      return;
+    }
+    fx.pulse('ring', x, y, 1.2 * k + 0.3, hi, 0.3, lo);
     if (blocked) return;
     if (first) fx.pulse('focus', x, y, 2.6, hi, 0.3, lo);
     if (ab.id !== 'meteor' && superImpactFx(this.host, ab.id, look, x, y, face, first, this.lx(att))) return this.superLanded(first, x, look);

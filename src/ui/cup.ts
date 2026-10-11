@@ -5,7 +5,7 @@ import { sfx } from '../audio/sfx';
 import { DEFAULT_LOOK, SPECIES } from '../character/appearance';
 import { cupWinXp, CHAMPION_GEMS } from '../character/progress';
 import { winGems } from '../character/collection';
-import { champion, entrantAt, matchCount, openRound, ROUND_COUNT, ROUNDS, statusOf, type Cup, type Entrant } from '../cup/cup';
+import { champion, entrantAt, matchCount, openRound, pathOf, ROUND_COUNT, ROUNDS, statusOf, type Cup, type Entrant } from '../cup/cup';
 import type { LobbyMember } from '../net/cupLobby';
 import { applyBackdrop, BH, BW } from '../render/backdrops';
 import { FORMS } from '../sim/forms';
@@ -16,6 +16,7 @@ import { icon } from './icons';
 import { gearIcons } from './menu';
 import { copy, inviteLink } from './online';
 import { Preview } from './preview';
+import { statCells } from './stats';
 import { levelBadge } from './xp';
 
 // --- Start sheet -------------------------------------------------------------------------------
@@ -114,6 +115,7 @@ export class CupScreen {
     const { cup } = v;
     const st = statusOf(cup);
     this.leave.hidden = st.kind !== 'play';
+    this.el.classList.toggle('decided', openRound(cup) >= ROUND_COUNT);
     const now = st.kind === 'play' ? st.round : st.kind === 'out' ? st.round : ROUND_COUNT;
     this.track.replaceChildren(...some(ROUNDS.flatMap((r, i) => [
       i ? h(`i.ct-line${i <= now ? '.done' : ''}`) : null,
@@ -169,33 +171,66 @@ export class CupScreen {
       ];
     }
     const decided = openRound(cup) >= ROUND_COUNT;
-    const champ = decided ? cup.entrants[champion(cup)] : null;
-    if (st.kind === 'champion') {
+    const r = ROUNDS[st.kind === 'out' ? st.round : 0];
+    if (decided) {
+      const ci = champion(cup);
+      if (st.kind === 'out') summary.prepend(h('span', null, h('small', null, 'Your run'), h('b', null, `Out in ${r.short}`)));
       return [
-        h('div.cup-champ', null,
-          h('div.cc-rays'),
-          h('div.cc-cup', null, icon('trophy')),
-          h('div.ribbon.cup-ribbon', null, h('span', null, 'Champion!')),
-          h('p.cup-round', null, `${cup.entrants[cup.me].build.name} wins the Arena Cup`)),
-        summary,
-        h('div.cup-foot', null, h('button.btn', { onclick: () => { sfx.play('ui'); this.cb.onMenu(); } }, icon('home'), 'Menu'),
-          h('button.btn.primary.go', { onclick: () => { sfx.play('confirm'); this.cb.onNewCup(); } }, icon('trophy'), 'New cup')),
+        this.crown(cup, ci),
+        h('div.cup-foot.cr-foot', null, summary,
+          h('div.cr-btns', null,
+            h('button.btn', { onclick: () => { sfx.play('ui'); this.cb.onMenu(); } }, icon('home'), 'Menu'),
+            h('button.btn.primary.go', { onclick: () => { sfx.play('confirm'); this.cb.onNewCup(); } }, icon('trophy'), 'New cup'))),
       ];
     }
-    // Knocked out.
-    const r = ROUNDS[st.kind === 'out' ? st.round : 0];
+    // Knocked out, the cup still going.
     return [
       h('div.ribbon.cup-ribbon.out', null, h('span', null, 'Knocked out')),
       h('p.cup-round', null, `You fell in the ${r.name}.`),
-      champ
-        ? h('div.cup-winner', null, h('small', null, 'Champion'), this.fighter(champ, 0, champ.human ? 'Friend' : 'Winner'))
-        : v.busy ? h('div.cup-wait', null, h('span.spinner'), h('span', null, 'Playing out the rest of the cup…'))
-          : h('p.muted.cup-note', null, 'The cup goes on without you. See who takes it, or start a new one.'),
+      v.busy ? h('div.cup-wait', null, h('span.spinner'), h('span', null, 'Playing out the rest of the cup…'))
+        : h('p.muted.cup-note', null, 'The cup goes on without you. See who takes it, or start a new one.'),
       summary,
       h('div.cup-foot', null,
-        !champ && !v.busy ? h('button.btn', { onclick: () => { sfx.play('ui'); this.cb.onFinish(); } }, icon('eye'), 'See who wins') : null,
+        !v.busy ? h('button.btn', { onclick: () => { sfx.play('ui'); this.cb.onFinish(); } }, icon('eye'), 'See who wins') : null,
         h('button.btn.primary.go', { onclick: () => { sfx.play('confirm'); this.cb.onNewCup(); } }, icon('trophy'), 'New cup')),
     ];
+  }
+
+  /**
+   * The cup's winner, big: the full fighter on a pedestal under the trophy,
+   * their level, build and stats, and the health they kept in every round.
+   */
+  private crown(cup: Cup, ci: number): HTMLElement {
+    const e = cup.entrants[ci], c = e.build;
+    const you = ci === cup.me;
+    const look = c.look ?? DEFAULT_LOOK;
+    const p = new Preview(c, 72, 80, { autoplay: true, pedestal: true });
+    this.previews.push(p);
+    const art = h('div.cr-art', null, h('div.cc-rays'), p.el, h('div.cc-cup', null, icon('trophy')));
+    applyBackdrop(art, look.backdrop);
+    p.fitTo(art);
+    const road = pathOf(cup, ci).map(({ round, opp, res }) => {
+      const o = cup.entrants[opp];
+      const pct = Math.round((res?.hp ?? 0) * 100);
+      const tone = pct > 50 ? 'hi' : pct > 25 ? 'mid' : 'lo';
+      return h(`div.cr-step.${tone}${round === ROUND_COUNT - 1 ? '.final' : ''}`,
+        { title: `${ROUNDS[round].name}: beat ${o.build.name} (Lv ${o.level}) ${res?.ko ? 'by K.O.' : 'on time'}, ${pct}% health left` },
+        h('small', null, ROUNDS[round].short),
+        h('span.cr-opp', null, `vs ${o.build.name}`),
+        h('div.cr-hp', null, h('i', { style: { '--w': `${pct}%` } })),
+        h('b', null, `${pct}%`, h('em', null, res?.ko ? 'KO' : 'Time')));
+    });
+    return h(`div.cup-crown${you ? '.me' : ''}`, null,
+      art,
+      h('div.cr-info', null,
+        h('div.cr-top', null,
+          h('div.ribbon.cup-ribbon', null, h('span', null, you ? 'Champion!' : 'Champion')),
+          h('div.cf-tag', null, h('span.side-tag', null, you ? 'You' : e.human ? 'Friend' : 'Challenger'), levelBadge(e.level))),
+        h('div.cr-name', null, c.name),
+        h('div.cf-sub', null, `${SPECIES[look.species].name} · ${FORMS[c.form].name}`),
+        h('div.cf-gear', null, ...gearIcons(c).map((g) => h('span.sock', null, g))),
+        h('div.cr-stats', null, ...statCells(c.form, c.gear, c.train))),
+      h('div.cr-road', { 'aria-label': 'Health left after each round' }, ...road));
   }
 
   /** A fighter's card in the match panel: portrait, name, level, species and form, gear. */

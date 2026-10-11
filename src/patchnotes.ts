@@ -12,7 +12,7 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.71.0',
+    version: '0.73.0',
     date: '2026-10-11',
     title: 'New special item: the Gale Bell',
     notes: [
@@ -20,6 +20,38 @@ export const PATCH_NOTES: PatchNote[] = [
       'Made for archers and casters who want their distance back, and it also gives +8% move speed. Thrown into a wall, the enemy splats against it for extra damage.',
       "Watch the wind rune on the bell: it glows when the bell is ready and goes dark while it recharges. A quick dodge can slip through the gale if you see the bell start to swing.",
       'Fighters know how to use it: they ring it when you are mid-swing, stuck, or out of dodges, and they are careful about stepping into a ready bell themselves.',
+    ],
+  },
+  {
+    version: '0.72.0',
+    date: '2026-10-11',
+    title: 'Cup champion spotlight',
+    notes: [
+      'When an Arena Cup ends, its winner now takes the stage: the full fighter on a pedestal under the trophy, with their level, all their gear and every stat.',
+      'Below them is the road to the cup: who they beat in each round and how much health they kept, by K.O. or on time.',
+      'It shows for any winner, whether that is you, a friend or a challenger. If you went out early, tap See who wins to watch it.',
+    ],
+  },
+  {
+    version: '0.71.0',
+    date: '2026-10-11',
+    title: 'Meteor Sigil goes big',
+    notes: [
+      'The Meteor Sigil\'s meteor is much bigger: it comes down larger and its blast now covers a far wider area (about 4 m each side of where it lands). Each hit deals a bit less damage to keep it fair.',
+      'You can see it coming: the sigil fires a beam into the sky, the meteor whistles down, and the full blast area is marked on the ground with a shadow that grows as it falls.',
+      'Brand new impacts. The stock meteor hits with a fireball dome, lava splash, a mushroom of smoke and a molten crater that cools and burns.',
+      'Frostfall Sigil: giant ice crystals burst out across the whole area in a frost mist and falling snow, leave a glittering glaze, then shatter.',
+      'Doomcaller Sigil: a burning rune circle opens on the ground, hellfire geysers erupt across it, then a second eruption and a rain of brimstone.',
+      'Comet Sigil: a nova of starlight rings and rays, a constellation drawn in the air over the blast, a shower of shooting stars and drifting stardust.',
+    ],
+  },
+  {
+    version: '0.70.2',
+    date: '2026-10-11',
+    title: 'Easy install',
+    notes: [
+      'Arena Legends has a website now, with screenshots, what the game is about, and buttons to play or install it on a computer, Android or iPhone.',
+      'Its Install button opens the game with an install box: one tap installs the app, or it shows the steps for your device when your browser can\'t do it in one tap.',
     ],
   },
   {

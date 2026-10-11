@@ -22,8 +22,9 @@ export function setupPhoneFullscreen(): void {
   if (!matchMedia('(pointer: coarse)').matches) return;
   void lockLandscape();
   let pending = false;
-  const go = (): void => {
+  const go = (e: PointerEvent): void => {
     const el = document.documentElement;
+    if ((e.target as Element | null)?.closest?.('[data-nofs]')) return; // e.g. the install card needs the gesture
     if (pending || document.fullscreenElement || !el.requestFullscreen) return; // iPhone Safari has none.
     pending = true;
     el.requestFullscreen({ navigationUI: 'hide' })
