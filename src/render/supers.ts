@@ -1,5 +1,7 @@
 import type { AbilityDef } from '../sim/types';
+import { mix } from './pixel/color';
 import type { CharacterArt } from './sprite/look';
+import type { SkinArt } from './sprite/skins';
 
 /**
  * Super attacks: the main weapon's skill and the special item's big moves
@@ -17,6 +19,8 @@ export interface SuperLook {
   el: SuperElement;
   hi: number;
   lo: number;
+  /** Particle shape for its sparks: the weapon skin's own (flames, petals, snowflakes) or the element's. */
+  kind: 'twinkle' | 'flame' | 'petal' | 'flake';
 }
 
 const LOOKS: Record<string, [SuperElement, number, number]> = {
@@ -55,12 +59,33 @@ export function superLook(ab: AbilityDef, art: CharacterArt | undefined): SuperL
   if (hit) return hit;
   const [el, hi0, lo0] = LOOKS[ab.id] ?? ['steel', 0xffffff, 0xc8a050];
   const ult = ab.slot === 'item';
-  // A legendary or epic weapon skin, or a skinned special item, brings its own colours.
-  const skin = ult ? art?.specialSkin?.glow : art?.mainSkin?.fx ? [art.mainSkin.fx.spark, art.mainSkin.fx.spark2] : undefined;
-  const look: SuperLook = { name: ab.name, ult, el, hi: skin?.[0] ?? hi0, lo: skin?.[1] ?? lo0 };
+  // Any skinned weapon or special item brings its own colours.
+  const skin = ult ? art?.specialSkin?.glow : skinColours(art?.mainSkin);
+  const skinKind = ult ? art?.specialSkin?.fx?.kind : art?.mainSkin?.fx?.kind;
+  const look: SuperLook = { name: ab.name, ult, el, hi: skin?.[0] ?? hi0, lo: skin?.[1] ?? lo0, kind: skinKind ?? (el === 'fire' ? 'flame' : 'twinkle') };
   if (art) {
     if (!m) cache.set(art, (m = new Map()));
     m.set(ab.id, look);
   }
   return look;
+}
+
+/**
+ * A weapon skin's colours for its super: a legendary or epic skin's sparks,
+ * a mythic one's trail, or for a rare one (colours only) its glowing
+ * material, else its brightest polished one.
+ */
+function skinColours(skin: SkinArt | null | undefined): [number, number] | undefined {
+  if (!skin) return undefined;
+  if (skin.fx) return [skin.fx.spark, skin.fx.spark2];
+  if (skin.trail) return skin.trail;
+  const mats = Object.values(skin.mats ?? {});
+  const glow = mats.find((m) => m.glow);
+  if (glow) return [mix(glow.base, 0xffffff, 0.3), mix(glow.base, 0x101020, 0.25)];
+  const shiny = mats.filter((m) => m.shiny).sort((a, b) => luma(b.base) - luma(a.base))[0];
+  return shiny ? [mix(shiny.base, 0xffffff, 0.45), mix(shiny.base, 0x101020, 0.2)] : undefined;
+}
+
+function luma(c: number): number {
+  return ((c >> 16) & 255) * 0.3 + ((c >> 8) & 255) * 0.59 + (c & 255) * 0.11;
 }

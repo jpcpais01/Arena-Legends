@@ -113,6 +113,9 @@ export class Hud {
   /** Super attack names on screen: one per side, item ultimates in the middle. */
   private supers: Record<'left' | 'right' | 'mid', HTMLElement | null> = { left: null, right: null, mid: null };
   private superOf: (HTMLElement | null)[] = [null, null];
+  /** Cinematic letterbox bars that close in while a super plays. */
+  private cineBars = [h('i.cine-bar.t'), h('i.cine-bar.b')];
+  private cineQ = 0;
 
   constructor(private readonly cb: HudCallbacks, private readonly view: BattleView) {
     this.el = h<HTMLDivElement>('div.hud');
@@ -129,11 +132,19 @@ export class Hud {
     if (this.el.hidden) return;
     const slot = look.ult ? 'mid' : side;
     this.supers[slot]?.remove();
-    const text = look.name.toUpperCase() + '!';
-    const el = h('div.super', { class: `${slot}${look.ult ? ' ult' : ''}`, style: { '--hi': hex(look.hi), '--lo': hex(look.lo), '--dur': `${(look.ult ? 1.7 : 1.15) / Math.sqrt(this.speedV)}s` } },
-      h('i.sc-streak'),
+    // Word per line, letter by letter: each one slams in a beat after the last.
+    const sp = Math.sqrt(this.speedV);
+    let i = 0;
+    const words = (look.name.toUpperCase() + '!').split(/\s+/).map((w) =>
+      h('span.sc-word', null, ...[...w].map((c) => h('b.sc-ch', { style: { '--i': String(i++) } }, h('s', null, c), h('u', null, c)))));
+    const el = h('div.super', {
+      class: `${slot}${look.ult ? ' ult' : ''}`,
+      style: { '--hi': hex(look.hi), '--lo': hex(look.lo), '--dur': `${(look.ult ? 1.9 : 1.35) / sp}s`, '--st': `${Math.round((look.ult ? 34 : 24) / sp)}ms` },
+    },
+      h('i.sc-plate'),
       look.ult ? h('i.sc-rays') : null,
-      h('span.sc-text', null, h('span.sc-ink', null, text), h('span.sc-fill', null, text)),
+      h('span.sc-tag', null, look.ult ? 'ULTIMATE' : 'SUPER'),
+      h('span.sc-text', null, ...words),
     );
     el.addEventListener('animationend', (e) => {
       if (e.target !== el) return;
@@ -205,7 +216,8 @@ export class Hud {
       this.speedBtn, this.pauseBtn,
       h('button.btn', { title: 'Leave', 'aria-label': 'Leave', onclick: () => this.cb.onExit() }, icon('close')));
     this.banner = h('div.banner', { hidden: true });
-    this.el.replaceChildren(top, ...bubbles, ctrl, this.banner);
+    this.el.replaceChildren(...this.cineBars, top, ...bubbles, ctrl, this.banner);
+    this.cineQ = -1;
     this.supers = { left: null, right: null, mid: null };
     this.superOf = [null, null];
     this.setSpeed(speed);
@@ -292,6 +304,11 @@ export class Hud {
   update(dt: number): void {
     const b = this.battle;
     if (!b) return;
+    const bars = Math.round(this.view.bars * 40);
+    if (bars !== this.cineQ) {
+      this.cineQ = bars;
+      for (const bar of this.cineBars) bar.style.transform = `scaleY(${bars / 40})`;
+    }
     for (let i = 0; i < 2; i++) {
       const f = b.fighters[i];
       const s = this.sides[i];
