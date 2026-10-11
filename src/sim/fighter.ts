@@ -90,6 +90,9 @@ export interface Fighter {
   garbT: number;
   /** Heartwood: healing waiting to be applied. */
   mendAcc: number;
+  /** Basic attack string: swings landed in a row, and seconds since the last one. */
+  combo: number;
+  comboT: number;
 
   /** Seconds since last taking damage. */
   sinceHurt: number;
@@ -144,7 +147,7 @@ export function createFighter(id: FighterId, cfg: FighterConfig): Fighter {
     echoQueue: [],
     hist: [], histI: 0, histT: 0, rewindUsed: false,
     wardCd: 3, dreadCd: 0, foresightCd: 0,
-    pullT: 0, pullTo: 0, chargeT: 0, garbT: 0, mendAcc: 0,
+    pullT: 0, pullTo: 0, chargeT: 0, garbT: 0, mendAcc: 0, combo: 0, comboT: 99,
     sinceHurt: 99,
     sinceHit: 99,
     totals: {
@@ -218,6 +221,24 @@ export function refreshStats(f: Fighter): void {
     s.damageMult *= 1 + Math.min(0.4, missing * 0.6);
     if (missing > 0.6) s.attackSpeed *= 1.1;
   }
+}
+
+/**
+ * Step (1..every) the next swing of `ab` would be in its combo string, or the
+ * step of the swing in progress. 0 for abilities without a combo.
+ */
+export function comboStep(f: Fighter, ab: AbilityDef): number {
+  const c = ab.combo;
+  if (!c) return 0;
+  const a = f.action;
+  if (a && a.combo && f.abilities[a.ability] === ab) return a.combo;
+  return f.comboT > c.window ? 1 : f.combo + 1;
+}
+
+/** The definition a running action actually uses: a combo finisher swaps in its own. */
+export function actionDef(f: Fighter, a: ActionState): AbilityDef {
+  const ab = f.abilities[a.ability];
+  return ab.combo && a.combo === ab.combo.every ? ab.combo.finisher : ab;
 }
 
 /** Effective reach of a melee or AoE ability for this fighter (long limbs reach further). */

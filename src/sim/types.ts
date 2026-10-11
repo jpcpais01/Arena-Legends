@@ -233,6 +233,12 @@ export interface AbilityDef {
    */
   draw?: number;
   stow?: number;
+  /**
+   * Basic attack string: swings that land within `window` seconds of each
+   * other chain, and every `every`-th one is the `finisher` (its own timing,
+   * power and effects). A whiff, a block or a parry starts the string over.
+   */
+  combo?: { every: number; window: number; finisher: AbilityDef };
 }
 
 export type Phase = 'windup' | 'active' | 'recovery';
@@ -264,6 +270,8 @@ export interface ActionState {
   dir: number;
   /** Dash crosses through the opponent. */
   through: boolean;
+  /** Step of this swing in its combo string (1..every), 0 for abilities without one. */
+  combo: number;
 }
 
 /**
@@ -376,6 +384,8 @@ export type BattleEvent =
   | { type: 'parry'; defender: FighterId; attacker: FighterId; x: number; y: number }
   | { type: 'evade'; f: FighterId }
   | { type: 'heal'; f: FighterId; amount: number }
+  /** A combo finisher landed (the last swing of a basic attack string). */
+  | { type: 'finisher'; f: FighterId; x: number; y: number }
   /** A usable item was used up (drunk or thrown). */
   | { type: 'used'; f: FighterId; ability: number; left: number }
   | { type: 'cleanse'; f: FighterId }

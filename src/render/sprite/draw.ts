@@ -38,6 +38,11 @@ export interface Hold {
   useBehind?: boolean;
   /** A two-handed main held in the near hand only (the far hand is busy with an item). */
   oneHand?: boolean;
+  /**
+   * A one-handed main taken in both hands for a big cut: the far hand joins
+   * the grip this far along the weapon (negative = toward the pommel).
+   */
+  grip?: number;
 }
 
 export interface Smear {
@@ -80,9 +85,10 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
   // the whole skeleton turns for rolls and falls.
   const upright = pose.rot ? { ...pose, rot: 0 } : pose;
   let sk = solve(body, upright);
-  const twoHanded = hold.main === 'hand' && !hold.oneHand && art.main.grip2 !== undefined && art.family !== 'bow';
+  const grip2 = art.main.grip2 ?? (hold.sec === 'hand' ? undefined : hold.grip);
+  const twoHanded = hold.main === 'hand' && !hold.oneHand && grip2 !== undefined && art.family !== 'bow';
   if (twoHanded) {
-    const g2 = alongWeapon(sk.handN, pose.wAng, art.main.grip2!);
+    const g2 = alongWeapon(sk.handN, pose.wAng, grip2);
     sk = solve(body, upright, { far: backFromHand(sk.elF, g2, body.hand) });
     sk.handF = g2;
   }

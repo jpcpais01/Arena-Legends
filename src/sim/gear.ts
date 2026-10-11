@@ -88,7 +88,7 @@ const MAIN: Catalog['main'] = {
   },
   katana: {
     id: 'katana', slot: 'main', name: 'Katana', rarity: 'rare', color: 0xf5f0e6,
-    desc: 'One-handed. +8% crit. Lightning-fast cuts and a dash that slices straight through.',
+    desc: 'One-handed. +8% crit. Lightning-fast cuts that flow into a three-cut string (the third lands heavy and heals), and a dash that slices straight through.',
     add: { critChance: 0.08 },
     weapon: { hands: 1, ranged: false, preferredRange: 1.7 },
     tags: ['melee', 'physical', 'fast', 'crit', 'mobility'],
@@ -97,8 +97,18 @@ const MAIN: Catalog['main'] = {
         id: 'swift_cut', name: 'Swift Cut', slot: 'basic', kind: 'melee',
         range: 1.85, cost: 0, cooldown: 0.1,
         windup: 0.15, active: 0.08, recovery: 0.22,
-        power: 0.7, damageType: 'physical', stagger: 0.18, knockback: 0.8, lunge: 0.35,
-        anim: 'slash', desc: 'Lightning-fast katana cut.',
+        power: 0.6, damageType: 'physical', stagger: 0.18, knockback: 0.8, lunge: 0.35,
+        anim: 'slash', desc: 'Lightning-fast katana cut. Three in a row make a string: the third is a heavy finisher that heals.',
+        combo: {
+          every: 3, window: 1.4,
+          finisher: {
+            id: 'swift_cut', name: 'Crescent Finisher', slot: 'basic', kind: 'melee',
+            range: 1.95, cost: 0, cooldown: 0.1,
+            windup: 0.24, active: 0.1, recovery: 0.3,
+            power: 1.05, damageType: 'physical', heavy: true, stagger: 0.32, knockback: 2.6, lunge: 0.55, drainLife: 0.3,
+            anim: 'slash', desc: 'The string\'s closing cut: lands heavy and heals for part of the damage.',
+          },
+        },
       },
       {
         id: 'iaido', name: 'Iaido Dash', slot: 'skill', kind: 'dash',
