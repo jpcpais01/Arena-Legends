@@ -2603,3 +2603,91 @@ button.lb-pick:hover { filter: brightness(1.2); }
 @media (orientation: portrait) and (max-width: 720px), (max-width: 560px) {
   .scr.gear.loadout .scr-title { display: none; }
 }
+
+/* --- Gacha overhaul: the vault canvas, the skip key, richer cards ---------------------------------- */
+.scr.gacha { background: #0d0a16; }
+.scr.gacha > .skip-btn {
+  position: absolute; z-index: 5; top: calc(var(--safe-t) + 0.7rem); right: calc(var(--safe-r) + 0.8rem);
+  display: none; align-items: center; gap: 2px; padding: 0.35rem 0.7rem 0.45rem 0.85rem;
+  font: 700 0.75rem/1 var(--font); letter-spacing: 0.14em; text-transform: uppercase; color: var(--text);
+  background: rgba(10, 6, 18, 0.6); border: var(--px) solid rgba(255, 255, 255, 0.18); cursor: pointer;
+  clip-path: polygon(var(--px) 0, calc(100% - var(--px)) 0, 100% var(--px), 100% calc(100% - var(--px)), calc(100% - var(--px)) 100%, var(--px) 100%, 0 calc(100% - var(--px)), 0 var(--px));
+}
+.scr.gacha > .skip-btn svg { width: 0.75em; height: 0.75em; margin-left: -1px; }
+.scr.gacha > .skip-btn svg:first-of-type { margin-left: 0.35em; }
+.scr.gacha.busy > .skip-btn { display: inline-flex; animation: fade-in 300ms 600ms both; }
+.scr.gacha.busy .scr-head .gem-chip { opacity: 0; }
+
+/* Card fronts: tier, stars, art, name, item, extras. */
+.gc-front { grid-template-rows: auto auto minmax(0, 1fr) auto auto; }
+.gc-stars { display: flex; gap: 2px; justify-content: center; margin-top: 2px; }
+.gc-stars i { width: calc(var(--px) * 3); height: calc(var(--px) * 3); background: var(--rc); box-shadow: 0 var(--px) 0 var(--ink); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.gcard.big .gc-stars i { width: calc(var(--px) * 5); height: calc(var(--px) * 5); }
+.gcard.r-epic .gc-stars i { background: var(--skin-epic-sweep) 0 0 / 400% 100%; }
+/* The art sits on a halo of its tier; the best two tiers get slow turning rays behind it. */
+.gc-art { position: relative; isolation: isolate; }
+.gc-art::before { content: ''; position: absolute; inset: 8% 14%; z-index: -1; border-radius: 50%; background: radial-gradient(circle, var(--rc-glow), transparent 68%); }
+.gcard.r-legendary .gc-art::after, .gcard.r-epic .gc-art::after {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 150%; aspect-ratio: 1; z-index: -2; translate: -50% -50%;
+  background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--rc) 30%, transparent) 0 8deg, transparent 8deg 22deg);
+  mask: radial-gradient(circle, #000 20%, transparent 62%); -webkit-mask: radial-gradient(circle, #000 20%, transparent 62%);
+  animation: gc-spin 9s linear infinite;
+}
+@keyframes gc-spin { to { rotate: 360deg; } }
+
+/* Card backs: an ornate weave, gold corners and a wax seal with the chest. */
+.gc-back {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(176, 154, 255, 0.28), transparent 42%),
+    conic-gradient(from 45deg at 50% 50%, rgba(255, 255, 255, 0.05) 0 25%, transparent 0 50%, rgba(255, 255, 255, 0.05) 0 75%, transparent 0) 0 0 / calc(var(--px) * 8) calc(var(--px) * 8),
+    linear-gradient(180deg, #2c2056, #120c24);
+  box-shadow:
+    inset 0 0 0 var(--px) var(--gold-lo), inset 0 0 0 calc(var(--px) * 2) #1a1230, inset 0 0 0 calc(var(--px) * 3) rgba(242, 181, 66, 0.45),
+    inset 0 0 1.4rem var(--rc-glow);
+}
+.gc-back::before, .gc-back::after {
+  content: ''; position: absolute; inset: calc(var(--px) * 5); pointer-events: none;
+  background:
+    linear-gradient(var(--gold), var(--gold)) 0 0 / calc(var(--px) * 5) var(--px) no-repeat, linear-gradient(var(--gold), var(--gold)) 0 0 / var(--px) calc(var(--px) * 5) no-repeat,
+    linear-gradient(var(--gold), var(--gold)) 100% 0 / calc(var(--px) * 5) var(--px) no-repeat, linear-gradient(var(--gold), var(--gold)) 100% 0 / var(--px) calc(var(--px) * 5) no-repeat,
+    linear-gradient(var(--gold), var(--gold)) 0 100% / calc(var(--px) * 5) var(--px) no-repeat, linear-gradient(var(--gold), var(--gold)) 0 100% / var(--px) calc(var(--px) * 5) no-repeat,
+    linear-gradient(var(--gold), var(--gold)) 100% 100% / calc(var(--px) * 5) var(--px) no-repeat, linear-gradient(var(--gold), var(--gold)) 100% 100% / var(--px) calc(var(--px) * 5) no-repeat;
+}
+.gc-back::after { inset: calc(var(--px) * 7); opacity: 0.4; }
+.gc-seal {
+  display: grid; place-items: center; width: 58%; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #ffe58f, #f2b542 40%, #b06c1e 75%, #7a420e);
+  box-shadow: 0 0 0 var(--px) var(--ink), 0 calc(var(--px) * 2) 0 var(--ink), 0 0 1rem rgba(242, 181, 66, 0.35);
+  color: #5a2e08;
+}
+.gc-seal svg { width: 62%; height: auto; filter: drop-shadow(0 var(--px) 0 rgba(255, 240, 180, 0.6)); }
+.gcard.tease .gc-seal { box-shadow: 0 0 0 var(--px) var(--ink), 0 calc(var(--px) * 2) 0 var(--ink), 0 0 1.4rem var(--rc-glow), 0 0 0.5rem var(--rc); }
+
+/* Holo foil over mythic, legendary and epic fronts, following a slow sweep. */
+.gc-foil { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; transition: opacity 400ms 300ms; mix-blend-mode: color-dodge;
+  clip-path: polygon(var(--px) 0, calc(100% - var(--px)) 0, 100% var(--px), 100% calc(100% - var(--px)), calc(100% - var(--px)) 100%, var(--px) 100%, 0 calc(100% - var(--px)), 0 var(--px));
+  background: linear-gradient(115deg, transparent 20%, rgba(255, 120, 200, 0.35) 34%, rgba(120, 220, 255, 0.35) 44%, rgba(255, 240, 140, 0.35) 54%, transparent 68%) 0 0 / 250% 250%;
+  animation: foil 3.2s ease-in-out infinite alternate;
+}
+.gcard.flipped:is(.r-mythic, .r-legendary, .r-epic) .gc-foil { opacity: 0.55; }
+.gcard.flipped.r-epic .gc-foil { opacity: 0.9; }
+@keyframes foil { from { background-position: 100% 100%; } to { background-position: 0 0; } }
+
+/* The single reveal: out of the chest, spinning, face down. */
+.gcard.big.rising { animation: card-fly 560ms cubic-bezier(0.2, 1.15, 0.35, 1) both; }
+@keyframes card-fly {
+  from { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.12) rotate(-200deg); }
+  25% { opacity: 1; }
+}
+.gcard.big.flipped { animation: card-fly 560ms cubic-bezier(0.2, 1.15, 0.35, 1) both, card-land 500ms 560ms cubic-bezier(0.2, 1.8, 0.4, 1); }
+@keyframes card-land { 30% { transform: scale(1.08); } }
+
+/* Ten: the best card of the lot keeps its glow. */
+.gcard.best { z-index: 1; filter: drop-shadow(0 0 0.5rem var(--rc-glow)) drop-shadow(0 0 1.2rem var(--rc-glow)); animation: best-bob 1.6s 700ms ease-in-out infinite; }
+@keyframes best-bob { 50% { transform: translateY(calc(var(--px) * -3)); } }
+.reveal-ten .gcard.best { transition: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gc-foil, .gcard.r-legendary .gc-art::after, .gcard.r-epic .gc-art::after, .gcard.best { animation: none; }
+  .gcard.big.rising, .gcard.big.flipped { animation: none; }
+}

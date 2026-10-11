@@ -98,6 +98,9 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
     h('span.buy-l', null, icon('chest'), 'Open 1'), gemTag(PULL_COST));
   const buy10 = h<HTMLButtonElement>('button.btn.primary.go.buy', { onclick: () => void open(10) },
     h('span.buy-l', null, icon('chest'), 'Open 10'), gemTag(TEN_COST));
+  // Ten come in the grand chest: it stands on the dais while Open 10 is pointed at.
+  const lookAt = (grand: boolean) => { if (!busy) fx.look = grand ? 'grand' : 'wood'; };
+  for (const [ev, on] of [['pointerenter', true], ['focus', true], ['pointerleave', false], ['blur', false]] as const) buy10.addEventListener(ev, () => lookAt(on));
   const panel = h('section.scr-panel.frame.chest-panel', null,
     h('div.ribbon', null, h('span', null, 'Skin chest')),
     h('p.chest-blurb', null, 'Every chest holds one item skin. Skins change how your gear looks, never how it fights.'),
@@ -134,11 +137,12 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
 
   const reveal = h('div.gacha-reveal', { onclick: (e: MouseEvent) => { if (!(e.target as Element).closest('button')) skip(); } });
   const done = h('button.btn.primary.done', { onclick: () => close() }, icon('check'), 'Done');
+  const skipBtn = h('button.skip-btn', { onclick: () => skip(), 'aria-label': 'Skip' }, 'Skip', icon('play'), icon('play'));
   const el = h('div.scr.gacha', { role: 'dialog', 'aria-label': 'Skin chests' },
     fx.canvas,
     h('header.scr-head', null, h('div.scr-title', null, h('h1', null, cb.onShop ? 'Shop' : 'Skin Chests')),
       ...(cb.onShop ? [tabs()] : []), h('div.grow'), gemChip, done),
-    stage, panel, reveal,
+    stage, panel, reveal, skipBtn,
   );
   // Taps on the darkened screen skip the opening too.
   fx.canvas.addEventListener('click', skip);
@@ -173,7 +177,8 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
   /** Back to the shop after a reveal. */
   function backToShop(): void {
     clearReveal();
-    el.classList.remove('opening', 'revealed');
+    el.classList.remove('opening', 'revealed', 'busy');
+    fx.look = 'wood';
     fx.setCentered(false);
     fx.reset();
     renderShop();
@@ -193,11 +198,13 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
     skipping = false;
     clearReveal();
     el.classList.remove('revealed');
-    el.classList.add('opening');
+    el.classList.add('opening', 'busy');
     sfx.play('confirm');
     fx.reset();
+    fx.look = count === 10 ? 'grand' : 'wood';
     fx.setCentered(true);
-    await wait(0.45);
+    sfx.play('whoosh');
+    await wait(0.6);
     await play(pulls, 0, count === 1 ? againChest(1) : againChest(10));
   }
 
@@ -230,12 +237,19 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
     if (top >= rank('legendary') && !skipping) await omen(topTier);
     if (dead) return;
 
-    // Burst.
+    // Light rushes into the chest, then it blows.
     fx.release();
+    if (!skipping) {
+      fx.gather(topTier);
+      sfx.play('gather', 0, top + 1);
+      await wait(0.6);
+      if (dead) return;
+    }
     fx.burst(topTier);
     fx.rays = 1;
-    sfx.play('chestOpen');
-    await wait(0.3);
+    sfx.play('chestOpen', 0, top + 1);
+    setTimeout(() => { if (!dead) sfx.play('coins'); }, 380);
+    await wait(0.35);
     banner.classList.remove('on');
     if (dead) return;
     el.classList.add('revealed');
@@ -244,6 +258,7 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
     if (dead) return;
     busy = false;
     skipping = false;
+    el.classList.remove('busy');
   }
 
   // The big tier name for the omen.
@@ -263,7 +278,7 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
 
   function showOne(p: Pull, again: HTMLElement | null): void {
     const s = p.skin;
-    sfx.play(REVEAL[s.rarity]);
+    sfx.play('whoosh');
     const pl = cb.player();
     let stageEl: HTMLElement | null = null;
     if (pl) {
@@ -283,18 +298,23 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
       onclick: () => { cb.onEquip(s); sfx.play('equip'); equip.disabled = true; equip.replaceChildren(icon('check'), 'Equipped'); },
     }, icon('bag'), 'Equip');
     const big = card(p, true);
-    setTimeout(() => {
-      if (dead) return;
-      big.classList.add('flipped');
-      const at = fx.pointOf(big);
-      fx.pop(at.x, at.y, s.rarity, 40);
-      // The best two tiers keep sparkling around the card.
-      if (rank(s.rarity) >= rank('legendary')) setTimeout(() => { if (!dead && big.isConnected) fx.setHalo(big, s.rarity); }, 520);
-    }, 60);
     reveal.replaceChildren(
       h('div.reveal-one', null, stageEl, big),
       h('div.reveal-foot', null, h('button.btn', { onclick: () => { sfx.play('back'); backToShop(); } }, icon('back'), 'Back'), pl ? equip : null, again),
     );
+    // Out of the chest it flies, face down and spinning, then turns over.
+    riseFrom(big, fx.mouth.x * fx.k, fx.mouth.y * fx.k, fx.canvas);
+    setTimeout(() => {
+      if (dead || !big.isConnected) return;
+      big.classList.add('flipped');
+      sfx.play(REVEAL[s.rarity]);
+      const at = fx.pointOf(big);
+      fx.pop(at.x, at.y, s.rarity, 40);
+      fx.glowAt(big, s.rarity, 1.6);
+      if (rank(s.rarity) >= rank('legendary')) fx.impactAt(at.x, at.y, s.rarity);
+      // The best two tiers keep sparkling around the card.
+      if (rank(s.rarity) >= rank('legendary')) setTimeout(() => { if (!dead && big.isConnected) fx.setHalo(big, s.rarity); }, 520);
+    }, skipping ? 60 : 560);
   }
 
   async function showTen(pulls: Pull[], again: HTMLElement | null): Promise<void> {
@@ -318,7 +338,8 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
     void grid.offsetWidth;
     grid.classList.add('dealt');
     sfx.play('whoosh');
-    await wait(0.85);
+    cards.forEach((_, i) => setTimeout(() => { if (!dead) sfx.play('deal', (i % 5 - 2) * 0.25); }, 60 + i * 45));
+    await wait(0.9);
     // Flip one by one; anything better than rare shakes first.
     for (let i = 0; i < cards.length && !dead; i++) {
       if (skipping) break;
@@ -330,7 +351,7 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
         if (skipping) break;
       }
       flip(c, p, true);
-      await wait(p.skin.rarity === 'rare' ? 0.14 : p.skin.rarity === 'epic' ? 1 : 0.45);
+      await wait(p.skin.rarity === 'rare' ? 0.14 : p.skin.rarity === 'epic' ? 1.2 : p.skin.rarity === 'legendary' ? 0.9 : 0.45);
     }
     if (dead) return;
     // Skipped: everything left turns over at once, with the best one's sound.
@@ -339,7 +360,13 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
       for (const [c, p] of left) flip(c, p, false);
       const best = left.reduce((a, b) => (rank(b[1].skin.rarity) > rank(a[1].skin.rarity) ? b : a))[1];
       sfx.play(REVEAL[best.skin.rarity]);
+      const bc = left.find(([, p]) => p === best)![0];
+      const at = fx.pointOf(bc);
+      fx.pop(at.x, at.y, best.skin.rarity, 30);
     }
+    // The best of the ten stays lit.
+    const top = pulls.reduce((a, b) => (rank(b.skin.rarity) > rank(a.skin.rarity) ? b : a));
+    if (rank(top.skin.rarity) >= rank('mythic')) cards[pulls.indexOf(top)].classList.add('best');
     const fresh = pulls.filter((p) => p.fresh).length;
     foot.replaceChildren(
       h('p.reveal-sum', null, h('b', null, `${fresh} new`),
@@ -357,7 +384,8 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
       sfx.play(r === 'rare' ? 'flip' : REVEAL[r]);
       const at = fx.pointOf(c);
       fx.pop(at.x, at.y, r, r === 'rare' ? 10 : 30);
-      if (r === 'epic') { fx.rayTier = 'epic'; }
+      if (r !== 'rare') fx.glowAt(c, r, r === 'mythic' ? 0.7 : 1.4);
+      if (rank(r) >= rank('legendary')) { fx.impactAt(at.x, at.y, r); fx.rayTier = r; }
     }
   }
 
@@ -394,6 +422,14 @@ export function slamBanner(banner: HTMLElement, host: HTMLElement, tier: SkinRar
   sfx.play(REVEAL[tier]);
 }
 
+/** A card flies up from a point (CSS px inside `from`'s box) to where it sits. */
+export function riseFrom(c: HTMLElement, x: number, y: number, from: Element): void {
+  const fr = from.getBoundingClientRect(), r = c.getBoundingClientRect();
+  c.style.setProperty('--dx', `${fr.left + x - (r.left + r.width / 2)}px`);
+  c.style.setProperty('--dy', `${fr.top + y - (r.top + r.height / 2)}px`);
+  c.classList.add('rising');
+}
+
 export function skinArt(s: SkinDef, px: number): HTMLCanvasElement {
   const c = iconCanvas(s.gear, px, s.id);
   c.className = 'icon';
@@ -410,6 +446,7 @@ export function card(p: Pull, big: boolean): HTMLElement {
   const setOwned = pieces.filter((x) => owns(x.id)).length;
   const front = h('div.gc-face.gc-front', null,
     h('div.gc-tier', null, h('span', null, TIER_NAME[s.rarity])),
+    h('div.gc-stars', { 'aria-hidden': 'true' }, ...Array.from({ length: rank(s.rarity) + 1 }, () => h('i'))),
     h('div.gc-art', null, art),
     h('b.gc-name', null, s.name),
     h('small.gc-item', null, big ? `${g.name} · ${SLOT_NAMES[g.slot]}` : g.name),
@@ -418,7 +455,7 @@ export function card(p: Pull, big: boolean): HTMLElement {
       h('small', null, setOwned === pieces.length ? 'Set complete!' : `${setOwned}/${pieces.length} owned`)) : null,
     p.fresh ? h('span.gc-new', null, 'New!') : h('span.gc-dupe', null, icon('anvil'), big ? 'Owned · +1 spare' : '+1 spare'),
   );
-  const backFace = h('div.gc-face.gc-back', null, icon('chest'));
+  const backFace = h('div.gc-face.gc-back', null, h('span.gc-seal', null, icon('chest')));
   return h(`div.gcard.r-${s.rarity}${big ? '.big' : ''}`, { title: `${s.name} (${s.rarity}) for ${g.name}` },
-    h('div.gc-inner', null, backFace, front));
+    h('div.gc-inner', null, backFace, front), h('i.gc-foil', { 'aria-hidden': 'true' }));
 }

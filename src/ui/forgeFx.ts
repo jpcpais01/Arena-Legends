@@ -1,5 +1,6 @@
 import type { SkinRarity } from '../character/skins';
 import { TIER_LIGHT } from './chestFx';
+import { SceneGl } from './sceneGl';
 
 /**
  * The forge, drawn on one low-res canvas like the chest (one art pixel = `k`
@@ -30,10 +31,92 @@ const PIVOT = { x: 26, y: -34 };
 const REACH = 23;
 const A_STRIKE = Math.atan2(ANVIL_TOP - 4 - PIVOT.y, 2 - PIVOT.x);
 const A_REST = A_STRIKE + 1.25;
+const hash = (n: number) => { const s = Math.sin(n * 127.1) * 43758.5453; return s - Math.floor(s); };
+
+/**
+ * The smithy behind the forge, drawn once per size: a soot-dark brick wall
+ * under a timber beam, a rack of tongs and hammers, a quench barrel, chains,
+ * and a stone floor. The anvil stands at (ax, ay); the room is twice the
+ * screen each way so it covers it wherever the scene pans.
+ */
+function smithyArt(sw: number, sh: number): { c: HTMLCanvasElement; ax: number; ay: number } {
+  const RW = sw * 2 + 120, RH = sh * 2;
+  const c = document.createElement('canvas');
+  c.width = RW; c.height = RH;
+  const g = c.getContext('2d')!;
+  const px = (x: number, y: number, w: number, h: number, col: string) => { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+  const X = Math.round(RW / 2), Y = sh, seam = Y - 12;
+  px(0, 0, RW, seam, '#120a0c');
+  const BR = ['#2a1a1c', '#2f1d1f', '#251618', '#33201f'];
+  for (let r = 0, y = seam; y > -8; r++, y -= 7) {
+    const off = (r & 1) * 7;
+    for (let x = -14 + off; x < RW; x += 14) {
+      px(x + 1, y - 6, 13, 6, BR[Math.floor(hash(x * 0.41 + r * 11.3) * BR.length)]);
+      px(x + 1, y - 6, 13, 1, '#3d2826');
+      if (hash(x * 1.7 + r) > 0.8) px(x + 3, y - 4, 5, 2, '#1a1012');
+    }
+  }
+  // Soot climbing the wall behind the furnace.
+  const soot = g.createRadialGradient(X - 53, seam - 40, 4, X - 53, seam - 40, 60);
+  soot.addColorStop(0, 'rgba(8, 4, 6, 0.75)');
+  soot.addColorStop(1, 'rgba(8, 4, 6, 0)');
+  g.fillStyle = soot; g.fillRect(X - 120, seam - 110, 140, 110);
+  // Timber beam and its posts.
+  const beam = seam - 96;
+  px(0, beam - 1, RW, 10, INK); px(0, beam, RW, 8, WOOD[1]); px(0, beam, RW, 1, WOOD[3]); px(0, beam + 6, RW, 1, WOOD[0]);
+  for (let x = 0; x < RW; x += 23) px(x + Math.floor(hash(x) * 10), beam + 3, 6, 1, WOOD[0]);
+  for (const s of [-1, 1]) {
+    const cx = X + s * 118;
+    px(cx - 7, beam, 14, seam - beam, INK); px(cx - 6, beam, 12, seam - beam, WOOD[1]); px(cx - 6, beam, 2, seam - beam, WOOD[3]); px(cx + 3, beam, 3, seam - beam, WOOD[0]);
+  }
+  // Hanging chains with hooks.
+  for (const cx of [X - 6, X + 84]) {
+    for (let y = beam + 8; y < beam + 34; y += 3) { px(cx, y, 2, 2, IRON[2]); px(cx, y, 1, 1, IRON[4]); }
+    px(cx - 1, beam + 34, 1, 4, IRON[3]); px(cx - 1, beam + 37, 4, 1, IRON[3]); px(cx + 2, beam + 35, 1, 2, IRON[3]);
+  }
+  // Tool rack: a board with tongs, a hammer and a file.
+  const rx = X + 36, ry = seam - 70;
+  px(rx - 1, ry - 1, 44, 6, INK); px(rx, ry, 42, 4, WOOD[2]); px(rx, ry, 42, 1, WOOD[3]);
+  for (const [tx, len] of [[5, 26], [16, 22], [27, 24], [37, 18]] as const) {
+    px(rx + tx - 1, ry + 4, 3, len, INK);
+    px(rx + tx, ry + 4, 1, len, IRON[3]);
+  }
+  px(rx + 13, ry + 24, 8, 4, INK); px(rx + 14, ry + 25, 6, 2, IRON[3]);
+  px(rx + 3, ry + 28, 5, 3, IRON[2]);
+  // Floor: big worn flagstones.
+  px(0, seam, RW, RH - seam, '#1c1214');
+  px(0, seam, RW, 1, '#3a2624'); px(0, seam + 1, RW, 1, '#0e0809');
+  for (let r = 0, y = seam + 2; y < RH; r++) {
+    const hgt = 4 + r * 2;
+    px(0, y + hgt, RW, 1, '#0e0809');
+    const S = 20 + r * 6, off = (r & 1) * S / 2;
+    for (let x = X - 400 + off; x < RW; x += S) { px(x, y + 1, 1, hgt - 1, '#120b0c'); px(x + 1, y + 1, S * 0.5, 1, '#271a1b'); }
+    y += hgt + 1;
+  }
+  // Quench barrel on the right.
+  const bx = X + 48, bt = Y - 18;
+  px(bx - 1, bt - 1, 18, 19, INK); px(bx, bt, 16, 18, WOOD[2]);
+  for (const x of [3, 8, 13]) px(bx + x, bt + 1, 1, 17, WOOD[1]);
+  px(bx, bt, 16, 2, WOOD[3]);
+  for (const y of [4, 12]) { px(bx, bt + y, 16, 2, IRON[2]); px(bx, bt + y, 16, 1, IRON[3]); }
+  px(bx + 1, bt + 1, 14, 1, '#3a5a7a');
+  // Light falloff.
+  const up = g.createLinearGradient(0, seam - 130, 0, seam);
+  up.addColorStop(0, 'rgba(6, 3, 4, 0.8)');
+  up.addColorStop(1, 'rgba(6, 3, 4, 0)');
+  g.fillStyle = up; g.fillRect(0, 0, RW, seam);
+  const pool = g.createRadialGradient(X - 30, seam - 10, 30, X - 30, seam - 10, sw * 0.95);
+  pool.addColorStop(0, 'rgba(6, 3, 4, 0)');
+  pool.addColorStop(1, 'rgba(6, 3, 4, 0.72)');
+  g.fillStyle = pool; g.fillRect(0, 0, RW, RH);
+  return { c, ax: X, ay: Y };
+}
 
 export class ForgeFx {
-  readonly canvas: HTMLCanvasElement;
+  readonly src: HTMLCanvasElement;
   private g: CanvasRenderingContext2D;
+  private readonly gl: SceneGl;
+  private room: ReturnType<typeof smithyArt> | null = null;
   k = 3;
   w = 0;
   h = 0;
@@ -80,9 +163,18 @@ export class ForgeFx {
   private last = 0;
 
   constructor() {
-    this.canvas = document.createElement('canvas');
-    this.canvas.className = 'chest-fx forge-fx';
-    this.g = this.canvas.getContext('2d')!;
+    this.src = document.createElement('canvas');
+    this.src.className = 'chest-fx forge-fx';
+    this.g = this.src.getContext('2d')!;
+    this.gl = new SceneGl(this.src);
+    this.gl.canvas.className = 'chest-fx forge-fx';
+    this.gl.vignette = { col: '#000000', k: 0.5 };
+    this.gl.onLost = () => { this.gl.canvas.replaceWith(this.src); };
+  }
+
+  /** The element to put on screen (the shader layer, or the plain canvas without WebGL2). */
+  get canvas(): HTMLCanvasElement {
+    return this.gl.ok ? this.gl.canvas : this.src;
   }
 
   resize(): void {
@@ -91,10 +183,23 @@ export class ForgeFx {
     this.k = Math.max(2, Math.floor((r.height * 0.62) / 76));
     this.w = Math.ceil(r.width / this.k);
     this.h = Math.ceil(r.height / this.k);
-    this.canvas.width = this.w;
-    this.canvas.height = this.h;
-    this.canvas.style.width = `${this.w * this.k}px`;
-    this.canvas.style.height = `${this.h * this.k}px`;
+    this.src.width = this.w;
+    this.src.height = this.h;
+    this.src.style.width = `${this.w * this.k}px`;
+    this.src.style.height = `${this.h * this.k}px`;
+    this.gl.resize(this.k);
+    this.room = smithyArt(this.w, this.h);
+  }
+
+  private hue(tier: SkinRarity, bright: boolean): string {
+    return TIER_LIGHT[tier][bright ? 1 : 0];
+  }
+  /** Screen point (CSS px, relative to the canvas) of the metal on the anvil. */
+  get barPx(): { x: number; y: number } {
+    return { x: this.barAt.x * this.k, y: this.barAt.y * this.k };
+  }
+  private get barAt(): { x: number; y: number } {
+    return { x: this.at.x + 2, y: this.at.y + ANVIL_TOP - 3 };
   }
 
   /** The scene stands on the bottom of an element's box, centred in it. */
@@ -107,7 +212,8 @@ export class ForgeFx {
 
   setCentered(on: boolean): void {
     this.center = on;
-    this.dimTarget = on ? 0.55 : 0;
+    this.dimTarget = on ? 0.3 : 0;
+    this.gl.vignette.k = on ? 0.75 : 0.5;
   }
 
   /** Screen point (CSS px, relative to the canvas) of the furnace mouth. */
@@ -138,6 +244,7 @@ export class ForgeFx {
     this.sceneTarget = 1;
     this.parts.length = 0;
     this.rings.length = 0;
+    this.gl.clear();
   }
 
   start(): void {
@@ -148,6 +255,13 @@ export class ForgeFx {
       this.last = now;
       this.update(dt);
       this.draw();
+      if (this.gl.ok) {
+        // Heat shimmer over the furnace, stronger the hotter it burns.
+        const ax = this.at.x, ay = this.at.y;
+        this.gl.haze = { x0: ax + FURNACE.x0 + 4, y0: ay + CHIMNEY.top - 30, x1: ax + FURNACE.x1 - 2, y1: ay + MOUTH.top + 4, amp: (0.35 + this.heat * 1.1) * this.scene };
+        this.gl.cam = { x: this.barAt.x - 20, y: this.barAt.y, zoom: this.zoom };
+        this.gl.render(dt);
+      }
       this.raf = requestAnimationFrame(step);
     };
     this.raf = requestAnimationFrame(step);
@@ -156,7 +270,11 @@ export class ForgeFx {
   stop(): void {
     cancelAnimationFrame(this.raf);
     this.raf = 0;
+    this.gl.clear();
   }
+  private zoom = 1;
+  private punch = 0;
+  private beamLight: import('./sceneGl').Glow | null = null;
 
   color(tier: SkinRarity, bright = false, i = 0): string {
     if (tier === 'epic') return RAINBOW[(i + Math.floor(this.t * 6)) % RAINBOW.length];
@@ -177,6 +295,9 @@ export class ForgeFx {
       const v = 30 + Math.random() * 80;
       this.spark(m.x + (Math.random() - 0.5) * 14, m.y, Math.cos(a) * v, Math.sin(a) * v, Math.random() < 0.5 ? HEAT[4] : this.color(tier, true, i), 0.5 + Math.random() * 0.6, 60, i % 4 === 0);
     }
+    this.gl.add({ kind: 'glow', x: m.x, y: m.y - 4, r0: 14, r1: 40, hi: this.hue(tier, true), lo: HEAT[2], power: 0.9, life: 1.1 });
+    this.gl.shock(m.x, m.y, 50, 2, 0.6, HEAT[4]);
+    this.punch = 0.04;
   }
 
   /** Molten metal leaps from the furnace onto the anvil. */
@@ -184,6 +305,7 @@ export class ForgeFx {
     this.pourT = 0;
     this.barTier = tier;
     this.hammerTarget = 1;
+    this.gl.add({ kind: 'glow', x: 0, y: 0, follow: () => (this.pourT >= 0 ? this.pourPos() : this.barAt), r0: 8, r1: 14, hi: HEAT[5], lo: HEAT[3], power: 0.8, life: 0.9 });
   }
 
   /** One hammer blow (`n` = 0, 1, 2; the last is the hardest). */
@@ -212,6 +334,13 @@ export class ForgeFx {
       const hot = Math.random() < 0.6;
       this.spark(x + (Math.random() - 0.5) * 6, y, Math.cos(a) * v, Math.sin(a) * v, hot ? HEAT[3 + Math.floor(Math.random() * 3)] : this.color(this.barTier, true, i), 0.4 + Math.random() * 0.7, 140, Math.random() < 0.25);
     }
+    const hi = n === 2 ? this.hue(this.barTier, true) : HEAT[5];
+    this.gl.shock(x, y, 50 + n * 30, 2 + n * 1.4, 0.55, hi);
+    this.gl.add({ kind: 'star', x, y, r0: 14 + n * 6, r1: 26 + n * 10, w: 0.8, hi, lo: HEAT[3], power: 1, life: 0.35 });
+    this.gl.add({ kind: 'glow', x, y, r0: 8, r1: 20 + n * 6, hi, lo: HEAT[2], power: 0.5, life: 0.4 });
+    this.gl.split(1 + n * 0.8, 0.3);
+    if (n === 2) this.gl.zoomBlur(x, y, 0.18, 0.35);
+    this.punch = 0.03 + n * 0.025;
   }
 
   /** Legendary or epic: the room darkens and light pours up out of the metal. */
@@ -224,6 +353,9 @@ export class ForgeFx {
     if (tier === 'epic') this.starfall = 1;
     const x = this.at.x + 2, y = this.at.y + ANVIL_TOP - 3;
     for (let i = 0; i < 3; i++) this.rings.push({ x, y, r: 3, v: 150 + i * 60, t: -i * 0.12, life: 0.8, col: this.color(tier, true, i) });
+    this.beamLight = this.gl.add({ kind: 'beam', x, y, r0: y + 20, r1: y + 20, w: tier === 'epic' ? 15 : 11, rot: -Math.PI / 2, hi: this.hue(tier, true), lo: this.hue(tier, false), power: 1, life: 2.6, fin: 0.05, hold: true });
+    this.gl.shock(x, y, 110, 3, 0.8, this.hue(tier, true));
+    this.gl.vignette.k = 0.95;
   }
 
   slam(tier: SkinRarity): void {
@@ -235,6 +367,10 @@ export class ForgeFx {
       const v = 60 + Math.random() * 150;
       this.spark(x, y, Math.cos(a) * v, Math.sin(a) * v, this.color(tier, Math.random() < 0.5, i), 0.6 + Math.random() * 0.8, 50, Math.random() < 0.4);
     }
+    this.gl.impact(this.hue(tier, true), INK, 0.09);
+    this.gl.shock(x, y, 190, 6, 1, this.hue(tier, true));
+    this.gl.split(3, 0.5);
+    this.punch = 0.08;
   }
 
   /** Quench: a burst of steam swallows the bar (the card comes out of it). */
@@ -246,7 +382,16 @@ export class ForgeFx {
     this.heatTarget = 0.45;
     this.bar = 0;
     this.sceneTarget = 0.12;
-    this.flashOnce('#ffffff', 0.9);
+    this.flashOnce('#ffffff', 0.7);
+    this.gl.vignette.k = this.center ? 0.75 : 0.5;
+    this.gl.end(this.beamLight);
+    this.beamLight = null;
+    {
+      const b = this.barAt;
+      this.gl.shock(b.x, b.y, 130, 4, 0.8, '#ffffff');
+      this.gl.add({ kind: 'flare', x: b.x, y: b.y, r0: 50, r1: 130, w: 2.2, hi: this.hue(tier, true), lo: this.hue(tier, false), power: 1.1, life: 0.7 });
+      this.gl.add({ kind: 'rays', x: b.x, y: b.y, r0: 50, r1: 170, hi: this.hue(tier, true), lo: this.hue(tier, false), power: 0.5, life: 2.4, seed: Math.random() * 50 });
+    }
     const x = this.at.x + 2, y = this.at.y + ANVIL_TOP - 3;
     for (let i = 0; i < 50; i++) {
       const v = 20 + Math.random() * 50;
@@ -276,6 +421,10 @@ export class ForgeFx {
       const v = 20 + Math.random() * 90 * big;
       this.spark(x, y, Math.cos(a) * v, Math.sin(a) * v, this.color(tier, Math.random() < 0.5, i), 0.4 + Math.random() * 0.6, 40, Math.random() < 0.3);
     }
+    const r = ['rare', 'mythic', 'legendary', 'epic'].indexOf(tier);
+    this.gl.add({ kind: 'star', x, y, r0: 12 + r * 8, r1: 24 + r * 12, w: 0.8, hi: this.hue(tier, true), lo: this.hue(tier, false), power: 0.9, life: 0.6 });
+    this.gl.add({ kind: 'glow', x, y, r0: 20, r1: 40 + r * 6, hi: this.hue(tier, true), lo: this.hue(tier, false), power: 0.6, life: 1.4 });
+    if (r >= 2) this.gl.impact(this.hue(tier, true), INK, 0.07);
   }
 
   flashOnce(col: string, a: number): void {
@@ -301,6 +450,8 @@ export class ForgeFx {
     this.at.x += (target.x - this.at.x) * e;
     this.at.y += (target.y - this.at.y) * e;
     this.dim += (this.dimTarget - this.dim) * (1 - Math.exp(-dt * 6));
+    this.punch *= Math.exp(-dt * 7);
+    this.zoom += ((this.center && this.sceneTarget > 0.5 ? 1.06 : 1) + this.punch - this.zoom) * (1 - Math.exp(-dt * 8));
     this.scene += (this.sceneTarget - this.scene) * (1 - Math.exp(-dt * 4));
     this.heat += (this.heatTarget - this.heat) * (1 - Math.exp(-dt * 3));
     this.hammer += (this.hammerTarget - this.hammer) * (1 - Math.exp(-dt * 8));
@@ -381,7 +532,8 @@ export class ForgeFx {
 
   private draw(): void {
     const g = this.g;
-    g.clearRect(0, 0, this.w, this.h);
+    if (this.room) g.drawImage(this.room.c, Math.round(this.at.x) - this.room.ax, Math.round(this.at.y) - this.room.ay);
+    else { g.fillStyle = '#120a0c'; g.fillRect(0, 0, this.w, this.h); }
     if (this.dim > 0.01) { g.fillStyle = `rgba(6, 3, 12, ${this.dim})`; g.fillRect(0, 0, this.w, this.h); }
     const sx = this.shake ? Math.round(Math.sin(this.t * 61) * this.shake) : 0;
     const sy = this.shake ? Math.round(Math.cos(this.t * 47) * this.shake * 0.6) : 0;

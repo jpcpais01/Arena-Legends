@@ -14,7 +14,7 @@ export type Sfx =
   | 'entStep' | 'entSlam' | 'entPoof' | 'entRise' | 'entChoir' | 'entFall' | 'entCheer' | 'entIgnite'
   | 'entWind' | 'entCannon' | 'entBats' | 'entCoins' | 'entRumble' | 'entPortal' | 'entStars' | 'entPhoenix'
   // Big pulls and the forge
-  | 'omen' | 'slam' | 'forge' | 'meld' | 'clang' | 'fire' | 'steam'
+  | 'omen' | 'slam' | 'forge' | 'meld' | 'clang' | 'fire' | 'steam' | 'gather' | 'coins' | 'deal' | 'hiss'
   // Super attacks: the callout stingers, the power gathering, the blade ring on release
   | 'superSkill' | 'superUlt' | 'charge' | 'shing'
   // The gale bell: a bronze toll and the wind it lets loose
@@ -352,10 +352,35 @@ class AudioEngine {
         this.burst(t, 0.35, 0.18, 'highpass', 3000, 9000, 1);
         break;
       }
+      // The lid blows: `intensity` is the best tier inside (1..4), each one a bigger boom.
       case 'chestOpen':
-        this.burst(t, 0.5, 0.6, 'lowpass', 2400, 120, 0.7);
-        this.tone('sine', 110, 40, t, 0.6, 0.7);
+        this.burst(t, 0.5 + k * 0.1, 0.6, 'lowpass', 2400, 120, 0.7);
+        this.tone('sine', 110, 40, t, 0.6 + k * 0.15, 0.7);
+        this.tone('sine', 62, 30, t, 0.8 + k * 0.2, 0.25 + k * 0.1);
         this.burst(t + 0.02, 0.4, 0.3, 'highpass', 4000, 9000, 0.8);
+        [784, 988, 1175, 1568].slice(0, k).forEach((f, i) => this.tone('triangle', f, f, t + 0.08 + i * 0.05, 0.5, 0.06));
+        break;
+      // Light rushing into the chest: a rising suck that tightens to a point (`intensity` 1..4 longer and higher).
+      case 'gather': {
+        const d = 0.55;
+        this.burst(t, d, 0.3, 'bandpass', 300, 3800 + k * 800, 2.5);
+        this.tone('sawtooth', 80, 160 * (1 + k * 0.25), t, d, 0.05);
+        this.tone('sine', 220, 880 + k * 220, t, d, 0.08);
+        for (let i = 0; i < 6; i++) this.tone('square', 660 * Math.pow(2, i / 8 + k / 12), 660 * Math.pow(2, i / 8 + k / 12), t + (i / 6) * d, 0.05, 0.02);
+        break;
+      }
+      // Gold spilling over stone.
+      case 'coins':
+        for (let i = 0; i < 9; i++) {
+          const f = 2600 + Math.random() * 1800;
+          const at = t + i * 0.055 + Math.random() * 0.03;
+          this.tone('square', f, f * 0.98, at, 0.05, 0.025, (Math.random() - 0.5) * 0.8);
+          this.tone('sine', f * 1.5, f * 1.5, at, 0.12, 0.03);
+        }
+        break;
+      // A card dealt onto the table.
+      case 'deal':
+        this.burst(t, 0.08, 0.14, 'bandpass', 3200, 1600, 1.6, pan);
         break;
       case 'flip':
         this.burst(t, 0.06, 0.2, 'bandpass', 2600, 1400, 2);
@@ -559,6 +584,10 @@ class AudioEngine {
       case 'steam':
         this.burst(t, 0.9, 0.35, 'highpass', 5000, 2500, 0.8);
         this.burst(t, 0.25, 0.25, 'bandpass', 1200, 600, 2);
+        break;
+      // Steam swirling off the quenched metal (soft, long).
+      case 'hiss':
+        this.burst(t, 0.6, 0.12, 'highpass', 7000, 4000, 0.7);
         break;
       case 'meld':
         this.burst(t, 0.5, 0.3, 'bandpass', 500, 4000, 2);

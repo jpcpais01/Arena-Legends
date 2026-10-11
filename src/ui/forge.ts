@@ -7,7 +7,7 @@ import { withGear } from '../sim/loadout';
 import { h } from './dom';
 import { ForgeFx } from './forgeFx';
 import { fmtInt } from './format';
-import { card, REVEAL, shopTabs, skinArt, slamBanner, TIER_NAME } from './gacha';
+import { card, REVEAL, riseFrom, shopTabs, skinArt, slamBanner, TIER_NAME } from './gacha';
 import { icon } from './icons';
 import { Preview } from './preview';
 
@@ -199,6 +199,7 @@ export function forgeScreen(cb: ForgeCallbacks): { el: HTMLElement; dispose(): v
       // Quench.
       fx.quench(into);
       sfx.play('steam');
+      setTimeout(() => { if (!dead) sfx.play('hiss'); }, 500);
       await wait(0.35);
       banner.classList.remove('on');
       if (dead) return;
@@ -212,7 +213,6 @@ export function forgeScreen(cb: ForgeCallbacks): { el: HTMLElement; dispose(): v
 
   function showResult(p: Pull, from: SkinRarity): void {
     const s = p.skin;
-    sfx.play(REVEAL[s.rarity]);
     const pl = cb.player();
     let stageEl: HTMLElement | null = null;
     if (pl) {
@@ -233,16 +233,20 @@ export function forgeScreen(cb: ForgeCallbacks): { el: HTMLElement; dispose(): v
       ? h<HTMLButtonElement>('button.btn.primary.go.buy', { onclick: () => { backToForge(); void smith(from); } }, h('span.buy-l', null, icon('anvil'), 'Forge again'))
       : null;
     const big = card(p, true);
-    setTimeout(() => {
-      if (dead) return;
-      big.classList.add('flipped');
-      const at = fx.pointOf(big);
-      fx.pop(at.x, at.y, s.rarity, 40);
-      if (rank(s.rarity) >= rank('legendary')) setTimeout(() => { if (!dead && big.isConnected) fx.setHalo(big, s.rarity); }, 520);
-    }, 60);
     reveal.replaceChildren(
       h('div.reveal-one', null, stageEl, big),
       h('div.reveal-foot', null, h('button.btn', { onclick: () => { sfx.play('back'); backToForge(); } }, icon('back'), 'Back'), pl ? equip : null, again));
+    // Out of the steam it comes, spinning, and turns over.
+    riseFrom(big, fx.barPx.x, fx.barPx.y, fx.canvas);
+    sfx.play('whoosh');
+    setTimeout(() => {
+      if (dead || !big.isConnected) return;
+      big.classList.add('flipped');
+      sfx.play(REVEAL[s.rarity]);
+      const at = fx.pointOf(big);
+      fx.pop(at.x, at.y, s.rarity, 40);
+      if (rank(s.rarity) >= rank('legendary')) setTimeout(() => { if (!dead && big.isConnected) fx.setHalo(big, s.rarity); }, 520);
+    }, 560);
   }
 
   return {

@@ -62,7 +62,7 @@ export interface Shock {
 }
 
 const MAX_SHOCKS = 4;
-const KIND: Record<LightKind, number> = { glow: 0, ring: 1, arc: 2, beam: 3, flare: 4, star: 5, rays: 6 };
+export const KIND: Record<LightKind, number> = { glow: 0, ring: 1, arc: 2, beam: 3, flare: 4, star: 5, rays: 6 };
 
 const VS = `#version 300 es
 in vec2 p;
@@ -127,7 +127,7 @@ void main() {
 }`;
 
 // One light, drawn additively over the frame. Coordinates are snapped to the art-pixel grid.
-const LIGHT = `#version 300 es
+export const LIGHT = `#version 300 es
 precision highp float;
 uniform vec2 res, dxy;
 uniform float vs;
@@ -205,7 +205,7 @@ void main() {
   o = vec4(col * pw, 0.0);
 }`;
 
-function rgb(c: number): [number, number, number] {
+export function rgb(c: number): [number, number, number] {
   return [((c >> 16) & 255) / 255, ((c >> 8) & 255) / 255, (c & 255) / 255];
 }
 
