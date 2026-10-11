@@ -451,7 +451,10 @@ export function skinTints(skin?: string | null): boolean {
 
 const cache = new Map<string, Sprite>();
 let raster: Raster | null = null;
+let bigRaster: Raster | null = null;
 const STEPS = 32;
+/** Sprites drawn larger than their art: the meteor comes down big (in every skin). */
+const SCALE: Partial<Record<ProjArtId, number>> = { meteor: 1.6 };
 
 export function projFrames(id: ProjArtId, skin?: string | null): number {
   return artFor(id, skin)?.frames ?? 1;
@@ -477,7 +480,9 @@ export function projSprite(id: ProjArtId, frame: number, angle = 0, skin?: strin
 export function projFrame(id: ProjArtId, frame: number, angle = 0, skin?: string | null): Frame {
   const art = artFor(id, skin)!;
   const f = frame % art.frames;
-  const r = (raster ??= new Raster(80, 80));
+  const sc = SCALE[id] ?? 1;
+  const size = sc > 1 ? 144 : 80, o = size / 2;
+  const r = sc > 1 ? (bigRaster ??= new Raster(size, size)) : (raster ??= new Raster(size, size));
   r.clear();
   const mats = new Map<Material, number>();
   const over = skin && !isUsableShot(id, skin) ? skinMaterials(skin) : null;
@@ -487,8 +492,8 @@ export function projFrame(id: ProjArtId, frame: number, angle = 0, skin?: string
     if (!k) { k = r.add(m); mats.set(m, k); }
     return k;
   };
-  art.draw(r, new Xf(40, 40, angle), f, h);
-  return r.compose(40, 40, art.outline ?? false);
+  art.draw(r, new Xf(o, o, angle, sc, sc), f, h);
+  return r.compose(o, o, art.outline ?? false);
 }
 
 const bottles = new Map<string, Sprite>();

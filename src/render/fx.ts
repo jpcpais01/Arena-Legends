@@ -54,10 +54,17 @@ export interface Burst {
  * - implode: a ring closing in on a point (a super gathering power);
  * - rays: speed lines bursting out of a point (a super let loose);
  * - focus: anime focus lines closing in on a point from far round it, flickering (a super's big moment).
+ * Meteor impacts (see meteorFx.ts):
+ * - dome: a blast dome swelling off the ground, then lifting and burning away core first;
+ * - crater: a glowing pool on the ground that cools (`v` picks molten, ice, hellfire or stardust);
+ * - spires: big ice crystals jutting out across the ring, then shattering;
+ * - hellgate: a burning rune circle on the ground, a hexagram turning inside it;
+ * - constellation: stars pricking out above a point and joined up by lines;
+ * - jet: a geyser of fire shooting `r` metres up off the ground, then falling away.
  */
 interface Pulse {
   kind: 'ring' | 'star' | 'groundRing' | 'crack' | 'pillar' | 'bolt' | 'cloud' | 'clock' | 'runes' | 'eye' | 'swirl' | 'coin' | 'icicles'
-    | 'slash' | 'implode' | 'rays' | 'focus';
+    | 'slash' | 'implode' | 'rays' | 'focus' | 'dome' | 'crater' | 'spires' | 'hellgate' | 'constellation' | 'jet';
   x: number; y: number;
   r: number;
   t: number; max: number;
@@ -65,7 +72,12 @@ interface Pulse {
   seed: number;
   x2: number; y2: number;
   color2: number;
+  /** Variant, for shapes that have several looks (crater). */
+  v: number;
 }
+
+/** Pulses drawn flat on the ground, under the fighters. */
+const GROUND = new Set<Pulse['kind']>(['groundRing', 'crack', 'crater', 'spires', 'hellgate']);
 
 interface Pop {
   text: string; x: number; y: number; vy: number;
@@ -82,6 +94,12 @@ export class Fx {
   private pops: Pop[] = [];
   private smokeCache = new Map<string, HTMLCanvasElement>();
   private rnd = Math.random;
+  private timers: { t: number; fn: () => void }[] = [];
+
+  /** Runs `fn` after `delay` seconds of effect time (follow-up beats of a big impact). */
+  later(delay: number, fn: () => void): void {
+    this.timers.push({ t: delay, fn });
+  }
 
   burst(b: Burst): void {
     for (let i = 0; i < b.count && this.ps.length < MAX_PARTICLES; i++) {
@@ -98,7 +116,7 @@ export class Fx {
   }
 
   pulse(kind: Pulse['kind'], x: number, y: number, r: number, color: number, life = 0.3, color2 = color): Pulse {
-    const q: Pulse = { kind, x, y, r, t: 0, max: life, color, seed: Math.floor(this.rnd() * 1000), x2: x, y2: y, color2 };
+    const q: Pulse = { kind, x, y, r, t: 0, max: life, color, seed: Math.floor(this.rnd() * 1000), x2: x, y2: y, color2, v: 0 };
     this.pulses.push(q);
     return q;
   }
@@ -139,6 +157,12 @@ export class Fx {
   }
 
   update(dt: number): void {
+    for (let i = this.timers.length - 1; i >= 0; i--) {
+      const tm = this.timers[i];
+      if ((tm.t -= dt) > 0) continue;
+      this.timers.splice(i, 1);
+      tm.fn();
+    }
     const ps = this.ps;
     for (let i = ps.length - 1; i >= 0; i--) {
       const p = ps[i];
@@ -166,10 +190,13 @@ export class Fx {
   /** Ground-level effects (rings, cracks) drawn under the fighters. */
   drawUnder(g: CanvasRenderingContext2D, v: View): void {
     for (const q of this.pulses) {
-      if (q.kind !== 'groundRing' && q.kind !== 'crack') continue;
+      if (!GROUND.has(q.kind)) continue;
       const k = q.t / q.max;
       const cx = Math.round(v.sx(q.x)), cy = Math.round(v.sy(0));
-      if (q.kind === 'groundRing') {
+      if (q.kind === 'crater') drawCrater(g, q, cx, cy, k);
+      else if (q.kind === 'spires') drawSpires(g, q, cx, cy, k);
+      else if (q.kind === 'hellgate') drawHellgate(g, q, cx, cy, k);
+      else if (q.kind === 'groundRing') {
         const rx = q.r * PPM * (0.3 + 0.7 * Math.sqrt(k)), ry = rx * 0.22;
         ellipseOutline(g, cx, cy, rx, ry, css(q.color), k > 0.6 ? 0.5 : 1);
       } else {
@@ -252,7 +279,7 @@ export class Fx {
       }
     }
     for (const q of this.pulses) {
-      if (q.kind === 'groundRing' || q.kind === 'crack') continue;
+      if (GROUND.has(q.kind)) continue;
       const k = q.t / q.max;
       const cx = Math.round(v.sx(q.x)), cy = Math.round(v.sy(q.y));
       if (q.kind === 'ring') {
@@ -305,6 +332,12 @@ export class Fx {
         drawRays(g, q, cx, cy, k);
       } else if (q.kind === 'focus') {
         drawFocus(g, q, cx, cy, k);
+      } else if (q.kind === 'dome') {
+        drawDome(g, q, cx, cy, k);
+      } else if (q.kind === 'constellation') {
+        drawConstellation(g, q, cx, cy, k);
+      } else if (q.kind === 'jet') {
+        drawJet(g, q, cx, cy, k);
       } else if (q.kind === 'pillar') {
         // Column of light (revive, meteor).
         const w = Math.max(1, Math.round(q.r * PPM * (1 - k)));
@@ -378,6 +411,7 @@ export class Fx {
     this.ps.length = 0;
     this.pulses.length = 0;
     this.pops.length = 0;
+    this.timers.length = 0;
   }
 
   /**
@@ -605,5 +639,226 @@ export function ellipseOutline(g: CanvasRenderingContext2D, cx: number, cy: numb
     if (x === lx && y === ly) continue;
     lx = x; ly = y;
     g.fillRect(x, y, 1, 1);
+  }
+}
+
+/** Seeded 0..1 sequence for pulses that need stable random layouts. */
+function seq(seed: number): () => number {
+  let s = seed % 233280;
+  return () => ((s = (s * 9301 + 49297) % 233280) / 233280);
+}
+
+/**
+ * Horizontal spans of an ellipse, one fillRect per row, between rows `top`
+ * and `bottom` (offsets from the centre). `skip` drops every other row,
+ * shifting with `ph`, for a scanline break-up as a shape fades.
+ */
+function fillEllipse(g: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number, top: number, bottom: number, skip = false, ph = 0): void {
+  if (rx < 0.5 || ry < 0.5) return;
+  const r0 = Math.max(-Math.ceil(ry), Math.floor(top)), r1 = Math.min(Math.ceil(ry), Math.ceil(bottom));
+  for (let dy = r0; dy <= r1; dy++) {
+    if (skip && ((dy + ph) & 1)) continue;
+    const q = 1 - (dy / ry) ** 2;
+    if (q <= 0) continue;
+    const w = Math.round(rx * Math.sqrt(q));
+    g.fillRect(cx - w, cy + dy, w * 2 + 1, 1);
+  }
+}
+
+/**
+ * A blast dome: swells off the ground fast, then lifts like a fireball and
+ * burns away from the inside out (white core first, then the hot layer, the
+ * deep outer shell last, breaking into scanlines).
+ */
+function drawDome(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+  const R = q.r * PPM;
+  const grow = k < 0.16 ? 1 - (1 - k / 0.16) ** 3 : 1;
+  const burn = Math.max(0, (k - 0.2) / 0.8);
+  const rise = burn * burn * R * 0.55;
+  const ph = Math.floor(q.t * 24);
+  const layers: [number, number, number, number][] = [
+    // scale, colour, alpha, how fast it burns away
+    [1, q.color2, 0.55, 1],
+    [0.74, q.color, 0.85, 1.5],
+    [0.44, 0xffffff, 1, 2.6],
+  ];
+  for (const [sc, col, al, speed] of layers) {
+    const s = sc * grow * (1 - Math.min(1, burn * speed)) ** 0.6;
+    if (s <= 0.02) continue;
+    const rx = R * s * (1 + burn * 0.25), ry = R * s * 0.82;
+    const yc = cy - rise;
+    g.globalAlpha = al * (k > 0.75 ? 1 - (k - 0.75) * 2.4 : 1);
+    g.fillStyle = css(col);
+    fillEllipse(g, cx, Math.round(yc), rx, ry, -ry, cy - yc, k > 0.55, ph);
+  }
+  g.globalAlpha = 1;
+}
+
+/** Crater looks: [crust, hot, core, glints] colour roles, by variant (molten, ice, hellfire, stardust). */
+function craterLook(q: Pulse): { crust: number; crustA: number; glints: number } {
+  switch (q.v) {
+    case 1: return { crust: mix(q.color, 0x6a8ab8, 0.5), crustA: 0.5, glints: 14 };
+    case 2: return { crust: 0x14060a, crustA: 0.6, glints: 0 };
+    case 3: return { crust: mix(q.color, 0x140a30, 0.7), crustA: 0.35, glints: 16 };
+    default: return { crust: 0x241014, crustA: 0.5, glints: 0 };
+  }
+}
+
+/**
+ * A pool on the ground where the meteor struck: a dark crust, a hot middle
+ * that shrinks and cools, a white core that goes first. Ice and stardust
+ * pools glitter instead of cooling.
+ */
+function drawCrater(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+  const R = q.r * PPM;
+  const L = craterLook(q);
+  const grow = k < 0.06 ? k / 0.06 : 1;
+  const ph = Math.floor(q.t * 12);
+  const fade = k > 0.55 ? (k - 0.55) / 0.45 : 0;
+  g.globalAlpha = L.crustA * (1 - fade);
+  g.fillStyle = css(L.crust);
+  fillEllipse(g, cx, cy, R * grow, R * grow * 0.2, -R, R, fade > 0.3, ph);
+  const heat = (1 - k) ** 1.4;
+  g.globalAlpha = 0.9 * (1 - fade);
+  g.fillStyle = css(mix(q.color, L.crust, 1 - heat));
+  fillEllipse(g, cx, cy, R * grow * 0.66 * (0.5 + heat * 0.5), R * grow * 0.13 * (0.5 + heat * 0.5), -R, R, k > 0.5, ph);
+  if (k < 0.45) {
+    g.globalAlpha = 1;
+    g.fillStyle = css(q.color2);
+    const c = 1 - k / 0.45;
+    fillEllipse(g, cx, cy, R * grow * 0.32 * c, R * grow * 0.065 * c, -R, R);
+  }
+  g.globalAlpha = 1;
+  if (!L.glints) return;
+  // Frost and stardust glitter: points across the pool winking on and off.
+  const rnd = seq(q.seed + 7);
+  for (let i = 0; i < L.glints; i++) {
+    const a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * 0.92;
+    const on = (ph + i * 3) % 5;
+    if (on > 1 || fade > rnd()) continue;
+    const x = Math.round(cx + Math.cos(a) * d * R), y = Math.round(cy + Math.sin(a) * d * R * 0.2);
+    g.fillStyle = on ? css(q.color2) : '#fff';
+    g.fillRect(x, y, 1, 1);
+    if (!on) { g.fillRect(x - 1, y, 3, 1); g.fillRect(x, y - 1, 1, 3); }
+  }
+}
+
+/**
+ * Big ice crystals jutting out of the ground across the ring, leaning
+ * outward, a white edge catching the light; they hold, flicker and shatter.
+ */
+function drawSpires(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+  if (k > 0.78 || (k > 0.68 && (Math.floor(q.t * 30) & 1))) return;
+  const R = q.r * PPM;
+  const rnd = seq(q.seed + 3);
+  const n = 13;
+  for (let i = 0; i < n; i++) {
+    const u = Math.max(-1, Math.min(1, (i / (n - 1)) * 2 - 1 + (rnd() - 0.5) * 0.14));
+    const lag = Math.abs(u) * 0.06;
+    const grow = Math.max(0, Math.min(1, (k - lag) / 0.08));
+    const up = 1 - (1 - grow) ** 3;
+    if (up <= 0) { rnd(); rnd(); continue; }
+    const h = Math.round((12 + (1 - Math.abs(u)) * 30 + rnd() * 10) * up);
+    const bw = 1.5 + (1 - Math.abs(u)) * 3 + rnd() * 1.5;
+    const x = cx + u * R * 0.95, y0 = cy + 2 - (i % 3) * 2;
+    const lean = u * 0.5;
+    for (let j = 0; j < h; j++) {
+      const w = bw * (1 - j / h);
+      const xs = Math.round(x + lean * j);
+      g.fillStyle = css(j > h - 4 ? 0xffffff : j < 3 ? q.color2 : q.color);
+      g.fillRect(Math.round(xs - w), y0 - j, Math.max(1, Math.round(w * 2)), 1);
+      // The lit edge, facing away from the impact.
+      if (w > 1) {
+        g.fillStyle = '#fff';
+        g.fillRect(u < 0 ? Math.round(xs - w) : Math.round(xs + w) - 1, y0 - j, 1, 1);
+      }
+    }
+  }
+}
+
+/** A burning rune circle laid flat on the ground: two rings, glyphs between, a hexagram turning inside. */
+function drawHellgate(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+  if (k > 0.72 && (Math.floor(q.t * 24) & 1)) return;
+  const open = k < 0.1 ? 1 - (1 - k / 0.1) ** 2 : 1;
+  const rx = q.r * PPM * open, ry = rx * 0.22;
+  const dense = k > 0.55 ? 0.5 : 1;
+  ellipseOutline(g, cx, cy, rx, ry, css(q.color), dense);
+  ellipseOutline(g, cx, cy, rx * 0.8, ry * 0.8, css(q.color2), dense);
+  const spin = q.t * 0.9 + q.seed;
+  // Glyphs riding between the rings.
+  const n = 14;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 - spin * 0.5;
+    const x = Math.round(cx + Math.cos(a) * rx * 0.9) - 1, y = Math.round(cy + Math.sin(a) * ry * 0.9) - 1;
+    g.fillStyle = css(Math.sin(a) < 0 ? q.color : q.color2);
+    const gl = GLYPHS[(i + q.seed) % GLYPHS.length];
+    for (let b = 0; b < 9; b++) if (gl & (1 << b)) g.fillRect(x + (b % 3), y + ((b / 3) | 0), 1, 1);
+  }
+  // Two triangles, turning the other way.
+  g.fillStyle = css(q.color);
+  for (let t = 0; t < 2; t++) {
+    for (let i = 0; i < 3; i++) {
+      const a0 = spin + t * Math.PI / 3 + (i * Math.PI * 2) / 3, a1 = a0 + (Math.PI * 2) / 3;
+      pxLine(g, Math.round(cx + Math.cos(a0) * rx * 0.78), Math.round(cy + Math.sin(a0) * ry * 0.78),
+        Math.round(cx + Math.cos(a1) * rx * 0.78), Math.round(cy + Math.sin(a1) * ry * 0.78));
+    }
+  }
+}
+
+/** Stars pricking out over the impact, joined one by one into a constellation, twinkling, then gone. */
+function drawConstellation(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+  if (k > 0.75 && (Math.floor(q.t * 24) & 1)) return;
+  const R = q.r * PPM;
+  const rnd = seq(q.seed + 11);
+  const n = 8;
+  const pts: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const u = (i / (n - 1)) * 2 - 1 + (rnd() - 0.5) * 0.18;
+    pts.push(Math.round(cx + u * R * 0.9), Math.round(cy - (0.3 + rnd() * 0.55 + (1 - Math.abs(u)) * 0.35) * R * 0.75));
+  }
+  const drawn = Math.min(n - 1, k * 3.2 * (n - 1));
+  g.fillStyle = css(q.color2);
+  for (let i = 0; i < drawn; i++) {
+    const f = Math.min(1, drawn - i);
+    const x0 = pts[i * 2], y0 = pts[i * 2 + 1], x1 = pts[i * 2 + 2], y1 = pts[i * 2 + 3];
+    pxLine(g, x0, y0, Math.round(x0 + (x1 - x0) * f), Math.round(y0 + (y1 - y0) * f));
+  }
+  const ph = Math.floor(q.t * 10);
+  for (let i = 0; i < n; i++) {
+    if (i > drawn + 1) break;
+    const x = pts[i * 2], y = pts[i * 2 + 1];
+    const big = (ph + i) % 4 === 0 ? 3 : (ph + i) % 2 ? 2 : 1;
+    g.fillStyle = css(q.color);
+    g.fillRect(x - big, y, big * 2 + 1, 1);
+    g.fillRect(x, y - big, 1, big * 2 + 1);
+    g.fillStyle = '#fff';
+    g.fillRect(x, y, 1, 1);
+  }
+}
+
+/**
+ * A geyser of fire: shoots up fast, tongues flickering at its edges, then
+ * its foot lifts off the ground and the column burns out from the bottom.
+ */
+function drawJet(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+  const H = q.r * PPM;
+  const top = H * (k < 0.25 ? 1 - (1 - k / 0.25) ** 2 : 1 + (k - 0.25) * 0.3);
+  const foot = k < 0.4 ? 0 : H * ((k - 0.4) / 0.6) ** 1.5;
+  const ph = Math.floor(q.t * 30);
+  for (let j = Math.floor(foot); j < top; j++) {
+    const u = j / Math.max(1, top);
+    const w = Math.max(1, Math.round((6.5 - u * 5) * (1 - k * 0.35) + (((j + ph) * 7) % 4 === 0 ? 1 : 0)));
+    const x = cx + Math.round(Math.sin(j * 0.2 + q.t * 14 + q.seed) * u);
+    g.fillStyle = css(q.color);
+    g.fillRect(x - w, cy - j, w * 2 + 1, 1);
+    const wi = Math.round(w * 0.55);
+    if (wi > 0) {
+      g.fillStyle = css(q.color2);
+      g.fillRect(x - wi, cy - j, wi * 2 + 1, 1);
+    }
+    if (u < 0.35 && k < 0.45 && w > 3) {
+      g.fillStyle = '#fff';
+      g.fillRect(x - 1, cy - j, 3, 1);
+    }
   }
 }

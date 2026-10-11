@@ -12,13 +12,26 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.71.0',
+    version: '0.72.0',
     date: '2026-10-11',
     title: 'Cup champion spotlight',
     notes: [
       'When an Arena Cup ends, its winner now takes the stage: the full fighter on a pedestal under the trophy, with their level, all their gear and every stat.',
       'Below them is the road to the cup: who they beat in each round and how much health they kept, by K.O. or on time.',
       'It shows for any winner, whether that is you, a friend or a challenger. If you went out early, tap See who wins to watch it.',
+    ],
+  },
+  {
+    version: '0.71.0',
+    date: '2026-10-11',
+    title: 'Meteor Sigil goes big',
+    notes: [
+      'The Meteor Sigil\'s meteor is much bigger: it comes down larger and its blast now covers a far wider area (about 4 m each side of where it lands). Each hit deals a bit less damage to keep it fair.',
+      'You can see it coming: the sigil fires a beam into the sky, the meteor whistles down, and the full blast area is marked on the ground with a shadow that grows as it falls.',
+      'Brand new impacts. The stock meteor hits with a fireball dome, lava splash, a mushroom of smoke and a molten crater that cools and burns.',
+      'Frostfall Sigil: giant ice crystals burst out across the whole area in a frost mist and falling snow, leave a glittering glaze, then shatter.',
+      'Doomcaller Sigil: a burning rune circle opens on the ground, hellfire geysers erupt across it, then a second eruption and a rain of brimstone.',
+      'Comet Sigil: a nova of starlight rings and rays, a constellation drawn in the air over the blast, a shower of shooting stars and drifting stardust.',
     ],
   },
   {
