@@ -222,6 +222,39 @@ function clumps(p: Pix, blobs: Blob[], pal: number[], seed: number, fluff = 0.4)
   }
 }
 
+/**
+ * Cherry blossom: clumps lit from the upper right, lower clumps first, their
+ * edges bitten into small lobes; inside, little five-pixel florets catch the
+ * light and pockets of shade sit between them.
+ */
+function bloom(p: Pix, blobs: Blob[], seed: number, shade = 0): void {
+  blobs.sort((a, b) => b.y - a.y);
+  const n = BLOSSOM.length;
+  for (const b of blobs) {
+    for (let y = Math.floor(b.y - b.ry); y <= b.y + b.ry; y++) for (let x = Math.floor(b.x - b.rx); x <= b.x + b.rx; x++) {
+      const u = (x + 0.5 - b.x) / b.rx, v = (y + 0.5 - b.y) / b.ry;
+      const d = u * u + v * v;
+      if (d > 1 || (d > 0.68 && hash(x >> 1, y >> 1, seed) < (d - 0.68) * 2.4)) continue;
+      let l = 0.6 - shade - v * 0.46 + u * 0.24 - d * 0.16 + (bayer(x, y) - 0.5) * 0.14;
+      // A floret in some 4×4 cells: centre and its four neighbours.
+      const cx = x >> 2, cy = y >> 2;
+      if (hash(cx, cy, seed + 1) < 0.55) {
+        const fx = (cx << 2) + 1 + Math.floor(hash(cx, cy, seed + 2) * 2), fy = (cy << 2) + 1 + Math.floor(hash(cx, cy, seed + 3) * 2);
+        const k = Math.abs(x - fx) + Math.abs(y - fy);
+        if (k === 0) l += 0.26;
+        else if (k === 1) l += 0.12;
+      }
+      // Shade pockets between the florets, deeper on the underside.
+      const px = Math.floor(x / 5), py = Math.floor(y / 5);
+      if (hash(px, py, seed + 4) < 0.2 + Math.max(0, v) * 0.2) {
+        const qx = px * 5 + 2, qy = py * 5 + 2;
+        if (Math.abs(x - qx) + Math.abs(y - qy) <= 1) l -= 0.24;
+      }
+      p.set(x, y, BLOSSOM[Math.max(0, Math.min(n - 1, Math.floor(l * n)))]);
+    }
+  }
+}
+
 /** Tileable value noise (wraps every `w` px along x). */
 function tnoise(x: number, y: number, w: number, cx: number, cy: number, s: number): number {
   const f = x / w;
@@ -524,29 +557,31 @@ function paintCherry(rng: Rng, dir: number, Ht: number, reach: number, seed: num
   const w = reach + 170, h = Ht + 2;
   const p = new Pix(w, h);
   const bx = dir > 0 ? 120 : w - 120, by = h - 2;
-  // Branch discs: x, y, radius, segment id.
+  // Branch discs: x, y, radius.
   const discs: number[] = [];
   const blobs: Blob[] = [];
-  let seg = 0;
+  // The crown's body round each fork, under the clumps.
+  const mass: Blob[] = [];
   const clump = (x: number, y: number, k: number) => {
     for (let i = rng.int(3, 5); i > 0; i--) {
-      blobs.push({ x: x + rng.range(-11, 11) * k, y: y + rng.range(-8, 4) * k, rx: rng.range(12, 19) * k, ry: rng.range(8, 12) * k });
+      const rx = rng.range(12, 18) * k;
+      blobs.push({ x: x + rng.range(-11, 11) * k, y: y + rng.range(-9, 3) * k, rx, ry: rx * rng.range(0.66, 0.82) });
     }
   };
   const limb = (x: number, y: number, ang: number, len: number, r: number, depth: number): void => {
     const n = Math.max(2, Math.round(len / 2));
     const bend = rng.range(-0.025, 0.025);
-    const id = seg++;
     for (let i = 0; i < n; i++) {
       ang += bend + rng.range(-0.07, 0.07);
       // Outer boughs spread out level, as cherries do.
       if (depth >= 1) ang += (Math.sign(ang) * 1.45 - ang) * 0.01 * depth;
       x += Math.sin(ang) * 2;
       y -= Math.cos(ang) * 2;
-      discs.push(x, y, Math.max(0.6, r * (1 - (i / n) * 0.35)), id);
+      discs.push(x, y, Math.max(0.6, r * (1 - (i / n) * 0.35)));
       if (depth >= 1 && i % 4 === 2 && rng.chance(depth >= 2 ? 0.7 : 0.3)) clump(x, y, 0.8);
     }
     if (depth >= 3 || r < 1) { clump(x, y, 1); return; }
+    if (depth >= 1) { const rx = rng.range(20, 27); mass.push({ x, y: y - 4, rx, ry: rx * 0.72 }); }
     const kids = depth === 0 ? 0 : 2;
     for (let k = 0; k < kids; k++) {
       const spread = rng.range(0.3, 0.62) * (k === 0 ? -1 : 1);
@@ -561,42 +596,40 @@ function paintCherry(rng: Rng, dir: number, Ht: number, reach: number, seed: num
     ang += Math.sin(i * 0.25) * 0.03 * dir + rng.range(-0.04, 0.04);
     x += Math.sin(ang) * 2;
     y -= Math.cos(ang) * 2;
-    discs.push(x, y, 6.2 - (i / n) * 1.2, -1);
+    discs.push(x, y, 6.2 - (i / n) * 1.2);
   }
   // Root flare.
-  for (let i = 0; i < 9; i++) discs.push(bx + rng.range(-1, 1), by - i, 6.5 + (9 - i) * 0.55, -1);
-  for (const s of [-1, 1]) for (let i = 0; i < 12; i++) discs.push(bx + s * (5 + i), by - 1 + i * 0.12, Math.max(0.8, 2.6 - i * 0.18), -1);
+  for (let i = 0; i < 9; i++) discs.push(bx + rng.range(-1, 1), by - i, 6.5 + (9 - i) * 0.55);
+  for (const s of [-1, 1]) for (let i = 0; i < 12; i++) discs.push(bx + s * (5 + i), by - 1 + i * 0.12, Math.max(0.8, 2.6 - i * 0.18));
   // Main boughs: a long one reaching inward, one rising, one leaning out.
   limb(x, y, dir * 0.95, reach * 0.5, 4.4, 1);
   limb(x, y, dir * 0.3, Ht * 0.3, 4, 1);
   limb(x, y, -dir * 0.5, Ht * 0.24, 3.4, 1);
-  limb(x - dir * 2, y + 14, dir * 1.25, reach * 0.3, 2.6, 2);
-  const drawDiscs = (only: (id: number) => boolean) => {
-    for (let i = 0; i < discs.length; i += 4) {
-      if (!only(discs[i + 3])) continue;
-      const dx = discs[i], dy = discs[i + 1], r = discs[i + 2];
-      for (let yy = Math.floor(dy - r); yy <= dy + r; yy++) for (let xx = Math.floor(dx - r); xx <= dx + r; xx++) {
-        const u = (xx + 0.5 - dx) / r, v = (yy + 0.5 - dy) / r;
-        if (u * u + v * v > 1) continue;
-        const l = u * 0.6 - v * 0.8;
-        let c = l > 0.45 ? BARK[3] : l > -0.1 ? BARK[2] : l > -0.6 ? BARK[1] : BARK[0];
-        // Cherry bark's horizontal lenticels.
-        if (r > 2.4 && yy % 4 === 0 && l > -0.4 && hash(xx >> 1, yy, seed) < 0.4) c = BARK[3];
-        p.set(xx, yy, c);
-      }
+  for (let i = 0; i < discs.length; i += 3) {
+    const dx = discs[i], dy = discs[i + 1], r = discs[i + 2];
+    for (let yy = Math.floor(dy - r); yy <= dy + r; yy++) for (let xx = Math.floor(dx - r); xx <= dx + r; xx++) {
+      const u = (xx + 0.5 - dx) / r, v = (yy + 0.5 - dy) / r;
+      if (u * u + v * v > 1) continue;
+      const l = u * 0.6 - v * 0.8;
+      let c = l > 0.45 ? BARK[3] : l > -0.1 ? BARK[2] : l > -0.6 ? BARK[1] : BARK[0];
+      // Cherry bark's horizontal lenticels.
+      if (r > 2.4 && yy % 4 === 0 && l > -0.4 && hash(xx >> 1, yy, seed) < 0.4) c = BARK[3];
+      p.set(xx, yy, c);
     }
-  };
-  drawDiscs(() => true);
-  // Keep the crown off the very top so it never looks cut.
-  for (const b of blobs) b.y = Math.max(b.y, b.ry + 3);
+  }
+  // Keep the crown off the very top so it never looks cut, and the inner
+  // crown up out of the fighters' way.
+  for (const b of [...blobs, ...mass]) {
+    if ((b.x - bx) * dir > 40) b.y = Math.min(b.y, h - 92 - b.ry * 0.3);
+    b.y = Math.max(b.y, b.ry + 3);
+  }
   const hangs: [number, number][] = [];
   for (const b of blobs) {
     const k = (b.x - bx) * dir;
     if (k > 26 && k < reach - 10) hangs.push([Math.round(b.x + rng.range(-0.4, 0.4) * b.rx), Math.round(b.y)]);
   }
-  clumps(p, blobs, BLOSSOM, seed, 0.42);
-  // Some twigs cross in front of the blossom.
-  drawDiscs((id) => id >= 0 && hash(id, 0, seed + 7) < 0.3);
+  bloom(p, mass, seed, 0.14);
+  bloom(p, blobs, seed);
   p.outline(INK);
   // Loose flowers just off the crown's edge.
   for (const b of blobs) for (let i = 0; i < 4; i++) {
