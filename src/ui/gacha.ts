@@ -4,7 +4,7 @@ import {
   TEN_COST, WIN_BASE, WIN_HP_BONUS, type Pull,
 } from '../character/collection';
 import type { PlayerCharacter } from '../character/profile';
-import { setPieces, SKIN_RARITIES, SKIN_SET_BY_ID, type SkinDef, type SkinRarity } from '../character/skins';
+import { RARITY_NAME, setPieces, SKIN_RARITIES, SKIN_SET_BY_ID, type SkinDef, type SkinRarity } from '../character/skins';
 import { iconCanvas } from '../render/icons';
 import { gearOf, SLOT_NAMES } from '../sim/gear';
 import { withGear } from '../sim/loadout';
@@ -39,7 +39,7 @@ export function shopTabs(on: ShopTab, go: (t: ShopTab) => void): HTMLElement {
 }
 
 export const REVEAL: Record<SkinRarity, Sfx> = { rare: 'revealRare', mythic: 'revealMythic', legendary: 'revealLegendary', epic: 'revealEpic' };
-export const TIER_NAME: Record<SkinRarity, string> = { rare: 'Rare', mythic: 'Mythic', legendary: 'Legendary', epic: 'Epic' };
+export const TIER_NAME = RARITY_NAME;
 const rank = (r: SkinRarity) => SKIN_RARITIES.indexOf(r);
 
 /** A gem amount with the gem glyph. */
@@ -107,7 +107,7 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
     odds,
     pityLine,
     h('div.chest-buy', null, buy1, buy10),
-    h('p.chest-note', null, h('b', null, 'Open 10'), ' costs one chest less and always holds a mythic or better.'),
+    h('p.chest-note', null, h('b', null, 'Open 10'), ' costs one chest less and always holds an epic or better.'),
     h('p.chest-note', null, 'Already own a skin? The copy goes to your spares: melt ', h('b', null, `${FORGE_COST} of a rarity`), ' in the ', h('b', null, 'Forge'), ' for one of the next.'),
     h('p.chest-note.earn', null, icon('swords'), ` Win fights to earn gems: ${WIN_BASE} per win, plus up to ${WIN_HP_BONUS} more for the health you keep.`),
   );
@@ -125,7 +125,7 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
         h('small', null, `${got}/${all}`));
     }));
     const left = EPIC_PITY - pity();
-    pityLine.replaceChildren(icon('star'), ' Epic guaranteed within ', h('b', null, `${left}`), left === 1 ? ' chest' : ' chests');
+    pityLine.replaceChildren(icon('star'), ' Mythic guaranteed within ', h('b', null, `${left}`), left === 1 ? ' chest' : ' chests');
     const g = gems();
     buy1.disabled = g < PULL_COST;
     buy10.disabled = g < TEN_COST;
@@ -456,6 +456,6 @@ export function card(p: Pull, big: boolean): HTMLElement {
     p.fresh ? h('span.gc-new', null, 'New!') : h('span.gc-dupe', null, icon('anvil'), big ? 'Owned · +1 spare' : '+1 spare'),
   );
   const backFace = h('div.gc-face.gc-back', null, h('span.gc-seal', null, icon('chest')));
-  return h(`div.gcard.r-${s.rarity}${big ? '.big' : ''}`, { title: `${s.name} (${s.rarity}) for ${g.name}` },
+  return h(`div.gcard.r-${s.rarity}${big ? '.big' : ''}`, { title: `${s.name} (${TIER_NAME[s.rarity]}) for ${g.name}` },
     h('div.gc-inner', null, backFace, front), h('i.gc-foil', { 'aria-hidden': 'true' }));
 }

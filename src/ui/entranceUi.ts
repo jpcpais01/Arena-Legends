@@ -7,4 +7,4 @@ export const ENTRANCE_ICON: Record<EntranceId, IconName> = {
   whirlwind: 'tornado', cannon: 'bomb', bats: 'bat', jackpot: 'coin', blade: 'blade', quake: 'rock', rift: 'portal', starborn: 'constellation', phoenix: 'phoenix',
 };
 
-export const ENTRANCE_TIER: Record<EntranceTier, string> = { common: 'Free', rare: 'Rare', mythic: 'Mythic', legendary: 'Legendary' };
+export const ENTRANCE_TIER: Record<EntranceTier, string> = { common: 'Free', rare: 'Rare', mythic: 'Epic', legendary: 'Legendary' };

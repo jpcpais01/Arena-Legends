@@ -17,7 +17,7 @@ import { SceneGl, type Glow } from './sceneGl';
 /** Tier light: [deep, bright]. Epic cycles the rainbow instead. */
 export const TIER_LIGHT: Record<SkinRarity, [string, string]> = {
   rare: ['#2f7cff', '#bfe0ff'],
-  mythic: ['#ff3a8a', '#ffc6e0'],
+  mythic: ['#9a4aff', '#e6ccff'],
   legendary: ['#ff9a1a', '#fff0a0'],
   epic: ['#7ff0e0', '#ffffff'],
 };

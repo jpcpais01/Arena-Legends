@@ -35,6 +35,7 @@ import { SKYBELL } from './skybell';
 import { WAVE4_MAINS } from './wave4Mains';
 import { WAVE4_OFFHAND } from './wave4Offhand';
 import { WAVE4_SPECIALS } from './wave4Specials';
+import { METEOR_SKINS } from './meteorSkins';
 import { WAVE4_USABLES } from './wave4Usables';
 import { WAVE4_HEADS } from './wave4Heads';
 import { WAVE4_LEGS } from './wave4Legs';
@@ -392,6 +393,7 @@ export const SKIN_ART: Record<string, SkinArt> = {
   ...WAVE4_MAINS,
   ...WAVE4_OFFHAND,
   ...WAVE4_SPECIALS,
+  ...METEOR_SKINS,
   ...WAVE4_USABLES,
   ...WAVE4_HEADS,
   ...WAVE4_LEGS,

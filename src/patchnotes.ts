@@ -12,7 +12,7 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.85.0',
+    version: '0.87.0',
     date: '2026-10-11',
     title: 'Clearer menus on phones, part 1',
     notes: [
@@ -21,6 +21,28 @@ export const PATCH_NOTES: PatchNote[] = [
       'Settings fit on one screen: sound, battle and arena side by side.',
       'Patch notes have a list of versions beside them. Tap one to jump to it.',
       'Play online, the room code screen and the Arena Cup start screen are shorter and tidier, and fit with the browser bar showing.',
+    ],
+  },
+  {
+    version: '0.86.0',
+    date: '2026-10-11',
+    title: 'Mythic is the rarest',
+    notes: [
+      'Skin tiers have swapped names: Mythic is now the rarest tier of all, and Epic sits between Rare and Legendary. The order is now Rare, Epic, Legendary, Mythic.',
+      'Nothing you own changed, only the names. The seven-piece sets with their auras are now Mythic sets, and the chest guarantee now promises a Mythic.',
+      'Epic skins and cards now glow purple. Entrances follow the same naming: the tier below Legendary is now Epic.',
+    ],
+  },
+  {
+    version: '0.85.0',
+    date: '2026-10-11',
+    title: 'Three new meteors',
+    notes: [
+      'Three new legendary skins for the Meteor Sigil, each with its own fall and its own impact.',
+      'Tidefall: a globe of sea water rains spray as it falls and lands in a huge splash, a crown of water that bursts up and out, then waves roll across the sand and the drops rain back down.',
+      'Bloomfall: a glowing seed sheds petals on the way down. Where it lands, vines curl out of the ground, a giant flower opens and a storm of petals and pollen drifts across the arena.',
+      'Singularity: a tiny black hole falls through a ring of light. On impact it pulls everything in, the picture bends towards it, and then it bursts in a violet nova.',
+      'At night only their accents shine: the foam crest, the seams of the seed and the ring around the black hole.',
     ],
   },
   {

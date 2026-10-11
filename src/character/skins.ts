@@ -14,6 +14,9 @@ import type { GearId, GearSet } from '../sim/types';
 export type SkinRarity = 'rare' | 'mythic' | 'legendary' | 'epic';
 export const SKIN_RARITIES: readonly SkinRarity[] = ['rare', 'mythic', 'legendary', 'epic'];
 
+/** The tier names players see. Ids stay as they are (saves, odds and tests use them); only the labels moved. */
+export const RARITY_NAME: Record<SkinRarity, string> = { rare: 'Rare', mythic: 'Epic', legendary: 'Legendary', epic: 'Mythic' };
+
 export const RARITY_INFO: Record<SkinRarity, string> = {
   rare: 'New colours and finish.',
   mythic: 'Reshaped: a new silhouette.',
@@ -454,6 +457,10 @@ export const SKINS: readonly SkinDef[] = [
   E('skybell', 'mage_robe', 'skybell', 'Robes of the Windward Peak'),
   E('skybell', 'windrunner_leggings', 'skybell', 'Cloudstep Trousers'),
   E('skybell', 'zephyr_boots', 'skybell', 'Cloudwalker Sandals'),
+  // Meteor sigil (v0.85.0): three legendary meteors, each with its own fall and impact
+  S('meteor_sigil', 'legendary', 'tidefall', 'Tidefall Sigil'),
+  S('meteor_sigil', 'legendary', 'bloomfall', 'Bloomfall Sigil'),
+  S('meteor_sigil', 'legendary', 'singularity', 'Singularity Sigil'),
 ];
 
 export const SKIN_BY_ID: ReadonlyMap<string, SkinDef> = new Map(SKINS.map((s) => [s.id, s]));
