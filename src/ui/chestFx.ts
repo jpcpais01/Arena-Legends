@@ -2,15 +2,16 @@ import type { SkinRarity } from '../character/skins';
 import { SceneGl, type Glow } from './sceneGl';
 
 /**
- * The treasure vault and its chest, painted on one low-res canvas (one art
+ * The moonlit grove and its chest, painted on one low-res canvas (one art
  * pixel = `k` CSS pixels) and shown through the shader layer (bloom,
  * shockwaves, light, camera push-in), or as it is where WebGL2 is missing.
  *
- * The vault: brick walls, an arched alcove with a carved rune circle,
- * pillars, banners, two braziers, a round dais with a rune ring, coin piles
- * and light falling from a high window. The whole room travels with the
- * chest, so when an opening starts the camera pans to put it centre stage.
- * Two chests: the wooden one for single pulls and the grand one for ten.
+ * The grove: a waterfall falling from a mossy cliff into a pool under the
+ * moon, two ancient trees, a canopy with vines, stone lanterns, flowers,
+ * fireflies and drifting petals, and the chest on a mossy stone dais. The
+ * whole scene travels with the chest, so when an opening starts the camera
+ * pans to put it centre stage. Two chests: the wooden one for single pulls
+ * and the grand one for ten.
  */
 
 /** Tier light: [deep, bright]. Epic cycles the rainbow instead. */
@@ -28,7 +29,6 @@ const W = 52; // chest width (art px)
 const BODY_H = 24;
 const LID_H = 18;
 const GOLD = ['#7a420e', '#b06c1e', '#f2b542', '#ffe58f'];
-const IRON = ['#15121c', '#262233', '#3a3550', '#5a5478'];
 const FIRE = ['#8a1a0a', '#d8400e', '#ff8a1a', '#ffd24a', '#fff6c8'];
 
 export type ChestLook = 'wood' | 'grand';
@@ -129,9 +129,25 @@ function ellipse(px: Px, cx: number, cy: number, rx: number, ry: number, col: st
 
 const hash = (n: number) => { const s = Math.sin(n * 127.1) * 43758.5453; return s - Math.floor(s); };
 
+/** Pixel disc, filled. */
+function disc(px: Px, cx: number, cy: number, r: number, col: string): void {
+  for (let dy = -r; dy <= r; dy++) {
+    const hw = Math.round(Math.sqrt(Math.max(0, r * r - dy * dy)));
+    px(cx - hw, cy + dy, hw * 2, 1, col);
+  }
+}
+
+const FLOWERS = ['#ff8ac8', '#f4f0ff', '#ffd860', '#7ad8ff', '#c89aff'];
+const MOSS = ['#1f4a2a', '#2e5a34', '#3e7a3c', '#5a9a48'];
+const STONE = ['#26302f', '#36423f', '#4a5853', '#62706a'];
+
 /**
- * The vault, drawn once per size. The chest stands at (ax, ay) in it; the
- * room is twice the screen each way so it covers it wherever the chest goes.
+ * The grove, drawn once per size: a moonlit forest glade with a waterfall
+ * spilling from a mossy cliff into a pool, two ancient trees framing it,
+ * a canopy with hanging vines, mountains under the moon, stone lanterns,
+ * flowers, ferns and glowing mushrooms, and the chest on a mossy stone dais.
+ * The chest stands at (ax, ay); the room is twice the screen each way so it
+ * covers it wherever the chest goes.
  */
 function roomArt(sw: number, sh: number): { c: HTMLCanvasElement; ax: number; ay: number } {
   const RW = sw * 2 + 120, RH = sh * 2;
@@ -141,141 +157,190 @@ function roomArt(sw: number, sh: number): { c: HTMLCanvasElement; ax: number; ay
   const px: Px = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
   const X = Math.round(RW / 2), Y = sh, seam = Y - 16;
 
-  // Back wall: bricks.
-  px(0, 0, RW, seam, '#0d0a16');
-  const BR = ['#211a2e', '#251d33', '#1d1729', '#2a2138'];
-  for (let r = 0, y = seam; y > -8; r++, y -= 8) {
-    const off = (r & 1) * 8;
-    for (let x = -16 + off; x < RW; x += 16) {
-      const col = BR[Math.floor(hash(x * 0.37 + r * 13.1) * BR.length)];
-      px(x + 1, y - 7, 15, 7, col);
-      px(x + 1, y - 7, 15, 1, '#30263f');
-      px(x + 14, y - 6, 2, 6, '#1a1424');
-      if (hash(x + r * 7) > 0.86) px(x + 4 + Math.floor(hash(x * 3 + r) * 8), y - 4, 2, 1, '#14101c');
+  // Night sky, stars, the moon.
+  const sky = g.createLinearGradient(0, seam - 190, 0, seam - 20);
+  sky.addColorStop(0, '#050d18');
+  sky.addColorStop(0.6, '#0e2632');
+  sky.addColorStop(1, '#1b3f46');
+  g.fillStyle = sky; g.fillRect(0, 0, RW, seam);
+  for (let i = 0; i < 260; i++) {
+    const x = hash(i * 3.7) * RW, y = seam - 60 - hash(i * 9.1) * 200;
+    px(x, y, 1, 1, hash(i) > 0.85 ? '#ffffff' : '#7a98b0');
+  }
+  const mx = X - 46, my = seam - 64;
+  const halo = g.createRadialGradient(mx, my, 10, mx, my, 70);
+  halo.addColorStop(0, 'rgba(200, 236, 220, 0.35)');
+  halo.addColorStop(1, 'rgba(200, 236, 220, 0)');
+  g.fillStyle = halo; g.fillRect(mx - 70, my - 70, 140, 140);
+  disc(px, mx, my, 11, '#e6f2da');
+  disc(px, mx + 2, my - 2, 9, '#f6fbee');
+  for (const [dx, dy, r] of [[-4, 3, 3], [4, 5, 2], [-1, -6, 2], [6, -2, 1]] as const) disc(px, mx + dx, my + dy, r, '#cfdcc4');
+
+  // Mountains, two layers.
+  for (const [base, amp, col, f] of [[seam - 34, 18, '#10243a', 0.021], [seam - 22, 10, '#14323a', 0.034]] as const) {
+    for (let x = 0; x < RW; x++) {
+      const hgt = amp * (0.6 + 0.4 * Math.sin(x * f + base) + 0.25 * Math.sin(x * f * 2.7 + 1.3) + 0.12 * Math.sin(x * f * 6.1));
+      px(x, base - hgt, 1, seam - base + hgt, col);
     }
   }
-  // The alcove: an arch of stone blocks with a carved rune circle inside.
-  const AW = 40, AT = seam - 66;
-  for (let y = AT - AW; y < seam; y++) {
-    const dy = y - AT;
-    const hw = dy < 0 ? Math.round(Math.sqrt(Math.max(0, AW * AW - dy * dy))) : AW;
-    if (hw <= 0) continue;
-    px(X - hw - 6, y, (hw + 6) * 2, 1, '#3a3050');
-    px(X - hw, y, hw * 2, 1, '#0f0b18');
+  // Far trees in silhouette.
+  for (let i = 0; i < 26; i++) {
+    const tx = hash(i * 5.3) * RW;
+    if (Math.abs(tx - X) < 70) continue;
+    const th = 26 + hash(i * 2.1) * 34;
+    px(tx - 3, seam - th, 6, th, '#0d211d');
+    for (let k = 0; k < 4; k++) disc(px, tx + (hash(i + k) - 0.5) * 18, seam - th - 4 + k * 8, 9 + Math.round(hash(i * 7 + k) * 6), '#0f2620');
   }
-  for (let a = 0; a <= 12; a++) {
-    // Seams between the arch stones.
-    const ang = Math.PI + (a / 12) * Math.PI;
-    for (let r = AW; r < AW + 6; r++) px(X + Math.cos(ang) * r, AT + Math.sin(ang) * r, 1, 1, '#241c34');
-  }
-  for (let y = AT; y < seam; y += 9) { px(X - AW - 6, y, 6, 1, '#241c34'); px(X + AW, y, 6, 1, '#241c34'); }
-  for (let y = AT - AW; y < seam; y++) {
-    const dy = y - AT;
-    const hw = dy < 0 ? Math.round(Math.sqrt(Math.max(0, AW * AW - dy * dy))) : AW;
-    if (hw > 0) { px(X - hw, y, 1, 1, '#4a3f66'); px(X + hw - 1, y, 1, 1, '#1a1424'); }
-  }
-  px(X - 5, AT - AW - 8, 10, 11, INK); px(X - 4, AT - AW - 7, 8, 9, '#4a3f66'); px(X - 4, AT - AW - 7, 8, 1, '#5e5280');
-  px(X - 1, AT - AW - 4, 2, 2, '#b09aff');
-  const rc = { x: X, y: seam - 50 };
-  for (let i = 0; i < 160; i++) {
-    const a = (i / 160) * Math.PI * 2;
-    px(rc.x + Math.cos(a) * 26, rc.y + Math.sin(a) * 26, 1, 1, '#2a2040');
-    px(rc.x + Math.cos(a) * 20, rc.y + Math.sin(a) * 20, 1, 1, '#221a34');
-  }
-  for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2 - Math.PI / 2, b = ((i + 2) / 6) * Math.PI * 2 - Math.PI / 2;
-    for (let s = 0; s <= 30; s++) {
-      const t = s / 30;
-      px(rc.x + Math.cos(a) * 20 * (1 - t) + Math.cos(b) * 20 * t, rc.y + Math.sin(a) * 20 * (1 - t) + Math.sin(b) * 20 * t, 1, 1, '#221a34');
-    }
-  }
-  // Pillars.
+
+  // The cliff and its waterfall.
   for (const s of [-1, 1]) {
-    const cx = X + s * 94;
-    px(cx - 10, 0, 20, seam, '#352c4a');
-    px(cx - 10, 0, 3, seam, '#4a3f66');
-    px(cx + 6, 0, 4, seam, '#221b30');
-    for (let x = cx - 5; x < cx + 6; x += 4) px(x, 0, 1, seam, '#2a2240');
-    px(cx - 13, seam - 9, 26, 10, INK); px(cx - 12, seam - 8, 24, 8, '#3d3354'); px(cx - 12, seam - 8, 24, 1, '#52476a');
-    px(cx - 13, seam - 128, 26, 8, INK); px(cx - 12, seam - 127, 24, 6, '#3d3354'); px(cx - 12, seam - 122, 24, 1, '#1c1626');
+    for (let x = 0; x < 48; x++) {
+      const cx = X + s * (15 + x);
+      const top = seam - 62 + Math.round(x * 0.5 + Math.sin(x * 0.7 + s) * 2.5 + (x > 30 ? (x - 30) * 1.6 : 0));
+      px(cx, top, 1, seam - top, STONE[1]);
+      // Rock strata and cracks.
+      for (let y = top + 4 + Math.floor(hash(x * 0.7) * 5); y < seam; y += 5 + Math.floor(hash(x + y) * 6)) px(cx, y + Math.round(Math.sin(x * 0.3) * 2), 1 + (hash(y * x) > 0.6 ? 1 : 0), 1, STONE[0]);
+      if (hash(x * 1.9 + s) > 0.82) px(cx, top + 4, 1, Math.round(hash(x * 5) * 14), STONE[0]);
+      if (hash(x * 3.3 + s) > 0.86) px(cx, top + 2, 1, 6 + Math.round(hash(x) * 18), STONE[2]);
+      px(cx, top, 1, 2, MOSS[2]); px(cx, top + 2, 1, 1, MOSS[1]);
+      if (hash(x * 3 + s) > 0.7) px(cx, top + 3, 1, 3 + Math.floor(hash(x) * 6), MOSS[1]);
+    }
   }
-  // Banners.
-  for (const [s, d] of [[-1, 140], [1, 140], [-1, 214], [1, 214]] as const) {
-    const cx = X + s * d, top = seam - 118, bot = seam - 38;
-    px(cx - 15, top - 2, 30, 3, GOLD[1]); px(cx - 15, top - 2, 30, 1, GOLD[3]);
-    px(cx - 12, top + 1, 24, bot - top, INK);
-    px(cx - 11, top + 1, 22, bot - top - 1, '#5a1426');
-    px(cx - 11, top + 1, 4, bot - top - 1, '#7a2034');
-    px(cx + 7, top + 1, 4, bot - top - 1, '#3a0c18');
-    px(cx - 9, top + 1, 1, bot - top - 1, GOLD[1]); px(cx + 8, top + 1, 1, bot - top - 1, GOLD[1]);
-    for (let i = 0; i < 7; i++) { px(cx - 1 - i, bot - 7 + i, 1 + i * 2, 1, '#0d0a16'); }
-    px(cx - 1, bot - 7, 2, 7, '#0d0a16');
-    const ey = top + 26;
-    for (let i = 0; i < 6; i++) px(cx - i, ey - 6 + i, 1 + i * 2, 1, GOLD[2]);
-    for (let i = 0; i < 6; i++) px(cx - 5 + i, ey + i, 11 - i * 2, 1, GOLD[1]);
-    px(cx - 1, ey - 2, 2, 3, '#7ad8ff');
-  }
-  // Floor in perspective.
-  px(0, seam, RW, RH - seam, '#17121f');
-  px(0, seam, RW, 2, '#2a2238'); px(0, seam + 2, RW, 1, '#0e0a15');
-  const vanish = seam - 70;
-  const scale = (y: number) => (y - vanish) / (seam - vanish);
-  let y0 = seam + 3;
-  for (let i = 0; y0 < RH; i++) {
-    const y1 = y0 + 3 + i * 1.6;
-    px(0, Math.round(y1), RW, 1, '#0e0a15');
-    const S = 18, off = (i & 1) * S / 2;
-    for (let j = -60; j <= 60; j++) {
-      const d = j * S + off;
-      const xa = X + d * scale(y0), xb = X + d * scale(y1);
-      for (let yy = Math.round(y0) + 1; yy < Math.round(y1); yy++) {
-        const t = (yy - y0) / (y1 - y0);
-        px(xa + (xb - xa) * t, yy, 1, 1, '#100c18');
+  px(X - 15, seam - 64, 30, 64, '#2f6d8c');
+  for (let x = X - 14; x < X + 15; x += 2) px(x, seam - 63, 1, 63, hash(x) > 0.5 ? '#4a92b0' : '#3a7e9e');
+  px(X - 16, seam - 65, 32, 2, '#d8f0f8');
+  for (const s of [-1, 1]) { px(X + s * 16 - (s < 0 ? 4 : 0), seam - 66, 5, 3, MOSS[2]); px(X + s * 18 - (s < 0 ? 2 : 0), seam - 67, 3, 1, MOSS[3]); }
+  // The pool below.
+  ellipse(px, X, seam + 1, 44, 6, '#163e52');
+  ellipse(px, X, seam, 40, 5, '#1e5470');
+  for (let i = 0; i < 9; i++) px(X - 30 + i * 7, seam - 1 + (i % 3), 4, 1, '#4a92b0');
+
+  // Two ancient trees framing the glade.
+  for (const s of [-1, 1]) {
+    const cx = X + s * 98;
+    px(cx - 12, 0, 24, seam + 4, '#1a120e');
+    px(cx - 11, 0, 22, seam + 4, '#2a1d18');
+    px(cx - 11, 0, 4, seam + 4, '#3d2a20');
+    px(cx + 6, 0, 5, seam + 4, '#1d140f');
+    for (let x = cx - 5; x < cx + 6; x += 4) for (let y = 0; y < seam; y += 1) if (hash(x * 13 + y * 0.3) > 0.35) px(x, y, 1, 1, '#22170f');
+    for (let i = 0; i < 10; i++) {
+      const my2 = seam - 20 - hash(i * 3 + s) * 120;
+      px(cx - 11 + Math.round(hash(i + s * 9) * 10), my2, 4 + Math.round(hash(i) * 5), 2 + Math.round(hash(i * 2) * 3), MOSS[1]);
+    }
+    // Roots flaring into the ground.
+    for (const r of [-1, 1]) {
+      for (let i = 0; i < 22; i++) {
+        const rx = cx + r * (10 + i), ry = seam + 4 - Math.round(Math.max(0, 10 - i * 0.6));
+        px(rx, ry, 1, seam + 6 - ry, i < 12 ? '#2a1d18' : '#22170f');
+        px(rx, ry, 1, 1, '#3d2a20');
       }
     }
-    for (let j = -40; j <= 40; j++) if (hash(j * 3.1 + i * 9.7) > 0.8) px(X + (j * S + off + 6) * scale(y0), Math.round(y0) + 1, 4, 1, '#1d1727');
-    y0 = y1;
+    // A hollow with glowing mushrooms at its foot.
+    for (const [mxx, h2] of [[-16, 3], [-12, 5], [-8, 2], [14, 4], [18, 2]] as const) {
+      const fx = cx + mxx * (s > 0 ? -1 : 1);
+      px(fx, seam + 4 - h2, 1, h2, '#d8e4d0');
+      px(fx - 2, seam + 3 - h2, 5, 2, '#2a8a9a'); px(fx - 1, seam + 3 - h2, 3, 1, '#7ae8f0');
+    }
   }
-  // Light falloff: dark up high and out to the sides, the dais in a pool of light.
-  const up = g.createLinearGradient(0, seam - 150, 0, seam - 10);
-  up.addColorStop(0, 'rgba(5, 3, 10, 0.85)');
-  up.addColorStop(1, 'rgba(5, 3, 10, 0)');
+  // The canopy: layered leaf clumps, sagging toward the sides, open over the moon.
+  for (const [col, n, off] of [['#0b1d12', 70, 0], ['#12301c', 70, 4], ['#1a4426', 60, 7], ['#245a30', 46, 10]] as const) {
+    for (let i = 0; i < n; i++) {
+      const dx = (hash(i * 7.7 + off) - 0.5) * RW;
+      const ad = Math.abs(dx);
+      if (ad < 90 && hash(i + off) > 0.12) continue;
+      const cy = seam - 118 + Math.min(1, ad / 200) * 56 + (hash(i * 3.3 + off) - 0.5) * 24 - off;
+      disc(px, X + dx, cy, 10 + Math.round(hash(i * 1.9 + off) * 14), col);
+    }
+  }
+  for (let i = 0; i < 90; i++) {
+    const dx = (hash(i * 4.1 + 2) - 0.5) * RW, ad = Math.abs(dx);
+    if (ad < 50) continue;
+    const cy = seam - 104 + Math.min(1, ad / 200) * 56 + (hash(i * 2.9) - 0.5) * 24;
+    px(X + dx, cy, 2, 1, MOSS[3]);
+  }
+  // Vines hanging from the canopy.
+  for (let i = 0; i < 26; i++) {
+    const dx = (hash(i * 6.3 + 1) - 0.5) * RW * 0.9, ad = Math.abs(dx);
+    if (ad < 34) continue;
+    const top = seam - 100 + Math.min(1, ad / 200) * 50;
+    const len = 12 + hash(i * 2.2) * 30;
+    for (let y = 0; y < len; y++) {
+      const vx = X + dx + Math.round(Math.sin(y * 0.18 + i) * 1.5);
+      px(vx, top + y, 1, 1, MOSS[1]);
+      if (y % 5 === 2) px(vx + (y % 10 < 5 ? 1 : -2), top + y, 2, 1, MOSS[2]);
+    }
+    if (hash(i * 9) > 0.6) px(X + dx - 1, top + len, 3, 2, FLOWERS[i % FLOWERS.length]);
+  }
+
+  // The glade floor: grass and moss, tufts, flowers.
+  px(0, seam + 4, RW, RH - seam, '#132a18');
+  const bands = ['#162e1a', '#18331c', '#1b371e', '#1d3b20', '#203f22'];
+  for (let i = 0, y = seam + 6; y < RH; i++) { px(0, y, RW, 4 + i * 2, bands[Math.min(bands.length - 1, i)]); y += 4 + i * 2; }
+  px(0, seam + 3, RW, 2, MOSS[1]);
+  for (let i = 0; i < 700; i++) {
+    const x = hash(i * 1.37) * RW, y = seam + 4 + hash(i * 2.71) ** 1.4 * (RH - seam - 4);
+    const d = (y - seam) / 60;
+    const col = MOSS[1 + Math.floor(hash(i * 5.1) * 3)];
+    px(x, y - 1 - d, 1, 1 + d, col);
+    px(x + 1 + d, y - 2 - d, 1, 2 + d, col);
+    px(x - 1 - d, y - 1, 1, 1 + d * 0.5, col);
+  }
+  for (let i = 0; i < 260; i++) {
+    const x = hash(i * 8.17) * RW, y = seam + 5 + hash(i * 4.33) ** 1.2 * (RH - seam - 6);
+    if (Math.abs(x - X) < 56 && y < Y + 14) continue;
+    const col = FLOWERS[Math.floor(hash(i * 3.3) * FLOWERS.length)];
+    px(x, y, 1, 2, MOSS[2]);
+    px(x - 1, y - 1, 3, 1, col); px(x, y - 2, 1, 3, col); px(x, y - 1, 1, 1, '#fff6c8');
+  }
+  // Ferns at the tree roots.
+  for (const s of [-1, 1]) for (const o of [-30, 26]) {
+    const fx = X + s * 98 + o, fy = seam + 8;
+    for (let f = -3; f <= 3; f++) for (let k = 0; k < 10; k++) px(fx + f * k * 0.7, fy - k * (1 - Math.abs(f) * 0.12) - Math.abs(f), 1, 1, k > 6 ? MOSS[3] : MOSS[2]);
+  }
+
+  // Light falloff: deep shade under the canopy and out to the sides, the dais in a pool of moonlight.
+  const up = g.createLinearGradient(0, seam - 120, 0, seam - 50);
+  up.addColorStop(0, 'rgba(3, 8, 8, 0.45)');
+  up.addColorStop(1, 'rgba(3, 8, 8, 0)');
   g.fillStyle = up; g.fillRect(0, 0, RW, seam);
-  const pool = g.createRadialGradient(X, seam - 10, 30, X, seam - 10, sw * 0.95);
-  pool.addColorStop(0, 'rgba(5, 3, 10, 0)');
-  pool.addColorStop(1, 'rgba(5, 3, 10, 0.7)');
+  const pool = g.createRadialGradient(X, seam - 10, 34, X, seam - 10, sw * 0.95);
+  pool.addColorStop(0, 'rgba(3, 8, 10, 0)');
+  pool.addColorStop(1, 'rgba(3, 8, 10, 0.68)');
   g.fillStyle = pool; g.fillRect(0, 0, RW, RH);
-  // The dais: a round stone step with a rune ring.
+
+  // The dais: a round, mossy stone with a ring of tiny flowers.
   ellipse(px, X, Y + 4, 52, 11, INK);
-  ellipse(px, X, Y + 3, 51, 10, '#1c1628');
+  ellipse(px, X, Y + 3, 51, 10, STONE[0]);
   ellipse(px, X, Y, 51, 10, INK);
-  ellipse(px, X, Y, 50, 9, '#2e2640');
-  ellipse(px, X, Y - 1, 46, 7, '#352c4a');
-  for (let i = 0; i < 220; i++) {
-    const a = (i / 220) * Math.PI * 2;
-    px(X + Math.cos(a) * 40, Y + Math.sin(a) * 6.5, 1, 1, '#211a30');
-    if (i % 11 === 0) px(X + Math.cos(a) * 43, Y + Math.sin(a) * 7.4, 2, 1, '#211a30');
+  ellipse(px, X, Y, 50, 9, STONE[1]);
+  ellipse(px, X, Y - 1, 46, 7, STONE[2]);
+  for (let i = 0; i < 160; i++) {
+    const a = (i / 160) * Math.PI * 2;
+    if (hash(i * 2.3) > 0.45) px(X + Math.cos(a) * 50, Y + Math.sin(a) * 9 + 1, 2, 1, MOSS[1 + (i % 2)]);
+    if (i % 9 === 0) px(X + Math.cos(a) * 40, Y + Math.sin(a) * 6.5, 1, 1, FLOWERS[i % FLOWERS.length]);
   }
-  // Coin piles and loose gems at the dais' feet.
+  for (let i = 0; i < 30; i++) px(X + (hash(i * 3.1) - 0.5) * 80, Y - 4 + hash(i * 1.7) * 6, 2, 1, STONE[3]);
+  // Coin piles spilled at the dais' feet.
   for (const [s, big] of [[-1, 1], [1, 0.8]] as const) {
     const cx = X + s * 46, cy = Y + 10;
     const rows = [15, 13, 10, 7, 4].map((n) => Math.round(n * big));
-    rows.forEach((n, r) => {
-      px(cx - n / 2 - 1, cy - r * 2 - 1, n + 2, 3, INK);
-    });
+    rows.forEach((n, r) => { px(cx - n / 2 - 1, cy - r * 2 - 1, n + 2, 3, INK); });
     rows.forEach((n, r) => {
       px(cx - n / 2, cy - r * 2, n, 2, GOLD[1]);
       for (let i = 0; i < n; i += 2) px(cx - n / 2 + i, cy - r * 2, 1, 1, hash(i + r * 5 + s) > 0.5 ? GOLD[3] : GOLD[2]);
     });
     px(cx + s * 9, cy + 1, 3, 2, INK); px(cx + s * 9, cy + 1, 2, 1, s < 0 ? '#ff5a9a' : '#7ad8ff');
   }
-  // Brazier stands.
+  // Stone lanterns, moss on their caps.
   for (const s of [-1, 1]) {
     const bx = X + s * 66, by = seam + 6;
-    px(bx - 1, by - 20, 3, 20, INK); px(bx, by - 20, 1, 20, IRON[3]);
-    px(bx - 6, by - 2, 13, 3, INK); px(bx - 5, by - 2, 11, 2, IRON[2]);
-    px(bx - 9, by - 26, 19, 7, INK); px(bx - 8, by - 25, 17, 5, IRON[2]); px(bx - 8, by - 25, 17, 1, IRON[3]); px(bx - 6, by - 21, 13, 1, IRON[1]);
-    px(bx - 7, by - 27, 15, 2, '#3a0a06');
+    px(bx - 6, by - 4, 13, 5, INK); px(bx - 5, by - 3, 11, 3, STONE[1]); px(bx - 5, by - 3, 11, 1, STONE[2]);
+    px(bx - 3, by - 20, 7, 17, INK); px(bx - 2, by - 20, 5, 17, STONE[1]); px(bx - 2, by - 20, 1, 17, STONE[3]);
+    px(bx - 9, by - 26, 19, 7, INK); px(bx - 8, by - 25, 17, 5, STONE[2]); px(bx - 8, by - 25, 17, 1, STONE[3]);
+    px(bx - 8, by - 21, 17, 1, STONE[0]);
+    px(bx - 7, by - 27, 15, 2, '#3a1a06');
+    for (const mx2 of [-8, -5, 4, 7]) px(bx + mx2, by - 21, 2, 1 + (mx2 & 1), MOSS[2]);
+    px(bx - 3, by - 6, 2, 3, MOSS[1]);
   }
   return { c, ax: X, ay: Y };
 }
@@ -653,7 +718,7 @@ export class ChestFx {
     this.moteT -= dt;
     if (this.moteT <= 0 && this.gone < 1) {
       this.moteT = this.tier ? 0.025 : 0.1;
-      const col = this.tier ? this.color(this.tier, Math.random() < 0.5) : Math.random() < 0.5 ? GOLD[3] : '#b09aff';
+      const col = this.tier ? this.color(this.tier, Math.random() < 0.5) : Math.random() < 0.5 ? GOLD[3] : '#d8ff7a';
       this.spark(this.at.x + (Math.random() - 0.5) * (W + 24), this.at.y - Math.random() * 8, (Math.random() - 0.5) * 6, -10 - Math.random() * 18, col, 1.2 + Math.random(), -4, false);
     }
     for (const p of this.parts) {
@@ -797,55 +862,81 @@ export class ChestFx {
     }
   }
 
-  /** Window light falling across the vault, the alcove's carved circle glowing, brazier light on the walls. */
+  /** Moonlight through the leaves, the waterfall running, fireflies and petals, lantern light, the glow behind the chest. */
   private drawAmbient(ax: number, ay: number): void {
     const g = this.g;
     const seam = ay - 16;
+    // The waterfall: bright streaks racing down, foam and mist where it meets the pool.
+    const top = seam - 63;
+    for (let x = ax - 14; x < ax + 15; x++) {
+      const sp = 70 + hash(x * 1.3) * 50, len = 4 + Math.floor(hash(x * 2.9) * 7), gap = 12 + Math.floor(hash(x * 4.1) * 10);
+      const off = (this.t * sp + hash(x) * 50) % (len + gap);
+      g.fillStyle = hash(x * 7.7) > 0.5 ? '#bfeaf6' : '#7cc4dc';
+      for (let y = top - (len + gap) + off; y < seam; y += len + gap) {
+        const y0 = Math.max(top, Math.round(y)), y1 = Math.min(seam - 1, Math.round(y + len));
+        if (y1 > y0) g.fillRect(x, y0, 1, y1 - y0);
+      }
+    }
+    g.fillStyle = '#e8f8ff';
+    for (let i = 0; i < 12; i++) {
+      const fx = ax - 16 + ((i * 5 + Math.floor(this.t * 9)) % 32), fy = seam - 2 - ((i * 3 + Math.floor(this.t * 7)) % 4);
+      g.fillRect(fx, fy, 2, 1);
+    }
     g.globalCompositeOperation = 'lighter';
-    // Two shafts of pale light from a high window on the left.
-    for (const [ox, wd, a] of [[-150, 22, 0.06], [-112, 12, 0.045]] as const) {
-      g.globalAlpha = a + Math.sin(this.t * 0.9 + ox) * 0.012;
-      g.fillStyle = '#b8a8ff';
+    const mist = g.createRadialGradient(ax, seam - 2, 2, ax, seam - 2, 30);
+    mist.addColorStop(0, 'rgba(190, 230, 240, 0.35)');
+    mist.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = mist; g.fillRect(ax - 30, seam - 32, 60, 60);
+    // Shafts of moonlight through the canopy.
+    for (const [ox, wd, a] of [[60, 18, 0.05], [96, 10, 0.04], [-130, 14, 0.035]] as const) {
+      g.globalAlpha = a + Math.sin(this.t * 0.7 + ox) * 0.012;
+      g.fillStyle = '#cfe8ff';
       g.beginPath();
       g.moveTo(ax + ox, -4);
       g.lineTo(ax + ox + wd, -4);
-      g.lineTo(ax + ox + wd + 120, ay + 14);
-      g.lineTo(ax + ox + 120, ay + 14);
+      g.lineTo(ax + ox + wd - 70, ay + 14);
+      g.lineTo(ax + ox - 70, ay + 14);
       g.closePath();
       g.fill();
     }
-    // Dust in the light.
-    for (let i = 0; i < 14; i++) {
-      const u = (hash(i * 7.3) + this.t * (0.02 + hash(i) * 0.03)) % 1;
-      const x = ax - 140 + u * 120 + hash(i * 3.1) * 22, y = -4 + u * (ay + 18);
-      g.globalAlpha = 0.35 * Math.sin(u * Math.PI);
-      g.fillStyle = '#e8e0ff';
-      g.fillRect(Math.round(x), Math.round(y), 1, 1);
+    // Fireflies wandering and blinking.
+    for (let i = 0; i < 22; i++) {
+      const fx = ax + (hash(i * 3.7) - 0.5) * 300 + Math.sin(this.t * (0.3 + hash(i) * 0.4) + i) * 18;
+      const fy = seam - 4 - hash(i * 5.9) * 60 + Math.sin(this.t * (0.5 + hash(i * 2) * 0.5) + i * 2) * 10;
+      const blink = Math.max(0, Math.sin(this.t * (1.4 + hash(i * 9) * 1.6) + i * 4));
+      if (blink < 0.05) continue;
+      g.globalAlpha = blink * (1 - this.dim * 0.6);
+      g.fillStyle = this.tier && this.steps > 0 ? this.color(this.tier, true, i) : '#d8ff7a';
+      g.fillRect(Math.round(fx), Math.round(fy), 1, 1);
+      if (blink > 0.8) { g.globalAlpha = 0.3 * blink; g.fillRect(Math.round(fx) - 1, Math.round(fy), 3, 1); g.fillRect(Math.round(fx), Math.round(fy) - 1, 1, 3); }
     }
-    // The carved circle behind the chest breathes; it burns in the tier colour while charging.
-    const rc = { x: ax, y: seam - 50 };
-    const col = this.tier ? this.color(this.tier, false) : '#6a4ad8';
-    const pulse = this.tier ? 0.35 + this.glow * 0.4 : 0.1 + Math.sin(this.t * 1.6) * 0.04;
-    const grd = g.createRadialGradient(rc.x, rc.y, 4, rc.x, rc.y, 44);
+    g.globalCompositeOperation = 'source-over';
+    // Petals drifting down from the canopy.
+    for (let i = 0; i < 12; i++) {
+      const u = (hash(i * 7.3) + this.t * (0.04 + hash(i) * 0.04)) % 1;
+      const x = ax + (hash(i * 3.1) - 0.5) * 280 + Math.sin(u * 12 + i) * 8 - u * 30, y = -6 + u * (ay + 14);
+      g.globalAlpha = Math.min(1, Math.sin(u * Math.PI) * 2) * 0.85;
+      g.fillStyle = i % 3 ? '#ff9ad0' : '#ffd0ea';
+      g.fillRect(Math.round(x), Math.round(y), (i + Math.floor(this.t * 4)) % 3 ? 2 : 1, 1);
+    }
+    g.globalCompositeOperation = 'lighter';
+    // A soft glow behind the chest over the falls: moonlit at rest, the tier's colour while charging.
+    const rc = { x: ax, y: seam - 36 };
+    const col = this.tier ? this.color(this.tier, false) : '#5ab8b0';
+    const pulse = this.tier ? 0.35 + this.glow * 0.4 : 0.1 + Math.sin(this.t * 1.2) * 0.03;
+    const grd = g.createRadialGradient(rc.x, rc.y, 4, rc.x, rc.y, 50);
     grd.addColorStop(0, col);
     grd.addColorStop(1, 'rgba(0,0,0,0)');
     g.globalAlpha = pulse;
     g.fillStyle = grd;
-    g.fillRect(rc.x - 44, rc.y - 44, 88, 88);
-    g.globalAlpha = Math.min(1, pulse * 2.2);
-    g.fillStyle = this.tier ? this.color(this.tier, true) : '#8a6aff';
-    const n = 48;
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2 + this.t * 0.3;
-      if ((i + Math.floor(this.t * 6)) % 4 === 0) g.fillRect(Math.round(rc.x + Math.cos(a) * 26), Math.round(rc.y + Math.sin(a) * 26), 1, 1);
-    }
-    // Brazier light on the walls.
-    for (const s of [-1, 1]) {
-      const bx = ax + s * 66, by = seam - 22;
-      const fl = 0.22 + Math.sin(this.t * 11 + s) * 0.03 + Math.sin(this.t * 23 + s * 2) * 0.025;
+    g.fillRect(rc.x - 50, rc.y - 50, 100, 100);
+    // Lantern light on the trunks and grass.
+    for (const sd of [-1, 1]) {
+      const bx = ax + sd * 66, by = seam - 22;
+      const fl = 0.22 + Math.sin(this.t * 11 + sd) * 0.03 + Math.sin(this.t * 23 + sd * 2) * 0.025;
       const r = 46;
       const gb = g.createRadialGradient(bx, by, 2, bx, by, r);
-      gb.addColorStop(0, this.tier && this.dim > 0.3 ? this.color(this.tier, false) : '#ff7a1a');
+      gb.addColorStop(0, this.tier && this.dim > 0.3 ? this.color(this.tier, false) : '#ff9a3a');
       gb.addColorStop(1, 'rgba(0,0,0,0)');
       g.globalAlpha = fl * (1 - this.dim * 0.5);
       g.fillStyle = gb;
@@ -855,7 +946,7 @@ export class ChestFx {
     g.globalCompositeOperation = 'source-over';
   }
 
-  /** Pixel flames in the braziers; they take the tier's colour as the chest charges. */
+  /** Pixel flames in the stone lanterns; they take the tier's colour as the chest charges. */
   private drawFlames(ax: number, ay: number): void {
     const g = this.g;
     const seam = ay - 16;
@@ -878,7 +969,7 @@ export class ChestFx {
     }
   }
 
-  /** The rune ring on the dais: faint when idle, filling with the tier's light step by step. */
+  /** The flower ring on the dais: softly twinkling at rest, filling with the tier's light step by step. */
   private drawDais(ax: number, ay: number): void {
     const g = this.g;
     const n = 64;
@@ -889,7 +980,7 @@ export class ChestFx {
       const on = this.tier ? (i / n) < lit || Math.random() < 0.05 : (i + Math.floor(this.t * 3)) % 8 === 0;
       if (!on) continue;
       g.globalAlpha = this.tier ? 0.9 : 0.35;
-      g.fillStyle = this.tier ? this.color(this.tier, i % 3 === 0, i) : '#8a6aff';
+      g.fillStyle = this.tier ? this.color(this.tier, i % 3 === 0, i) : ['#ff8ac8', '#f4f0ff', '#7ad8ff', '#ffd860'][i % 4];
       g.fillRect(Math.round(ax + Math.cos(a) * 40), Math.round(ay + Math.sin(a) * 6.5), i % 4 === 0 ? 2 : 1, 1);
     }
     if (this.tier && this.gone < 1) {
