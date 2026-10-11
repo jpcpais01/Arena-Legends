@@ -27,6 +27,8 @@ export interface MenuCallbacks {
   onAccount?(): void;
   /** Friends button (only when accounts are switched on). */
   onFriends?(): void;
+  /** Leaderboard button (only when accounts are switched on). */
+  onLeaderboard?(): void;
   onCup(): void;
 }
 
@@ -67,6 +69,7 @@ export class Menu {
       h('div.home-tools', null,
         cb.onAccount && h('button.btn.icon.sm', { title: 'Account', 'aria-label': 'Account', onclick: () => cb.onAccount!() }, icon('user')),
         this.friendsBtn,
+        cb.onLeaderboard && h('button.btn.icon.sm', { title: 'Leaderboard', 'aria-label': 'Leaderboard', onclick: () => cb.onLeaderboard!() }, icon('podium')),
         this.soundBtn,
         h('button.btn.icon.sm', { title: 'Settings', 'aria-label': 'Settings', onclick: () => cb.onSettings() }, icon('settings'))),
       h('div.home-actions', null,
