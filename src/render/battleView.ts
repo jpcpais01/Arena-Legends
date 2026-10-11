@@ -925,7 +925,9 @@ export class BattleView implements View {
     const skinId = v.art.specialSkinId;
     if (skinDraws('lantern', skinId)) {
       // An epic lantern brings its own sprite; it flickers faster while charging a shot.
-      const s = projSprite('lantern', Math.floor(this.time * (charging ? 16 : 6)), 0, skinId);
+      // One that brings a charging sprite (the Undertaker's urn rattling open) shows it while it charges.
+      const id = charging && skinDraws('lanternCharge', skinId) ? 'lanternCharge' : 'lantern';
+      const s = projSprite(id, Math.floor(this.time * (charging ? (id === 'lanternCharge' ? 10 : 16) : 6)), 0, skinId);
       blit(g, s, fx, fy, f.facing < 0);
       return;
     }

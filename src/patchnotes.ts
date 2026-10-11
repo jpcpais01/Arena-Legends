@@ -12,6 +12,30 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.94.0',
+    date: '2026-10-11',
+    title: 'New Mythic set: The Champ Is Here',
+    notes: [
+      'A new Mythic set: The Champ Is Here, John Cena\'s ring gear in Cenation lime, black and denim.',
+      'Seven pieces: Never Give Up Wristbands (spirit wraps: taped fists and lime sweatbands), The Time Is Now Trumpet (war horn), The Spinner Title (phoenix feather: the spinner belt floats at your shoulder, its disc turning), the Cenation Cap, the Never Give Up Tee with dog tags, Cena\'s Jorts (leather leggings) and Cenation High-Tops (leather boots).',
+      'With the wristbands, Spirit Palm becomes the "You can\'t see me" hand, waving as it flies. With the Spinner Title, coming back from the dead pops NEVER GIVE UP!',
+      'Wear all seven for its aura: a lime ring at your feet, trumpet notes rising off your shoulders, and every few seconds the hand waves in front of your face and you fade out of sight. You can\'t see him.',
+      'At night the spinner\'s diamonds, the logos on the cap, wristbands and heels, the dog tags and the trumpet catch the light.',
+    ],
+  },
+  {
+    version: '0.93.0',
+    date: '2026-10-11',
+    title: 'New Mythic set: The Undertaker',
+    notes: [
+      'The Deadman rises: a new Mythic set, The Undertaker, in black leather and purple.',
+      'Seven pieces: Deadman\'s Grips (spirit wraps, black fingerless gloves whose spirit palm becomes a great ghost hand closing for a chokeslam), Rest in Peace (tower shield, a cracked granite tombstone), The Urn (wisp lantern), The Phenom\'s Hat (a wide-brimmed hat with long black hair and eyes rolled back to white), Deadman\'s Duster (a long leather coat lined in purple), Graveyard Leathers and Tombstone Boots.',
+      'The Urn raises the dead: it floats at your shoulder, and when it charges its lid rattles open, a ghost climbs out and then flies at the enemy, wailing.',
+      'Wear all seven for its aura: graveyard fog at your feet, hands of the dead clawing up out of the ground, ghosts rising around you, and every few seconds purple lightning strikes behind you.',
+      'At night the white eyes, the urn\'s seam, the tombstone\'s crack and a few amethysts glow purple.',
+    ],
+  },
+  {
     version: '0.92.0',
     date: '2026-10-11',
     title: 'New Mythic set: Reign of the Ruler',
