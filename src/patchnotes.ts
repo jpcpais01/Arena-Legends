@@ -12,6 +12,18 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.78.0',
+    date: '2026-10-11',
+    title: 'Supers redone with real light',
+    notes: [
+      'Weapon supers have brand new effects drawn with shaders: blades leave sweeping arcs of light in the weapon\'s colours, blows bend the air with a shockwave, and the first hit flashes into a split-second ink-and-paper impact frame, anime style.',
+      'Power now gathers as a glow round the fighter during the windup, the weapon glints as it strikes, and projectiles from a super carry their light with them.',
+      'Every main weapon has its own look: Rising Cleave throws a column of light, Iaido Dash opens an X-cut a beat after the dash, Grave Harvest drags the soul back to the reaper, Thunderclap ripples the air around the caster, and more.',
+      'Special items no longer look like weapon supers: they show a small badge with the item\'s icon on their user\'s side, with no slow motion or widescreen bars. The big SUPER letters and the cinematic camera are only for main weapon supers now.',
+      'Cleaner hits: the old scratchy focus lines and the white wash over fighters during slow motion are gone.',
+    ],
+  },
+  {
     version: '0.77.0',
     date: '2026-10-11',
     title: '12 new portrait backdrops',
