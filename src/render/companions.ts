@@ -65,7 +65,7 @@ export function drawCompanions(
   }
   if (special === 'gale_bell') {
     const x = gx - facing * 12, y = Math.round(gy - m.shPx - 12 + Math.sin(t * 2.4) * 1.5);
-    put(g, bellSprite('ready', Math.sin(t * 1.7) * 0.7, skin), x, y, false);
+    put(g, bellSprite('ready', Math.sin(t * 1.7) * 0.7, skin, Math.floor(t * 6)), x, y, false);
     return [x, y + 6];
   }
   if (special === 'thunder_totem') {

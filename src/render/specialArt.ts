@@ -21,7 +21,7 @@ import { Xf } from './sprite/xform';
  * Item skins: a rare skin recolours these maps from its `mats` (each letter
  * follows one of the item's icon materials, see the `*_MAP` tables), and a
  * reshaped skin brings its own sprites through `proj` (ids `perch`, `whelp`,
- * `totem`, `charm`, `hourglass`, `ward`), rasterized here with night accents.
+ * `totem`, `charm`, `hourglass`, `ward`, `bell`), rasterized here with night accents.
  */
 
 type PalEntry = number | [number, number];
@@ -572,7 +572,9 @@ const BELL_MAP: Recolor = { h: ['bronze', 3], b: ['bronzeDark', 1], B: ['bronze'
  * The bell tilted by `tilt` px at the lip (−2..2): rows shear away from the
  * hanger, the clapper hangs back so it strikes the side.
  */
-export function bellFrame(state: BellState, tilt: number, skin?: string | null): PixFrame {
+export function bellFrame(state: BellState, tilt: number, skin?: string | null, tick = 0): PixFrame {
+  const art = reshaped('bell', skin);
+  if (art) return skinFrame(art, bellArtFrame(state, tilt, tick));
   const rows = BELL_ROWS.map((row, i) => {
     const k = row.includes('k') && i === BELL_ROWS.length - 1;
     const off = k ? Math.round(tilt * 0.5) : Math.round((tilt * Math.max(0, i - BELL_PIVOT)) / (BELL_ROWS.length - 2 - BELL_PIVOT));
@@ -586,9 +588,20 @@ export function bellFrame(state: BellState, tilt: number, skin?: string | null):
   return pixFrame(rows, lit, BELL_PAD + 4, BELL_PIVOT);
 }
 
-export function bellSprite(state: BellState, tilt: number, skin?: string | null): Sprite {
+/**
+ * Frame of a reshaped bell's `bell` sprite: 60 frames, by state (ready,
+ * spent, toll), then tilt (−2..2), then a four-step idle loop (`frame & 3`).
+ */
+export function bellArtFrame(state: BellState, tilt: number, tick: number): number {
+  const s = state === 'ready' ? 0 : state === 'spent' ? 1 : 2;
+  return (s * 5 + Math.max(-2, Math.min(2, Math.round(tilt))) + 2) * 4 + (tick & 3);
+}
+
+/** The bell at its tilt; a reshaped one also loops its own idle by `tick`. */
+export function bellSprite(state: BellState, tilt: number, skin?: string | null, tick = 0): Sprite {
   const t = Math.max(-2, Math.min(2, Math.round(tilt)));
-  return sprite(`bell.${state}.${t}.${skin ?? ''}`, () => bellFrame(state, t, skin));
+  const k = reshaped('bell', skin) ? tick & 3 : 0;
+  return sprite(`bell.${state}.${t}.${skin ?? ''}.${k}`, () => bellFrame(state, t, skin, k));
 }
 
 // -----------------------------------------------------------------------------
