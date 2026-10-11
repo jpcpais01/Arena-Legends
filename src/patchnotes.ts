@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.68.0',
+    date: '2026-10-11',
+    title: 'Supers go cinematic',
+    notes: [
+      'Super attack names are much bigger and hit harder: each letter slams in one after another in the move\'s colours, over an angled plate with a SUPER or ULTIMATE tag.',
+      'Supers are now a proper cinematic moment: widescreen bars close in, the camera leans in on the move in every camera mode, manga focus lines frame it, and time slows harder as the blow lands.',
+      'Every main weapon super has its own animation now: Rising Cleave throws a column of light, Iaido Dash leaves a cross cut a beat after the draw, Grave Harvest tears the soul back to the reaper, Crescent Chop splits the floor, and more.',
+      'Weapon skins play their super in their own colours and particles (flames, petals, snowflakes...), and the blade leaves a trail of its sparks as it strikes.',
+    ],
+  },
+  {
     version: '0.67.0',
     date: '2026-10-10',
     title: 'Arena Cup and hero levels',
