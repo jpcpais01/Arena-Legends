@@ -640,10 +640,10 @@ const SPECIAL: Catalog['special'] = {
       id: 'meteor', name: 'Meteor', slot: 'item', kind: 'meteor',
       range: 14, cost: 100, cooldown: 10,
       windup: 0.7, active: 0.1, recovery: 0,
-      power: 6.0, damageType: 'magic', heavy: true, knockback: 6, stun: 0.5,
+      power: 4.0, damageType: 'magic', heavy: true, knockback: 6, stun: 0.5,
       applies: [{ status: 'burn', duration: 4, stacks: 3 }],
-      projectile: { speed: 14, radius: 2.5, style: 'meteor' },
-      anim: 'item', desc: 'The sigil calls a meteor on the predicted enemy position.',
+      projectile: { speed: 12, radius: 3.6, style: 'meteor' },
+      anim: 'item', desc: 'The sigil calls a huge meteor down on the predicted enemy position. The blast covers a wide area.',
     }],
   },
   phantom_blade: {
@@ -735,6 +735,19 @@ const SPECIAL: Catalog['special'] = {
     desc: 'A whelp perches on your shoulder. When the enemy comes within 5m, it breathes fire on them every 4.5s (2 stacks of burn).',
     passive: 'Familiar',
     tags: ['magic', 'dot'],
+  },
+  gale_bell: {
+    id: 'gale_bell', slot: 'special', name: 'Gale Bell', rarity: 'epic', color: 0x7ee8d0,
+    desc: 'A bronze bell floats at your shoulder. When the enemy gets close, it tolls: a gale bursts out around you and hurls them far away, breaking off their attack. Rings again after 20s. Keep your distance.',
+    mul: { moveSpeed: 1.08 },
+    tags: ['control', 'ranged', 'mobility'],
+    abilities: [{
+      id: 'gale_toll', name: 'Gale Toll', slot: 'item', kind: 'repel',
+      range: 3.2, cost: 0, cooldown: 20,
+      windup: 0.3, active: 0.1, recovery: 0,
+      power: 2.8, damageType: 'magic', heavy: true, unblockable: true, knockback: 16, stagger: 0.5, stun: 0.9,
+      anim: 'item', desc: 'The bell tolls a gale that hurls the enemy away.',
+    }],
   },
 };
 

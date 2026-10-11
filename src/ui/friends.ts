@@ -2,20 +2,13 @@
 // friend's hero with the gear and skins they have equipped (read-only).
 import { sfx } from '../audio/sfx';
 import { accountStatus, me, onAccount, social, type AccountStatus } from '../account/account';
-import { SPECIES } from '../character/appearance';
 import { isOnline, seenAgo } from '../account/presence';
-import { parseCharacter, type PlayerCharacter } from '../character/profile';
-import { skinOn } from '../character/skins';
-import { applyBackdrop } from '../render/backdrops';
-import { iconCanvas } from '../render/icons';
-import { FORMS } from '../sim/forms';
-import { GEAR_SLOTS, gearOf, SLOT_NAMES } from '../sim/gear';
-import { FIGHT_STYLES } from '../sim/styles';
+import { parseCharacter } from '../character/profile';
 import type { AddResult, Friend, FriendRequest, FriendsData, SharedHero } from '../account/social';
 import { h } from './dom';
 import { icon } from './icons';
-import { Preview } from './preview';
-import { levelBadge } from './xp';
+import type { Preview } from './preview';
+import { heroCard } from './heroCard';
 
 export interface FriendsCallbacks {
   onClose(): void;
@@ -188,32 +181,9 @@ export function friendsSheet(cb: FriendsCallbacks): { el: HTMLElement; dispose()
       view.replaceChildren(h('div.fr-empty', null, h('span.sock', null, icon('user')), h('b', null, f.name), h('p.muted', null, text)), foot);
       return;
     }
-    view.replaceChildren(heroCard(hero, got as SharedHero, f.name), foot);
-  }
-
-  function heroCard(c: PlayerCharacter, s: SharedHero, account: string): HTMLElement {
-    const p = new Preview(c, 72, 78, { autoplay: true, ground: 4, pedestal: true });
-    preview = p;
-    const stage = h('div.fr-stage', { title: 'Tap to see a move', onclick: () => p.showcase() }, p.el);
-    applyBackdrop(stage, c.look.backdrop);
-    p.fitTo(stage);
-    const style = c.style ? FIGHT_STYLES[c.style]?.name : '';
-    const gear = GEAR_SLOTS.map((slot) => {
-      const id = c.gear[slot];
-      if (!id) return h('li.fr-gear.empty', null, h('span.sock', null), h('div', null, h('b', null, 'Empty'), h('span.muted', null, SLOT_NAMES[slot])));
-      const skin = skinOn(c.skins, id);
-      const ic = iconCanvas(id, undefined, skin?.id);
-      ic.classList.add('icon');
-      return h('li.fr-gear', { title: SLOT_NAMES[slot] }, h('span.sock', null, ic),
-        h('div', null, h('b', null, gearOf(id).name), h('span.muted', null, skin ? skin.name : SLOT_NAMES[slot])));
-    });
-    return h('div.fr-hero', null,
-      stage,
-      h('div.fr-info', null,
-        h('div.fr-tag', null, h('span.side-tag', null, account), levelBadge(c.level ?? 1), h('span.rec', null, `${s.w}W ${s.l}L`)),
-        h('div.fr-name', null, c.name),
-        h('div.fr-sub', null, [SPECIES[c.look.species].name, FORMS[c.form].name, style].filter(Boolean).join(' · ')),
-        h('ul.fr-gears', null, ...gear)));
+    const card = heroCard(hero, got as SharedHero, f.name);
+    preview = card.preview;
+    view.replaceChildren(card.el, foot);
   }
 
   /** Guests (and a sign-in still being checked) get a prompt instead of the list. */

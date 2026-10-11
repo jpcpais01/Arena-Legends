@@ -16,7 +16,7 @@ export function derivePersonality(f: Fighter, kit: Kit, temper: number, temper2:
   const base = f.profile.personality;
   const s = f.base;
   const counters = kit.defenses.some((d) => !!d.ab.guard?.counterPower);
-  const heavyHitters = kit.info.filter((a) => a.offensive && a.ab.heavy && !a.ultimate).length;
+  const heavyHitters = kit.info.filter((a) => a.offensive && a.ab.heavy && !a.ultimate && !a.item).length;
 
   let aggression = base.aggression + s.lifesteal * 0.5 + s.thorns * 0.3 + (kit.ranged && !f.profile.ranged ? -0.08 : 0);
   let caution = base.caution - s.lifesteal * 0.2 + (kit.ranged ? 0.05 : 0);

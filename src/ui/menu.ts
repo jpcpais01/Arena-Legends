@@ -27,6 +27,8 @@ export interface MenuCallbacks {
   onAccount?(): void;
   /** Friends button (only when accounts are switched on). */
   onFriends?(): void;
+  /** Leaderboard button (only when accounts are switched on). */
+  onLeaderboard?(): void;
   onCup(): void;
 }
 
@@ -37,9 +39,12 @@ export const CARD_ART: [number, number] = [64, 64];
 
 /**
  * Main menu over the background duel, kept out of the fight's way: a slim
- * nameplate in each top corner with the fighter and their gear, the logo
- * between them, sound and settings in the bottom-left corner and every action
- * grouped in the bottom-right one. The middle of the screen stays the duel's.
+ * nameplate in each top corner with the fighter and their gear (a dice on the
+ * rival's draws a new one), the logo between them, and along the bottom a
+ * rampart: the Fight crest in the middle rising over the wall, Hero and Armory
+ * on its left, Online and Cup on its right, the Shop at the right end and the
+ * small tools (account, friends, leaderboard, sound, settings, notes) at the
+ * left end. The middle of the screen stays the duel's.
  */
 export class Menu {
   readonly el: HTMLElement;
@@ -51,35 +56,47 @@ export class Menu {
   private friendsBtn: HTMLButtonElement | null = null;
   private heroBtn: HTMLButtonElement;
   private cupBtn: HTMLButtonElement;
+  private rivalBtn: HTMLButtonElement;
+  private vsLabel = h('small.fight-vs');
+  private toolsBox: HTMLElement;
 
   constructor(cb: MenuCallbacks) {
-    this.chestBtn = h<HTMLButtonElement>('button.btn.chest-btn.go', { title: 'Shop', onclick: () => cb.onChests() });
+    this.chestBtn = h<HTMLButtonElement>('button.dock-shop', { title: 'Shop', onclick: () => cb.onChests() });
     this.soundBtn = h<HTMLButtonElement>('button.btn.icon.sm', { title: 'Sound', 'aria-label': 'Sound', onclick: () => cb.onSound() });
     const mark = h('div.menu-logo.home-logo', { 'aria-label': 'Arena Legends' });
     void logo().then((c) => { mark.append(c); fitPixels(c, mark); });
     if (cb.onFriends) this.friendsBtn = h<HTMLButtonElement>('button.btn.icon.sm', { title: 'Friends', 'aria-label': 'Friends', onclick: () => cb.onFriends!() }, icon('friends'));
-    const side = (ic: Parameters<typeof icon>[0], label: string, fn: () => void) =>
-      h<HTMLButtonElement>('button.btn.sm.home-side', { title: label, onclick: fn }, icon(ic), h('span', null, label));
-    this.heroBtn = side('edit', 'Hero', () => cb.onEditLook());
-    this.cupBtn = h<HTMLButtonElement>('button.btn.home-online.home-cup', { title: 'Arena Cup', onclick: () => cb.onCup() }, icon('trophy'), h('span', null, 'Cup'));
-    this.el = h('div.menu.home', null,
-      h('div.home-top', null, this.you, mark, this.rival),
-      h('div.home-tools', null,
+    const tile = (cls: string, ic: Parameters<typeof icon>[0], label: string, fn: () => void, title = label) =>
+      h<HTMLButtonElement>(`button.dock-tile.${cls}`, { title, onclick: fn }, h('span.dt-ic', null, icon(ic)), h('span.dt-label', null, label));
+    this.heroBtn = tile('t-hero', 'crown', 'Hero', () => cb.onEditLook());
+    this.cupBtn = tile('t-cup', 'trophy', 'Cup', () => cb.onCup(), 'Arena Cup');
+    this.rivalBtn = h<HTMLButtonElement>('button.btn.icon.sm.rival-roll', { title: 'New rival', 'aria-label': 'New rival', onclick: () => cb.onNewRival() }, icon('dice'));
+    this.toolsBox = h('div.dock-tools', null,
+      h('div.dock-tool-row', null,
         cb.onAccount && h('button.btn.icon.sm', { title: 'Account', 'aria-label': 'Account', onclick: () => cb.onAccount!() }, icon('user')),
         this.friendsBtn,
+        cb.onLeaderboard && h('button.btn.icon.sm', { title: 'Leaderboard', 'aria-label': 'Leaderboard', onclick: () => cb.onLeaderboard!() }, icon('podium')),
         this.soundBtn,
-        h('button.btn.icon.sm', { title: 'Settings', 'aria-label': 'Settings', onclick: () => cb.onSettings() }, icon('settings'))),
-      h('div.home-actions', null,
-        h('div.home-row', null, this.chestBtn),
-        h('div.home-row', null,
-          side('bag', 'Armory', () => cb.onGear()),
-          this.heroBtn,
-          side('dice', 'Rival', () => cb.onNewRival())),
-        h('div.home-row', null,
-          h('button.btn.home-online', { title: 'Online duel', onclick: () => cb.onOnline() }, icon('globe'), h('span', null, 'Online')),
-          this.cupBtn,
-          h('button.btn.primary.big.fight', { onclick: () => cb.onFight() }, icon('swords'), h('span', null, 'Fight')))),
+        h('button.btn.icon.sm', { title: 'Settings', 'aria-label': 'Settings', onclick: () => cb.onSettings() }, icon('settings'))));
+    const fight = h<HTMLButtonElement>('button.dock-fight', { title: 'Fight', onclick: () => cb.onFight() },
+      h('span.df-shine'),
+      h('span.df-main', null, icon('swords'), h('b', null, 'Fight')),
+      this.vsLabel);
+    this.el = h('div.menu.home', null,
+      h('div.home-top', null, this.you, mark, this.rival),
+      h('nav.home-dock', { 'aria-label': 'Main menu' },
+        h('div.dock-wall'),
+        this.toolsBox,
+        h('div.dock-wing.l', null, this.heroBtn, tile('t-armory', 'shield', 'Armory', () => cb.onGear())),
+        fight,
+        h('div.dock-wing.r', null, tile('t-online', 'globe', 'Online', () => cb.onOnline(), 'Online duel'), this.cupBtn),
+        h('div.dock-end', null, this.chestBtn)),
     );
+  }
+
+  /** The version line (notes and update buttons) sits with the small tools. */
+  dockVersion(badge: HTMLElement): void {
+    this.toolsBox.append(badge);
   }
 
   setSound(on: boolean): void {
@@ -89,7 +106,7 @@ export class Menu {
 
   /** The chest button shows the gems, with a dot when a chest can be opened. */
   setGems(n: number, canOpen: boolean): void {
-    this.chestBtn.replaceChildren(icon('shop'), h('span', null, 'Shop'), gemTag(n));
+    this.chestBtn.replaceChildren(h('span.ds-ic', null, icon('shop')), h('span.ds-text', null, h('b', null, 'Shop'), gemTag(n)));
     this.chestBtn.classList.toggle('unseen', canOpen);
   }
 
@@ -107,7 +124,7 @@ export class Menu {
 
   /** The Cup button says which round a running cup is at. */
   setCup(round: string | null): void {
-    this.cupBtn.replaceChildren(icon('trophy'), h('span', null, round ?? 'Cup'));
+    this.cupBtn.replaceChildren(h('span.dt-ic', null, icon('trophy')), h('span.dt-label', null, round ?? 'Cup'));
     this.cupBtn.classList.toggle('live', !!round);
     this.cupBtn.title = round ? `Arena Cup: ${round}` : 'Arena Cup';
   }
@@ -118,7 +135,10 @@ export class Menu {
     const b = new Preview(rival, ...PLATE_ART, { autoplay: true, flip: true, ground: -18 });
     this.previews = [a, b];
     this.you.replaceChildren(this.plate(player, a, 0, 'You', `${rec.w}W ${rec.l}L`));
-    this.rival.replaceChildren(this.plate(rival, b, 1, 'Rival', ''));
+    const rp = this.plate(rival, b, 1, 'Rival', '');
+    rp.append(this.rivalBtn);
+    this.rival.replaceChildren(rp);
+    this.vsLabel.textContent = `vs ${rival.name}`;
   }
 
   /** A nameplate: the fighter's portrait over name, species and form, beside their gear two to a row. */

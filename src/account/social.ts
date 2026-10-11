@@ -2,7 +2,7 @@
 // decline requests, and read the hero a friend shares. Loaded on demand with
 // the rest of the Firebase code, only by signed-in players.
 import {
-  collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where, writeBatch,
+  collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, updateDoc, where, writeBatch,
 } from 'firebase/firestore/lite';
 import { db } from './cloud';
 import { isOnline } from './presence';
@@ -144,4 +144,30 @@ export async function answerInvite(i: Invite, yes: boolean): Promise<void> {
 
 export async function dropInvite(from: string, to: string): Promise<void> {
   await deleteDoc(inviteRef(from, to));
+}
+
+// --- Leaderboard ------------------------------------------------------------------------------------
+// Each signed-in player keeps a tiny `ranks/{uid}` doc ({name, w, l, lv, at}),
+// so the board is one indexed query of small docs, never every account's save.
+
+/** One leaderboard row. */
+export interface Rank { uid: string; name: string; w: number; l: number; lv: number }
+export type RankBy = 'w' | 'lv';
+/** Rows the board reads (the rules refuse bigger queries). */
+export const BOARD_SIZE = 100;
+
+/** The top players by wins or by level; ties go to the other one, then fewer losses. */
+export async function board(by: RankBy): Promise<Rank[]> {
+  const snap = await getDocs(query(collection(db, 'ranks'), orderBy(by, 'desc'), limit(BOARD_SIZE)));
+  const rows = snap.docs.map((d) => {
+    const x = d.data();
+    return { uid: d.id, name: str(x.name) || '?', w: int(x.w), l: int(x.l), lv: Math.max(1, int(x.lv)) };
+  });
+  const other: RankBy = by === 'w' ? 'lv' : 'w';
+  return rows.sort((a, b) => b[by] - a[by] || b[other] - a[other] || a.l - b.l || a.name.localeCompare(b.name));
+}
+
+/** Puts this player's wins, losses and level on the board. */
+export async function rank(me: Me, w: number, l: number, lv: number): Promise<void> {
+  await setDoc(doc(db, 'ranks', me.uid), { name: me.name.slice(0, 16), w: int(w), l: int(l), lv: Math.max(1, int(lv)), at: Date.now() });
 }

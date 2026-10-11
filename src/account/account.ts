@@ -1,6 +1,7 @@
 // Player accounts: a username + password (Firebase), and the local save synced
 // to it. Guests play exactly as before; the Firebase code only downloads once
 // someone signs in, or at boot when this device is already signed in.
+import { heroLevel } from '../character/progress';
 import { accountsEnabled, NAME_RE, PASSWORD_MIN } from './config';
 import type { AccountError } from './cloud';
 import { applySave, hashSave, mergeGuest, sameSave, snapshot, type SaveMap } from './sync';
@@ -240,6 +241,32 @@ function shareHero(): void {
     .finally(() => { sharing = false; });
 }
 
+/** The board entry last written, and when a failed one may retry (its own doc and backoff: the board never holds up friends). */
+let ranked = '';
+let ranking: Promise<void> | null = null;
+let rankAfter = 0;
+
+/** Keeps this player's leaderboard entry (wins, losses, level) up to date. Resolves once it's written or skipped. */
+export function syncRank(): Promise<void> {
+  const who = me();
+  if (!who || Date.now() < rankAfter) return Promise.resolve();
+  if (ranking) return ranking;
+  let rec: { w?: unknown; l?: unknown } = {};
+  let hasHero = false;
+  try {
+    hasHero = !!localStorage.getItem('al.character');
+    rec = JSON.parse(localStorage.getItem('al.record') ?? '{}') ?? {};
+  } catch { /* storage blocked */ }
+  const w = Number(rec.w) || 0, l = Number(rec.l) || 0, lv = heroLevel();
+  const key = `${who.uid}|${who.name}|${w}|${l}|${lv}`;
+  if (!hasHero || key === ranked) return Promise.resolve();
+  ranking = social().then((m) => m.rank(who, w, l, lv))
+    .then(() => { ranked = key; })
+    .catch(() => { rankAfter = Date.now() + 5 * 60_000; })
+    .finally(() => { ranking = null; });
+  return ranking;
+}
+
 /** Online presence: while the game is open and in view, the shared hero's time is refreshed once a minute. */
 export const BEAT_EVERY = 60_000;
 let beatAt = 0;
@@ -254,6 +281,7 @@ function beat(): void {
 export function push(force = false): Promise<void> {
   if (!link.uid || pending) return Promise.resolve();
   shareHero();
+  void syncRank();
   beat();
   if (pushing) return pushing;
   const s = snapshot();

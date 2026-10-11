@@ -25,6 +25,7 @@ import { TitleScreen } from './ui/title';
 import { h, save, store } from './ui/dom';
 import { icon } from './ui/icons';
 import { setupPhoneFullscreen } from './ui/fullscreen';
+import { setupInstall } from './ui/install';
 import { chestScreen } from './ui/gacha';
 import { forgeScreen } from './ui/forge';
 import { shopScreen } from './ui/shop';
@@ -46,6 +47,7 @@ import { setPieces, type SkinDef } from './character/skins';
 import { accountStatus, accountsEnabled, consumeResume, me, onAccount, poke, restoreAccount, setReloadGate, social } from './account/account';
 import { accountSheet } from './ui/account';
 import { friendsSheet } from './ui/friends';
+import { leaderboardSheet } from './ui/leaderboard';
 import { FIGHT_STYLE_IDS } from './sim/styles';
 import { invitePopup, type InvitePopup } from './ui/invite';
 import { addXp, CHAMPION_GEMS, CHAMPION_XP, cupLossXp, cupWinXp, FINALIST_GEMS, heroLevel, pointsAt, quickXp } from './character/progress';
@@ -181,6 +183,7 @@ const menu = new Menu({
   },
   onAccount: accountsEnabled ? () => openAccount() : undefined,
   onFriends: accountsEnabled ? () => openFriends() : undefined,
+  onLeaderboard: accountsEnabled ? () => openLeaderboard() : undefined,
   onCup: () => openCup(),
 });
 
@@ -193,6 +196,13 @@ function openFriends(): void {
     onIncoming: (n) => { requestsAt = Date.now(); menu.setFriendRequests(n); },
     onInvite: (f) => inviteFriend(f.uid, f.name),
   });
+  ui.append(sheet.el);
+}
+
+function openLeaderboard(): void {
+  closeSheet();
+  sfx.play('ui');
+  sheet = leaderboardSheet({ onClose: () => closeSheet(), onAccount: () => openAccount() });
   ui.append(sheet.el);
 }
 
@@ -392,7 +402,8 @@ const pick = new PickScreen({
 });
 const lobby = new Lobby({ onCancel: () => endOnline(true), onRetry: () => (session as HostSession | GuestSession | null)?.retry() });
 const netBanner = new NetBanner();
-ui.append(menu.el, pick.el, hud.el, badge, lobby.el, netBanner.el);
+menu.dockVersion(badge);
+ui.append(menu.el, pick.el, hud.el, lobby.el, netBanner.el);
 
 function refreshMenu(): void {
   if (!player) return;
@@ -1266,6 +1277,8 @@ toMenu();
   else if (consumeResume()) { if (!player) openCreator(true); }
   else showTitle();
   restoreAccount();
+  // Sent by the landing page's Install button (?install): offer to install the app.
+  setupInstall(ui);
 }
 
 /** The title over the live arena; the first tap opens the menu, or character creation for a new player. */

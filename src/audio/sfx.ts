@@ -16,7 +16,9 @@ export type Sfx =
   // Big pulls and the forge
   | 'omen' | 'slam' | 'forge' | 'meld' | 'clang' | 'fire' | 'steam'
   // Super attacks: the callout stingers, the power gathering, the blade ring on release
-  | 'superSkill' | 'superUlt' | 'charge' | 'shing';
+  | 'superSkill' | 'superUlt' | 'charge' | 'shing'
+  // The gale bell: a bronze toll and the wind it lets loose
+  | 'bell' | 'gale';
 
 /** Elements of the super attacks, for their impact sounds (see render/supers.ts). */
 export type SfxElement = 'steel' | 'fire' | 'storm' | 'arcane' | 'soul' | 'venom' | 'earth' | 'wind';
@@ -488,6 +490,24 @@ class AudioEngine {
         this.tone('sawtooth', 160 * k, 640 * k, t, 0.45, 0.05, pan);
         this.tone('sine', 320 * k, 1280 * k, t, 0.45, 0.12, pan);
         this.burst(t, 0.45, 0.12, 'bandpass', 800, 5000, 2, pan);
+        break;
+      case 'bell': {
+        // A bronze bell: inharmonic partials (hum, prime, minor third, fifth, nominal),
+        // the high ones dying first, over a short clang of the strike.
+        const f0 = 290;
+        for (const [r, a, d] of [[0.5, 0.16, 1.6], [1, 0.22, 1.3], [1.19, 0.12, 0.9], [1.5, 0.08, 0.7], [2, 0.12, 0.8], [2.6, 0.05, 0.4], [3.4, 0.04, 0.3]] as const) {
+          this.tone('sine', f0 * r, f0 * r * 0.997, t, d, a * k, pan);
+        }
+        this.burst(t, 0.05, 0.3 * k, 'highpass', 3000, 2000, 1, pan);
+        this.tone('triangle', f0 * 4.2, f0 * 4, t, 0.08, 0.05 * k, pan);
+        break;
+      }
+      case 'gale':
+        // A rush of wind bursting out: a swelling, rising hiss, a low thump and a fading tail.
+        this.burst(t, 0.55, 0.55 * k, 'bandpass', 350, 2400, 0.6, pan);
+        this.burst(t + 0.03, 0.75, 0.3 * k, 'bandpass', 1600, 500, 0.9, -pan);
+        this.burst(t, 0.18, 0.5 * k, 'lowpass', 900, 90, 0.7, pan);
+        this.tone('sine', 85, 38, t, 0.32, 0.5 * k, pan);
         break;
       case 'shing':
         this.burst(t, 0.08, 0.4, 'highpass', 5000, 3000, 1, pan);

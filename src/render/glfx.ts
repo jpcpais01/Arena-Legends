@@ -201,7 +201,7 @@ void main() {
     core = 0.0;
   }
   // Saturated colour in the body, the dark colour at the soft edges, a little white only at the very core.
-  vec3 col = mix(lo, hi, smoothstep(0.15, 0.85, v)) * v * 1.15 + vec3(1.0) * core * 0.7;
+  vec3 col = mix(lo * 1.3, hi, smoothstep(0.45, 1.0, v)) * v * 1.15 + vec3(1.0) * core * 0.45;
   o = vec4(col * pw, 0.0);
 }`;
 

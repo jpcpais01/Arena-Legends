@@ -12,6 +12,109 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.76.0',
+    date: '2026-10-11',
+    title: 'Supers redone with real light',
+    notes: [
+      'Weapon supers have brand new effects drawn with shaders: blades leave sweeping arcs of light in the weapon\'s colours, blows bend the air with a shockwave, and the first hit flashes into a split-second ink-and-paper impact frame, anime style.',
+      'Power now gathers as a glow round the fighter during the windup, the weapon glints as it strikes, and projectiles from a super carry their light with them.',
+      'Every main weapon has its own look: Rising Cleave throws a column of light, Iaido Dash opens an X-cut a beat after the dash, Grave Harvest drags the soul back to the reaper, Thunderclap ripples the air around the caster, and more.',
+      'Special items no longer look like weapon supers: they show a small badge with the item\'s icon on their user\'s side, with no slow motion or widescreen bars. The big SUPER letters and the cinematic camera are only for main weapon supers now.',
+      'Cleaner hits: the old scratchy focus lines and the white wash over fighters during slow motion are gone.',
+    ],
+  },
+  {
+    version: '0.75.0',
+    date: '2026-10-11',
+    title: 'New epic set: Skybell Sanctum',
+    notes: [
+      'New epic set, Skybell Sanctum: the monks who keep the bells on the windswept peaks. Saffron robes under a maroon shawl, sea-green temple bronze, a wide straw hat, and jade wind runes that glow at night.',
+      'It comes with the Windsong Bow, the Prayer Wheel Chakram, the Pilgrim\'s Windhat, the Robes of the Windward Peak, Cloudstep Trousers and Cloudwalker Sandals.',
+      'And the Gale Bell gets its first skin, the Bell of the Four Winds: a temple bell with a jade rune band and a swinging tassel. Its gale blows golden, and rings of sound fan out when it tolls.',
+      'Wear the whole set for its aura: a whirlwind at your feet, prayer flags circling on the wind and marigold petals carried up around you.',
+    ],
+  },
+  {
+    version: '0.74.0',
+    date: '2026-10-11',
+    title: 'New special item: the Gale Bell',
+    notes: [
+      'New special item, the Gale Bell: a bronze bell that floats at your shoulder. When the enemy gets close it tolls, and a gale bursts out around you that hurls them far away, stuns them for a moment and breaks off whatever attack they were winding up. It rings again after 20 seconds.',
+      'Made for archers and casters who want their distance back, and it also gives +8% move speed. Thrown into a wall, the enemy splats against it for extra damage.',
+      "Watch the wind rune on the bell: it glows when the bell is ready and goes dark while it recharges. A quick dodge can slip through the gale if you see the bell start to swing.",
+      'Fighters know how to use it: they ring it when you are mid-swing, stuck, or out of dodges, and they are careful about stepping into a ready bell themselves.',
+    ],
+  },
+  {
+    version: '0.73.0',
+    date: '2026-10-11',
+    title: 'New home menu',
+    notes: [
+      'The home screen has a new castle rampart along the bottom. The big gold Fight crest sits in the middle and shows who you will face.',
+      'Hero and Armory are on its left, Online and Cup on its right, and the Shop stall with your gems is at the right end.',
+      'Account, friends, leaderboard, sound, settings and patch notes are together at the left end.',
+      'The dice to draw a new rival now sits right beside the rival card.',
+    ],
+  },
+  {
+    version: '0.72.0',
+    date: '2026-10-11',
+    title: 'Cup champion spotlight',
+    notes: [
+      'When an Arena Cup ends, its winner now takes the stage: the full fighter on a pedestal under the trophy, with their level, all their gear and every stat.',
+      'Below them is the road to the cup: who they beat in each round and how much health they kept, by K.O. or on time.',
+      'It shows for any winner, whether that is you, a friend or a challenger. If you went out early, tap See who wins to watch it.',
+    ],
+  },
+  {
+    version: '0.71.0',
+    date: '2026-10-11',
+    title: 'Meteor Sigil goes big',
+    notes: [
+      'The Meteor Sigil\'s meteor is much bigger: it comes down larger and its blast now covers a far wider area (about 4 m each side of where it lands). Each hit deals a bit less damage to keep it fair.',
+      'You can see it coming: the sigil fires a beam into the sky, the meteor whistles down, and the full blast area is marked on the ground with a shadow that grows as it falls.',
+      'Brand new impacts. The stock meteor hits with a fireball dome, lava splash, a mushroom of smoke and a molten crater that cools and burns.',
+      'Frostfall Sigil: giant ice crystals burst out across the whole area in a frost mist and falling snow, leave a glittering glaze, then shatter.',
+      'Doomcaller Sigil: a burning rune circle opens on the ground, hellfire geysers erupt across it, then a second eruption and a rain of brimstone.',
+      'Comet Sigil: a nova of starlight rings and rays, a constellation drawn in the air over the blast, a shower of shooting stars and drifting stardust.',
+    ],
+  },
+  {
+    version: '0.70.2',
+    date: '2026-10-11',
+    title: 'Easy install',
+    notes: [
+      'Arena Legends has a website now, with screenshots, what the game is about, and buttons to play or install it on a computer, Android or iPhone.',
+      'Its Install button opens the game with an install box: one tap installs the app, or it shows the steps for your device when your browser can\'t do it in one tap.',
+    ],
+  },
+  {
+    version: '0.70.1',
+    date: '2026-10-11',
+    title: 'Home screen framed a little higher',
+    notes: [
+      'The fight playing behind the home screen now sits a bit higher too, matching the battles.',
+    ],
+  },
+  {
+    version: '0.70.0',
+    date: '2026-10-11',
+    title: 'Global leaderboard',
+    notes: [
+      'New global leaderboard: the podium button next to Friends on the menu shows the top 100 players, ranked by wins or by level.',
+      'Tap anyone in the top 25 to see their hero, their body and fighting style, and every piece of gear and skin they have equipped. You can send them a friend request from there too.',
+      'Every signed-in player is on the board automatically, and your row updates after your fights. Guests can browse it as well, and sign in to join.',
+    ],
+  },
+  {
+    version: '0.69.1',
+    date: '2026-10-11',
+    title: 'Battles framed a little higher',
+    notes: [
+      'During battles the arena now sits a bit higher on screen (about 10%), so the camera no longer feels like it is looking down from too high. This works with every camera mode and every arena.',
+    ],
+  },
+  {
     version: '0.69.0',
     date: '2026-10-11',
     title: 'New Armory',

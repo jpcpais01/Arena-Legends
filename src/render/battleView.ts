@@ -14,8 +14,9 @@ import { drawText } from './font';
 import { ellipseOutline, Fx, type View } from './fx';
 import { css, mix } from './pixel/color';
 import {
-  boneRootSprite, caltropsPatch, charmSprite, clearPatches, hawkSprite, hourglassSprite, silenceSprite, skullSprite,
+  bellSprite, boneRootSprite, caltropsPatch, charmSprite, clearPatches, hawkSprite, hourglassSprite, silenceSprite, skullSprite,
   totemSprite, totemTop, wardSprite, whelpSprite, type HawkPose, type PatchLook,
+  type BellState,
 } from './specialArt';
 import { bottleSprite, isUsableShot, projFrames, projSprite, skinDraws, skinTints } from './projArt';
 import { drawSetAura, SET_FX } from './setAura';
@@ -28,6 +29,7 @@ import type { SkinFx } from './sprite/skins';
 import { isSuper, superLook, type SuperLook } from './supers';
 import { superImpactFx, superRelease as superReleaseFx, superWindup, type SuperHost } from './superFx';
 import { GlFx } from './glfx';
+import { METEOR_GLOW, meteorImpact, meteorMark, meteorStyle, meteorTrail, type ImpactCues } from './meteorFx';
 
 const STYLE_COLOR: Record<ProjectileStyle, number> = {
   arcane: 0xc58cff, hex: 0xa04aff, wave: 0xd8f4ff, groundwave: 0xc8a070, meteor: 0xff7a1a, arrow: 0xf0e0c0,
@@ -288,7 +290,9 @@ export class BattleView implements View {
 
   private layout(): void {
     const { w, h } = this.screen;
-    this.gy = h > w ? Math.round(h * 0.6) : h - Math.max(44, Math.round(h * 0.17));
+    // The ground sits 10% of the screen higher than the original framing (João, v0.69.1).
+    const lift = Math.round(h * 0.1);
+    this.gy = (h > w ? Math.round(h * 0.6) : h - Math.max(44, Math.round(h * 0.17))) - lift;
     const travel = Math.max(0, (ARENA_HALF_WIDTH + 1.8) * PPM - w / 2) + 12;
     this.arena = new ArenaView(this.theme, w, h, this.gy, travel);
   }
@@ -505,6 +509,8 @@ export class BattleView implements View {
     this.fx.drawUnder(g, this);
     for (const v of this.fighters) v.ent?.draw(g, this, 'under');
     for (const z of b.zones) this.drawZoneGround(g, z);
+    // Where a meteor is about to land.
+    for (const p of b.projectiles) if (p.alive && p.style === 'meteor') this.drawMeteorMark(g, p);
     // Shadows.
     for (const f of b.fighters) {
       const pose = this.fighters[f.id].pose;
@@ -771,6 +777,7 @@ export class BattleView implements View {
       g.drawImage(s.img, cx - s.ox, cy - s.oy);
     }
     if (f.has.has('hourglass')) this.drawHourglass(g, f, v, px, py);
+    if (f.has.has('gale_bell')) this.drawBell(g, f, v, px, py, dt);
     if (f.has.has('thunder_totem')) this.drawCharm(g, f, v, px, py, dt);
     const fam = f.familiar;
     if (!fam) return;
@@ -909,6 +916,39 @@ export class BattleView implements View {
     this.put(g, hourglassSprite(used ? 0 : Math.floor(this.time * 5), v.art.specialSkinId), cx, cy, false);
     g.globalAlpha = 1;
     if (!used) this.itemSparks(v, cx, cy);
+  }
+
+  /**
+   * The gale bell hangs over the back shoulder, rocking gently. Its wind rune
+   * glows while it's ready to ring and goes dark while it recharges; tolling,
+   * it lifts and swings hard, then settles as the swing dies away.
+   */
+  private drawBell(g: CanvasRenderingContext2D, f: Fighter, v: FighterView, px: number, py: number, dt: number): void {
+    const idx = f.abilities.findIndex((a) => a.kind === 'repel');
+    if (idx < 0) return;
+    const it = f.item && f.item.ability === idx ? f.item : null;
+    const ready = !it && f.cooldowns[idx] <= 0;
+    let tilt = Math.sin(this.time * 1.7 + f.id * 2) * 0.7;
+    let lift = 0;
+    if (it?.phase === 'windup') {
+      const k = Math.min(1, it.t / f.abilities[idx].windup);
+      tilt = Math.sin(it.t * 40) * 2 * (0.4 + 0.6 * k);
+      lift = k * 4;
+    } else if (it) {
+      const k = Math.min(1, it.t / 0.45);
+      tilt = Math.sin(it.t * 26) * 2 * (1 - k);
+      lift = 4 * (1 - k);
+    }
+    const state: BellState = it ? 'toll' : ready ? 'ready' : 'spent';
+    const cx = px - f.facing * 12, cy = Math.round(py - v.shPx - 12 + Math.sin(this.time * 2.4 + f.id) * 1.5 - lift);
+    this.put(g, bellSprite(state, tilt, v.art.specialSkinId, Math.floor(this.time * 6 + f.id)), cx, cy, false);
+    this.itemSparks(v, cx, cy + 6);
+    // Ready: now and then a wisp of wind curls off the rim.
+    if (ready && dt > 0 && Math.random() < dt * 2.5) {
+      const c = this.glow(f.id, 0xd8fff4, 0x5ad8c0);
+      const side = Math.random() < 0.5 ? -1 : 1;
+      this.fx.burst({ x: this.wx(cx + side * 4), y: this.wy(cy + 10), count: 1, dir: Math.PI / 2 + side * 0.9, spread: 0.3, speed: [0.4, 0.9], life: [0.4, 0.7], color: c[0], color2: c[1], kind: 'twinkle' });
+    }
   }
 
   /** The ward stone circles the chest; `back` draws it only on the far half of its orbit. */
@@ -1198,6 +1238,7 @@ export class BattleView implements View {
       g.drawImage(s.img, x - s.ox, y - s.oy);
       return;
     }
+    if (ab.kind !== 'blade') return;
     // Phantom blade: rises, flies at the enemy, slashes, returns.
     let ang = Math.PI / 2;
     const e = this.battle!.other(f);
@@ -1245,8 +1286,25 @@ export class BattleView implements View {
     }
   }
 
+  /** The meteor's mark on the ground: the full reach of its blast, the shadow swelling as it falls. */
+  private drawMeteorMark(g: CanvasRenderingContext2D, p: Projectile): void {
+    const c = this.glow(p.owner, METEOR_GLOW[0], METEOR_GLOW[1]);
+    const y = p.py + (p.y - p.py) * this.alpha;
+    const k = clamp(1 - (y - 0.4) / 11.6, 0, 1);
+    meteorMark(g, this, p.targetX, p.radius + 0.4, k, meteorStyle(this.fighters[p.owner]?.art.specialSkinId), c[0], c[1], this.time);
+  }
+
   private drawProjectile(g: CanvasRenderingContext2D, p: Projectile): void {
     const x = p.px + (p.x - p.px) * this.alpha, y = p.py + (p.y - p.py) * this.alpha;
+    if (p.style === 'meteor' && !this.heard.has(p.id)) {
+      // The sigil fires a beam into the sky, and the meteor comes whistling down.
+      this.heard.add(p.id);
+      const owner = this.battle!.fighters[p.owner];
+      const c = this.glow(p.owner, METEOR_GLOW[0], METEOR_GLOW[1]);
+      this.fx.pulse('pillar', owner.x - owner.facing * 0.5, owner.y + 2.8, 0.22, c[0], 0.35);
+      this.fx.burst({ x: owner.x - owner.facing * 0.5, y: owner.y + 2.8, count: 14, speed: [2, 5], life: [0.25, 0.5], color: 0xffffff, color2: c[0], drag: 2, kind: 'twinkle' });
+      this.play('entFall', this.pan(p.targetX), 0.9);
+    }
     if (p.style === 'breath' && !this.heard.has(p.id)) {
       // The whelp's breath: a fiery whoosh as it leaves the jaws.
       this.heard.add(p.id);
@@ -1292,7 +1350,7 @@ export class BattleView implements View {
       const back = Math.atan2(-p.vy, -p.vx);
       if (style === 'meteor') {
         const c = this.glow(p.owner, 0xffd060, 0x8a2a1a);
-        this.fx.burst({ x, y, count: 2, dir: back, spread: 0.4, speed: [1, 3], life: [0.3, 0.6], color: c[0], color2: mix(c[1], 0x200a08, 0.4), kind: 'ember', jitter: 0.2 });
+        meteorTrail(this.fx, meteorStyle(thrower?.specialSkinId), x, y, back, c[0], c[1]);
       }
       else if (style === 'flamewave' || style === 'groundwave') this.fx.burst({ x, y: 0.1, count: 1, dir: Math.PI / 2, spread: 0.6, speed: [0.5, 1.5], life: [0.3, 0.5], color: col, color2: wfx ? wfx.spark2 : 0x5a4a50, kind: style === 'flamewave' ? wfx?.kind ?? 'ember' : 'smoke', size: 3 });
       else if (style !== 'arrow' && style !== 'bolt' && style !== 'knife') this.fx.burst({ x, y, count: 1, dir: back, spread: 0.3, speed: [0.5, 1.5], life: [0.15, 0.3], color: col, color2: mix(col, 0x202040, 0.6) });
@@ -1368,6 +1426,13 @@ export class BattleView implements View {
       case 'itemStart': {
         const f = b.fighters[e.f];
         const ab = f.abilities[e.ability];
+        if (ab.kind === 'repel') {
+          // The bell starts to rock: a first soft chime, wind drawn in around it.
+          const c = this.glow(f.id, 0xd8fff4, 0x5ad8c0);
+          fx.gather(f.x - f.facing * 0.4, f.y + 2.3, 1.1, 10, c[0], c[1]);
+          this.play('bell', this.pan(f.x), 0.35);
+          break;
+        }
         if (isSuper(ab)) this.superStart(f, ab);
         this.play('castBig', this.pan(f.x));
         fx.pulse('ring', f.x, 2.4, 1.2, this.glow(f.id, ab.kind === 'meteor' ? 0xff9a3a : 0xa8c8ff, 0)[0], 0.4);
@@ -1537,6 +1602,7 @@ export class BattleView implements View {
         this.play('parry', this.pan(e.x), 0.7);
         break;
       case 'shockwave': {
+        if (e.style === 'gale') { this.galeBlast(e.f, e.x, e.radius); break; }
         if (e.style === 'frost' || e.style === 'smoke' || e.style === 'stomp' || e.style === 'thunder') {
           this.shockStyle(e.style, e.x, e.radius, b.fighters[e.f].facing, e.f);
           break;
@@ -1554,17 +1620,18 @@ export class BattleView implements View {
           break;
         }
         const col = e.style === 'nova' ? 0x9fe8ff : met ? (this.fighters[e.f]?.art.specialSkin?.glow ? mix(met[0], met[1], 0.5) : 0xff6a1a) : e.style === 'whirl' ? 0xe8f4ff : 0xd8a060;
-        fx.pulse('groundRing', e.x, 0, e.radius * 1.2, col, 0.5);
-        if (e.style !== 'nova') fx.pulse('crack', e.x, 0, e.radius * 0.8, mix(col, 0x2a1a20, 0.4), 1.6);
+        if (e.style !== 'meteor') fx.pulse('groundRing', e.x, 0, e.radius * 1.2, col, 0.5);
+        if (e.style !== 'nova' && e.style !== 'meteor') fx.pulse('crack', e.x, 0, e.radius * 0.8, mix(col, 0x2a1a20, 0.4), 1.6);
         if (e.style === 'meteor') {
-          fx.pulse('pillar', e.x, 0, e.radius * 0.25, col, 0.5);
-          fx.burst({ x: e.x, y: 0.3, count: 50, jitter: 0.6, dir: Math.PI / 2, spread: 1.1, speed: [4, 11], life: [0.4, 1.0], color: met![0], color2: met![1], gravity: 10, drag: 1, kind: 'ember' });
-          fx.burst({ x: e.x, y: 0.4, count: 12, jitter: 1, speed: [1, 3], life: [0.8, 1.4], color: 0x7a6a60, color2: 0x3a2a30, kind: 'smoke', size: 6, drag: 1.5 });
-          this.play('explosion', this.pan(e.x));
-          this.shake(0.9);
-          this.flash(this.fighters[e.f]?.art.specialSkin?.glow ? mix(met![0], 0xffffff, 0.3) : 0xffc070, 1);
-          this.arena?.cheer(0.8);
-          this.punchIn(1, 0.5, e.x);
+          const pan = this.pan(e.x);
+          const cues: ImpactCues = {
+            play: (name, k = 1) => this.play(name, pan, k),
+            shake: (a) => this.shake(a),
+            flash: (c, a) => this.flash(c, a),
+          };
+          meteorImpact(fx, cues, meteorStyle(this.fighters[e.f]?.art.specialSkinId), e.x, e.radius + 0.4, met![0], met![1]);
+          this.arena?.cheer(1);
+          this.punchIn(1, 0.6, e.x);
         } else if (e.style === 'nova') {
           fx.burst({ x: e.x, y: 1, count: 36, speed: [4, 9], life: [0.3, 0.6], color: 0xffffff, color2: col, drag: 3, kind: 'streak' });
           this.play('freeze', this.pan(e.x));
@@ -1746,6 +1813,30 @@ export class BattleView implements View {
       default:
         break;
     }
+  }
+
+  /**
+   * The gale bell tolls: wind fronts race out to both sides, a ring sweeps the
+   * ground, streaks of wind and kicked-up dust fly outward, the bell rings.
+   */
+  private galeBlast(id: FighterId, x: number, radius: number): void {
+    const fx = this.fx;
+    const f = this.battle!.fighters[id];
+    const [hi, lo] = this.glow(id, 0xd8fff4, 0x5ad8c0);
+    const pan = this.pan(x);
+    fx.pulse('gust', x, 1.1, radius, lo, 0.5, hi);
+    fx.pulse('groundRing', x, 0, radius * 1.25, mix(hi, lo, 0.4), 0.45);
+    fx.pulse('ring', f.x - f.facing * 0.4, f.y + 2.4, 0.8, hi, 0.25);
+    for (const side of [-1, 1]) {
+      const dir = side > 0 ? 0 : Math.PI;
+      fx.burst({ x: x + side * 0.4, y: 1.1, count: 14, jitter: 0.2, jitterY: 0.8, dir, spread: 0.16, speed: [7, 13], life: [0.18, 0.36], color: 0xffffff, color2: lo, drag: 2, kind: 'streak' });
+      fx.burst({ x: x + side * 0.6, y: 0.15, count: 6, jitter: 0.3, dir: dir + side * -0.25, spread: 0.25, speed: [2.5, 5], life: [0.4, 0.8], color: 0xd8d0c0, color2: 0x8a8278, kind: 'smoke', size: 3, drag: 2.2 });
+      fx.burst({ x: x + side * 0.8, y: 0.8, count: 4, jitter: 0.3, jitterY: 0.5, dir, spread: 0.5, speed: [3, 6], life: [0.4, 0.7], color: hi, color2: lo, drag: 2.5, kind: 'twinkle' });
+    }
+    this.play('gale', pan);
+    this.play('bell', pan, 0.9);
+    this.shake(0.4);
+    this.arena?.cheer(0.45);
   }
 
   /** The newer shockwaves: frost bursts, smoke, quake stomps and thunderclaps. */

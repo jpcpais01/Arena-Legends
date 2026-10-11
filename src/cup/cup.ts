@@ -67,6 +67,19 @@ export function entrantAt(cup: Cup, r: number, m: number, side: 0 | 1): number {
   return winnerOf(cup, r - 1, 2 * m + side);
 }
 
+/** An entrant's run, round by round: who they faced and how it went, up to their last match so far. */
+export function pathOf(cup: Cup, i: number): { round: number; opp: number; res: MatchResult | null; won: boolean }[] {
+  const out: { round: number; opp: number; res: MatchResult | null; won: boolean }[] = [];
+  for (let r = 0; r < ROUND_COUNT; r++) {
+    const m = i >> (r + 1), side = ((i >> r) & 1) as 0 | 1;
+    if (entrantAt(cup, r, m, side) !== i) break;
+    const res = cup.results[r][m] ?? null;
+    out.push({ round: r, opp: entrantAt(cup, r, m, side ? 0 : 1), res, won: !!res && res.w === side });
+    if (!res || res.w !== side) break;
+  }
+  return out;
+}
+
 export function winnerOf(cup: Cup, r: number, m: number): number {
   const res = cup.results[r]?.[m];
   return res ? entrantAt(cup, r, m, res.w) : -1;

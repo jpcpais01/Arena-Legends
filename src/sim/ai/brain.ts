@@ -323,7 +323,7 @@ export class Brain implements FighterBrain {
       } else this.script = null;
     }
 
-    if (!this.imagined) this.considerItem(b, e);
+    this.considerItem(b, e);
 
     if (f.action) {
       this.midAction(b, e);
@@ -413,6 +413,18 @@ export class Brain implements FighterBrain {
             projectile: false, heavy: false, melee: false, reach: 1.1, recovery: 0,
           });
         }
+      }
+    }
+
+    // The enemy's gale bell swinging: step out of its reach or dodge through it.
+    if (it && it.phase === 'windup') {
+      const iab = e.abilities[it.ability];
+      const gap = Math.abs(e.x - f.x);
+      if (iab.kind === 'repel' && gap <= iab.range + 0.3 && it.t >= this.p.reaction * 0.8) {
+        consider({
+          tti: Math.max(0.01, iab.windup - it.t), danger: estDamage(e, iab, f) + 0.04, blockable: false,
+          projectile: false, heavy: true, melee: true, reach: iab.range, recovery: 0,
+        });
       }
     }
 
@@ -591,7 +603,8 @@ export class Brain implements FighterBrain {
       pressure: 0.45 + p.aggression * 0.4 + closeEdge + (enemyZoner ? 0.35 : 0) + (enHp < myHp ? 0.1 : 0)
         - Math.max(0, zoneBetter) * 0.8 + (enemyNearWall ? 0.08 : 0) - unsure * 0.12
         + (enemyRests && !this.winded ? p.aggression * 0.25 : 0) + rnd(),
-      kite: m.zone > 0 ? 0.3 + zoneBetter + p.caution * 0.15 + (enemyDots > 0 ? 0.12 : 0) + ahead * 0.35 + rnd() : -1,
+      kite: m.zone > 0 ? 0.3 + zoneBetter + p.caution * 0.15 + (enemyDots > 0 ? 0.12 : 0) + ahead * 0.35
+        + (this.bellReady(b, f, this.kit, 0) ? 0.08 : 0) + rnd() : -1,
       bait: this.ek.ranged && enemyZoner ? -1
         : p.cunning * 0.45 + (o.aggro > 0.55 ? 0.2 : 0) + o.defends * 0.3 + o.whiff * 0.4 + o.trade * 0.15
           + unsure * (0.3 + p.caution * 0.2) + rnd(),
@@ -1132,6 +1145,8 @@ export class Brain implements FighterBrain {
       if (!ab.unblockable) pHit *= 0.3;
     }
     if (e.invuln > reachTime) return null;
+    // Their gale bell is ready and I'm inside its reach: a slow swing gets blown away before it lands.
+    if (!punishing && windup > 0.25 && !ab.hyperArmor && this.bellReady(b, e, this.ek, dist - (ab.lunge ?? 0) * 0.25)) pHit *= 0.7;
 
     // Slow windups get stuffed if they can hit me first (unless I have hyper armor).
     if (!ab.hyperArmor && !punishing && windup > 0.3) {
@@ -1310,10 +1325,13 @@ export class Brain implements FighterBrain {
    */
   private considerItem(b: Battle, e: Fighter): void {
     const f = this.f;
-    if (f.item || b.over) { this.itemReady = 0; return; }
+    if (f.item || b.over) { this.itemReady = 0; this.bellNear = 0; return; }
     if (getStatus(e, 'hidden')) return;
     for (const info of this.kit.info) {
       if (!info.item || !b.canUse(f, info.idx)) continue;
+      // Imagined futures only ring the gale bell (the others are rare, slow calls).
+      if (this.imagined && info.ab.kind !== 'repel') continue;
+      if (info.ab.kind === 'repel') { this.considerBell(b, e, info); return; }
       this.itemReady += DT;
       const ab = info.ab;
       const dist = Math.abs(e.x - f.x);
@@ -1356,6 +1374,63 @@ export class Brain implements FighterBrain {
     }
   }
   private itemReady = 0;
+  /** Is `who`'s gale bell ready to ring at someone `dist` away? */
+  private bellReady(b: Battle, who: Fighter, k: Kit, dist: number): boolean {
+    if (who.item) return false;
+    for (const a of k.info) if (a.ab.kind === 'repel' && dist <= a.ab.range + 0.3 && b.canUse(who, a.idx)) return true;
+    return false;
+  }
+
+  /** Seconds the enemy has stood inside the gale bell's reach while it was ready. */
+  private bellNear = 0;
+
+  /**
+   * The gale bell tolls on its own when the enemy is close. It is held for the
+   * moment they can't slip it: mid-swing (it breaks the attack off), stuck in a
+   * recovery or a stun, or with no dodge ready. A shooter rings it sooner (it is
+   * how they get their distance back), and nobody waits for long with an enemy
+   * in their face. Into a wall, the gale throws them hard against it.
+   */
+  private considerBell(b: Battle, e: Fighter, info: AbilityInfo): void {
+    const f = this.f;
+    const ab = info.ab;
+    const dist = Math.abs(e.x - f.x);
+    // Where they'll be when it rings.
+    const closing = e.vx * -Math.sign(e.x - f.x || 1) * ab.windup;
+    const reach = ab.range - 0.15;
+    if (!e.alive || e.y > 1.6 || dist - closing > reach || dist > ab.range + 0.4) {
+      this.bellNear = Math.max(0, this.bellNear - DT * 2);
+      return;
+    }
+    this.bellNear += DT;
+    // Their dodge would carry them through it.
+    if (e.invuln > ab.windup * 0.5) return;
+    const open = this.enemyOpenFor(e);
+    const ea = e.action;
+    const eab = ea ? e.abilities[ea.ability] : null;
+    // Winding up something that hurts: the gale lands first and throws it off.
+    const swinging = !!ea && !ea.feint && ea.phase === 'windup' && !!eab && eab.power > 0 && eab.kind !== 'guard'
+      && ea.windup - ea.t > ab.windup * 0.75 && this.perceived(b);
+    const def = readyDefenses(e, this.ek, ab.windup);
+    const noEscape = !def.evade || open > ab.windup * 0.7;
+    const shooter = this.kit.ranged || this.m.zone > 0;
+    const pressed = this.backToWall(f, 1.6) || f.hp / f.stats.maxHp < 0.35 || this.plan === 'recover' || this.plan === 'breathe';
+    // Thrown into the wall behind them: a splat on top.
+    const away = Math.sign(e.x - f.x) || f.facing;
+    const wall = ARENA_HALF_WIDTH - Math.abs(e.x) < 3 && Math.sign(e.x) === away;
+    const patience = (shooter ? 0.5 : 1.4) + this.p.cunning * 0.6 - (pressed ? 0.6 : 0);
+    let why = '';
+    if (swinging) why = 'The bell tolls — knocked out of the swing!';
+    else if (open > ab.windup * 0.7) why = 'Tolls the bell on the opening!';
+    else if (wall && noEscape) why = 'Gale into the wall!';
+    else if (noEscape && (shooter || pressed)) why = 'Too close — the bell tolls!';
+    else if (this.bellNear > patience && (shooter || pressed || dist < 1.6)) why = 'The bell tolls them away!';
+    if (!why) return;
+    if (b.startAction(f, info.idx)) {
+      this.bellNear = 0;
+      this.thought(b, why, true);
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // Mid-action: feints and cancels
