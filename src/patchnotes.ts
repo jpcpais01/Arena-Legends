@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.73.0',
+    date: '2026-10-11',
+    title: 'New home menu',
+    notes: [
+      'The home screen has a new castle rampart along the bottom. The big gold Fight crest sits in the middle and shows who you will face.',
+      'Hero and Armory are on its left, Online and Cup on its right, and the Shop stall with your gems is at the right end.',
+      'Account, friends, leaderboard, sound, settings and patch notes are together at the left end.',
+      'The dice to draw a new rival now sits right beside the rival card.',
+    ],
+  },
+  {
     version: '0.72.0',
     date: '2026-10-11',
     title: 'Cup champion spotlight',
