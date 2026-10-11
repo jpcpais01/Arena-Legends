@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.79.0',
+    date: '2026-10-11',
+    title: 'Rougher shockwaves',
+    notes: [
+      'Super shockwaves now ripple like real blasts: the front wobbles and breaks up, its strength comes and goes around the ring, fainter ripples trail behind it, and it pushes further in the direction of the blow.',
+      'Shockwaves along the ground stay flat against the floor, and the ring of light churns with grain as it travels instead of being a perfect circle.',
+    ],
+  },
+  {
     version: '0.78.1',
     date: '2026-10-11',
     title: 'Cleaner cup champion screen',
