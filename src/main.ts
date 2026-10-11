@@ -402,7 +402,8 @@ const pick = new PickScreen({
 });
 const lobby = new Lobby({ onCancel: () => endOnline(true), onRetry: () => (session as HostSession | GuestSession | null)?.retry() });
 const netBanner = new NetBanner();
-ui.append(menu.el, pick.el, hud.el, badge, lobby.el, netBanner.el);
+menu.dockVersion(badge);
+ui.append(menu.el, pick.el, hud.el, lobby.el, netBanner.el);
 
 function refreshMenu(): void {
   if (!player) return;
