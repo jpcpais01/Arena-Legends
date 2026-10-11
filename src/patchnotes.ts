@@ -12,6 +12,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.80.0',
+    date: '2026-10-11',
+    title: 'A brand new hero creator',
+    notes: [
+      'Building your hero is a whole new experience. Your hero stands in their own portrait card, in front of your backdrop with your name and tags underneath, and it all updates live as you make choices.',
+      'Your hero reacts to every choice with a line of their own and a burst of sparks in that choice\'s colour.',
+      'Look is now a proper dressing room: choose what to style on the left and see big options on the right. The camera zooms in on the face for skin, eyes and hair, and hairstyles show as little portraits of your own hero.',
+      'Steps are tabs along the top, and the stage arrows now also flip through colours and backdrops.',
+      'Your name gets a big banner and a "Hear the crowd" button so the arena can chant it.',
+      'A new hero finishes with a "new legend rises" reveal that plays the entrance you picked on your own backdrop.',
+    ],
+  },
+  {
+    version: '0.79.0',
+    date: '2026-10-11',
+    title: 'Rougher shockwaves',
+    notes: [
+      'Super shockwaves now ripple like real blasts: the front wobbles and breaks up, its strength comes and goes around the ring, fainter ripples trail behind it, and it pushes further in the direction of the blow.',
+      'Shockwaves along the ground stay flat against the floor, and the ring of light churns with grain as it travels instead of being a perfect circle.',
+    ],
+  },
+  {
     version: '0.78.1',
     date: '2026-10-11',
     title: 'Cleaner cup champion screen',
