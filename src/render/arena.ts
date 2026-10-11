@@ -2,6 +2,7 @@ import { ARENA_HALF_WIDTH } from '../sim/constants';
 import { css, mix } from './pixel/color';
 import type { Pix } from './pixel/paint';
 import { buildArena, floorRow, type ArenaArt, type Layer, type SkyKey, type Theme } from './arenaArt';
+import { devils, embers, hawks, nightSky, sandDrift, shimmer } from './desertFx';
 import { hash } from './scenery';
 import { PPM } from './sprite/animator';
 
@@ -98,7 +99,9 @@ export class ArenaView {
   private sun = { x: 0, y: 0, color: 0xffffff, power: 0, len: 0, dir: 1, shade: 0.2 };
   private floaters: FloaterImg[];
   private amb: { petals: string[]; wings: string[]; sparkle: string; bird: string } | null;
-  private sky: { stars: HTMLCanvasElement; rainbow: HTMLCanvasElement; moon: HTMLCanvasElement; lamp: HTMLCanvasElement; firefly: HTMLCanvasElement } | null;
+  /** A windswept arena's sand and hawk colours. */
+  private wind: { sand: string[]; hawk: string } | null;
+  private sky: { stars: HTMLCanvasElement; rainbow: HTMLCanvasElement | null; moon: HTMLCanvasElement; lamp: HTMLCanvasElement; firefly: HTMLCanvasElement } | null;
   /** Share of the round gone by (0 noon … 1 night) for arenas with a day cycle. */
   private day = 0;
   /** The same, unclamped (past 1 in overtime): how far a deep-space arena's sky has stirred. */
@@ -124,8 +127,10 @@ export class ArenaView {
     this.floaters = this.art.floaters.map((f) => ({ ...f, img: canvasOf(f.pix) }));
     const a = this.art.ambience;
     const cy = this.art.cycle;
-    this.sky = cy && { stars: canvasOf(cy.stars), rainbow: canvasOf(cy.rainbow), moon: canvasOf(cy.moon), lamp: glowSprite(cy.lampColor), firefly: glowSprite(0xd8ff70) };
+    this.sky = cy && { stars: canvasOf(cy.stars), rainbow: cy.rainbow ? canvasOf(cy.rainbow) : null, moon: canvasOf(cy.moon), lamp: glowSprite(cy.lampColor), firefly: glowSprite(0xd8ff70) };
     this.amb = a && { petals: a.petals.map((c) => css(c)), wings: a.butterflies.map((c) => css(c)), sparkle: css(a.sparkle), bird: css(a.bird) };
+    const wd = this.art.wind;
+    this.wind = wd ? { sand: wd.sand.map((c) => css(c)), hawk: css(wd.hawk) } : null;
     this.crowd = this.art.crowd.map(canvasOf);
     this.floor = canvasOf(this.art.floor);
     this.pillar = canvasOf(this.art.pillar);
@@ -154,8 +159,13 @@ export class ArenaView {
   }
 
   private sunPos(): [number, number] {
-    const s = Math.min(1, this.day / 0.76), hz = this.art.cycle!.hz;
-    return [this.W * (0.18 + 0.64 * s), hz * (0.14 + s * s)];
+    const cy = this.art.cycle!, path = cy.sunPath;
+    if (path) {
+      const s = Math.min(1, this.day / path.set);
+      return [this.W * (path.x[0] + (path.x[1] - path.x[0]) * s), cy.hz * (path.y[0] + (path.y[1] - path.y[0]) * s * s)];
+    }
+    const s = Math.min(1, this.day / 0.76);
+    return [this.W * (0.18 + 0.64 * s), cy.hz * (0.14 + s * s)];
   }
 
   private moonPos(): [number, number] {
@@ -177,11 +187,13 @@ export class ArenaView {
       elev = 1 - b.y; cast = 0.2;
     } else if (this.day < 0.78) {
       const p = this.day;
+      // With a path of its own the sun is gone a little before it reaches its end.
+      const end = cy.sunPath ? cy.sunPath.set * 0.93 : 0.77;
       [L.x, L.y] = this.sunPos();
       L.color = mix(0xfff2cc, 0xffb068, smooth(0.42, 0.7, p));
-      L.power = (0.6 + 0.4 * smooth(0.45, 0.68, p)) * (1 - smooth(0.68, 0.77, p));
+      L.power = (0.6 + 0.4 * smooth(0.45, 0.68, p)) * (1 - smooth(end - 0.09, end, p)) * (cy.rays ?? 1);
       elev = 1 - L.y / cy.hz;
-      cast = 0.32 * (1 - smooth(0.7, 0.77, p));
+      cast = 0.32 * (1 - smooth(end - 0.07, end, p)) * (cy.shade ?? 1);
     } else {
       const m = smooth(0.8, 0.95, this.day);
       [L.x, L.y] = this.moonPos();
@@ -192,7 +204,7 @@ export class ArenaView {
     }
     const az = Math.max(-1, Math.min(1, (L.x - W / 2) / (W / 2)));
     L.dir = az > 0 ? -1 : 1;
-    L.len = (4 + 40 * Math.max(0, 1 - elev) ** 1.5) * (0.4 + 0.6 * Math.abs(az));
+    L.len = (4 + 40 * Math.max(0, 1 - elev) ** 1.5) * (0.4 + 0.6 * Math.abs(az)) * (cy?.cast ?? 1);
     L.shade = cast;
   }
 
@@ -252,6 +264,12 @@ export class ArenaView {
       if (l.after === 'birds' && this.amb && this.day < 0.8) this.drawBirds(g, cam, t);
       else if (l.after === 'floaters') this.drawFloaters(g, cam, t, false);
       else if (l.after === 'stars') this.drawStars(g, t);
+      else if (l.after === 'shimmer' && this.art.wind) shimmer(g, l.img, off(l.img, l.factor), l.y, this.art.wind.shimmer, t, 1 - smooth(0.36, 0.56, this.day));
+      else if (l.after === 'devils' && this.wind) {
+        const sun = 1 - smooth(0.5, 0.66, this.day);
+        devils(g, cam, l.factor, W, this.art.wind!.devils, t, sun, this.wind.sand[0]);
+        hawks(g, cam, W, this.art.cycle?.hz ?? this.gy, t, sun, this.wind.hawk);
+      }
     }
     const cx = off(this.crowd[0], wf);
     g.drawImage(this.crowd[this.crowdFrame], cx, shakeY);
@@ -274,6 +292,7 @@ export class ArenaView {
     if (this.floaters.length) this.drawFloaters(g, cam, t, true);
     if (this.amb) this.drawAmbience(g, cam, t);
     if (this.stars) this.drawDust(g, cam, t);
+    if (this.wind) sandDrift(g, near, W, this.art.floorTop + shakeY, this.gy + shakeY, t, this.wind.sand);
     // Pillars at the arena bounds, with a floating crystal or a fire bowl.
     const gy = this.gy + shakeY;
     for (const side of [-1, 1]) {
@@ -328,9 +347,9 @@ export class ArenaView {
     const [sx, sy] = this.sunPos();
     const r = cy.sunR;
     if (sy < hz + r) {
-      g.fillStyle = css(mix(0xffffff, 0xffe9a8, smooth(0.3, 0.7, p)));
+      g.fillStyle = css(mix(mix(0xffffff, 0xffe9a8, smooth(0.3, 0.7, p)), 0xffdc8a, cy.warm ?? 0));
       g.beginPath(); g.arc(sx, sy, r - 4, 0, Math.PI * 2); g.fill();
-      g.fillStyle = css(mix(0xfffbe2, 0xff9a50, smooth(0.45, 0.74, p)));
+      g.fillStyle = css(mix(0xfffbe2, 0xff9a50, Math.max(cy.warm ?? 0, smooth(0.45, 0.74, p))));
       g.beginPath(); g.arc(sx, sy, r, 0, Math.PI * 2); g.fill();
     }
     const moon = smooth(0.76, 1, p);
@@ -356,9 +375,10 @@ export class ArenaView {
       g.restore();
     }
     const bow = 1 - smooth(0.32, 0.5, p);
-    if (bow > 0) { g.globalAlpha = bow; g.drawImage(sk.rainbow, 0, 0); }
+    if (bow > 0 && sk.rainbow) { g.globalAlpha = bow; g.drawImage(sk.rainbow, 0, 0); }
     const stars = smooth(0.74, 0.9, p);
     if (stars > 0) { g.globalAlpha = stars; g.drawImage(sk.stars, 0, 0); }
+    if (cy.twinkle) nightSky(g, cy.twinkle, W, hz, t, stars);
     g.globalAlpha = 1;
     const sg = g.createLinearGradient(0, 0, 0, hz + 8);
     k.sky.forEach((c, i) => sg.addColorStop(i / 3, css(c)));
@@ -384,9 +404,13 @@ export class ArenaView {
         g.globalAlpha = lamps * (0.85 + 0.15 * Math.sin(t * 2.3 + i * 1.7));
         g.drawImage(sk.lamp, x - l.r, y - l.r, l.r * 2, l.r * 2);
       }
-      // Fireflies drifting over the meadow.
+      // Embers off the markers' fire bowls, or fireflies drifting over the meadow.
+      if (cy.motes === 'embers') {
+        const bowl = this.art.gy + this.shake[1] - this.pillar.height + 6;
+        for (const side of [-1, 1]) embers(g, W / 2 + side * (ARENA_HALF_WIDTH + 0.75) * PPM - cam + this.shake[0], bowl, t, lamps, side);
+      }
       const span = W + 40;
-      for (let i = 0; i < 18; i++) {
+      for (let i = 0; i < (cy.motes === 'embers' ? 0 : 18); i++) {
         const tw = Math.sin(t * (1.1 + (i % 4) * 0.35) + i * 2.3);
         if (tw < -0.2) continue;
         const x = ((((i * 71.3 + Math.sin(t * 0.25 + i) * 40 - cam * 0.85) % span) + span) % span) - 20;
