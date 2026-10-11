@@ -6,7 +6,7 @@ import {
   MATCH_TIME, OVERTIME_DAMAGE, ROUND_TIME, START_GAP, WALL_SPLAT_SPEED,
 } from './constants';
 import {
-  createFighter, getStatus, isDisabled, isSilenced, isUnstoppable, reachOf, refreshStats, type Fighter, type FighterConfig,
+  actionDef, comboStep, createFighter, getStatus, isDisabled, isSilenced, isUnstoppable, reachOf, refreshStats, type Fighter, type FighterConfig,
 } from './fighter';
 import type {
   AbilityDef, BattleEvent, DamageType, Familiar, FighterId, Projectile, StatusApply, StatusId, Zone, ZoneKind,
@@ -226,6 +226,7 @@ export class Battle {
     if (f.garbT > 0) f.garbT -= DT;
     f.sinceHurt += DT;
     f.sinceHit += DT;
+    f.comboT += DT;
     this.updatePassives(f);
 
     f.energy = Math.min(MAX_ENERGY, f.energy + BASE_ENERGY_REGEN * f.stats.energyRegen * DT);
@@ -418,6 +419,11 @@ export class Battle {
       }
     }
 
+    // Basic attack strings: a stale string starts over, and the last swing is the finisher.
+    const combo = comboStep(f, ab);
+    if (combo === 1) f.combo = 0;
+    const def = ab.combo && combo === ab.combo.every ? ab.combo.finisher : ab;
+
     let targetX = e.x;
     if (ab.kind === 'meteor') {
       // Lead the target: where will they be when the meteor lands?
@@ -428,13 +434,13 @@ export class Battle {
 
     f.action = {
       ability: idx, phase: 'windup', t: 0, total: 0,
-      windup: ab.windup / spd,
-      active: ab.hits && ab.hits > 1 ? ab.active / Math.sqrt(spd) : ab.active,
-      recovery: ab.recovery / spd,
+      windup: def.windup / spd,
+      active: def.hits && def.hits > 1 ? def.active / Math.sqrt(spd) : def.active,
+      recovery: def.recovery / spd,
       draw: (ab.draw ?? 0) / spd,
       stow: (ab.stow ?? 0) / spd,
       hitsDone: 0, connected: false, feint: false, targetX, startX: f.x, isCounter: false,
-      dir, through,
+      dir, through, combo,
     };
     f.move = 0;
     if (ab.slot === 'evade') f.totals.evades++;
@@ -466,7 +472,7 @@ export class Battle {
   private updateAction(f: Fighter): void {
     const a = f.action;
     if (!a || !f.alive) return;
-    const ab = f.abilities[a.ability];
+    const ab = actionDef(f, a);
     const e = this.other(f);
     a.t += DT;
     a.total += DT;
@@ -499,7 +505,10 @@ export class Battle {
           a.hitsDone++;
           if (this.inMeleeReach(f, e, reachOf(f, ab))) {
             const last = a.hitsDone === hits;
-            this.abilityHit(f, e, ab, { heavyOverride: hits > 1 && !last ? false : undefined });
+            if (this.abilityHit(f, e, ab, { heavyOverride: hits > 1 && !last ? false : undefined })) {
+              if (!a.connected && ab !== f.abilities[a.ability]) this.emit({ type: 'finisher', f: f.id, x: e.x, y: e.y + 1.2 });
+              a.connected = true;
+            }
           }
         }
       } else if (ab.kind === 'dash') {
@@ -522,6 +531,11 @@ export class Battle {
         a.phase = 'recovery';
         a.t = 0;
         if (ab.kind === 'dash') f.vx = a.dir * 2;
+        if (a.combo) {
+          // The string carries on only while swings land; the finisher closes it.
+          f.combo = a.connected ? a.combo % f.abilities[a.ability].combo!.every : 0;
+          if (a.connected) f.comboT = 0;
+        }
       }
       return;
     }
@@ -1044,7 +1058,7 @@ export class Battle {
         defender.action = {
           ability: a.ability, phase: 'recovery', t: 0, total: a.total, windup: 0, active: 0,
           recovery: 0.3 + a.stow, draw: a.draw, stow: a.stow, hitsDone: 1, connected: true, feint: false, targetX: attacker.x, startX: defender.x,
-          isCounter: true, dir: defender.facing, through: false,
+          isCounter: true, dir: defender.facing, through: false, combo: 0,
         };
         this.abilityHit(defender, attacker, counter, { isCounter: true });
         this.emit({ type: 'thought', f: defender.id, text: 'Perfect parry — riposte!' });
@@ -1055,17 +1069,18 @@ export class Battle {
     return 'block';
   }
 
-  private abilityHit(att: Fighter, tgt: Fighter, ab: AbilityDef, opts: HitOptions, blocked = false): void {
-    if (!tgt.alive) return;
+  /** Returns whether the blow landed clean (not dodged, parried or blocked). */
+  private abilityHit(att: Fighter, tgt: Fighter, ab: AbilityDef, opts: HitOptions, blocked = false): boolean {
+    if (!tgt.alive) return false;
     if (tgt.invuln > 0) {
       if (tgt.action && tgt.abilities[tgt.action.ability].slot === 'evade') {
         this.emit({ type: 'thought', f: tgt.id, text: 'Clean dodge.' });
       }
-      return;
+      return false;
     }
     if (!opts.fromProjectile && !opts.isCounter && !blocked) {
       const g = this.guardCheck(tgt, att, ab, undefined, !!opts.aoe);
-      if (g === 'parry') return;
+      if (g === 'parry') return false;
       if (g === 'block') blocked = true;
     }
     // Seer's Blindfold: saw it coming, and simply isn't there when it lands.
@@ -1073,7 +1088,7 @@ export class Battle {
       && (ab.heavy || ab.power * att.stats.power >= tgt.stats.maxHp * 0.03)) {
       tgt.foresightCd = 10;
       this.emit({ type: 'foresight', f: tgt.id, x: tgt.x, y: tgt.y + 1.3 });
-      return;
+      return false;
     }
 
     const heavy = opts.heavyOverride ?? !!ab.heavy;
@@ -1108,7 +1123,6 @@ export class Battle {
       raw *= 1 - (g.guard?.reduction ?? 0.5);
     }
 
-    const hpBefore = tgt.hp;
     const dealt = this.applyDamage(att, tgt, raw, ab.damageType);
     const killing = !tgt.alive;
     att.totals.hits++;
@@ -1142,8 +1156,7 @@ export class Battle {
       }
     }
 
-    if (!tgt.alive && hpBefore > 0) return;
-    if (!tgt.alive) return;
+    if (!tgt.alive) return !blocked;
 
     // Crowd control & displacement.
     if (!blocked) {
@@ -1213,6 +1226,7 @@ export class Battle {
         att.echoQueue.push({ delay: 0.35, amount: dealt * 0.6, dtype: ab.damageType });
       }
     }
+    return !blocked;
   }
 
   /** Applies mitigation, shields, death and revive. Returns HP damage dealt. */

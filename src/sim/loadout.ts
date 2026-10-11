@@ -78,7 +78,9 @@ export function buildAbilities(gear: GearSet): AbilityDef[] {
           windup: ab.windup + swap.draw, recovery: ab.recovery + swap.stow,
         });
       } else {
-        out.push({ ...ab, from: slot });
+        const def: AbilityDef = { ...ab, from: slot };
+        if (ab.combo) def.combo = { ...ab.combo, finisher: { ...ab.combo.finisher, from: slot } };
+        out.push(def);
       }
     }
   }

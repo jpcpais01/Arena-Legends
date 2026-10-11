@@ -12,13 +12,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.82.0',
+    version: '0.83.0',
     date: '2026-10-11',
     title: 'The moonlit grove',
     notes: [
       'Chests now open in a moonlit forest grove instead of the vault: a waterfall spills from a mossy cliff into a pool, the moon rises over the mountains, and two ancient trees frame the glade under a canopy with hanging vines.',
       'Fireflies wander and blink, petals drift down, the grass is full of flowers, glowing mushrooms grow at the roots, and stone lanterns light the chest\'s mossy dais.',
       'The rune circle is gone. A soft glow over the falls takes the tier\'s colour as the chest charges, the fireflies, lantern flames and the flower ring round the dais light up with it, and the whole opening plays out as before.',
+    ],
+  },
+  {
+    version: '0.82.0',
+    date: '2026-10-11',
+    title: 'Katana three-cut string',
+    notes: [
+      'The katana now fights in strings of three cuts: a diagonal cut down from the shoulder, a reverse cut rising from low, then a finisher taken in both hands, raised high and split straight down into a deep lunge, ending with a flick of the blade.',
+      'The finisher lands heavy (about 75% more damage than a normal cut) and heals the wielder for part of the damage, with a flash in the colours of your katana skin.',
+      'The string only keeps going while your cuts land. A miss, a block, a parry or too long a pause starts it over.',
+      'Normal katana cuts deal a little less damage to make room for the finisher, and fighters now know to keep a string going when the finisher is close.',
     ],
   },
   {
