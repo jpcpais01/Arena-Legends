@@ -1406,12 +1406,16 @@ export class BattleView implements View {
         const dir = e.x >= att.x ? 0 : Math.PI;
         const heavy = e.heavy || e.crit;
         const color = e.blocked ? 0xbfd8ff : e.dtype === 'magic' ? 0xc58cff : e.ability === 'lightning' ? 0xaedcff : 0xffd27a;
-        fx.burst({ x: e.x, y: e.y, count: e.blocked ? 8 : heavy ? 22 : 12, dir, spread: e.blocked ? 1.2 : 0.8, speed: heavy ? [5, 12] : [3, 8], life: [0.12, 0.35], color: 0xffffff, color2: color, gravity: 12, drag: 2, kind: 'streak' });
-        fx.pulse('star', e.x, e.y, e.blocked ? 0.25 : heavy ? 0.5 : 0.32, color, heavy ? 0.16 : 0.1);
-        this.legendHit(e.attacker, e.target, e.ability, e.blocked, heavy, e.x, e.y);
         const sab = e.echo ? undefined : att.abilities.find((a) => a.id === e.ability);
+        // A weapon super's blow draws its own impact; the generic hit sparks would only muddy it.
+        const sig = !!sab && isSuper(sab) && sab.slot !== 'item' && !e.blocked && this.gl.ok && !this.quiet;
+        if (!sig) {
+          fx.burst({ x: e.x, y: e.y, count: e.blocked ? 8 : heavy ? 22 : 12, dir, spread: e.blocked ? 1.2 : 0.8, speed: heavy ? [5, 12] : [3, 8], life: [0.12, 0.35], color: 0xffffff, color2: color, gravity: 12, drag: 2, kind: 'streak' });
+          fx.pulse('star', e.x, e.y, e.blocked ? 0.25 : heavy ? 0.5 : 0.32, color, heavy ? 0.16 : 0.1);
+          this.legendHit(e.attacker, e.target, e.ability, e.blocked, heavy, e.x, e.y);
+        }
         if (sab && isSuper(sab)) this.superImpact(att, sab, e.blocked, e.x, e.y);
-        if (heavy && !e.blocked) {
+        if (heavy && !e.blocked && !sig) {
           fx.pulse('ring', e.x, e.y, 0.9, color, 0.25);
           fx.burst({ x: e.x, y: 0.1, count: 4, jitter: 0.3, dir: Math.PI / 2, spread: 1, speed: [0.5, 1.5], life: [0.4, 0.7], color: 0xb0a090, color2: 0x6a5a60, kind: 'smoke', size: 3 });
         }

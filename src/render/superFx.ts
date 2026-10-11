@@ -198,7 +198,7 @@ export function superImpactFx(h: SuperHost, id: string, look: SuperLook, x: numb
       // A beat after passing through them, the cut opens: an X of light and the picture flips to ink.
       gl.add({ kind: 'flare', x, y, r0: 2, r1: 4.5, w: 0.04, hi: WHITE, lo: look.hi, life: 0.4, power: 1, fin: 0 });
       sparks(fx, look, x, y, 8, [2, 5]);
-      h.later(0.16, () => {
+      h.later(0.05, () => {
         for (const r of [0.75, -0.75]) beam(h, look, x - Math.cos(r) * 1.1, y - Math.sin(r) * 1.1, r, 2.2, 0.07, 0.32, { r0: 2.2 });
         blow(h, look, x, y);
         h.shake(0.45);
