@@ -7,6 +7,8 @@ import { iconCanvas } from '../render/icons';
 import { gearOf, SLOT_NAMES } from '../sim/gear';
 import { DEFAULT_BUILDS, withGear } from '../sim/loadout';
 import { confirmBox } from './confirm';
+import { isAdmin } from '../character/promo';
+import { promoBox } from './promo';
 import { h } from './dom';
 import { fmtInt } from './format';
 import { gemTag, shopTabs } from './gacha';
@@ -80,6 +82,10 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
   // Gem counter.
   const gemNum = h('b', null, fmtInt(gems()));
   const gemChip = h('div.gem-chip', { title: 'Gems' }, icon('gem'), gemNum);
+  const adminTag = h('span.admin-tag', { title: 'Admin account: every skin, entrance, finisher and pose is yours' }, icon('crown'), h('span', null, 'Admin'));
+  const showAdmin = () => { adminTag.hidden = !isAdmin(); };
+  showAdmin();
+  const codeBtn = h('button.btn.promo-btn', { title: 'Redeem a promo code', onclick: () => promoBox(el) }, icon('tag'), h('span', null, 'Code'));
 
   const feat = h('section.shop-feat.frame');
   let shelf: Shelf = lastShelf;
@@ -96,7 +102,7 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
     h('header.scr-head', null,
       h('div.scr-title', null, h('h1', null, 'Shop')),
       shopTabs('offers', (t) => { sfx.play('select'); cb.onChests(t === 'forge' ? 'forge' : 'chests'); }),
-      h('div.grow'), gemChip,
+      h('div.grow'), adminTag, codeBtn, gemChip,
       h('button.btn.primary.done', { onclick: close }, icon('check'), 'Done')),
     feat, shelves, got);
 
@@ -345,7 +351,7 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
   featured();
   render();
   const clock = window.setInterval(tick, 30000);
-  const unlisten = onCollection(() => { gemNum.textContent = fmtInt(gems()); gemChip.classList.remove('bump'); void gemChip.offsetWidth; gemChip.classList.add('bump'); featured(); render(); });
+  const unlisten = onCollection(() => { showAdmin(); gemNum.textContent = fmtInt(gems()); gemChip.classList.remove('bump'); void gemChip.offsetWidth; gemChip.classList.add('bump'); featured(); render(); });
   const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { if (got.classList.contains('on')) dismiss(); else close(); } };
   window.addEventListener('keydown', onKey);
   return {

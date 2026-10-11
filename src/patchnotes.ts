@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.97.0',
+    date: '2026-10-11',
+    title: 'Promo codes',
+    notes: [
+      'The Shop has a new Code button next to your gems: type a 6-letter promo code to claim its reward.',
+      'Each code works once per account. Friends who know the right code get something special.',
+    ],
+  },
+  {
     version: '0.96.0',
     date: '2026-10-11',
     title: 'New Mythic set: Oba, The Ruler',
