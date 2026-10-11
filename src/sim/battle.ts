@@ -875,6 +875,21 @@ export class Battle {
       return;
     }
 
+    if (ab.kind === 'repel') {
+      // The gale bell: it swings while it charges, then tolls a gale all round
+      // its owner. Only the enemy is caught; a dodge's i-frames slip through it.
+      it.x = homeX; it.y = homeY;
+      if (it.phase === 'windup' && it.t >= ab.windup) {
+        this.emit({ type: 'shockwave', x: f.x, radius: ab.range, f: f.id, style: 'gale' });
+        if (e.alive && f.alive && Math.abs(e.x - f.x) <= ab.range && e.y < 2.4) this.abilityHit(f, e, ab, { aoe: true });
+        it.phase = 'return';
+        it.t = 0;
+      } else if (it.phase === 'return' && it.t >= 0.45) {
+        f.item = null;
+      }
+      return;
+    }
+
     if (ab.kind === 'meteor') {
       it.x = homeX; it.y = homeY;
       if (it.phase === 'windup' && it.t >= ab.windup) {
@@ -1119,7 +1134,7 @@ export class Battle {
     }
 
     // Thorns.
-    if (tgt.stats.thorns > 0 && !opts.fromProjectile && ab.kind !== 'aoe' && ab.kind !== 'blade' && att.alive && dealt > 0) {
+    if (tgt.stats.thorns > 0 && !opts.fromProjectile && ab.kind !== 'aoe' && ab.kind !== 'blade' && ab.kind !== 'repel' && att.alive && dealt > 0) {
       const back = this.applyDamage(tgt, att, dealt * tgt.stats.thorns, 'true');
       if (back > 0) {
         this.emit({ type: 'hit', attacker: tgt.id, target: att.id, amount: back, crit: false, dtype: 'true',

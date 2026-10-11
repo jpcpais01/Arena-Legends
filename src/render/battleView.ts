@@ -14,8 +14,9 @@ import { drawText } from './font';
 import { ellipseOutline, Fx, type View } from './fx';
 import { css, mix } from './pixel/color';
 import {
-  boneRootSprite, caltropsPatch, charmSprite, clearPatches, hawkSprite, hourglassSprite, silenceSprite, skullSprite,
+  bellSprite, boneRootSprite, caltropsPatch, charmSprite, clearPatches, hawkSprite, hourglassSprite, silenceSprite, skullSprite,
   totemSprite, totemTop, wardSprite, whelpSprite, type HawkPose, type PatchLook,
+  type BellState,
 } from './specialArt';
 import { bottleSprite, isUsableShot, projFrames, projSprite, skinDraws, skinTints } from './projArt';
 import { drawSetAura, SET_FX } from './setAura';
@@ -764,6 +765,7 @@ export class BattleView implements View {
       g.drawImage(s.img, cx - s.ox, cy - s.oy);
     }
     if (f.has.has('hourglass')) this.drawHourglass(g, f, v, px, py);
+    if (f.has.has('gale_bell')) this.drawBell(g, f, v, px, py, dt);
     if (f.has.has('thunder_totem')) this.drawCharm(g, f, v, px, py, dt);
     const fam = f.familiar;
     if (!fam) return;
@@ -902,6 +904,39 @@ export class BattleView implements View {
     this.put(g, hourglassSprite(used ? 0 : Math.floor(this.time * 5), v.art.specialSkinId), cx, cy, false);
     g.globalAlpha = 1;
     if (!used) this.itemSparks(v, cx, cy);
+  }
+
+  /**
+   * The gale bell hangs over the back shoulder, rocking gently. Its wind rune
+   * glows while it's ready to ring and goes dark while it recharges; tolling,
+   * it lifts and swings hard, then settles as the swing dies away.
+   */
+  private drawBell(g: CanvasRenderingContext2D, f: Fighter, v: FighterView, px: number, py: number, dt: number): void {
+    const idx = f.abilities.findIndex((a) => a.kind === 'repel');
+    if (idx < 0) return;
+    const it = f.item && f.item.ability === idx ? f.item : null;
+    const ready = !it && f.cooldowns[idx] <= 0;
+    let tilt = Math.sin(this.time * 1.7 + f.id * 2) * 0.7;
+    let lift = 0;
+    if (it?.phase === 'windup') {
+      const k = Math.min(1, it.t / f.abilities[idx].windup);
+      tilt = Math.sin(it.t * 40) * 2 * (0.4 + 0.6 * k);
+      lift = k * 4;
+    } else if (it) {
+      const k = Math.min(1, it.t / 0.45);
+      tilt = Math.sin(it.t * 26) * 2 * (1 - k);
+      lift = 4 * (1 - k);
+    }
+    const state: BellState = it ? 'toll' : ready ? 'ready' : 'spent';
+    const cx = px - f.facing * 12, cy = Math.round(py - v.shPx - 12 + Math.sin(this.time * 2.4 + f.id) * 1.5 - lift);
+    this.put(g, bellSprite(state, tilt, v.art.specialSkinId), cx, cy, false);
+    this.itemSparks(v, cx, cy + 6);
+    // Ready: now and then a wisp of wind curls off the rim.
+    if (ready && dt > 0 && Math.random() < dt * 2.5) {
+      const c = this.glow(f.id, 0xd8fff4, 0x5ad8c0);
+      const side = Math.random() < 0.5 ? -1 : 1;
+      this.fx.burst({ x: this.wx(cx + side * 4), y: this.wy(cy + 10), count: 1, dir: Math.PI / 2 + side * 0.9, spread: 0.3, speed: [0.4, 0.9], life: [0.4, 0.7], color: c[0], color2: c[1], kind: 'twinkle' });
+    }
   }
 
   /** The ward stone circles the chest; `back` draws it only on the far half of its orbit. */
@@ -1191,6 +1226,7 @@ export class BattleView implements View {
       g.drawImage(s.img, x - s.ox, y - s.oy);
       return;
     }
+    if (ab.kind !== 'blade') return;
     // Phantom blade: rises, flies at the enemy, slashes, returns.
     let ang = Math.PI / 2;
     const e = this.battle!.other(f);
@@ -1378,6 +1414,13 @@ export class BattleView implements View {
       case 'itemStart': {
         const f = b.fighters[e.f];
         const ab = f.abilities[e.ability];
+        if (ab.kind === 'repel') {
+          // The bell starts to rock: a first soft chime, wind drawn in around it.
+          const c = this.glow(f.id, 0xd8fff4, 0x5ad8c0);
+          fx.gather(f.x - f.facing * 0.4, f.y + 2.3, 1.1, 10, c[0], c[1]);
+          this.play('bell', this.pan(f.x), 0.35);
+          break;
+        }
         if (isSuper(ab)) this.superStart(f, ab);
         this.play('castBig', this.pan(f.x));
         fx.pulse('ring', f.x, 2.4, 1.2, this.glow(f.id, ab.kind === 'meteor' ? 0xff9a3a : 0xa8c8ff, 0)[0], 0.4);
@@ -1543,6 +1586,7 @@ export class BattleView implements View {
         this.play('parry', this.pan(e.x), 0.7);
         break;
       case 'shockwave': {
+        if (e.style === 'gale') { this.galeBlast(e.f, e.x, e.radius); break; }
         if (e.style === 'frost' || e.style === 'smoke' || e.style === 'stomp' || e.style === 'thunder') {
           this.shockStyle(e.style, e.x, e.radius, b.fighters[e.f].facing, e.f);
           break;
@@ -1753,6 +1797,30 @@ export class BattleView implements View {
       default:
         break;
     }
+  }
+
+  /**
+   * The gale bell tolls: wind fronts race out to both sides, a ring sweeps the
+   * ground, streaks of wind and kicked-up dust fly outward, the bell rings.
+   */
+  private galeBlast(id: FighterId, x: number, radius: number): void {
+    const fx = this.fx;
+    const f = this.battle!.fighters[id];
+    const [hi, lo] = this.glow(id, 0xd8fff4, 0x5ad8c0);
+    const pan = this.pan(x);
+    fx.pulse('gust', x, 1.1, radius, lo, 0.5, hi);
+    fx.pulse('groundRing', x, 0, radius * 1.25, mix(hi, lo, 0.4), 0.45);
+    fx.pulse('ring', f.x - f.facing * 0.4, f.y + 2.4, 0.8, hi, 0.25);
+    for (const side of [-1, 1]) {
+      const dir = side > 0 ? 0 : Math.PI;
+      fx.burst({ x: x + side * 0.4, y: 1.1, count: 14, jitter: 0.2, jitterY: 0.8, dir, spread: 0.16, speed: [7, 13], life: [0.18, 0.36], color: 0xffffff, color2: lo, drag: 2, kind: 'streak' });
+      fx.burst({ x: x + side * 0.6, y: 0.15, count: 6, jitter: 0.3, dir: dir + side * -0.25, spread: 0.25, speed: [2.5, 5], life: [0.4, 0.8], color: 0xd8d0c0, color2: 0x8a8278, kind: 'smoke', size: 3, drag: 2.2 });
+      fx.burst({ x: x + side * 0.8, y: 0.8, count: 4, jitter: 0.3, jitterY: 0.5, dir, spread: 0.5, speed: [3, 6], life: [0.4, 0.7], color: hi, color2: lo, drag: 2.5, kind: 'twinkle' });
+    }
+    this.play('gale', pan);
+    this.play('bell', pan, 0.9);
+    this.shake(0.4);
+    this.arena?.cheer(0.45);
   }
 
   /** The newer shockwaves: frost bursts, smoke, quake stomps and thunderclaps. */

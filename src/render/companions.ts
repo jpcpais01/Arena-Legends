@@ -1,13 +1,13 @@
 import type { GearId } from '../sim/types';
 import { css, mix } from './pixel/color';
 import { projSprite, skinDraws } from './projArt';
-import { charmSprite, hawkSprite, hourglassSprite, wardSprite, whelpSprite, type HawkPose } from './specialArt';
+import { bellSprite, charmSprite, hawkSprite, hourglassSprite, wardSprite, whelpSprite, type HawkPose } from './specialArt';
 import type { Sprite } from './sprite/bank';
 import type { CharacterArt } from './sprite/look';
 
 /**
  * The special items that ride along with a fighter, at rest: the ward stone's
- * orbit, the hourglass and the totem charm at the back shoulder, the hawk on
+ * orbit, the hourglass, the gale bell and the totem charm at the back shoulder, the hawk on
  * its perch, the whelp over the head, the wisp lantern and an epic core.
  * Battle animates their attacks itself; previews (Armory, creator) draw these
  * idle versions with `drawCompanions`, in the same spots battle uses.
@@ -62,6 +62,11 @@ export function drawCompanions(
     const x = gx - facing * 12, y = Math.round(gy - m.shPx - 4 + Math.sin(t * 2.2) * 1.5);
     put(g, hourglassSprite(Math.floor(t * 5), skin), x, y, false);
     return [x, y];
+  }
+  if (special === 'gale_bell') {
+    const x = gx - facing * 12, y = Math.round(gy - m.shPx - 12 + Math.sin(t * 2.4) * 1.5);
+    put(g, bellSprite('ready', Math.sin(t * 1.7) * 0.7, skin), x, y, false);
+    return [x, y + 6];
   }
   if (special === 'thunder_totem') {
     const x = gx - facing * 12, y = Math.round(gy - m.shPx - 6 + Math.sin(t * 2.6) * 1.5);

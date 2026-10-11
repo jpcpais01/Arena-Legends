@@ -71,6 +71,11 @@ const SM = {
   whelpBelly: material({ base: 0xf8d088 }),
   whelpWing: material({ base: 0xa8302a }),
   horn: material({ base: 0xf4ecd8, shiny: true }),
+  // Gale bell.
+  bronze: material({ base: 0xc0823a, shiny: true, step: 0.13 }),
+  bronzeDark: material({ base: 0x7a4a22, step: 0.13 }),
+  galeRune: material({ base: 0x5ad8c0, glow: true }),
+  gust: material({ base: 0xd8fff4, glow: true }),
 };
 
 const SM_NAME = new Map<Material, string>(Object.entries(SM).map(([k, m]) => [m, k]));
@@ -219,6 +224,30 @@ function special(id: SpecialId, r: Raster, c: number, skin?: string | null): voi
       // Talons on the cuff.
       r.fill(t.cap(-1, -8, -1.6, -10, 0.8), h(SM.beak), { group: 6, bevel: 1 });
       r.fill(t.cap(2, -8, 2.4, -10, 0.8), h(SM.beak), { group: 6, bevel: 1 });
+      break;
+    }
+    case 'gale_bell': {
+      // A bronze bell mid-swing, a wind rune round its waist, gusts curling off both sides.
+      const tw = new Xf(c, c, -0.18);
+      const lx = (x: number, y: number) => tw.x(x, y), ly = (x: number, y: number) => tw.y(x, y);
+      // Swooshes: two staggered strokes each side, thinning at the tail.
+      r.fill(arc(c, c, 12.4, 13.6, -Math.PI * 0.3, Math.PI * 0.08), h(SM.gust), { group: 1 });
+      r.fill(arc(c + 1, c - 2, 9.6, 10.6, -Math.PI * 0.4, -Math.PI * 0.2), h(SM.gust), { group: 1 });
+      r.fill(arc(c, c, 12.4, 13.6, Math.PI * 0.92, Math.PI * 1.3), h(SM.gust), { group: 1 });
+      r.fill(arc(c - 1, c - 2, 9.6, 10.6, Math.PI * 1.2, Math.PI * 1.4), h(SM.gust), { group: 1 });
+      // Hanger loop and crown.
+      r.fill(arc(lx(0, 11.6), ly(0, 11.6), 1.2, 2.6, -Math.PI, Math.PI), h(SM.bronze), { group: 2 });
+      const body = tw.poly([-3.2, 9.4, 3.2, 9.4, 5, 7, 5.6, 1.6, 6.8, -3.6, 9, -7, -9, -7, -6.8, -3.6, -5.6, 1.6, -5, 7], 0.8);
+      r.fill(body, h(SM.bronze), { group: 3, bevel: 3.2 });
+      // The wind rune band.
+      r.fill(intersect(body, tw.rect(0, -1.4, 9, 1.4)), h(SM.galeRune), { group: 4 });
+      // A wind glyph on the band: a little wave.
+      for (const [x0, y0, x1, y1] of [[-3, -1.8, -1.4, -0.8], [-1.4, -0.8, 0.4, -1.8], [0.4, -1.8, 2, -0.8], [2, -0.8, 3.4, -1.6]]) {
+        r.line(lx(x0, y0), ly(x0, y0), lx(x1, y1), ly(x1, y1), h(SM.gust), 4, 5);
+      }
+      // The lip and the clapper peeking out.
+      r.fill(tw.rect(0, -7.6, 9.6, 1.3, 0.6), h(SM.bronzeDark), { group: 5, bevel: 1 });
+      r.fill(tw.circ(-1.4, -10, 1.7), h(SM.bronzeDark), { group: 4, bevel: 1 });
       break;
     }
     case 'dragon_whelp': {

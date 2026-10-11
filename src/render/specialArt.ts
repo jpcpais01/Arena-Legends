@@ -536,6 +536,62 @@ export function wardSprite(lit: boolean, skin?: string | null, tick = 0): Sprite
 }
 
 // -----------------------------------------------------------------------------
+// Gale bell (anchor = the hanger loop)
+// -----------------------------------------------------------------------------
+
+/** How the bell's wind rune burns: lit while it's ready, dark while it recharges, blazing as it tolls. */
+export type BellState = 'ready' | 'spent' | 'toll';
+
+const BELL_ROWS = [
+  '...hhh...',
+  '...h.h...',
+  '...bHb...',
+  '..bBHHb..',
+  '..bBBHb..',
+  '..bBBHb..',
+  '.bBrRrHb.',
+  '.bBBBHHb.',
+  '.bBBBBHb.',
+  'bBBBBBHHb',
+  'ddddddddd',
+  '....k....',
+];
+/** Row the bell swings from (the hanger). */
+const BELL_PIVOT = 1;
+const BELL_PAD = 3;
+
+const bellPal = (state: BellState): Pal => ({
+  h: 0xe8b860, b: 0x7a4a22, B: 0xb87a34, H: 0xf0c070, d: 0x5a3418, k: 0x4a3020,
+  r: state === 'spent' ? 0x2e5a54 : [0x5ad8c0, state === 'toll' ? 0.9 : 0.5],
+  R: state === 'spent' ? 0x3e7a70 : [state === 'toll' ? 0xffffff : 0xc8fff0, state === 'toll' ? 1 : 0.75],
+});
+
+const BELL_MAP: Recolor = { h: ['bronze', 3], b: ['bronzeDark', 1], B: ['bronze', 1], H: ['bronze', 3], d: ['bronzeDark', 0], k: ['bronzeDark', 0], r: ['galeRune', 2], R: ['galeRune', 4] };
+
+/**
+ * The bell tilted by `tilt` px at the lip (−2..2): rows shear away from the
+ * hanger, the clapper hangs back so it strikes the side.
+ */
+export function bellFrame(state: BellState, tilt: number, skin?: string | null): PixFrame {
+  const rows = BELL_ROWS.map((row, i) => {
+    const k = row.includes('k') && i === BELL_ROWS.length - 1;
+    const off = k ? Math.round(tilt * 0.5) : Math.round((tilt * Math.max(0, i - BELL_PIVOT)) / (BELL_ROWS.length - 2 - BELL_PIVOT));
+    const pad = '.'.repeat(BELL_PAD);
+    const full = pad + row + pad;
+    return off > 0 ? '.'.repeat(off) + full.slice(0, full.length - off) : off < 0 ? full.slice(-off) + '.'.repeat(-off) : full;
+  });
+  const pal = recolor(bellPal(state), BELL_MAP, skin);
+  // A toll lights the whole rim for a moment.
+  const lit = state === 'toll' ? { ...pal, d: [0xffe8b0, 0.5] as PalEntry } : pal;
+  return pixFrame(rows, lit, BELL_PAD + 4, BELL_PIVOT);
+}
+
+export function bellSprite(state: BellState, tilt: number, skin?: string | null): Sprite {
+  const t = Math.max(-2, Math.min(2, Math.round(tilt)));
+  return sprite(`bell.${state}.${t}.${skin ?? ''}`, () => bellFrame(state, t, skin));
+}
+
+// -----------------------------------------------------------------------------
 // Status marks (anchor = bottom centre)
 // -----------------------------------------------------------------------------
 

@@ -89,6 +89,7 @@ export function reachOf(f: Fighter, ab: AbilityDef): [number, number] {
     case 'meteor': return [0, r];
     case 'blade': return [0, r];
     case 'totem': return [0, (ab.totem?.radius ?? 0) + 0.5];
+    case 'repel': return [0, ab.range];
     default: return [0, 0];
   }
 }
@@ -113,7 +114,8 @@ export function analyzeKit(f: Fighter): Kit {
       idx, ab, offensive,
       defense: defenseOf(ab),
       buff: ab.kind === 'buff' && !offensive,
-      ultimate: ab.slot === 'item' || ab.cost >= MAX_ENERGY,
+      // The gale bell rings on a timer, not on a full bar: nothing to save energy for.
+      ultimate: (ab.slot === 'item' && ab.kind !== 'repel') || ab.cost >= MAX_ENERGY,
       item: ab.slot === 'item',
       minReach, maxReach, ranged,
       closer: (ab.kind === 'dash' && !!ab.dash?.strike) || (ab.lunge ?? 0) >= 1.4,
@@ -124,7 +126,7 @@ export function analyzeKit(f: Fighter): Kit {
   for (const a of info) {
     if (!a.offensive) continue;
     maxReach = Math.max(maxReach, a.maxReach);
-    if (!a.ultimate && !a.ranged && a.ab.kind !== 'dash') meleeReach = Math.max(meleeReach, a.maxReach);
+    if (!a.ultimate && !a.ranged && !a.item && a.ab.kind !== 'dash') meleeReach = Math.max(meleeReach, a.maxReach);
     // Ranged if a repeatable (cheap, short-cooldown) attack works from afar.
     if (a.ranged && !a.ultimate && a.ab.cooldown <= 1.5) ranged = true;
     if (a.ab.stun || a.ab.applies?.some((s) => STATUS_FX[s.status]?.cc)) hasStun = true;
@@ -259,8 +261,9 @@ export function analyzeMatchup(f: Fighter, fk: Kit, e: Fighter, ek: Kit, caution
   let myClose = 0, myFar = 0, theirClose = 0, theirFar = 0;
   const w = 0.55 + caution * 0.6;
   // Kiting only works if they can't simply walk me down.
+  // A gale bell blows them back out every time they make it in.
   const kiteEff = clamp(f.stats.moveSpeed / Math.max(0.1, e.stats.moveSpeed), 0.55, 1.2)
-    * (ek.info.some((a) => a.closer && a.offensive) ? 0.85 : 1);
+    * (ek.info.some((a) => a.closer && a.offensive) ? 0.85 : 1) * (fk.info.some((a) => a.ab.kind === 'repel') ? 1.15 : 1);
   for (let d = 1.1; d <= 8.6; d += 0.25) {
     // Keep a margin so a small step back by them doesn't turn hits into whiffs.
     const mine = dpsAt(f, fk, e, d <= 3.2 ? d + 0.25 : d);
@@ -289,7 +292,7 @@ export function analyzeMatchup(f: Fighter, fk: Kit, e: Fighter, ek: Kit, caution
 export function liveReach(e: Fighter, ek: Kit, within: number): number {
   let r = 0;
   for (const a of ek.info) {
-    if (!a.offensive || a.ranged || a.ultimate) continue;
+    if (!a.offensive || a.ranged || a.ultimate || a.item) continue;
     if (e.cooldowns[a.idx] <= within && e.energy >= a.ab.cost) r = Math.max(r, a.maxReach);
   }
   return r || ek.meleeReach;

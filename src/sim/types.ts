@@ -28,7 +28,8 @@ export type SecondaryId =
 export type SpecialId =
   | 'meteor_sigil' | 'phantom_blade' | 'wisp_lantern' | 'phoenix_feather' | 'echo_stone'
   | 'vampiric_fang' | 'ember_core' | 'frost_core'
-  | 'thunder_totem' | 'hourglass' | 'ward_stone' | 'hunter_hawk' | 'dragon_whelp';
+  | 'thunder_totem' | 'hourglass' | 'ward_stone' | 'hunter_hawk' | 'dragon_whelp'
+  | 'gale_bell';
 export type HeadId =
   | 'berserker_mask' | 'iron_helm' | 'chrono_circlet' | 'executioner_hood' | 'storm_crown' | 'duelist_band'
   | 'seer_blindfold' | 'dread_helm' | 'hawkeye_hood' | 'gladiator_helm';
@@ -143,7 +144,9 @@ export type AbilityKind =
   /** Trade places with the enemy. */
   | 'swap'
   /** The special item plants a totem that strikes anyone in its circle. */
-  | 'totem';
+  | 'totem'
+  /** The special item blasts a shockwave around its owner that hurls the enemy far away. */
+  | 'repel';
 
 export interface AbilityDef {
   id: string;
@@ -386,7 +389,7 @@ export type BattleEvent =
   | { type: 'revive'; f: FighterId }
   | { type: 'lightning'; f: FighterId; x: number }
   | { type: 'reflect'; f: FighterId; x: number; y: number }
-  | { type: 'shockwave'; x: number; radius: number; f: FighterId; style: 'slam' | 'nova' | 'meteor' | 'whirl' | 'flask' | 'frost' | 'smoke' | 'stomp' | 'thunder' }
+  | { type: 'shockwave'; x: number; radius: number; f: FighterId; style: 'slam' | 'nova' | 'meteor' | 'whirl' | 'flask' | 'frost' | 'smoke' | 'stomp' | 'thunder' | 'gale' }
   /** A zone appeared (totem planted, caltrops scattered). */
   | { type: 'zone'; f: FighterId; kind: ZoneKind; x: number; radius: number }
   /** A totem strikes the enemy standing in its circle. */

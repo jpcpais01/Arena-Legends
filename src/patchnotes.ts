@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.74.0',
+    date: '2026-10-11',
+    title: 'New special item: the Gale Bell',
+    notes: [
+      'New special item, the Gale Bell: a bronze bell that floats at your shoulder. When the enemy gets close it tolls, and a gale bursts out around you that hurls them far away, stuns them for a moment and breaks off whatever attack they were winding up. It rings again after 20 seconds.',
+      'Made for archers and casters who want their distance back, and it also gives +8% move speed. Thrown into a wall, the enemy splats against it for extra damage.',
+      "Watch the wind rune on the bell: it glows when the bell is ready and goes dark while it recharges. A quick dodge can slip through the gale if you see the bell start to swing.",
+      'Fighters know how to use it: they ring it when you are mid-swing, stuck, or out of dodges, and they are careful about stepping into a ready bell themselves.',
+    ],
+  },
+  {
     version: '0.73.0',
     date: '2026-10-11',
     title: 'New home menu',
