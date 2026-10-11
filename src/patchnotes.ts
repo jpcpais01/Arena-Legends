@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.71.0',
+    date: '2026-10-11',
+    title: 'Cup champion spotlight',
+    notes: [
+      'When an Arena Cup ends, its winner now takes the stage: the full fighter on a pedestal under the trophy, with their level, all their gear and every stat.',
+      'Below them is the road to the cup: who they beat in each round and how much health they kept, by K.O. or on time.',
+      'It shows for any winner, whether that is you, a friend or a challenger. If you went out early, tap See who wins to watch it.',
+    ],
+  },
+  {
     version: '0.70.2',
     date: '2026-10-11',
     title: 'Easy install',
