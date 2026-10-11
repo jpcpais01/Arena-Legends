@@ -333,7 +333,11 @@ export function iconFrame(id: GearId, skin?: string | null): Frame {
   } else {
     // Armour: drawn on an invisible body, so only the piece itself shows.
     const gear = { main: 'dagger', [def.slot]: id } as unknown as GearSet;
-    let art = makeArt({ name: '', form: 'balanced', gear, look: { ...DEFAULT_LOOK, species: 'golem', outfit: 7 }, skins: skin ? { [id]: skin } : {} });
+    // A piece made of bare skin (a bald dome, muscles) shows on a human with warm brown skin rather than a golem.
+    const sa = skin ? SKIN_ART[skin] : undefined;
+    const flesh = !!sa && [...Object.keys(sa.mats ?? {}), ...Object.keys(sa.head?.().mats ?? {})].some((k) => k.startsWith('flesh.'));
+    const look = flesh ? { ...DEFAULT_LOOK, species: 'human' as const, skin: 2, outfit: 7 } : { ...DEFAULT_LOOK, species: 'golem' as const, outfit: 7 };
+    let art = makeArt({ name: '', form: 'balanced', gear, look, skins: skin ? { [id]: skin } : {} });
     // A cloak worn over the tunic: its cloth wraps the torso too, so the icon reads as one garment.
     const { torso, sleeve } = art.chest;
     const wrap = def.slot === 'chest' && torso === 'outfit' && !!sleeve && sleeve !== 'outfit';

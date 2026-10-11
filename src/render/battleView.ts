@@ -22,7 +22,7 @@ import {
   totemSprite, totemTop, wardSprite, whelpSprite, type HawkPose, type PatchLook,
   type BellState,
 } from './specialArt';
-import { bottleSprite, isUsableShot, projFrames, projSprite, skinDraws, skinTints } from './projArt';
+import { bottleSprite, isUsableShot, projFrames, projSprite, projTimed, skinDraws, skinTints } from './projArt';
 import { drawSetAura, SET_FX } from './setAura';
 import type { Screen } from './screen';
 import { clipLength } from './sprite/anims';
@@ -34,7 +34,7 @@ import { isSuper, skinColours, superLook, type SuperLook } from './supers';
 import { superImpactFx, superRelease as superReleaseFx, superWindup, type SuperHost } from './superFx';
 import { GlFx, type Light } from './glfx';
 import { SoftLights } from './softLight';
-import { METEOR_GLOW, meteorImpact, meteorMark, meteorStyle, meteorTrail, type ImpactCues } from './meteorFx';
+import { METEOR_GLOW, meteorImpact, meteorLaunch, meteorMark, meteorStyle, meteorTrail, type ImpactCues } from './meteorFx';
 
 const STYLE_COLOR: Record<ProjectileStyle, number> = {
   arcane: 0xc58cff, hex: 0xa04aff, wave: 0xd8f4ff, groundwave: 0xc8a070, meteor: 0xff7a1a, arrow: 0xf0e0c0,
@@ -903,7 +903,9 @@ export class BattleView implements View {
     if (!alive) return;
     if (f.has.has('ward_stone')) this.drawWard(g, f, v, px, py, false);
     // An epic core floats at the far shoulder, bobbing.
-    if (skinDraws('core', v.art.specialSkinId)) {
+    // (A core that is also the meteor's sigil rises over the head while the meteor is called.)
+    const calling = f.item?.phase === 'windup' && f.abilities[f.item.ability].kind === 'meteor' && skinDraws('sigil', v.art.specialSkinId);
+    if (skinDraws('core', v.art.specialSkinId) && !calling) {
       const s = projSprite('core', Math.floor(this.time * 6), 0, v.art.specialSkinId);
       const cx = Math.round(this.sx(x - f.facing * 0.42)), cy = Math.round(this.sy(y + 1.75) + Math.sin(this.time * 2.4) * 1.5);
       blit(g, s, cx, cy, f.facing < 0);
@@ -1367,7 +1369,10 @@ export class BattleView implements View {
     const ab = f.abilities[it.ability];
     if (ab.kind === 'meteor') {
       if (it.phase !== 'windup') return;
-      const s = projSprite('sigil', Math.floor(this.time * 10), 0, this.fighters[f.id]?.art.specialSkinId);
+      const skin = this.fighters[f.id]?.art.specialSkinId;
+      // A timed sigil plays out once over the windup (the Rock's pot boils, rocks back and is thrown).
+      const frame = projTimed('sigil', skin) ? Math.floor(Math.min(0.999, it.t / ab.windup) * projFrames('sigil', skin)) : Math.floor(this.time * 10);
+      const s = projSprite('sigil', frame, 0, skin);
       const x = Math.round(this.sx(this.lx(f))), y = Math.round(this.sy(this.ly(f) + SIGIL_Y));
       blit(g, s, x, y, f.facing < 0);
       // A legendary sigil sheds its own sparkles (petals, drops...) while it calls the meteor.
@@ -1440,8 +1445,9 @@ export class BattleView implements View {
       const c = this.glow(p.owner, METEOR_GLOW[0], METEOR_GLOW[1]);
       // From the sigil, which turns over the caster's head.
       const ox = this.lx(owner), oy = this.ly(owner) + SIGIL_Y;
-      this.fx.pulse('pillar', ox, oy, 0.22, c[0], 0.35);
-      this.fx.burst({ x: ox, y: oy, count: 14, speed: [2, 5], life: [0.25, 0.5], color: 0xffffff, color2: c[0], drag: 2, kind: 'twinkle' });
+      const style = meteorStyle(this.fighters[p.owner]?.art.specialSkinId);
+      meteorLaunch(this.fx, style, ox, oy, c[0], owner.facing);
+      if (style === 'soup') this.play('splash', this.pan(ox), 0.7);
       this.play('entFall', this.pan(p.targetX), 0.9);
     }
     if (p.style === 'breath' && !this.heard.has(p.id)) {

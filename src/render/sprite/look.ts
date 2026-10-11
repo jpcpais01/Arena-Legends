@@ -58,6 +58,8 @@ export interface CharacterArt {
   headDraw: HeadDraw | null;
   /** Reshaped hood or mask that shows the face. */
   headFace: boolean;
+  /** Reshaped headgear that leaves the head bald (no hair drawn). */
+  headBald?: boolean;
   /** The epic set worn in full, if any (its aura plays around the fighter). */
   set: SkinSetId | null;
 }
@@ -236,7 +238,7 @@ function nightAccents(
   const tierOf = (id: GearId | null | undefined) => (id ? skinOn(skins, id)?.rarity ?? 'stock' : null);
   const headTier = tierOf(build.gear.head);
   for (const k of Object.keys(mats)) {
-    if (BODY_KEYS.has(k)) continue;
+    if (BODY_KEYS.has(k) || k.startsWith('flesh.')) continue;
     let best = -1;
     for (const [id, has] of slots) {
       const t = tierOf(id);
@@ -373,6 +375,7 @@ export function makeArt(build: CharacterBuild): CharacterArt {
   // Armour skins recolour the body's armour materials; reshaped headgear brings its own.
   let headDraw: HeadDraw | null = null;
   let headFace = false;
+  let headBald = false;
   let headMats: string[] = [];
   // Second-wave stock pieces bring their own materials.
   for (const slot of ['head', 'chest', 'legs', 'boots'] as const) {
@@ -392,6 +395,7 @@ export function makeArt(build: CharacterBuild): CharacterArt {
       headMats = Object.keys(hs.mats);
       headDraw = hs.draw;
       headFace = !!hs.face;
+      headBald = !!hs.bald;
     }
   }
   // Special item skins only recolour what the body wears of them (feather, fang).
@@ -402,6 +406,9 @@ export function makeArt(build: CharacterBuild): CharacterArt {
   }
   // A reshaped plume brings its own materials (named `p.*`).
   if (specialSkin?.plume) for (const [k, spec] of Object.entries(specialSkin.mats ?? {})) if (k.startsWith('p.')) mats[k] = material(spec);
+  // Skin materials named `flesh.*` are the wearer's own skin (`flesh.dark` its shade), kept apart from the body's so the
+  // piece's icon shows them (a bald dome, muscles).
+  for (const k of Object.keys(mats)) if (k.startsWith('flesh.')) mats[k] = material({ base: k === 'flesh.dark' ? shade(skin, -0.22, 0.04) : skin, step: 0.11 });
   const chest = { ...tunicFor(build.gear.chest), ...worn.chest?.chest };
   const legs = { ...legsFor(build.gear.legs), ...worn.legs?.legs };
   const boots = { ...bootsFor(build.gear.boots), ...worn.boots?.boots };
@@ -428,7 +435,7 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     legs,
     boots,
     useId, use, useSkin, useSkinId,
-    skins, mainSkin, secSkin, headDraw, headFace,
+    skins, mainSkin, secSkin, headDraw, headFace, headBald,
     headSkin: worn.head, chestSkin: worn.chest, legsSkin: worn.legs, bootsSkin: worn.boots,
     specialSkin, specialSkinId,
     set: fullSet(build.gear, skins),

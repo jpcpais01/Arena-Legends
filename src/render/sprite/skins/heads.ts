@@ -16,6 +16,8 @@ export interface HeadSkin {
   draw: HeadDraw;
   /** A hood or mask that leaves the face open: the wearer's eyes are drawn as usual. */
   face?: boolean;
+  /** A bald head: no hair is drawn at all, front or back (nor a myco cap or golem crystals). */
+  bald?: boolean;
 }
 
 export function hornedWarhelm(): HeadSkin {
