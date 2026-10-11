@@ -1,0 +1,397 @@
+/*
+ * Hero creator (ui/creator.ts): a dressing room. Chapters run along the top,
+ * the hero stands in their own portrait card on the left (backdrop, dais,
+ * nameplate), the chapter's picks fill the framed panel on the right.
+ * Looping animations are transform/opacity only; no blur over the game.
+ */
+.scr.hc {
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.28fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: "tabs tabs" "stage panel";
+  background:
+    radial-gradient(ellipse 40% 70% at 22% 60%, rgba(120, 80, 190, 0.32), transparent 72%),
+    linear-gradient(180deg, rgba(14, 9, 26, 0.9), rgba(8, 5, 15, 0.96));
+}
+
+/* --- Chapter tabs ---------------------------------------------------------------------------- */
+.hc-tabs { grid-area: tabs; display: flex; align-items: stretch; gap: calc(var(--px) * 2); padding: var(--safe-t) var(--safe-r) 0.45rem var(--safe-l); min-width: 0; }
+.hc-tab {
+  --c: calc(var(--px) * 2);
+  position: relative; flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  height: 2.6rem; padding: 0 0.45rem calc(var(--px) * 2);
+  color: var(--muted); background: #1f1734; border: var(--px) solid var(--ink); cursor: pointer;
+  box-shadow: inset 0 var(--px) 0 #3d3063, inset 0 calc(var(--px) * -2) 0 #120c20;
+  font: 700 0.8125rem/1 var(--font); letter-spacing: 0.07em; text-transform: uppercase; text-shadow: 0 var(--px) 0 var(--ink);
+  clip-path: polygon(var(--c) 0, calc(100% - var(--c)) 0, 100% var(--c), 100% 100%, 0 100%, 0 var(--c));
+  transition: filter 90ms, transform 90ms;
+}
+.hc-tab i { display: grid; place-items: center; flex: none; font-style: normal; }
+.hc-tab i svg { width: 1rem; height: 1rem; }
+.hc-tab span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hc-tab:hover:not(:disabled) { filter: brightness(1.2); }
+.hc-tab.done { color: var(--text); }
+.hc-tab.done i { color: var(--gold); }
+.hc-tab.on {
+  color: var(--gold-ink); background: var(--gold); text-shadow: 0 var(--px) 0 rgba(255, 240, 190, 0.6);
+  box-shadow: inset 0 var(--px) 0 var(--gold-hi), inset 0 calc(var(--px) * -2) 0 var(--gold-lo);
+  transform: translateY(calc(var(--px) * 1));
+}
+.hc-tab.locked { cursor: default; opacity: 0.5; background: #160f26; }
+.hc-tab.locked span { color: var(--dim); }
+.hc-close { flex: none; align-self: center; margin-left: calc(var(--px) * 2); }
+
+/* --- Stage: the hero's portrait card --------------------------------------------------------- */
+.hc-stage { grid-area: stage; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 0.45rem; min-height: 0; min-width: 0; padding: 0.15rem 0.35rem var(--safe-b) var(--safe-l); }
+.hc-scene {
+  position: relative; min-height: 0; overflow: hidden; display: grid; grid-template-rows: minmax(0, 1fr) auto;
+  border: calc(var(--px) * 7) solid transparent; border-image: var(--frame-gold) 7 / calc(var(--px) * 7) stretch; image-rendering: pixelated;
+  background: #0b0816; background-clip: padding-box;
+}
+/* The hero's own backdrop fills the card, dimmed so they stand out, with a soft spotlight and floor glow. */
+.hc-sky { position: absolute; inset: 0; transition: opacity 200ms; }
+.hc-shade {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 48% 34% at 50% 80%, rgba(255, 214, 140, 0.22), transparent 72%),
+    linear-gradient(180deg, rgba(10, 6, 18, 0.25), rgba(10, 6, 18, 0.05) 40%, rgba(10, 6, 18, 0.55) 85%, rgba(10, 6, 18, 0.85));
+}
+.hc-rays {
+  position: absolute; left: 50%; top: -10%; bottom: 3rem; width: 80%; transform: translateX(-50%); pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 236, 170, 0), rgba(255, 228, 160, 0.13) 75%, rgba(255, 228, 160, 0.2));
+  clip-path: polygon(40% 0, 60% 0, 100% 100%, 0 100%);
+  animation: hc-sway 5s ease-in-out infinite alternate;
+}
+@keyframes hc-sway { from { transform: translateX(-52%); } to { transform: translateX(-48%); } }
+.hc-box { position: relative; display: grid; place-items: end center; min-height: 0; overflow: hidden; }
+.hc-box canvas { position: relative; cursor: pointer; transform-origin: 50% 26%; transition: transform 320ms cubic-bezier(.3, .7, .3, 1); }
+/* Styling the face: the camera leans in on the head (a whole 2x keeps pixels square). */
+.hc-scene.zoom .hc-box canvas { transform: translateY(18%) scale(2); }
+.hc-scene .arrow { position: absolute; top: 44%; z-index: 2; width: 2.5rem; height: 2.5rem; }
+.hc-scene .arrow.l { left: calc(var(--px) * 3); animation: nudge-l 1.4s steps(2) infinite; }
+.hc-scene .arrow.r { right: calc(var(--px) * 3); animation: nudge-r 1.4s steps(2) infinite; }
+.hc-scene .arrow:hover, .hc-scene .arrow:active { animation: none; }
+.hc-tools { position: absolute; top: calc(var(--px) * 2); right: calc(var(--px) * 2); z-index: 2; display: grid; gap: calc(var(--px) * 2); }
+.hc-tool { --face: rgba(36, 26, 64, 0.88); }
+
+/* Nameplate across the bottom of the card: the name in the display face, tags under it. */
+.hc-plate {
+  position: relative; z-index: 1; display: grid; justify-items: center; gap: calc(var(--px) * 2);
+  padding: calc(var(--px) * 3) 0.6rem calc(var(--px) * 4);
+  background: linear-gradient(180deg, rgba(10, 6, 18, 0.3), rgba(10, 6, 18, 0.88) 45%);
+  border-top: var(--px) solid rgba(242, 181, 66, 0.35);
+}
+.hc-pname {
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 700 1.55rem/1 var(--font-pixel); letter-spacing: 0.04em; color: var(--gold-hi);
+  text-shadow: 0 var(--px) 0 var(--ink), var(--px) 0 0 var(--ink), calc(var(--px) * -1) 0 0 var(--ink), 0 calc(var(--px) * 2) 0 var(--gold-lo);
+  padding: 0 var(--px) calc(var(--px) * 2);
+}
+.hc-pname.empty { color: var(--dim); text-shadow: 0 var(--px) 0 var(--ink); }
+.hc-ptags { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(var(--px) * 2); }
+.hc-ptags span { display: inline-flex; align-items: center; gap: 0.3em; }
+.hc-ptags span .ic { width: 0.9em; height: 0.9em; }
+.hc-ptags span, .hc-chips span {
+  --c: var(--px);
+  padding: calc(var(--px) * 1) 0.45rem calc(var(--px) * 1.5); font: 700 0.6875rem/1.1 var(--font); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--tc); background: rgba(10, 6, 18, 0.75); border: var(--px) solid var(--ink); box-shadow: inset 0 0 0 var(--px) color-mix(in srgb, var(--tc) 40%, transparent);
+  clip-path: polygon(var(--c) 0, calc(100% - var(--c)) 0, 100% var(--c), 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, var(--c) 100%, 0 calc(100% - var(--c)), 0 var(--c));
+}
+
+/* Speech bubble over the hero's head. */
+.hc-bubble {
+  position: absolute; z-index: 3; left: 50%; top: 7%; max-width: min(88%, 17rem); pointer-events: none;
+  padding: calc(var(--px) * 2) 0.6rem calc(var(--px) * 3);
+  font: 700 0.875rem/1.2 var(--font); color: var(--gold-ink); text-align: center;
+  background: #fff3d6; border: var(--px) solid var(--ink); box-shadow: inset 0 calc(var(--px) * -2) 0 #e2c58e, 0 calc(var(--px) * 2) 0 rgba(10, 6, 18, 0.5);
+  opacity: 0; transform: translate(-50%, 0.4rem) scale(0.8);
+  transition: opacity 160ms, transform 160ms;
+}
+.hc-bubble::after {
+  content: ''; position: absolute; left: 50%; bottom: calc(var(--px) * -5); width: calc(var(--px) * 5); height: calc(var(--px) * 5);
+  transform: translateX(-60%); background: #e2c58e; clip-path: polygon(0 0, 100% 0, 20% 100%);
+}
+.hc-bubble.pop { opacity: 1; transform: translate(-50%, 0) scale(1); transition: opacity 120ms, transform 200ms cubic-bezier(.2, 1.6, .4, 1); }
+.hc-bubble:empty { display: none; }
+
+/* A ring of pixel sparks off the hero on every pick. */
+.hc-burst { position: absolute; z-index: 2; left: 50%; top: 52%; width: 0; height: 0; pointer-events: none; color: var(--bc, var(--gold-hi)); }
+.hc-burst::before, .hc-burst::after {
+  content: ''; position: absolute; left: calc(var(--px) * -1.5); top: calc(var(--px) * -1.5); width: calc(var(--px) * 3); height: calc(var(--px) * 3); opacity: 0;
+  box-shadow:
+    0 -2.6rem 0 currentColor, 1.85rem -1.85rem 0 currentColor, 2.6rem 0 0 currentColor, 1.85rem 1.85rem 0 currentColor,
+    0 2.6rem 0 currentColor, -1.85rem 1.85rem 0 currentColor, -2.6rem 0 0 currentColor, -1.85rem -1.85rem 0 currentColor;
+}
+.hc-burst::after { transform: rotate(22deg); box-shadow:
+    0 -1.9rem 0 #fff, 1.35rem -1.35rem 0 #fff, 1.9rem 0 0 #fff, 1.35rem 1.35rem 0 #fff,
+    0 1.9rem 0 #fff, -1.35rem 1.35rem 0 #fff, -1.9rem 0 0 #fff, -1.35rem -1.35rem 0 #fff; }
+.hc-burst.go::before { animation: hc-burst 520ms steps(6) forwards; }
+.hc-burst.go::after { animation: hc-burst2 420ms steps(5) forwards; }
+@keyframes hc-burst { 0% { opacity: 1; transform: scale(0.35); } 70% { opacity: 1; } 100% { opacity: 0; transform: scale(1.5); } }
+@keyframes hc-burst2 { 0% { opacity: 1; transform: rotate(22deg) scale(0.3); } 100% { opacity: 0; transform: rotate(22deg) scale(1.25); } }
+
+/* Back, Save, Next under the card. */
+.hc-nav { display: flex; gap: 0.45rem; }
+.hc-nav .btn { min-height: 3rem; }
+.hc-nav .btn.back, .hc-nav .btn.save { flex: none; min-width: 3rem; padding-left: 0.6rem; padding-right: 0.6rem; }
+.hc-nav .btn.save .lbl { display: none; }
+.hc-nav .btn.next { flex: 1; font-size: 1.1rem; }
+.hc-nav .btn.next small { font: 600 0.6875rem/1 var(--font); letter-spacing: 0.06em; opacity: 0.7; }
+
+/* --- Panel ----------------------------------------------------------------------------------- */
+.hc-panel {
+  grid-area: panel; min-height: 0; min-width: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden;
+  margin: 0 var(--safe-r) var(--safe-b) 0.2rem; padding: 0.45rem 0.3rem 0.45rem 0.5rem; container-type: inline-size;
+}
+.hc-head { display: grid; gap: 4px; margin-bottom: 0.35rem; }
+.hc-head p { font-size: 0.8125rem; color: var(--muted); padding-left: 0.4rem; }
+.hc-title { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.hc-title .ribbon { flex: 0 1 auto; min-width: 0; margin-left: calc(var(--px) * 7); }
+.hc-title .btn { flex: none; margin-left: auto; margin-right: calc(var(--px) * 2); }
+.hc-kicker { display: flex; align-items: center; gap: 0.35rem; flex: none; color: var(--gold); }
+.hc-kicker i {
+  display: grid; place-items: center; width: 2.1rem; height: 2.1rem; font-style: normal; color: var(--gold-ink);
+  background: var(--gold); border: var(--px) solid var(--ink); box-shadow: inset 0 var(--px) 0 var(--gold-hi), inset 0 calc(var(--px) * -2) 0 var(--gold-lo);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.hc-kicker i svg { width: 0.95rem; height: 0.95rem; }
+.hc-kicker small { display: none; font: 700 0.625rem/1 var(--font); letter-spacing: 0.12em; text-transform: uppercase; }
+.hc-body { overflow: auto; min-height: 0; overscroll-behavior: contain; padding: calc(var(--px) * 4) calc(var(--px) * 4) 0.5rem; scrollbar-width: thin; scrollbar-color: var(--gold-lo) transparent; }
+.hc-panel.in-r .hc-body { animation: step-in-r 240ms ease-out; }
+.hc-panel.in-l .hc-body { animation: step-in-l 240ms ease-out; }
+
+/* Pick cards: art with a glow in the option's own colour, the name on a strip under it. */
+.hc-grid { display: grid; grid-template-columns: repeat(var(--cols, 6), minmax(0, 1fr)); gap: 8px; }
+.hc-grid.forms { --cols: var(--n, 6); }
+.hc-grid.styles { --cols: 5; }
+.hc-grid.entrances { --cols: 6; }
+.hc-grid.scenes { --cols: 6; }
+.hc-grid.hairs { --cols: 3; max-width: 26rem; }
+.hc-card {
+  position: relative; display: grid; grid-template-rows: auto auto; justify-items: center; padding: 0; min-width: 0;
+  background: #241b3b; border: var(--px) solid var(--ink); cursor: pointer; text-align: center;
+  box-shadow: inset 0 var(--px) 0 #4a3b72, inset 0 calc(var(--px) * -2) 0 #120c20;
+  transition: transform 90ms, filter 90ms;
+}
+.hc-card:hover { filter: brightness(1.15); transform: translateY(calc(var(--px) * -1)); }
+.hc-card:focus-visible { outline: var(--px) solid var(--gold-hi); outline-offset: var(--px); }
+.hc-card > .portrait, .hc-card > .hc-glyph, .hc-card > .hc-scene-art {
+  position: relative; display: grid; place-items: end center; width: 100%; overflow: hidden; border-bottom: var(--px) solid var(--ink);
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 100%, color-mix(in srgb, var(--tint) 38%, transparent), transparent 72%),
+    linear-gradient(180deg, #0b0816, color-mix(in srgb, var(--tint) 14%, #150f26));
+}
+.hc-card > .portrait { aspect-ratio: 44 / 60; }
+.hc-card > .portrait.bust { aspect-ratio: 30 / 26; }
+.hc-card > .hc-glyph { aspect-ratio: 1 / 0.8; place-items: center; }
+.hc-glyph .ic { width: 50%; height: 62%; filter: drop-shadow(0 var(--px) 0 var(--ink)) drop-shadow(0 calc(var(--px) * -1) 0 var(--ink)); }
+.hc-card > .hc-scene-art { aspect-ratio: 60 / 48; }
+.hc-card b { display: block; width: 100%; padding: 0.3rem 0.2rem 0.32rem; font: 700 0.8125rem/1 var(--font); text-shadow: 0 var(--px) 0 var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hc-card small { display: inline-flex; align-items: center; justify-content: center; gap: 2px; padding: 0 0.2rem 0.35rem; margin-top: -0.15rem; font: 600 0.625rem/1 var(--font); color: var(--muted); }
+.hc-card small .ic { width: 0.75em; height: 0.75em; }
+.hc-card.on { background: #4a3410; box-shadow: inset 0 0 0 var(--px) var(--gold), inset 0 calc(var(--px) * -2) 0 var(--gold-lo); transform: translateY(calc(var(--px) * -1)); }
+.hc-card.on > .portrait, .hc-card.on > .hc-glyph {
+  background:
+    radial-gradient(ellipse 75% 50% at 50% 100%, color-mix(in srgb, var(--tint) 65%, transparent), transparent 74%),
+    linear-gradient(180deg, #120b14, color-mix(in srgb, var(--tint) 30%, #1a1220));
+}
+.hc-card.on b { color: var(--gold-hi); }
+.hc-card.on::before {
+  content: ''; position: absolute; z-index: 2; inset: calc(var(--px) * -4); pointer-events: none;
+  border: calc(var(--px) * 7) solid transparent; border-image: var(--frame-cursor) 7 / calc(var(--px) * 7) stretch; image-rendering: pixelated;
+  animation: cursor 0.9s steps(2) infinite;
+}
+.hc-card.ent.r-rare small { color: var(--rare); } .hc-card.ent.r-mythic small { color: var(--mythic); } .hc-card.ent.r-legendary small { color: var(--legendary); }
+.hc-card.ent.locked .hc-glyph .ic { opacity: 0.45; }
+.hc-card.ent.locked small { color: var(--muted); }
+.hc-card.ent.peek:not(.on) { outline: var(--px) dashed var(--tint); outline-offset: calc(var(--px) * -3); }
+
+/* Info strip under a grid: big name in the option's colour, then text, chips or bars. */
+.hc-info {
+  display: grid; gap: 5px; margin-top: 10px; padding: 0.45rem 0.65rem 0.55rem;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tint) 16%, rgba(10, 6, 18, 0.6)), rgba(10, 6, 18, 0.45) 60%);
+  border: var(--px) solid var(--ink); box-shadow: inset calc(var(--px) * 2) 0 0 var(--tint), inset 0 0 0 var(--px) var(--line);
+  animation: hc-info-in 200ms ease-out;
+}
+@keyframes hc-info-in { from { opacity: 0.4; transform: translateY(calc(var(--px) * 2)); } }
+.hc-info-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.hc-info-head b { font: 700 1.3rem/1 var(--font-pixel); color: var(--tint); text-shadow: 0 var(--px) 0 var(--ink), var(--px) 0 0 var(--ink), calc(var(--px) * -1) 0 0 var(--ink), 0 calc(var(--px) * 2) 0 var(--ink); padding-bottom: calc(var(--px) * 2); }
+.hc-info-head span { font-size: 0.8125rem; color: var(--muted); }
+.hc-info p { font-size: 0.8125rem; line-height: 1.35; }
+.hc-info p.hc-cry { font: 700 0.9375rem/1.25 var(--font); font-style: italic; color: var(--text); }
+.hc-chips { display: flex; flex-wrap: wrap; align-items: center; gap: calc(var(--px) * 2); }
+.hc-chips small { font: 700 0.625rem/1 var(--font); color: var(--gold); text-transform: uppercase; letter-spacing: 0.12em; margin-right: 2px; }
+
+/* Look: what to style on the left, its options on the right. */
+.hc-look { display: grid; grid-template-columns: minmax(8.5rem, 0.8fr) minmax(0, 1.6fr); gap: 12px; align-items: start; }
+.hc-cats { display: grid; gap: calc(var(--px) * 2); }
+.hc-cat {
+  --c: var(--px);
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 2.45rem; padding: 0 0.5rem 0 0.65rem;
+  background: #221a38; border: var(--px) solid var(--ink); cursor: pointer; text-align: left;
+  box-shadow: inset 0 var(--px) 0 #3d3063, inset 0 calc(var(--px) * -2) 0 #120c20;
+  font: 700 0.8125rem/1 var(--font); letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted);
+  clip-path: polygon(var(--c) 0, calc(100% - var(--c)) 0, 100% var(--c), 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, var(--c) 100%, 0 calc(100% - var(--c)), 0 var(--c));
+  transition: filter 80ms;
+}
+.hc-cat:hover { filter: brightness(1.18); }
+.hc-cat em { font-style: normal; font-size: 0.6875rem; color: var(--gold-hi); }
+.hc-cat.on { color: var(--gold-hi); background: #3d2b10; box-shadow: inset 0 0 0 var(--px) var(--gold), inset 0 calc(var(--px) * -2) 0 var(--gold-lo), inset calc(var(--px) * 3) 0 0 var(--gold); }
+.hc-chip { flex: none; width: 1.25rem; height: 1.25rem; background: var(--sw); border: var(--px) solid var(--ink); box-shadow: inset var(--px) var(--px) 0 rgba(255, 255, 255, 0.35), inset calc(var(--px) * -1) calc(var(--px) * -1) 0 rgba(0, 0, 0, 0.35); }
+.hc-pane { min-width: 0; padding-top: calc(var(--px) * 1); }
+.hc-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(3.3rem, 1fr)); gap: 10px; max-width: 26rem; }
+.swatch.hc-sw { width: auto; height: auto; aspect-ratio: 1; }
+.swatch.hc-sw.on { outline-width: calc(var(--px) * 1); outline-offset: calc(var(--px) * 1); box-shadow: inset var(--px) var(--px) 0 rgba(255, 255, 255, 0.35), inset calc(var(--px) * -1) calc(var(--px) * -2) 0 rgba(0, 0, 0, 0.35), 0 0 0 calc(var(--px) * 3) var(--ink); }
+
+/* Name: the name on a big banner, the crowd button and a summary of the hero so far. */
+.hc-body[data-step="name"] { display: grid; }
+.hc-name { display: grid; justify-items: center; align-content: center; gap: 0.55rem; min-height: 100%; padding: 0.2rem 0 0.6rem; text-align: center; }
+.hc-banner {
+  width: min(100%, 30rem); padding: calc(var(--px) * 3);
+  background: linear-gradient(var(--ribbon-hi) 0 var(--px), var(--ribbon) var(--px) calc(100% - var(--px) * 2), var(--ribbon-lo) calc(100% - var(--px) * 2));
+  border: var(--px) solid var(--ink); box-shadow: 0 calc(var(--px) * 2) 0 rgba(10, 6, 18, 0.55);
+  position: relative;
+}
+.hc-banner::before, .hc-banner::after {
+  content: ''; position: absolute; top: calc(var(--px) * 4); bottom: calc(var(--px) * -4); width: calc(var(--px) * 10); z-index: -1;
+  background: linear-gradient(#7a1830, #4e0e1e); border: var(--px) solid var(--ink);
+}
+.hc-banner::before { left: calc(var(--px) * -8); clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 45% 50%); }
+.hc-banner::after { right: calc(var(--px) * -8); clip-path: polygon(0 0, 100% 0, 55% 50%, 100% 100%, 0 100%); }
+.hc-banner-in { display: flex; align-items: center; gap: 6px; }
+.hc-name { isolation: isolate; }
+input.hc-name-in { height: 3.3rem; font-size: 1.75rem; text-align: center; }
+.hc-banner .btn.dice { min-height: 3.3rem; min-width: 3.3rem; }
+.hc-hint { font-size: 0.75rem; color: var(--muted); }
+.hc-facts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 0.2rem; }
+.hc-facts span { display: grid; gap: 4px; min-width: 6.5rem; padding: 0.4rem 0.7rem 0.5rem; background: rgba(0, 0, 0, 0.3); border: var(--px) solid var(--ink); box-shadow: inset 0 0 0 var(--px) var(--line); }
+.hc-facts small { font: 700 0.5625rem/1 var(--font); color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; }
+.hc-facts b { font: 700 1rem/1 var(--font); color: var(--gold-hi); text-shadow: 0 var(--px) 0 var(--ink); }
+
+/* Stats live in the panel like before (classes in styles.css). */
+
+/* --- The reveal of a brand new hero ---------------------------------------------------------- */
+.hc-finale {
+  position: absolute; inset: 0; z-index: 5; display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: center; gap: 1.5rem;
+  padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l); overflow: hidden;
+  background: radial-gradient(ellipse 60% 70% at 35% 55%, rgba(120, 80, 200, 0.5), transparent 70%), #08050f;
+  animation: fade-in 260ms ease-out;
+}
+.hc-fin-rays {
+  position: absolute; left: 30%; top: 50%; width: 160vmax; height: 160vmax; margin: -80vmax 0 0 -80vmax; pointer-events: none; opacity: 0.5;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 214, 120, 0.16) 0 7deg, transparent 7deg 20deg);
+  animation: hc-spin 30s linear infinite;
+}
+@keyframes hc-spin { to { transform: rotate(360deg); } }
+.hc-fin-card {
+  position: relative; justify-self: end; width: min(100%, 24rem); height: min(78vh, 30rem); padding: 0; overflow: hidden;
+  animation: hc-card-in 520ms cubic-bezier(.2, 1.4, .4, 1) both;
+}
+.hc-fin-sky { position: absolute; inset: 0; }
+.hc-fin-card::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(10, 6, 18, 0.15), transparent 40%, rgba(10, 6, 18, 0.55)); }
+.hc-fin-art { position: absolute; inset: 0 0 4% 0; display: grid; place-items: end center; z-index: 1; }
+@keyframes hc-card-in { from { opacity: 0; transform: translateY(2rem) scale(0.85); } }
+.hc-fin-text { position: relative; display: grid; justify-items: start; gap: 0.7rem; min-width: 0; }
+.hc-fin-rib { margin-left: calc(var(--px) * 7); animation: hc-slide 400ms 300ms ease-out both; }
+.hc-fin-rib span { font-size: 1rem; }
+.hc-fin-name {
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 700 3.2rem/1 var(--font-pixel); letter-spacing: 0.03em; color: var(--gold-hi); padding: 0 calc(var(--px) * 2) calc(var(--px) * 3);
+  text-shadow: var(--outline), 0 calc(var(--px) * 4) 0 var(--gold-lo);
+  animation: hc-slam 420ms 650ms cubic-bezier(.2, 1.5, .4, 1) both;
+}
+@keyframes hc-slam { from { opacity: 0; transform: scale(2.2); } }
+@keyframes hc-slide { from { opacity: 0; transform: translateX(-1.5rem); } }
+.hc-fin-tags { justify-content: flex-start; animation: hc-slide 360ms 900ms ease-out both; }
+.hc-fin-tags span { font-size: 0.8125rem; }
+.hc-fin-cry { font: 700 1.05rem/1.3 var(--font); font-style: italic; color: var(--text); text-shadow: 0 var(--px) 0 var(--ink); animation: hc-slide 360ms 1050ms ease-out both; }
+.hc-fin-go { margin-top: 0.4rem; min-width: 15rem; animation: hc-slide 360ms 1250ms ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hc-rays, .hc-fin-rays, .hc-card.on::before, .hc-scene .arrow { animation: none; }
+  .hc-burst.go::before, .hc-burst.go::after { animation: none; }
+}
+
+/* --- Roomy screens: the step tagline and a bigger card ------------------------------------- */
+@container (min-width: 560px) {
+  .hc-grid.hairs { --cols: 6; max-width: none; }
+}
+@media (min-height: 600px) {
+  .hc-kicker small { display: inline; }
+  .hc-pname { font-size: 2rem; }
+  .hc-ptags span { font-size: 0.75rem; }
+  .hc-grid { gap: 10px; }
+  .hc-grid.scenes, .hc-grid.entrances { --cols: 6; }
+}
+
+/* --- Phones held sideways (the main layout) ------------------------------------------------ */
+@media (orientation: landscape) and (max-height: 560px) {
+  .hc-tabs { padding-top: 6px; padding-bottom: 0.3rem; }
+  .hc-tab { height: 2.2rem; font-size: 0.6875rem; letter-spacing: 0.05em; gap: 0.3rem; padding-left: 0.3rem; padding-right: 0.3rem; }
+  .hc-tab i svg { width: 0.85rem; height: 0.85rem; }
+  .hc-stage { gap: 0.35rem; padding-top: 0; }
+  .hc-nav .btn { min-height: 2.75rem; }
+  .hc-nav .btn.next { font-size: 1rem; }
+  .hc-head p { display: none; }
+  .hc-head { margin-bottom: 0.15rem; }
+  .hc-kicker i { width: 1.8rem; height: 1.8rem; }
+  .hc-panel { padding: 0.35rem 0.2rem 0.3rem 0.35rem; }
+  .hc-pname { font-size: 1.3rem; }
+  .hc-plate { padding-top: calc(var(--px) * 2); padding-bottom: calc(var(--px) * 3); }
+  .hc-ptags span { font-size: 0.5625rem; }
+  .hc-grid { gap: 6px; }
+  .hc-card b { font-size: 0.75rem; padding: 0.22rem 0.15rem 0.26rem; }
+  .hc-card > .portrait { aspect-ratio: 44 / 50; }
+  .hc-grid.entrances .hc-glyph { aspect-ratio: 2 / 1; }
+  .hc-card > .hc-glyph { aspect-ratio: 1 / 0.62; }
+  .hc-info { margin-top: 7px; gap: 3px; padding: 0.3rem 0.5rem 0.4rem; }
+  .hc-info-head b { font-size: 1.05rem; }
+  .hc-info p { font-size: 0.75rem; line-height: 1.3; }
+  .hc-info p.hc-cry { font-size: 0.8125rem; }
+  .hc-info .bars { grid-template-columns: auto minmax(0, 1fr) auto auto minmax(0, 1fr) auto; gap: 3px 8px; margin-top: 2px; }
+  .hc-info .bars span, .hc-info .bars em { font-size: 0.6875rem; }
+  .hc-info .segs { height: 0.6rem; }
+  .hc-look { grid-template-columns: minmax(8rem, 0.75fr) minmax(0, 1.6fr); gap: 10px; }
+  .hc-cat { min-height: 2.15rem; font-size: 0.75rem; }
+  .hc-swatches { grid-template-columns: repeat(auto-fill, minmax(2.9rem, 1fr)); gap: 8px; }
+  .hc-grid.entrances .hc-card b { display: none; }
+  .hc-grid.entrances .hc-card small { margin-top: 0; padding-top: 0.2rem; }
+  input.hc-name-in { height: 2.9rem; font-size: 1.45rem; }
+  .hc-banner .btn.dice { min-height: 2.9rem; min-width: 2.9rem; }
+  .hc-name { gap: 0.4rem; }
+  .hc-facts span { min-width: 5.5rem; padding: 0.3rem 0.55rem 0.4rem; }
+  .hc-bubble { font-size: 0.75rem; }
+  .hc-finale { gap: 1rem; }
+  .hc-fin-card { height: 86vh; width: min(100%, 19rem); }
+  .hc-fin-name { font-size: 2.4rem; }
+  .hc-fin-cry { font-size: 0.875rem; }
+  .hc-fin-go { min-height: 3rem; font-size: 1.1rem; }
+}
+
+/* --- Phones upright: the card on top, chapters scroll sideways ---------------------------- */
+@media (orientation: portrait) and (max-width: 720px), (max-width: 560px) {
+  .scr.hc { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(13rem, 42%) minmax(0, 1fr); grid-template-areas: "tabs" "stage" "panel"; }
+  .hc-tabs { overflow-x: auto; scrollbar-width: none; gap: var(--px); }
+  .hc-tab { flex: 1 0 auto; height: 2.4rem; font-size: 0.6875rem; padding-left: 0.4rem; padding-right: 0.4rem; }
+  .hc-tab:not(.on) span { display: none; }
+  .hc-stage { padding: 0 var(--safe-r) 0.35rem var(--safe-l); }
+  .hc-panel { margin: 0 var(--safe-r) var(--safe-b) var(--safe-l); }
+  .hc-pname { font-size: 1.35rem; }
+  .hc-head p { display: none; }
+  .hc-grid, .hc-grid.forms { --cols: 3; }
+  .hc-grid.species { --cols: 6; gap: 5px; }
+  .hc-grid.species .hc-card b { font-size: 0.6875rem; }
+  .hc-kicker small { display: none; }
+  .hc-title .btn.lucky span { display: none; }
+  input.hc-name-in { font-size: 1.3rem; padding: 0 0.4rem; }
+  .hc-grid.styles { --cols: 3; }
+  .hc-grid.entrances, .hc-grid.scenes { --cols: 4; }
+  .hc-look { grid-template-columns: minmax(0, 1fr); }
+  .hc-cats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .hc-cat { min-height: 2.2rem; font-size: 0.6875rem; padding: 0 0.35rem; }
+  .hc-info .bars { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .hc-finale { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; justify-items: center; gap: 0.8rem; padding-top: 2rem; }
+  .hc-fin-card { justify-self: center; height: 100%; max-height: 26rem; width: min(100%, 20rem); }
+  .hc-fin-text { justify-items: center; text-align: center; padding-bottom: 1rem; }
+  .hc-fin-tags { justify-content: center; }
+  .hc-fin-name { font-size: 2.4rem; }
+}
