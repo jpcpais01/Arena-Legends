@@ -9,7 +9,8 @@ import { Xf } from './xform';
  * +y is the spine side.
  */
 
-export type MainFamily = 'sword' | 'wand' | 'heavy' | 'polearm' | 'staff' | 'bow';
+/** `fist`: worn on both hands (gloves, knuckles, wraps), never put away. */
+export type MainFamily = 'sword' | 'wand' | 'heavy' | 'polearm' | 'staff' | 'bow' | 'fist';
 /** `fist`: worn on the off hand all fight (cestus), never holstered. */
 export type SecFamily = 'shield' | 'parry' | 'buckler' | 'knife' | 'crossbow' | 'chakram' | 'wand' | 'horn' | 'fist';
 

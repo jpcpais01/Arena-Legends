@@ -12,6 +12,18 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.91.0',
+    date: '2026-10-11',
+    title: 'Fight with your fists',
+    notes: [
+      'Three new main weapons with no weapon at all: you fight with your fists, guard up like a boxer, and every punch comes from the hand that throws it.',
+      'Boxing Gloves: the quickest hands and +8% move speed. Jab, cross and a heavy hook land as one string, and the Haymaker stuns and sends them flying.',
+      'Spiked Knuckles: brass-knuckled punches from both hands with +10% crit and +20% crit damage. Pummel is a six-punch rush that leaves them taking 25% more damage.',
+      'Spirit Wraps: a monk\'s bound hands with +20% energy regen. Palm strikes draw out the enemy\'s energy, every third one is a roundhouse kick, and Spirit Palm hurls a glowing hand at them from afar.',
+      'Fists are worn on both hands, so they never need putting away: your off hand still grabs your secondary when you use it, and an Iron Cestus goes on over the off fist.',
+    ],
+  },
+  {
     version: '0.90.1',
     date: '2026-10-11',
     title: 'Specials face the right way',

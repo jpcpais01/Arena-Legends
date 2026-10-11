@@ -20,7 +20,8 @@ export type GearSlot = 'main' | 'secondary' | 'special' | 'usable' | 'head' | 'c
 export type MainWeaponId =
   | 'longsword' | 'katana' | 'mace' | 'dagger' | 'ember_wand'
   | 'warhammer' | 'spear' | 'greataxe' | 'arcane_staff' | 'longbow'
-  | 'chain_sickle' | 'soul_scythe' | 'rapier' | 'storm_rod' | 'halberd' | 'grave_staff';
+  | 'chain_sickle' | 'soul_scythe' | 'rapier' | 'storm_rod' | 'halberd' | 'grave_staff'
+  | 'boxing_gloves' | 'spiked_knuckles' | 'spirit_wraps';
 export type SecondaryId =
   | 'kite_shield' | 'parrying_dagger' | 'buckler' | 'throwing_knives' | 'hand_crossbow'
   | 'wind_chakram' | 'frost_wand' | 'war_horn'
@@ -87,12 +88,14 @@ export type AnimKey =
   | 'slash' | 'thrust' | 'overhead' | 'bash' | 'spin' | 'cast' | 'castBig'
   | 'guard' | 'counter' | 'dash' | 'evade' | 'roll' | 'blink' | 'leap' | 'roar'
   | 'flurry' | 'slam' | 'throw' | 'shoot' | 'crossbow' | 'horn' | 'harden' | 'barrier' | 'item'
-  | 'drink' | 'toss' | 'stomp';
+  | 'drink' | 'toss' | 'stomp'
+  /** Bare-fisted mains: a straight punch, a looping haymaker, an open palm strike and a two-palm chi push. */
+  | 'punch' | 'haymaker' | 'palm' | 'chi';
 
 export type ProjectileStyle =
   | 'arcane' | 'hex' | 'wave' | 'groundwave' | 'meteor' | 'arrow' | 'knife' | 'bolt' | 'fire' | 'flamewave' | 'chakram' | 'wisp'
   | 'flask'
-  | 'hook' | 'bolas' | 'javelin' | 'spark' | 'soul' | 'bonespike' | 'frostflask' | 'caltrops' | 'hawk' | 'breath';
+  | 'hook' | 'bolas' | 'javelin' | 'spark' | 'soul' | 'bonespike' | 'frostflask' | 'caltrops' | 'hawk' | 'breath' | 'palm';
 
 export interface Stats {
   maxHp: number;

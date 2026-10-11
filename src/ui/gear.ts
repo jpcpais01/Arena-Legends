@@ -256,7 +256,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     const shown = peek ?? cur;
     const big = iconCanvas(id, 64, shown?.id);
     big.className = 'icon';
-    const hands = g.weapon ? `${g.weapon.hands === 2 ? '2' : '1'}-hand${g.weapon.ranged ? ' · ranged' : ''}` : SLOT_NAMES[slot];
+    const hands = g.weapon ? `${g.weapon.fists ? 'fists' : g.weapon.hands === 2 ? '2-hand' : '1-hand'}${g.weapon.ranged ? ' · ranged' : ''}` : SLOT_NAMES[slot];
 
     // Equipped: what the item gives (against the slot left empty). Not equipped: what would change.
     const from = on ? (slot === 'main' ? c.gear : withGear(c, slot, null).gear) : c.gear;

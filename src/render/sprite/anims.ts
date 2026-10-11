@@ -65,6 +65,8 @@ const STANCE: Record<MainFamily, Pose> = {
   polearm: { ...READY, hNx: 0.12, hNy: -0.72, wAng: 0.15 },
   staff: { ...READY, lean: 0.08, hNx: 0.35, hNy: -0.62, wAng: 1.4 },
   bow: { ...READY, lean: 0.06, hFx: 0.55, hFy: -0.55, elF: 1, wAng: -0.5, hNx: 0.22, hNy: -0.62 },
+  // A boxer's guard: chin tucked, rear fist by the jaw, lead fist out in front.
+  fist: { ...READY, lean: 0.16, head: -0.04, hNx: 0.44, hNy: -0.14, elN: 1, wAng: 0.9, hFx: 0.6, hFy: 0.02, elF: 1 },
 };
 
 /** Rear hand when the main weapon is slung on the back. */
@@ -305,7 +307,9 @@ function katanaCombo(): Record<string, Phases> {
 }
 
 /** Basic attack strings with a clip per step (`combo1`..), per main weapon. */
-const COMBO_CLIPS: Partial<Record<MainWeaponId, () => Record<string, Phases>>> = { katana: katanaCombo };
+const COMBO_CLIPS: Partial<Record<MainWeaponId, () => Record<string, Phases>>> = {
+  katana: katanaCombo, boxing_gloves: boxingCombo, spirit_wraps: monkCombo,
+};
 
 function wandClips(): Record<string, Phases> {
   return {
@@ -459,8 +463,134 @@ function bowClips(): Record<string, Phases> {
   };
 }
 
+/**
+ * Fists (gloves, knuckles, wraps): both hands are weapons. Punches snap
+ * straight out from the guard and come straight back to the chin; the hips
+ * turn into every blow. The near hand is the rear hand (cross, hook,
+ * haymaker), the far hand the lead (jab).
+ */
+function fistClips(): Record<string, Phases> {
+  return {
+    // Rear-hand cross: the hip turns in behind it.
+    punch: {
+      w: [F({ hNx: 0.2, hNy: 0.0, lean: 0.1, hipX: -0.03, hFx: 0.5, hFy: 0.1 })],
+      a: [F({ hNx: 1.0, hNy: 0.1, lean: 0.36, hipX: 0.08, fFx: 0.44, hFx: 0.3, hFy: 0.04 }, 'shout')],
+      r: [F({ hNx: 0.72, hNy: 0.08, lean: 0.28, hipX: 0.06, fFx: 0.44, hFx: 0.36, hFy: 0.06 }), F({ hNx: 0.38, hNy: 0.04, lean: 0.2 }, 'calm')],
+    },
+    // Lead-hand jab (every other basic punch).
+    punch2: {
+      w: [F({ hFx: 0.36, hFy: 0.02, lean: 0.12, hipX: -0.02, hNx: 0.3, hNy: 0.06 })],
+      a: [F({ hFx: 1.0, hFy: 0.14, lean: 0.3, hipX: 0.06, fFx: 0.42, hNx: 0.28, hNy: 0.08 }, 'shout')],
+      r: [F({ hFx: 0.74, hFy: 0.1, lean: 0.24, hipX: 0.04, fFx: 0.42 }), F({ hFx: 0.56, hFy: 0.08, lean: 0.18 }, 'calm')],
+    },
+    // Haymaker: the rear fist wound all the way back, then looped over the top with everything behind it.
+    haymaker: {
+      w: [
+        F({ hNx: -0.15, hNy: 0.1, lean: 0.04, hipX: -0.04, hFx: 0.55, hFy: 0.12 }),
+        F({ hNx: -0.42, hNy: 0.3, lean: -0.12, hipX: -0.07, head: 0.06, toeN: -0.2, hFx: 0.6, hFy: 0.16, elF: 1 }),
+        F({ hNx: -0.5, hNy: 0.42, lean: -0.16, hipX: -0.08, head: 0.08, toeN: -0.3, hFx: 0.62, hFy: 0.2 }, 'shout'),
+      ],
+      a: [
+        F({ hNx: 0.55, hNy: 0.62, lean: 0.18, hipX: 0.04, fFx: 0.46, hFx: 0.3, hFy: -0.1, sway: -0.6 }, 'shout', { smear: { from: 2.5, to: 1.0 } }),
+        F({ hNx: 1.0, hNy: 0.0, lean: 0.46, hipX: 0.1, hipY: -0.13, fFx: 0.52, fNx: -0.46, hFx: 0.2, hFy: -0.15, head: -0.06, sway: -1 }, 'shout', { smear: { from: 1.4, to: 0.0 } }),
+      ],
+      r: [
+        F({ hNx: 0.9, hNy: -0.3, lean: 0.44, hipX: 0.09, hipY: -0.13, fFx: 0.52, fNx: -0.46, hFx: 0.25, hFy: -0.1 }),
+        F({ hNx: 0.55, hNy: -0.1, lean: 0.28, hipY: -0.1 }, 'calm'),
+        F({ hNx: 0.36, hNy: 0.02, lean: 0.2 }, 'calm'),
+      ],
+    },
+    // Pummel: both fists in turn, head to body, driving forward.
+    flurry: {
+      w: [F({ hNx: 0.24, hNy: 0.0, hFx: 0.42, hFy: 0.02, lean: 0.26, hipY: -0.1, hipX: -0.02 }), F({ hNx: 0.12, hNy: -0.05, hFx: 0.36, hFy: -0.02, lean: 0.3, hipY: -0.14, head: -0.08 })],
+      a: [
+        F({ hNx: 1.0, hNy: 0.08, hFx: 0.34, hFy: 0.02, lean: 0.36, hipX: 0.06, hipY: -0.12, fFx: 0.44 }, 'shout'),
+        F({ hNx: 0.5, hNy: 0.0, hFx: 0.7, hFy: -0.05, lean: 0.32, hipX: 0.05, hipY: -0.12, fFx: 0.44 }, 'fierce'),
+        F({ hNx: 0.3, hNy: -0.05, hFx: 1.0, hFy: -0.18, lean: 0.38, hipX: 0.07, hipY: -0.15, fFx: 0.44 }, 'shout'),
+        F({ hNx: 0.7, hNy: -0.15, hFx: 0.5, hFy: -0.06, lean: 0.34, hipX: 0.05, hipY: -0.13, fFx: 0.44 }, 'fierce'),
+      ],
+      cycle: 2,
+      r: [F({ hNx: 0.55, hNy: -0.05, hFx: 0.6, hFy: 0.0, lean: 0.28, hipY: -0.1 }), F({ hNx: 0.34, hNy: 0.02, hFx: 0.52, hFy: 0.06, lean: 0.2 }, 'calm')],
+    },
+    // Open-palm strike: like a cross, with the heel of the hand driven up a little higher.
+    palm: {
+      w: [F({ hNx: 0.12, hNy: -0.12, lean: 0.08, hipX: -0.04, hipY: -0.1, hFx: 0.5, hFy: 0.12 })],
+      a: [F({ hNx: 1.0, hNy: 0.18, lean: 0.32, hipX: 0.08, hipY: -0.12, fFx: 0.46, fNx: -0.4, hFx: 0.15, hFy: -0.2 }, 'shout')],
+      r: [F({ hNx: 0.78, hNy: 0.14, lean: 0.26, hipX: 0.06, hipY: -0.12, fFx: 0.46 }), F({ hNx: 0.4, hNy: 0.04, lean: 0.18 }, 'calm')],
+    },
+    palm2: {
+      w: [F({ hFx: 0.25, hFy: -0.1, lean: 0.08, hipX: -0.03, hipY: -0.1, hNx: 0.32, hNy: 0.04 })],
+      a: [F({ hFx: 1.0, hFy: 0.2, lean: 0.3, hipX: 0.07, hipY: -0.12, fFx: 0.46, fNx: -0.4, hNx: 0.1, hNy: -0.25 }, 'shout')],
+      r: [F({ hFx: 0.78, hFy: 0.15, lean: 0.24, hipX: 0.05, hipY: -0.1, fFx: 0.46 }), F({ hFx: 0.55, hFy: 0.08, lean: 0.18 }, 'calm')],
+    },
+    // Spirit palm: both hands drawn to the hip, then pushed out together in a deep stance.
+    chi: {
+      w: [
+        F({ hNx: 0.08, hNy: -0.45, hFx: 0.18, hFy: -0.42, lean: 0.06, hipY: -0.13, fNx: -0.42, fFx: 0.42 }),
+        F({ hNx: -0.06, hNy: -0.35, hFx: 0.06, hFy: -0.32, lean: -0.06, hipY: -0.18, head: 0.08, fNx: -0.48, fFx: 0.46 }, 'shout'),
+      ],
+      a: [F({ hNx: 1.0, hNy: 0.02, hFx: 1.0, hFy: 0.1, lean: 0.3, hipX: 0.08, hipY: -0.16, fNx: -0.52, fFx: 0.5, sway: -1 }, 'shout')],
+      r: [
+        F({ hNx: 0.95, hNy: 0.02, hFx: 0.96, hFy: 0.1, lean: 0.28, hipX: 0.07, hipY: -0.16, fNx: -0.52, fFx: 0.5 }),
+        F({ hNx: 0.5, hNy: -0.1, hFx: 0.6, hFy: -0.04, lean: 0.2, hipY: -0.1 }, 'calm'),
+      ],
+    },
+  };
+}
+
+/** Boxing string: lead jab, rear cross, then the hook, the elbow up and the whole body turning through it. */
+function boxingCombo(): Record<string, Phases> {
+  const c = fistClips();
+  return {
+    combo1: c.punch2,
+    combo2: c.punch,
+    combo3: {
+      w: [
+        F({ hNx: 0.18, hNy: 0.12, lean: 0.06, hipX: -0.04, hipY: -0.11, hFx: 0.52, hFy: 0.1 }),
+        F({ hNx: -0.12, hNy: 0.28, elN: -1, lean: -0.04, hipX: -0.06, hipY: -0.14, head: -0.04, hFx: 0.55, hFy: 0.12, toeN: -0.25 }, 'shout'),
+      ],
+      a: [
+        F({ hNx: 0.62, hNy: 0.34, elN: -1, lean: 0.3, hipX: 0.07, hipY: -0.14, fFx: 0.48, hFx: 0.3, hFy: 0.0, sway: -0.6 }, 'shout', { smear: { from: 2.0, to: 0.5 } }),
+        F({ hNx: 0.92, hNy: 0.12, elN: -1, lean: 0.42, hipX: 0.09, hipY: -0.15, fFx: 0.5, fNx: -0.44, hFx: 0.25, hFy: -0.05, sway: -1 }, 'shout', { smear: { from: 1.2, to: 0.1 } }),
+      ],
+      r: [
+        F({ hNx: 0.8, hNy: 0.0, elN: -1, lean: 0.38, hipX: 0.08, hipY: -0.14, fFx: 0.5, fNx: -0.44 }),
+        F({ hNx: 0.45, hNy: 0.02, lean: 0.24, hipY: -0.08 }, 'calm'),
+        F({ hNx: 0.34, hNy: 0.04, lean: 0.18 }, 'calm'),
+      ],
+    },
+  };
+}
+
+/**
+ * Monk string: palm, palm, then a roundhouse with the rear leg, the body
+ * leaning away and the arms flung out for balance.
+ */
+function monkCombo(): Record<string, Phases> {
+  const c = fistClips();
+  return {
+    combo1: c.palm,
+    combo2: c.palm2,
+    combo3: {
+      w: [
+        F({ hipY: -0.1, lean: 0.06, fNx: -0.4, fFx: 0.34, hNx: 0.3, hNy: 0.05, hFx: 0.5, hFy: 0.12 }),
+        F({ hipY: -0.02, lean: -0.12, head: 0.04, fNx: 0.2, fNy: -0.5, toeN: 0.35, fFx: 0.22, hNx: 0.1, hNy: -0.15, hFx: 0.6, hFy: 0.25, sway: 0.6 }, 'shout'),
+      ],
+      a: [
+        F({ hipY: 0.0, lean: -0.34, head: 0.12, hipX: 0.04, fNx: 0.96, fNy: -0.06, toeN: 0.15, fFx: 0.1, hNx: -0.35, hNy: -0.2, hFx: 0.55, hFy: 0.35, sway: -1 }, 'shout'),
+        F({ hipY: 0.0, lean: -0.36, head: 0.14, hipX: 0.05, fNx: 0.98, fNy: 0.04, toeN: 0.1, fFx: 0.08, hNx: -0.38, hNy: -0.22, hFx: 0.52, hFy: 0.38, sway: -1 }, 'shout'),
+      ],
+      r: [
+        F({ hipY: -0.04, lean: -0.16, fNx: 0.3, fNy: -0.52, toeN: 0.35, fFx: 0.15, hNx: 0.05, hNy: -0.1, hFx: 0.55, hFy: 0.2 }),
+        F({ hipY: -0.12, lean: 0.14, fNx: -0.38, fFx: 0.36 }, 'calm'),
+        F({ lean: 0.16 }, 'calm'),
+      ],
+    },
+  };
+}
+
 const FAMILY_CLIPS: Record<MainFamily, () => Record<string, Phases>> = {
-  sword: swordClips, wand: wandClips, heavy: heavyClips, polearm: polearmClips, staff: staffClips, bow: bowClips,
+  sword: swordClips, wand: wandClips, heavy: heavyClips, polearm: polearmClips, staff: staffClips, bow: bowClips, fist: fistClips,
 };
 
 // -----------------------------------------------------------------------------
