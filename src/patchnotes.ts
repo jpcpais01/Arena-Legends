@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.83.0',
+    date: '2026-10-11',
+    title: 'The moonlit grove',
+    notes: [
+      'Chests now open in a moonlit forest grove instead of the vault: a waterfall spills from a mossy cliff into a pool, the moon rises over the mountains, and two ancient trees frame the glade under a canopy with hanging vines.',
+      'Fireflies wander and blink, petals drift down, the grass is full of flowers, glowing mushrooms grow at the roots, and stone lanterns light the chest\'s mossy dais.',
+      'The rune circle is gone. A soft glow over the falls takes the tier\'s colour as the chest charges, the fireflies, lantern flames and the flower ring round the dais light up with it, and the whole opening plays out as before.',
+    ],
+  },
+  {
     version: '0.82.0',
     date: '2026-10-11',
     title: 'Katana three-cut string',
