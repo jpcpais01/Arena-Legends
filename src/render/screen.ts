@@ -100,6 +100,11 @@ export class Screen {
     c.drawImage(this.buffer, ox, oy, sw, sh, this.dx, this.dy, W, H);
   }
 
+  /** How the shown buffer maps to device pixels: device = (art - o) × vs + d. */
+  get mapping(): { ox: number; oy: number; vs: number; dx: number; dy: number } {
+    return { ox: this.ox, oy: this.oy, vs: this.vs, dx: this.dx, dy: this.dy };
+  }
+
   /** CSS px → art px. */
   toArt(cssX: number, cssY: number): [number, number] {
     const r = this.canvas.getBoundingClientRect();
