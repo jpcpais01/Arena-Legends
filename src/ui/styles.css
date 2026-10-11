@@ -489,13 +489,13 @@ h1, h2, h3, p { margin: 0; }
 .offer.ent .sock .ic { width: 60%; height: 60%; color: var(--ent); filter: drop-shadow(0 var(--px) 0 var(--ink)); }
 .offer.ent { cursor: pointer; }
 .offer.ent.peek { outline: calc(var(--px) * 1) dashed var(--rc); outline-offset: calc(var(--px) * -4); }
-.card-grid.backdrops { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.card-grid.backdrops { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .card-grid.backdrops .portrait { aspect-ratio: 60 / 48; }
 /* Portrait backdrops: one painted scene, pixel for pixel, anchored at the bottom. */
 .backdrop { background-size: cover !important; background-position: center bottom !important; background-repeat: no-repeat !important; image-rendering: pixelated; }
 @container (min-width: 420px) {
   .card-grid.forms { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
-  .card-grid.backdrops { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+  .card-grid.backdrops { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
 }
 @container (min-width: 900px) { .card-grid.forms, .card-grid.species { width: min(100%, 60rem); } }
 .card-tile {

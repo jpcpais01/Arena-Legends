@@ -12,7 +12,7 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.77.0',
+    version: '0.78.0',
     date: '2026-10-11',
     title: 'Supers redone with real light',
     notes: [
@@ -21,6 +21,15 @@ export const PATCH_NOTES: PatchNote[] = [
       'Every main weapon has its own look: Rising Cleave throws a column of light, Iaido Dash opens an X-cut a beat after the dash, Grave Harvest drags the soul back to the reaper, Thunderclap ripples the air around the caster, and more.',
       'Special items no longer look like weapon supers: they show a small badge with the item\'s icon on their user\'s side, with no slow motion or widescreen bars. The big SUPER letters and the cinematic camera are only for main weapon supers now.',
       'Cleaner hits: the old scratchy focus lines and the white wash over fighters during slow motion are gone.',
+    ],
+  },
+  {
+    version: '0.77.0',
+    date: '2026-10-11',
+    title: '12 new portrait backdrops',
+    notes: [
+      'Twelve new scenes to stand your hero in front of, for a total of 17: Coral Reef, Golden Dunes, Blossom Shrine, Starlit Void, Stormcoast, Glowcap Grotto, Cloud Isles, Haunted Moor, Throne Hall, Colosseum, Autumn Hollow and Rainbow Falls.',
+      'Pick one in the Backdrop step when you create or edit your hero. Rivals roll from the new ones too.',
     ],
   },
   {
