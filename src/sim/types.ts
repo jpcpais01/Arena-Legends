@@ -272,6 +272,29 @@ export interface ActionState {
   through: boolean;
   /** Step of this swing in its combo string (1..every), 0 for abilities without one. */
   combo: number;
+  /** Held in a blade lock: frozen at the start of the active phase until the bind breaks. */
+  lock?: boolean;
+  /** This swing broke through a blade lock: it lands harder. */
+  clash?: boolean;
+}
+
+/**
+ * Two melee swings met at the same moment and the weapons bound together.
+ * Both fighters strain against each other until one breaks through (their
+ * swing lands, harder) or neither does and both are thrown apart.
+ */
+export interface BladeLock {
+  /** Seconds since the weapons met, and how long the struggle lasts. */
+  t: number;
+  dur: number;
+  /** Who breaks through, or -1 when neither gives an inch. */
+  winner: FighterId | -1;
+  /** World x where the struggle started, and the distance between the fighters (closing in from `from`). */
+  x: number;
+  gap: number;
+  from: number;
+  /** Fighter 0's share of the strength in the bind (0..1); the render leans by it. */
+  share: number;
 }
 
 /**
@@ -386,6 +409,10 @@ export type BattleEvent =
   | { type: 'heal'; f: FighterId; amount: number }
   /** A combo finisher landed (the last swing of a basic attack string). */
   | { type: 'finisher'; f: FighterId; x: number; y: number }
+  /** Two swings met and the weapons bound (see BladeLock). */
+  | { type: 'bind'; x: number; y: number; dur: number }
+  /** A blade lock broke: `winner` breaks through, -1 when both are thrown apart. */
+  | { type: 'unbind'; winner: FighterId | -1; x: number; y: number }
   /** A usable item was used up (drunk or thrown). */
   | { type: 'used'; f: FighterId; ability: number; left: number }
   | { type: 'cleanse'; f: FighterId }

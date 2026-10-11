@@ -68,6 +68,9 @@ export class Animator {
       this.set1('ko', k < 0.09 ? 0 : k < 0.18 ? 1 : k < 0.26 ? 2 : k < 0.32 ? 3 : k < 0.4 ? 4 : 3);
     } else if (over && winner && (this.winT += dt) > 0.6) {
       this.set1('victory', Math.floor(this.winT * 4) % 2);
+    } else if (f.action?.lock) {
+      // Weapons bound: straining against each other.
+      this.set1('bind', Math.floor(this.time * 9) % 2);
     } else if (f.action) {
       this.action(f);
     } else if (getStatus(f, 'stun')) {

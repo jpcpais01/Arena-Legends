@@ -851,6 +851,19 @@ export function clipsFor(art: CharacterArt): ClipSet {
     { p: { hipY: stance.hipY - 0.06, lean: stance.lean + 0.08, head: -0.03, sway: -0.25 }, face: 'calm' },
   ]));
 
+  // Blade lock: braced low, leaning into the bind with the weapon crossed up in
+  // front of the chest (one-handed blades taken in both hands), straining.
+  const bind: PoseKey = {
+    hipX: 0.06, hipY: stance.hipY - 0.1, lean: 0.32, head: -0.08,
+    fNx: -0.56, fNy: -0.95, toeN: -0.3, fFx: 0.42, fFy: -1, toeF: 0.1,
+    hNx: 0.62, hNy: -0.22, elN: 1, wAng: 0.95, hFx: 0.66, hFy: -0.1, elF: 1, sway: -0.5,
+  };
+  const bindHold: Hold = { ...hold, ...(twoHand || art.family !== 'sword' ? {} : { grip: -4.4 }) };
+  clips.set('bind', loop(stance, bindHold, [
+    { p: bind, face: 'fierce' },
+    { p: { ...bind, hipX: 0.08, lean: 0.36, head: -0.12, hNx: 0.65, hFx: 0.69, wAng: 0.9, sway: -0.65 }, face: 'shout' },
+  ]));
+
   for (const [id, ph] of Object.entries(FAMILY_CLIPS[art.family]())) add(id, ph);
   const combo = COMBO_CLIPS[art.mainId];
   if (combo) {

@@ -1,15 +1,16 @@
 import { Rng } from '../core/rng';
-import { clamp, dsin } from '../core/math';
+import { clamp, dsin, smoothstep } from '../core/math';
 import { Brain, type FighterBrain } from './ai/brain';
 import {
   ARENA_HALF_WIDTH, BASE_ENERGY_REGEN, BODY_GAP, DT, ENERGY_ON_DEAL, ENERGY_ON_TAKE, MAX_ENERGY,
   MATCH_TIME, OVERTIME_DAMAGE, ROUND_TIME, START_GAP, WALL_SPLAT_SPEED,
 } from './constants';
 import {
-  actionDef, comboStep, createFighter, getStatus, isDisabled, isSilenced, isUnstoppable, reachOf, refreshStats, type Fighter, type FighterConfig,
+  actionDef, comboStep, createFighter, getStatus, hpRatio, isDisabled, isSilenced, isUnstoppable, reachOf, refreshStats, type Fighter, type FighterConfig,
 } from './fighter';
+import type { FightStyleId } from './styles';
 import type {
-  AbilityDef, BattleEvent, DamageType, Familiar, FighterId, Projectile, StatusApply, StatusId, Zone, ZoneKind,
+  AbilityDef, ActionState, BattleEvent, BladeLock, DamageType, Familiar, FighterId, Projectile, StatusApply, StatusId, Zone, ZoneKind,
 } from './types';
 
 /** The wisp lantern's spirit bolt (familiar shots carry ability index -1). */
@@ -52,6 +53,17 @@ const HISTORY_SIZE = 12;
 /** Caltrops patch: radius, seconds, seconds between cuts, damage per cut (× power). */
 const CALTROPS = { radius: 1.6, life: 8, every: 0.5, power: 0.16 };
 /** Savate Boots: the push kick that opens the evade. */
+/**
+ * Blade locks: how close (s) the other swing must be to landing for the two
+ * to bind, the odds that they do, and the rest before weapons can bind again.
+ */
+const BIND_WINDOW = 0.1;
+const BIND_CHANCE = 0.8;
+const BIND_REST = 6;
+/** A swing that breaks through a bind lands this much harder. */
+const BREAK_POWER = 1.3;
+/** How hard each fighting style leans into a bind. */
+const BIND_STYLE: Record<FightStyleId, number> = { balanced: 1, relentless: 1.12, tactician: 1, skirmisher: 0.92, guardian: 1.06 };
 const SAVATE_KICK: AbilityDef = {
   id: 'savate_kick', name: 'Push Kick', slot: 'evade', kind: 'melee',
   range: 1.9, cost: 0, cooldown: 0, windup: 0, active: 0, recovery: 0,
@@ -102,6 +114,10 @@ export class Battle {
   winner: FighterId | -1 = -1;
   /** Seconds since the battle ended (physics keeps running for the KO). */
   endTime = 0;
+  /** Weapons bound together, if they are. */
+  lock: BladeLock | null = null;
+  /** Seconds before weapons can bind again. */
+  lockCd = 0;
   private nextProjectileId = 1;
   private nextZoneId = 1;
 
@@ -169,6 +185,7 @@ export class Battle {
 
     if (this.over) {
       this.endTime += DT;
+      if (this.lock) this.updateLock();
       for (const f of this.fighters) {
         this.updateStatuses(f, false);
         if (f.action && f.alive) this.updateAction(f);
@@ -195,6 +212,8 @@ export class Battle {
     this.brains[first].think(this);
     this.brains[1 - first].think(this);
 
+    if (this.lock) this.updateLock();
+    else if (this.lockCd > 0) this.lockCd -= DT;
     if ((this.tick & 1) === 0) { this.updateAction(a); this.updateAction(b); }
     else { this.updateAction(b); this.updateAction(a); }
     this.updateItem(a);
@@ -471,7 +490,7 @@ export class Battle {
 
   private updateAction(f: Fighter): void {
     const a = f.action;
-    if (!a || !f.alive) return;
+    if (!a || !f.alive || a.lock) return;
     const ab = actionDef(f, a);
     const e = this.other(f);
     a.t += DT;
@@ -490,6 +509,7 @@ export class Battle {
         if (leapAttack) f.y = 0;
         this.emit({ type: 'actionActive', f: f.id, ability: a.ability });
         this.enterActive(f, e, ab);
+        if (ab.kind === 'melee') this.tryBind(f, e);
       }
       return;
     }
@@ -505,7 +525,9 @@ export class Battle {
           a.hitsDone++;
           if (this.inMeleeReach(f, e, reachOf(f, ab))) {
             const last = a.hitsDone === hits;
-            if (this.abilityHit(f, e, ab, { heavyOverride: hits > 1 && !last ? false : undefined })) {
+            // Breaking through a bind: the first blow lands heavy and harder.
+            const heavyOverride = a.clash && a.hitsDone === 1 ? true : hits > 1 && !last ? false : undefined;
+            if (this.abilityHit(f, e, ab, { heavyOverride, mult: a.clash ? BREAK_POWER : undefined })) {
               if (!a.connected && ab !== f.abilities[a.ability]) this.emit({ type: 'finisher', f: f.id, x: e.x, y: e.y + 1.2 });
               a.connected = true;
             }
@@ -611,6 +633,126 @@ export class Battle {
       case 'melee':
         break;
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Blade locks
+  // ---------------------------------------------------------------------------
+
+  /** A swing that can bind: a grounded weapon blow from the main hand, not a riposte. */
+  private bindable(f: Fighter, ab: AbilityDef, a: ActionState): boolean {
+    return ab.kind === 'melee' && (ab.slot === 'basic' || ab.slot === 'skill') && !ab.airborne
+      && !a.isCounter && !a.feint && f.alive && f.y < 0.2 && f.pullT <= 0;
+  }
+
+  /**
+   * `f`'s swing just went live: if `e`'s swing is about to land too, face to
+   * face and in reach of each other, the weapons meet and bind.
+   */
+  private tryBind(f: Fighter, e: Fighter): void {
+    const a = f.action!, ea = e.action;
+    if (this.lock || this.lockCd > 0 || this.over || !ea) return;
+    const ab = actionDef(f, a), eb = actionDef(e, ea);
+    if (!this.bindable(f, ab, a) || !this.bindable(e, eb, ea)) return;
+    const ready = ea.phase === 'windup'
+      ? ea.t >= ea.draw && ea.windup - ea.t <= BIND_WINDOW
+      : ea.phase === 'active' && ea.hitsDone === 0 && ea.t <= BIND_WINDOW;
+    if (!ready) return;
+    const dx = e.x - f.x, dist = Math.abs(dx);
+    if (Math.sign(dx) !== f.facing || e.facing !== -f.facing) return;
+    const reach = Math.min(reachOf(f, ab), reachOf(e, eb));
+    if (dist > reach + 0.25 || !this.rng.chance(BIND_CHANCE)) return;
+
+    if (ea.phase === 'windup') {
+      ea.phase = 'active';
+      ea.t = 0;
+      this.emit({ type: 'actionActive', f: e.id, ability: ea.ability });
+      this.enterActive(e, f, eb);
+    }
+    a.lock = ea.lock = true;
+    // Strength in the bind: raw power and weight, the swing behind it, health
+    // left and temperament, with a fair share of luck.
+    const sf = this.bindStrength(f, ab), se = this.bindStrength(e, eb);
+    const share = sf / (sf + se), edge = Math.abs(share - 0.5);
+    const winner = edge < 0.01 ? -1 : share > 0.5 ? f.id : e.id;
+    // Close enough for the weapons to cross between them (long weapons keep more room).
+    const gap = clamp(reach * 0.62, 1.2, 1.9);
+    const x = clamp((f.x + e.x) / 2, -ARENA_HALF_WIDTH + gap / 2, ARENA_HALF_WIDTH - gap / 2);
+    this.lock = {
+      t: 0, dur: 0.85 + 0.6 * (1 - Math.min(1, edge * 6)), winner, x, gap, from: Math.max(BODY_GAP, dist),
+      share: f.id === 0 ? share : 1 - share,
+    };
+    f.vx = e.vx = 0;
+    this.hitstop = Math.max(this.hitstop, 0.06);
+    this.emit({ type: 'bind', x, y: 1.35, dur: this.lock.dur });
+  }
+
+  private bindStrength(f: Fighter, ab: AbilityDef): number {
+    const s = f.stats;
+    return s.power * s.damageMult * s.force * Math.sqrt(ab.power) * (ab.heavy ? 1.2 : 1) * (0.7 + 0.6 * hpRatio(f))
+      * BIND_STYLE[f.profile.style] * (isUnstoppable(f) ? 1.15 : 1) * this.rng.range(0.8, 1.2);
+  }
+
+  /**
+   * The struggle: both fighters held face to face, swaying, until the
+   * stronger drives the other back and breaks through.
+   */
+  private updateLock(): void {
+    const L = this.lock!;
+    const [a, b] = this.fighters;
+    const held = (f: Fighter) => f.alive && !!f.action?.lock;
+    if (!held(a) || !held(b)) {
+      // Something else broke it (a knockout, a stun from a totem): whoever still holds swings through.
+      const w = held(a) ? a : held(b) ? b : null;
+      if (w) w.action!.lock = false;
+      this.lock = null;
+      this.lockCd = BIND_REST;
+      this.emit({ type: 'unbind', winner: w ? w.id : -1, x: (a.x + b.x) / 2, y: 1.35 });
+      return;
+    }
+    L.t += DT;
+    const k = L.t / L.dur;
+    if (k >= 1) { this.breakLock(); return; }
+    const side = b.x >= a.x ? 1 : -1;
+    const give = L.winner === -1 ? 0 : smoothstep(0.45, 1, k) * 0.55 * (L.winner === 0 ? 1 : -1);
+    const sway = dsin(L.t * 11) * 0.05 * (1 - k);
+    const half = (L.from + (L.gap - L.from) * smoothstep(0, 0.15, L.t)) / 2;
+    const mid = clamp(L.x + side * (give + sway), -ARENA_HALF_WIDTH + half, ARENA_HALF_WIDTH - half);
+    a.x = mid - side * half;
+    b.x = mid + side * half;
+    a.vx = b.vx = 0;
+  }
+
+  private breakLock(): void {
+    const L = this.lock!;
+    this.lock = null;
+    this.lockCd = BIND_REST;
+    const [a, b] = this.fighters;
+    const mid = (a.x + b.x) / 2;
+    this.hitstop = Math.max(this.hitstop, 0.08);
+    if (L.winner === -1) {
+      // Neither gives an inch: the blades shriek apart and both are thrown back.
+      for (const f of this.fighters) {
+        const act = f.action!;
+        act.lock = false;
+        act.phase = 'recovery';
+        act.t = 0;
+        if (act.combo) f.combo = 0;
+        f.vx = (Math.sign(f.x - mid) || -f.facing) * 7 * f.stats.knockbackTaken;
+        f.energy = Math.min(MAX_ENERGY, f.energy + 8);
+      }
+      this.emit({ type: 'unbind', winner: -1, x: mid, y: 1.35 });
+      return;
+    }
+    const w = this.fighters[L.winner], l = this.other(w);
+    w.action!.lock = false;
+    w.action!.clash = true;
+    w.energy = Math.min(MAX_ENERGY, w.energy + 12);
+    l.action = null;
+    l.combo = 0;
+    l.stagger = Math.max(l.stagger, 0.5);
+    this.emit({ type: 'unbind', winner: w.id, x: mid, y: 1.35 });
+    this.emit({ type: 'thought', f: w.id, text: 'Broke through the bind!' });
   }
 
   /** Boots whose evade does a little more than step away. */

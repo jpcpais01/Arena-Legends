@@ -20,7 +20,9 @@ export type Sfx =
   // The gale bell: a bronze toll and the wind it lets loose
   | 'bell' | 'gale'
   // Meteor skins: a crash of water
-  | 'splash';
+  | 'splash'
+  // Blade locks: steel meeting steel, the scrape of the struggle, the break
+  | 'bind' | 'grind' | 'unbind';
 
 /** Elements of the super attacks, for their impact sounds (see render/supers.ts). */
 export type SfxElement = 'steel' | 'fire' | 'storm' | 'arcane' | 'soul' | 'venom' | 'earth' | 'wind';
@@ -542,6 +544,27 @@ class AudioEngine {
         this.burst(t + 0.03, 0.75, 0.3 * k, 'bandpass', 1600, 500, 0.9, -pan);
         this.burst(t, 0.18, 0.5 * k, 'lowpass', 900, 90, 0.7, pan);
         this.tone('sine', 85, 38, t, 0.32, 0.5 * k, pan);
+        break;
+      case 'bind':
+        // Two blades slam together: a hard crack, then a ringing pair of tones that beat against each other.
+        this.burst(t, 0.06, 0.6 * k, 'highpass', 3500, 2200, 1, pan);
+        this.burst(t, 0.18, 0.45 * k, 'lowpass', 2200, 200, 0.8, pan);
+        this.tone('sine', 150, 50, t, 0.25, 0.6 * k, pan);
+        this.tone('triangle', 1960, 1880, t, 0.9, 0.11 * k, pan);
+        this.tone('triangle', 1987, 1905, t, 0.9, 0.1 * k, pan);
+        this.tone('sine', 3130, 3010, t + 0.01, 0.6, 0.05 * k, pan);
+        break;
+      case 'grind':
+        // Steel scraping on steel while they strain.
+        this.burst(t, 0.16, 0.22 * k, 'bandpass', 2600 + Math.random() * 900, 1900, 9, pan);
+        this.burst(t, 0.1, 0.12 * k, 'highpass', 5200, 4200, 1, pan);
+        break;
+      case 'unbind':
+        // The bind gives way: a shriek of steel sliding off, then the heavy release.
+        this.burst(t, 0.22, 0.4 * k, 'bandpass', 4200, 1500, 4, pan);
+        this.burst(t + 0.05, 0.35, 0.6 * k, 'lowpass', 2000, 90, 0.7, pan);
+        this.tone('sine', 120, 36, t + 0.05, 0.4, 0.75 * k, pan);
+        this.tone('triangle', 2400, 2250, t, 0.45, 0.08 * k, pan);
         break;
       case 'shing':
         this.burst(t, 0.08, 0.4, 'highpass', 5000, 3000, 1, pan);

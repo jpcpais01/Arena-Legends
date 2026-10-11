@@ -126,6 +126,8 @@ export interface BattleListener {
  * fixed 60 Hz and interpolates for the display; speed, pause and slow motion
  * only change how many steps run per frame.
  */
+const smooth01 = (t: number) => { const u = clamp(t, 0, 1); return u * u * (3 - 2 * u); };
+
 /** Damage number looks per corner: index 0 is the blue (left) fighter, 1 the red (right) one. */
 const DMG_INK = [
   { hit: { color: '#9cc8ff', shade: '#2f6ad0' }, heavy: { color: '#b4d6ff', scale: 2, shade: '#2f6ad0' }, crit: { color: '#dcecff', scale: 2, shade: '#3a7cf0' }, blocked: { color: '#7c98c0', shade: '#34486a' }, dot: { color: '#86b4f0', shade: '#2a5aa8' } },
@@ -210,6 +212,9 @@ export class BattleView implements View {
   onSuperCancel: ((f: FighterId) => void) | null = null;
   /** The arena dims behind a super so the move stands out. */
   private dim = 0;
+  /** Blade lock: seconds until the next grinding spark and scrape, and how far the strength meter has faded in. */
+  private grindT = 0;
+  private bindA = 0;
   /** Fighter sprites drawn this frame, for their night accents: feet position and facing. */
   private glowList: { s: Sprite; x: number; y: number; flip: boolean }[] = [];
 
@@ -559,8 +564,10 @@ export class BattleView implements View {
     for (const z of b.zones) if (z.kind === 'caltrops') this.caltropGlints(g, z);
     const night = this.arena!.night();
     if (night > 0.01) this.nightGlow(g, night);
+    if (b.lock) this.bindTick(dt);
     this.fx.draw(g, this);
     this.soft.draw(g, this);
+    this.drawBindMeter(g, dt);
     if (this.flashT > 0) {
       g.globalAlpha = Math.min(0.5, this.flashT * 4);
       g.fillStyle = css(this.flashCol);
@@ -664,7 +671,9 @@ export class BattleView implements View {
     const hidden = alive && !!getStatus(f, 'hidden');
     const fear = alive ? getStatus(f, 'fear') : undefined;
     // Afraid: the whole body trembles.
-    const shiver = fear && dt > 0 ? (Math.floor(this.time * 26) & 1 ? 1 : -1) : 0;
+    // Afraid: the whole body trembles; straining in a blade lock, it shudders.
+    const shiver = fear && dt > 0 ? (Math.floor(this.time * 26) & 1 ? 1 : -1)
+      : f.action?.lock && dt > 0 ? ((Math.floor(this.time * 30) + f.id) & 1 ? 1 : 0) * -f.facing : 0;
     const px = Math.round(this.sx(x)) + o.jitter + shiver, py = Math.round(this.sy(y)) - o.hop;
     v.headY = y + 2.0;
     v.lastS = s; v.lastX = px; v.lastY = py; v.lastFlip = flip;
@@ -1617,6 +1626,12 @@ export class BattleView implements View {
         else if (e.status === 'mark' && e.stacks === 1) fx.pop('HEXED', f.x, hy, { color: '#d8a8ff' }, 0.8);
         break;
       }
+      case 'bind':
+        this.bindStart(e.x, e.y, e.dur);
+        break;
+      case 'unbind':
+        this.bindBreak(e.winner, e.x, e.y);
+        break;
       case 'wallSplat':
         fx.pulse('star', e.x, 1.2, 0.8, 0xffd27a, 0.2);
         fx.burst({ x: e.x, y: 1, count: 10, jitter: 0.5, jitterY: 0.8, speed: [1, 3], life: [0.5, 0.9], color: 0xb0a090, color2: 0x6a5a60, kind: 'smoke', size: 4 });
@@ -2168,6 +2183,122 @@ export class BattleView implements View {
     this.punchIn(1, 0.45, x);
     this.cinema(this.camMode === 'classic' ? 1 : 2, 0.55, x);
     this.arena?.cheer(0.4);
+  }
+
+  // --- Blade locks ---------------------------------------------------------------
+
+  /** Where the weapons meet: between the two blade tips when both are drawn, else between the fighters at chest height. */
+  private bindPoint(): [number, number] {
+    const [a, b] = this.battle!.fighters;
+    const ta = this.tipOf(a), tb = this.tipOf(b);
+    if (ta && tb) return [(ta[0] + tb[0]) / 2, clamp((ta[1] + tb[1]) / 2, 0.9, 2.4)];
+    return [(this.lx(a) + this.lx(b)) / 2, 1.35];
+  }
+
+  /** A fighter's weapon colours (its skin's sparks or trail, else hot steel). */
+  private bladeCols(id: FighterId): [number, number] {
+    const skin = this.fighters[id]?.art.mainSkin;
+    return skin?.fx ? [skin.fx.spark, skin.fx.spark2] : skin?.trail ?? [0xfff4d0, 0xff9a30];
+  }
+
+  /** Two swings meet and the weapons bind: a crack of steel, a shower of sparks, time catches its breath. */
+  private bindStart(x: number, y: number, dur: number): void {
+    const fx = this.fx;
+    fx.pulse('star', x, y, 1.1, 0xffffff, 0.22, 0xffd890);
+    fx.pulse('ring', x, y, 1.3, 0xfff0c0, 0.3, 0xff9a30);
+    fx.burst({ x, y, count: 34, speed: [5, 12], life: [0.18, 0.45], color: 0xffffff, color2: 0xffb040, gravity: 9, drag: 2, kind: 'streak' });
+    fx.pop('BLADE LOCK!', x, y + 1.9, { color: '#fff0c8', scale: 2, shade: '#c86a20' }, 1.1, 0.6);
+    this.play('bind', this.pan(x));
+    this.shake(0.5);
+    this.flash(0xfff0d0, 0.6);
+    this.arena?.cheer(0.7);
+    this.grindT = 0.12;
+    if (this.quiet) return;
+    this.superBeat(0.3, 0.4);
+    this.cinema(1, 0.75 + dur * 0.5, x, 0.9);
+    if (this.gl.ok) {
+      this.gl.add({ kind: 'star', x, y, r0: 0.4, r1: 1.6, w: 0.07, hi: 0xffffff, lo: 0xffb040, life: 0.3, power: 1, real: true });
+      this.gl.add({ kind: 'glow', x, y, r0: 0.45, r1: 0.7, hi: 0xfff0c8, lo: 0xff8a30, life: dur, power: 0.55, fin: 0.05 });
+      this.gl.shock({ x, y, r: 1.6, amp: 3, life: 0.3, hi: 0xffffff });
+    }
+  }
+
+  /** While the weapons are bound: sparks grind out of the bind, steel scrapes, the camera trembles. */
+  private bindTick(dt: number): void {
+    if (dt <= 0 || (this.grindT -= dt) > 0) return;
+    const L = this.battle!.lock!;
+    const k = L.t / L.dur;
+    this.grindT = 0.07 - 0.03 * k;
+    const [x, y] = this.bindPoint();
+    const [a, b] = this.battle!.fighters;
+    // Each side's weapon sheds its own sparks, flying back over the shoulder of whoever is giving ground.
+    for (const f of [a, b]) {
+      const [c1, c2] = this.bladeCols(f.id);
+      this.fx.burst({ x, y, count: 2 + Math.round(k * 3), dir: Math.PI / 2 + f.facing * 0.9, spread: 0.7, speed: [3, 8], life: [0.15, 0.35], color: c1, color2: c2, gravity: 14, drag: 1.5, kind: 'streak' });
+    }
+    if (Math.random() < 0.45) this.play('grind', this.pan(x), 0.7 + k * 0.5);
+    this.shake(0.08 + k * 0.12);
+  }
+
+  /** The bind breaks: the winner drives through in a burst of their weapon's colours, or both are hurled apart. */
+  private bindBreak(winner: FighterId | -1, x0: number, y0: number): void {
+    const fx = this.fx;
+    const [x, y] = this.bindPoint();
+    const at = Math.abs(x - x0) < 1.5 ? x : x0, ay = Number.isFinite(y) ? y : y0;
+    this.play('unbind', this.pan(at));
+    this.arena?.cheer(1);
+    if (winner === -1) {
+      fx.pulse('ring', at, ay, 1.6, 0xffffff, 0.3, 0xffb040);
+      for (const side of [-1, 1]) fx.burst({ x: at, y: ay, count: 16, dir: side > 0 ? 0.25 : Math.PI - 0.25, spread: 0.6, speed: [5, 11], life: [0.2, 0.45], color: 0xffffff, color2: 0xffb040, gravity: 8, drag: 2, kind: 'streak' });
+      fx.pop('STANDOFF', at, ay + 1.2, { color: '#e8ecff', scale: 2, shade: '#5a6aa0' }, 1, 0.7);
+      this.shake(0.5);
+      this.flash(0xffffff, 0.5);
+      if (this.gl.ok && !this.quiet) this.gl.shock({ x: at, y: ay, r: 2.2, amp: 4, life: 0.35, hi: 0xffffff });
+      return;
+    }
+    const f = this.battle!.fighters[winner];
+    const [c1, c2] = this.bladeCols(winner);
+    fx.pulse('star', at, ay, 1.3, mix(c1, 0xffffff, 0.5), 0.25, c2);
+    fx.pulse('ring', at, ay, 1.8, c1, 0.35, c2);
+    fx.burst({ x: at, y: ay, count: 40, dir: f.facing > 0 ? 0 : Math.PI, spread: 0.9, speed: [6, 14], life: [0.2, 0.5], color: c1, color2: c2, gravity: 6, drag: 2, kind: 'streak' });
+    fx.pop('BREAK!', f.x, this.fighters[winner].headY + 0.5, { color: '#ffe8b0', scale: 2, shade: '#c8501a' }, 1, 0.9);
+    this.shake(0.9);
+    this.flash(0xffffff, 0.8);
+    this.punchIn(1, 0.5, at);
+    if (this.gl.ok && !this.quiet) {
+      this.gl.impactFrame(0xfff4e0, 0x140a18, 0.05);
+      this.gl.shock({ x: at, y: ay, r: 2.8, amp: 6, life: 0.45, hi: c1, dir: f.facing });
+      this.gl.add({ kind: 'flare', x: at, y: ay, r0: 0.6, r1: 2.6, w: 0.08, rot: 0, hi: 0xffffff, lo: c2, life: 0.3, power: 0.9, real: true });
+    }
+  }
+
+  /**
+   * A small strength meter over the bind: each side's colour pushing at a
+   * marker that wavers, then gives way toward whoever is losing.
+   */
+  private drawBindMeter(g: CanvasRenderingContext2D, dt: number): void {
+    const b = this.battle!, L = b.lock;
+    this.bindA = clamp(this.bindA + (L ? dt * 6 : -dt * 4), 0, 1);
+    if (this.bindA <= 0 || this.quiet || !L) return;
+    const [a, c] = b.fighters;
+    const left: FighterId = a.x <= c.x ? 0 : 1;
+    const k = L.t / L.dur;
+    const push = L.winner === -1 ? 0 : L.winner === left ? 1 : -1;
+    const waver = Math.sin(this.time * 7.3) * 0.22 + Math.sin(this.time * 12.1) * 0.08;
+    const m = clamp(waver * (1 - k) + push * smooth01((k - 0.35) / 0.65) * 0.85, -1, 1);
+    const [x, y] = this.bindPoint();
+    const w = 34, cx = Math.round(this.sx(x)), top = Math.round(this.sy(y)) - 30;
+    const x0 = cx - (w >> 1), mx = x0 + Math.round(((m + 1) / 2) * w);
+    g.globalAlpha = this.bindA;
+    g.fillStyle = '#140c18';
+    g.fillRect(x0 - 1, top - 1, w + 2, 5);
+    g.fillStyle = left === 0 ? '#5a9cff' : '#ff6a6a';
+    g.fillRect(x0, top, mx - x0, 3);
+    g.fillStyle = left === 0 ? '#ff6a6a' : '#5a9cff';
+    g.fillRect(mx, top, x0 + w - mx, 3);
+    g.fillStyle = '#ffffff';
+    g.fillRect(mx - 1, top - 2, 2, 7);
+    g.globalAlpha = 1;
   }
 
   /** Legendary skins: hits with the weapon burst in its colours; a legendary shield flares when it blocks. */
