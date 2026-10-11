@@ -101,7 +101,11 @@ export const OUTFIT_COLORS = [
 export const ACCENT_COLORS = [0xe8b030, 0xd0d8e8, 0xd03a3a, 0x30b0e0, 0x50d070, 0xb050e0, 0xf07a30, 0x2a2a34];
 
 /** Portrait backdrops (painted in render/backdrops.ts), in picker order. */
-export const BACKDROPS = ['Twilight', 'Sunset Peaks', 'Wildwood', 'Ember Forge', 'Frostlight'] as const;
+export const BACKDROPS = [
+  'Twilight', 'Sunset Peaks', 'Wildwood', 'Ember Forge', 'Frostlight',
+  'Coral Reef', 'Golden Dunes', 'Blossom Shrine', 'Starlit Void', 'Stormcoast', 'Glowcap Grotto',
+  'Cloud Isles', 'Haunted Moor', 'Throne Hall', 'Colosseum', 'Autumn Hollow', 'Rainbow Falls',
+] as const;
 
 export interface Appearance {
   species: SpeciesId;

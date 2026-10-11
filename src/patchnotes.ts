@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.77.0',
+    date: '2026-10-11',
+    title: '12 new portrait backdrops',
+    notes: [
+      'Twelve new scenes to stand your hero in front of, for a total of 17: Coral Reef, Golden Dunes, Blossom Shrine, Starlit Void, Stormcoast, Glowcap Grotto, Cloud Isles, Haunted Moor, Throne Hall, Colosseum, Autumn Hollow and Rainbow Falls.',
+      'Pick one in the Backdrop step when you create or edit your hero. Rivals roll from the new ones too.',
+    ],
+  },
+  {
     version: '0.76.0',
     date: '2026-10-11',
     title: 'Loadouts',
