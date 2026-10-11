@@ -35,8 +35,8 @@ export function devils(g: CanvasRenderingContext2D, cam: number, factor: number,
       const w = 0.6 + j * 0.28;
       const lean = Math.sin(t * 0.9 + i * 2) * j * 0.18 - j * 0.12;
       const sw = Math.sin(t * 9 + j * 0.8 + i) * w;
-      g.globalAlpha = life * k * (0.75 - (j / h) * 0.55);
-      g.fillRect(Math.round(x + lean + sw), y - j, 1, 1);
+      g.globalAlpha = life * k * (0.8 - (j / h) * 0.55);
+      g.fillRect(Math.round(x + lean + sw), y - j, j > h * 0.6 ? 2 : 1, 1);
       if (j > 2) { g.globalAlpha *= 0.5; g.fillRect(Math.round(x + lean - sw * 0.7), y - j, 1, 1); }
     }
     // Dust skirting its foot.
@@ -80,7 +80,7 @@ export function sandDrift(g: CanvasRenderingContext2D, cam: number, W: number, t
   const span = W + 60;
   for (let i = 0; i < 30; i++) {
     const T = 1.7 + (i % 7) * 0.3, ph = t / T + i * 0.37, n = Math.floor(ph), f = ph - n;
-    const a = Math.sin(f * Math.PI) * (0.12 + hash(n, i, 611) * 0.22) * (0.35 + 0.65 * gust);
+    const a = Math.sin(f * Math.PI) * (0.2 + hash(n, i, 611) * 0.3) * (0.4 + 0.6 * gust);
     if (a < 0.03) continue;
     let y = top + 1 + Math.floor(hash(n, i, 612) * (gy + 9 - top));
     if (i % 6 === 0) y -= 4 + Math.floor(hash(n, i, 613) * 16);

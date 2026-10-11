@@ -100,7 +100,7 @@ export class ArenaView {
   private floaters: FloaterImg[];
   private amb: { petals: string[]; wings: string[]; sparkle: string; bird: string } | null;
   /** A windswept arena's sand and hawk colours. */
-  private wind: { sand: string[]; hawk: string } | null;
+  private wind: { sand: string[]; hawk: string; dust: string } | null;
   private sky: { stars: HTMLCanvasElement; rainbow: HTMLCanvasElement | null; moon: HTMLCanvasElement; lamp: HTMLCanvasElement; firefly: HTMLCanvasElement } | null;
   /** Share of the round gone by (0 noon … 1 night) for arenas with a day cycle. */
   private day = 0;
@@ -130,7 +130,7 @@ export class ArenaView {
     this.sky = cy && { stars: canvasOf(cy.stars), rainbow: cy.rainbow ? canvasOf(cy.rainbow) : null, moon: canvasOf(cy.moon), lamp: glowSprite(cy.lampColor), firefly: glowSprite(0xd8ff70) };
     this.amb = a && { petals: a.petals.map((c) => css(c)), wings: a.butterflies.map((c) => css(c)), sparkle: css(a.sparkle), bird: css(a.bird) };
     const wd = this.art.wind;
-    this.wind = wd ? { sand: wd.sand.map((c) => css(c)), hawk: css(wd.hawk) } : null;
+    this.wind = wd ? { sand: wd.sand.map((c) => css(c)), hawk: css(wd.hawk), dust: css(wd.dust) } : null;
     this.crowd = this.art.crowd.map(canvasOf);
     this.floor = canvasOf(this.art.floor);
     this.pillar = canvasOf(this.art.pillar);
@@ -198,7 +198,7 @@ export class ArenaView {
       const m = smooth(0.8, 0.95, this.day);
       [L.x, L.y] = this.moonPos();
       L.color = 0x9cb6ff;
-      L.power = 0.45 * m;
+      L.power = 0.45 * m * (cy.rays ?? 1);
       elev = 1 - L.y / cy.hz;
       cast = 0.16 * m;
     }
@@ -267,7 +267,7 @@ export class ArenaView {
       else if (l.after === 'shimmer' && this.art.wind) shimmer(g, l.img, off(l.img, l.factor), l.y, this.art.wind.shimmer, t, 1 - smooth(0.36, 0.56, this.day));
       else if (l.after === 'devils' && this.wind) {
         const sun = 1 - smooth(0.5, 0.66, this.day);
-        devils(g, cam, l.factor, W, this.art.wind!.devils, t, sun, this.wind.sand[0]);
+        devils(g, cam, l.factor, W, this.art.wind!.devils, t, sun, this.wind.dust);
         hawks(g, cam, W, this.art.cycle?.hz ?? this.gy, t, sun, this.wind.hawk);
       }
     }

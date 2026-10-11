@@ -128,8 +128,9 @@ export interface Wind {
   sand: number[];
   /** Screen rows of the far layer that shimmer in the heat. */
   shimmer: [number, number];
-  /** The screen row dust devils wander along (on the layer marked 'devils'). */
+  /** The screen row dust devils wander along (on the layer marked 'devils'), and their colour. */
   devils: number;
+  dust: number;
   /** Colour of the hawks circling high up. */
   hawk: number;
 }

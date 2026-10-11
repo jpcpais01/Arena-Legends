@@ -127,7 +127,7 @@ export function buildMesa(theme: Theme, W: number, H: number, gy: number, travel
     wind: {
       sand: [SAND[1], SAND[3], SAND[4], 0xfff0d6],
       shimmer: [hz - 10, hz + 5],
-      devils: hz + 14,
+      devils: hz + 14, dust: 0x8e5040,
       hawk: 0x3a2220,
     },
   };
@@ -144,7 +144,7 @@ const SKY_KEYS: SkyKey[] = [
   { at: 0.5, sky: [0x2a3e7e, 0x765e94, 0xf08a6a, 0xffae5c], glow: 0xffa452, glowA: 0.78, band: 0xff7a40, bandA: 0.58, tint: 0xff8050, tintA: 0.22 },
   { at: 0.62, sky: [0x1e2662, 0x56387c, 0xd45a7c, 0xff8a58], glow: 0xff6e50, glowA: 0.62, band: 0xf05a5a, bandA: 0.6, tint: 0xd85a6a, tintA: 0.28 },
   { at: 0.74, sky: [0x0e1440, 0x262462, 0x6a307a, 0xb24e72], glow: 0xc04070, glowA: 0.22, band: 0x9a3a70, bandA: 0.36, tint: 0x2e2064, tintA: 0.44 },
-  { at: 0.88, sky: [0x03061a, 0x080f30, 0x14204c, 0x24305c], glow: 0x6070a0, glowA: 0, band: 0x2a3066, bandA: 0.12, tint: 0x081030, tintA: 0.58 },
+  { at: 0.88, sky: [0x03061a, 0x080f30, 0x14204c, 0x24305c], glow: 0x6070a0, glowA: 0, band: 0x2a3066, bandA: 0.12, tint: 0x08123a, tintA: 0.64 },
 ];
 
 // --- Sky and distance ---------------------------------------------------------------
