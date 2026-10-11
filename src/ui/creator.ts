@@ -90,17 +90,17 @@ const trim = (v: number) => (Math.round(v * 10) / 10).toFixed(1).replace(/\.0$/,
 function fmtGain(stat: keyof Stats, v: number): string {
   return stat === 'attackSpeed' || stat === 'critChance' ? `${trim(v * 100)}%` : stat === 'maxHp' ? String(Math.round(v)) : trim(v);
 }
-/** "+20 health a point", scaled down once a stat tapers. */
+/** "+20 per point", scaled down once a stat tapers. */
 function perPoint(id: TrainId, worth: number): string {
   const a = TRAIN[id].add;
   const tag = worth < 1 ? ` (${Math.round(worth * 100)}%)` : '';
   switch (id) {
-    case 'health': return `+${Math.round(a.maxHp! * worth)} health a point${tag}`;
-    case 'power': return `+${trim(a.power! * worth)} power a point${tag}`;
-    case 'armor': return `+${trim(a.armor! * worth)} armor a point${tag}`;
-    case 'resist': return `+${trim(a.resist! * worth)} resist a point${tag}`;
-    case 'speed': return `+${trim(a.attackSpeed! * 100 * worth)}% speed a point${tag}`;
-    case 'crit': return `+${trim(a.critChance! * 100 * worth)}% crit a point${tag}`;
+    case 'health': return `+${Math.round(a.maxHp! * worth)} per point${tag}`;
+    case 'power': return `+${trim(a.power! * worth)} per point${tag}`;
+    case 'armor': return `+${trim(a.armor! * worth)} per point${tag}`;
+    case 'resist': return `+${trim(a.resist! * worth)} per point${tag}`;
+    case 'speed': return `+${trim(a.attackSpeed! * 100 * worth)}% per point${tag}`;
+    case 'crit': return `+${trim(a.critChance! * 100 * worth)}% per point${tag}`;
   }
 }
 

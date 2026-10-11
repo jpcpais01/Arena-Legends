@@ -22,6 +22,7 @@ import { DEFAULT_BUILDS, sanitizeBuild } from './sim/loadout';
 import type { BattleEvent } from './sim/types';
 import { creatorSheet } from './ui/creator';
 import { installFrames } from './ui/frames';
+import { installDigits } from './ui/digits';
 import { TitleScreen } from './ui/title';
 import { h, save, store } from './ui/dom';
 import { icon } from './ui/icons';
@@ -67,6 +68,7 @@ import { isOnline } from './account/presence';
 type State = 'menu' | 'intro' | 'battle' | 'results';
 
 installFrames();
+installDigits();
 const app = document.getElementById('app')!;
 const ui = document.getElementById('ui')!;
 const screen = new Screen(app);

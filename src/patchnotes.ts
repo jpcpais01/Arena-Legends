@@ -12,6 +12,40 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.89.0',
+    date: '2026-10-11',
+    title: 'Clearer menus on phones, part 3',
+    notes: [
+      'In the Arena Cup the Fight button always shows on a phone, even with the browser bar taking space.',
+      'Train your stats fits on one screen sideways: each stat shows its value beside the buttons.',
+      'Before an online round, both fighter cards line up and your style is no longer named twice.',
+      'Empty loadout slots only offer Save, the signed-out Friends window is small and to the point, and the leaderboard drops a repeated hint.',
+    ],
+  },
+  {
+    version: '0.88.0',
+    date: '2026-10-11',
+    title: 'Clearer menus on phones, part 2',
+    notes: [
+      'Item skin icons have one clean border tinted by rarity, instead of looking framed twice.',
+      'The Armory gives the item list and the item card more room on a phone, so names and skills stop squeezing.',
+      'Shop offers sit on three tabs: Daily skins, Entrances and Mythic sets, each with its count, instead of one long scroll.',
+      'The Forge shows each rarity with its 0/3 progress once, and the chest panel says less and fits a phone with its browser bar.',
+    ],
+  },
+  {
+    version: '0.87.0',
+    date: '2026-10-11',
+    title: 'Clearer menus on phones, part 1',
+    notes: [
+      'Numbers are easier to read everywhere: gem counts, prices, levels and room codes no longer turn a 5 into an S.',
+      'Fight results lay out sideways on a phone: the verdict, rewards and buttons on the left and the stat duel on the right, with nothing to scroll.',
+      'Settings fit on one screen: sound, battle and arena side by side.',
+      'Patch notes have a list of versions beside them. Tap one to jump to it.',
+      'Play online, the room code screen and the Arena Cup start screen are shorter and tidier, and fit with the browser bar showing.',
+    ],
+  },
+  {
     version: '0.86.0',
     date: '2026-10-11',
     title: 'Mythic is the rarest',

@@ -107,9 +107,8 @@ export function chestScreen(cb: ChestCallbacks): { el: HTMLElement; dispose(): v
     odds,
     pityLine,
     h('div.chest-buy', null, buy1, buy10),
-    h('p.chest-note', null, h('b', null, 'Open 10'), ' costs one chest less and always holds an epic or better.'),
-    h('p.chest-note', null, 'Already own a skin? The copy goes to your spares: melt ', h('b', null, `${FORGE_COST} of a rarity`), ' in the ', h('b', null, 'Forge'), ' for one of the next.'),
-    h('p.chest-note.earn', null, icon('swords'), ` Win fights to earn gems: ${WIN_BASE} per win, plus up to ${WIN_HP_BONUS} more for the health you keep.`),
+    h('p.chest-note', null, h('b', null, 'Open 10'), ' costs one chest less and holds an Epic or better. Duplicates go to the ', h('b', null, 'Forge'), '.'),
+    h('p.chest-note.earn', null, icon('swords'), ` Wins pay ${WIN_BASE} gems, plus up to ${WIN_HP_BONUS} for the health you keep.`),
   );
 
   const tabs = () => shopTabs('chests', (t) => { if (busy) return; sfx.play('select'); if (t === 'offers') cb.onShop?.(); else if (t === 'forge') cb.onForge?.(); });

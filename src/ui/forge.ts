@@ -57,7 +57,7 @@ export function forgeScreen(cb: ForgeCallbacks): { el: HTMLElement; dispose(): v
       const into = forgeInto(r);
       const strip = h('div.forge-strip', null, ...(mine.length
         ? mine.map(([s, c]) => h(`span.sock.r-${r}`, { title: `${s.name} (${gearOf(s.gear).name}) x${c}`, 'data-id': s.id }, skinArt(s, 40), c > 1 ? h('i.forge-x', null, `x${c}`) : null))
-        : [h('small.forge-none', null, 'No spares')]));
+        : [h('small.forge-none', null, 'None yet')]));
       const pips = into ? h('span.forge-pips', null, ...Array.from({ length: FORGE_COST }, (_, i) => h(`i${i < n ? '.on' : ''}`))) : null;
       const btn = into
         ? h<HTMLButtonElement>(`button.btn.forge-btn${n >= FORGE_COST ? '.primary' : ''}`, {
@@ -66,12 +66,12 @@ export function forgeScreen(cb: ForgeCallbacks): { el: HTMLElement; dispose(): v
         }, icon('anvil'), h('span', null, `${FORGE_COST}`), icon('play'), h(`b.r-${into}`, null, TIER_NAME[into]))
         : h('small.forge-top', null, 'Top tier');
       return h(`div.forge-row.${r}`, null,
-        h('div.forge-tier', null, h(`b.tier.r-${r}`, null, TIER_NAME[r]), h('small', null, `${n} spare${n === 1 ? '' : 's'}`), pips),
+        h('div.forge-tier', null, h(`b.tier.r-${r}`, null, TIER_NAME[r]), h('div.forge-count', null, pips, h('small', null, into && n < FORGE_COST ? `${n}/${FORGE_COST}` : `${n} spare${n === 1 ? '' : 's'}`))),
         strip, btn);
     });
     panel.replaceChildren(
       h('div.ribbon', null, h('span', null, 'Forge')),
-      h('p.chest-blurb', null, `Duplicates from chests wait here as spares. Forge ${FORGE_COST} of one rarity into a random skin of the next rarity up.`),
+      h('p.chest-blurb', null, `Chest duplicates land here. Forge ${FORGE_COST} of a rarity into a random skin one rarity up.`),
       h('div.forge-rows', null, ...rows),
     );
   }

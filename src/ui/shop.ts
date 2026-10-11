@@ -56,6 +56,17 @@ function countdown(ms: number): string {
  * as a bundle priced by the pieces you still miss. The Chests tab opens the
  * gacha. Everything costs gems. A buy button asks once more before paying.
  */
+type Shelf = 'daily' | 'ent' | 'fin' | 'pose' | 'sets';
+const SHELVES: [Shelf, string, string][] = [
+  ['daily', 'Daily skins', 'New ones every day.'],
+  ['ent', 'Entrances', 'Tap one to watch it on the stage.'],
+  ['fin', 'Finishers', 'Tap one to watch it on the stage.'],
+  ['pose', 'Poses', 'Victory poses: tap one to watch it on the stage.'],
+  ['sets', 'Mythic sets', 'Pay only for the pieces you miss.'],
+];
+/** The shelf the shop opens on: the one the player last looked at (this session). */
+let lastShelf: Shelf = 'daily';
+
 export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): void } {
   let day = shopDay();
   let previews: Preview[] = [];
@@ -71,7 +82,12 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
   const gemChip = h('div.gem-chip', { title: 'Gems' }, icon('gem'), gemNum);
 
   const feat = h('section.shop-feat.frame');
-  const shelves = h('section.shop-shelves.scr-panel.frame');
+  let shelf: Shelf = lastShelf;
+  /** The shelf on screen at the last render (its scroll is kept across re-renders). */
+  let shownShelf = '';
+  const shelfTabs = h('nav.shelf-tabs', { role: 'tablist', 'aria-label': 'Offers' });
+  const shelfBody = h('div.shelf-body');
+  const shelves = h('section.shop-shelves.frame', null, shelfTabs, shelfBody);
   const got = h('div.shop-got-wrap');
   const timer = h('span.shop-timer');
 
@@ -216,10 +232,8 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
     for (const t of shelves.querySelectorAll<HTMLElement>('.offer.ent')) t.classList.toggle('peek', t.dataset.ent === peekFin);
   }
 
-  function finaleShelf(s: FinaleShelf): HTMLElement[] {
-    return [
-      h('div.shelf-head', null, h('div.ribbon', null, h('span', null, s.title)), h('small', null, 'Tap one to watch it')),
-      h('div.shelf-picks', null, ...s.ids.filter((id) => s.def(id).price > 0).map((id) => {
+  function finaleShelf(s: FinaleShelf): HTMLElement {
+    return h('div.shelf-picks', null, ...s.ids.filter((id) => s.def(id).price > 0).map((id) => {
         const e = s.def(id), key = `${s.key}:${id}`;
         const mine = s.owns(id);
         const using = mine && s.using(id);
@@ -234,8 +248,7 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
           !mine ? buyBtn(e.price, '', () => { if (s.buy(id)) unlocked(e, s.glyph(id), 'trophy', () => s.use(id)); })
             : using ? h('span.owned-tag', null, icon('check'), 'In use')
               : h('button.btn.sm', { onclick: (ev: MouseEvent) => { ev.stopPropagation(); s.use(id); sfx.play('equip'); render(); } }, icon('trophy'), 'Use'));
-      })),
-    ];
+      }));
   }
 
   function featured(): void {
@@ -271,10 +284,17 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
     const sets = SKIN_SETS.filter((s) => s.id !== featId).map((s) => setOffer(s));
     // Sets you can still complete first, owned ones last.
     sets.sort((a, b) => (a.missing.length ? 0 : 1) - (b.missing.length ? 0 : 1));
-    const scroll = shelves.scrollTop;
-    shelves.replaceChildren(
-      h('div.shelf-head', null, h('div.ribbon', null, h('span', null, 'Daily skins')), h('small', null, 'New ones every day')),
-      h('div.shelf-picks', null, ...picks.map((s) => {
+    const ents = ENTRANCE_IDS.filter((id) => ENTRANCES[id].price > 0);
+    const priced = (f: FinaleShelf) => f.ids.filter((id) => f.def(id).price > 0).length;
+    const counts: Record<Shelf, number> = { daily: picks.length, ent: ents.length, fin: priced(finales[0]), pose: priced(finales[1]), sets: sets.length };
+    const scroll = shelfBody.scrollTop;
+    // One shelf at a time, picked on the tabs: less to take in, and every card gets room for its full name.
+    shelfTabs.replaceChildren(...SHELVES.map(([id, label]) => h(`button.shelf-tab${shelf === id ? '.on' : ''}`, {
+      role: 'tab', 'aria-selected': String(shelf === id),
+      onclick: () => { if (shelf === id) return; shelf = lastShelf = id; sfx.play('select'); shownShelf = ''; render(); },
+    }, h('span', null, label), h('small', null, String(counts[id])))));
+    const hint = SHELVES.find(([id]) => id === shelf)![2];
+    const daily = () => h('div.shelf-picks.daily', null, ...picks.map((s) => {
         const mine = owns(s.id);
         return h(`div.offer.r-${s.rarity}${mine ? '.mine' : ''}`, null,
           h('span.offer-tier', null, TIER[s.rarity]),
@@ -282,9 +302,8 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
           h('b.offer-name', null, s.name),
           h('small.offer-item', null, gearOf(s.gear).name),
           mine ? h('span.owned-tag', null, icon('check'), 'Owned') : buyBtn(SKIN_PRICE[s.rarity], '', () => buyOne(s)));
-      })),
-      h('div.shelf-head', null, h('div.ribbon', null, h('span', null, 'Entrances')), h('small', null, 'Tap one to watch it')),
-      h('div.shelf-picks', null, ...ENTRANCE_IDS.filter((id) => ENTRANCES[id].price > 0).map((id) => {
+      }));
+    const entrances = () => h('div.shelf-picks', null, ...ents.map((id) => {
         const e = ENTRANCES[id];
         const mine = ownsEntrance(id);
         const using = mine && entranceOf(cb.player()?.look, true) === id;
@@ -299,10 +318,8 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
           !mine ? buyBtn(e.price, '', () => buyEnt(e))
             : using ? h('span.owned-tag', null, icon('check'), 'In use')
               : h('button.btn.sm', { onclick: (ev: MouseEvent) => { ev.stopPropagation(); cb.onEntrance(id); sfx.play('equip'); render(); } }, icon('boot'), 'Use'));
-      })),
-      ...finales.flatMap(finaleShelf),
-      h('div.shelf-head', null, h('div.ribbon', null, h('span', null, 'Mythic sets')), h('small', null, 'Pay only for the pieces you miss')),
-      h('div.shelf-sets', null, ...sets.map((o) => {
+      }));
+    const setList = () => h('div.shelf-sets', null, ...sets.map((o) => {
         const have = o.pieces.length - o.missing.length;
         return h(`div.offer-set${o.missing.length ? '' : '.mine'}`, null,
           h('b.set-name', null, o.set.name),
@@ -312,9 +329,11 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
             o.missing.length
               ? buyBtn(o.price, have ? `Last ${o.missing.length}` : 'Set', () => buySet(o))
               : h('button.btn.sm', { onclick: () => askEquip(o) }, icon('bag'), 'Equip')));
-      })),
-    );
-    shelves.scrollTop = scroll;
+      }));
+    shelfBody.replaceChildren(h('p.shelf-hint', null, hint), shelf === 'daily' ? daily() : shelf === 'ent' ? entrances()
+      : shelf === 'fin' ? finaleShelf(finales[0]) : shelf === 'pose' ? finaleShelf(finales[1]) : setList());
+    shelfBody.scrollTop = shownShelf === shelf ? scroll : 0;
+    shownShelf = shelf;
   }
 
   function tick(): void {
