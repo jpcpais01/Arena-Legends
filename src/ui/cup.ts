@@ -197,8 +197,9 @@ export class CupScreen {
   }
 
   /**
-   * The cup's winner, big: the full fighter on a pedestal under the trophy,
-   * their level, build and stats, and the health they kept in every round.
+   * The cup's winner: the fighter on a pedestal under the trophy beside their
+   * name, level, gear and stats, then the road to the cup (who they beat in
+   * each round and how much health they kept).
    */
   private crown(cup: Cup, ci: number): HTMLElement {
     const e = cup.entrants[ci], c = e.build;
@@ -209,28 +210,27 @@ export class CupScreen {
     const art = h('div.cr-art', null, h('div.cc-rays'), p.el, h('div.cc-cup', null, icon('trophy')));
     applyBackdrop(art, look.backdrop);
     p.fitTo(art);
+    const who = you ? 'You' : e.human ? 'Friend' : 'Challenger';
     const road = pathOf(cup, ci).map(({ round, opp, res }) => {
       const o = cup.entrants[opp];
       const pct = Math.round((res?.hp ?? 0) * 100);
       const tone = pct > 50 ? 'hi' : pct > 25 ? 'mid' : 'lo';
       return h(`div.cr-step.${tone}${round === ROUND_COUNT - 1 ? '.final' : ''}`,
         { title: `${ROUNDS[round].name}: beat ${o.build.name} (Lv ${o.level}) ${res?.ko ? 'by K.O.' : 'on time'}, ${pct}% health left` },
-        h('small', null, ROUNDS[round].short),
-        h('span.cr-opp', null, `vs ${o.build.name}`),
+        h('div.cr-step-top', null, h('small', null, ROUNDS[round].short), h('b', null, `${pct}%`, h('em', null, res?.ko ? 'KO' : 'Time'))),
         h('div.cr-hp', null, h('i', { style: { '--w': `${pct}%` } })),
-        h('b', null, `${pct}%`, h('em', null, res?.ko ? 'KO' : 'Time')));
+        h('span.cr-opp', null, `vs ${o.build.name}`));
     });
     return h(`div.cup-crown${you ? '.me' : ''}`, null,
-      art,
-      h('div.cr-info', null,
-        h('div.cr-top', null,
-          h('div.ribbon.cup-ribbon', null, h('span', null, you ? 'Champion!' : 'Champion')),
-          h('div.cf-tag', null, h('span.side-tag', null, you ? 'You' : e.human ? 'Friend' : 'Challenger'), levelBadge(e.level))),
-        h('div.cr-name', null, c.name),
-        h('div.cf-sub', null, `${SPECIES[look.species].name} · ${FORMS[c.form].name}`),
-        h('div.cf-gear', null, ...gearIcons(c).map((g) => h('span.sock', null, g))),
-        h('div.cr-stats', null, ...statCells(c.form, c.gear, c.train))),
-      h('div.cr-road', { 'aria-label': 'Health left after each round' }, ...road));
+      h('div.cr-hero', null,
+        art,
+        h('div.cr-info', null,
+          h('div.cr-kicker', null, icon('trophy'), h('span', null, you ? 'You won the Arena Cup!' : 'Arena Cup champion')),
+          h('div.cr-name', null, c.name),
+          h('div.cr-sub', null, levelBadge(e.level), h('span', null, `${who} · ${SPECIES[look.species].name} · ${FORMS[c.form].name}`)),
+          h('div.cf-gear.cr-gear', null, ...gearIcons(c).map((g) => h('span.sock', null, g))),
+          h('div.cr-stats', null, ...statCells(c.form, c.gear, c.train, true)))),
+      h('div.cr-road', { 'aria-label': 'Road to the cup: health left after each round' }, ...road));
   }
 
   /** A fighter's card in the match panel: portrait, name, level, species and form, gear. */

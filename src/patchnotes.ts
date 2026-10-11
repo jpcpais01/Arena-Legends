@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.77.1',
+    date: '2026-10-11',
+    title: 'Cleaner cup champion screen',
+    notes: [
+      'The Arena Cup winner screen is rebuilt to fit any screen without scrolling: the champion on a pedestal beside their name, level, gear and stats, and the road to the cup in one row below.',
+      'Each round on the road shows the health the champion kept, a colored bar, K.O. or time, and who they beat.',
+    ],
+  },
+  {
     version: '0.77.0',
     date: '2026-10-11',
     title: '12 new portrait backdrops',
