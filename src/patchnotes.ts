@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.91.0',
+    date: '2026-10-11',
+    title: 'New Mythic set: Reign of the Ruler',
+    notes: [
+      'A new Mythic set for the powerhouses: Reign of the Ruler, in black leather and championship gold.',
+      'Seven pieces: the Sceptre of the Ruler (mace), Kingmaker Knuckles (iron cestus), The Undisputed Title (echo stone, a championship belt that floats at your shoulder), a beaded Crown of the Ruler with a gold bird on top (storm crown), the Royal Ring Mantle (a kente-lined royal robe over a bare chest, juggernaut plate), Champion\'s Ring Tights (warlord faulds) and Ruler\'s Stompers (earthshaker boots).',
+      'Wear all seven for its aura: a ring of woven kente at your feet, gold glitter falling like confetti, and every few seconds the ground shakes, dust and pebbles jumping.',
+      'At night its emeralds glow in the crown, the collar, the title, the knuckles, the knee pads and the boots.',
+    ],
+  },
+  {
     version: '0.90.1',
     date: '2026-10-11',
     title: 'Specials face the right way',

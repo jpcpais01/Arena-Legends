@@ -32,6 +32,7 @@ import { OLYMPIAN } from './olympian';
 import { LIONHEART } from './lionheart';
 import { MOTHQUEEN } from './mothqueen';
 import { SKYBELL } from './skybell';
+import { RULER } from './ruler';
 import { WAVE4_MAINS } from './wave4Mains';
 import { WAVE4_OFFHAND } from './wave4Offhand';
 import { WAVE4_SPECIALS } from './wave4Specials';
@@ -390,6 +391,7 @@ export const SKIN_ART: Record<string, SkinArt> = {
   ...LIONHEART,
   ...MOTHQUEEN,
   ...SKYBELL,
+  ...RULER,
   ...WAVE4_MAINS,
   ...WAVE4_OFFHAND,
   ...WAVE4_SPECIALS,
