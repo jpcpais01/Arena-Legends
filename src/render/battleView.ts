@@ -1264,6 +1264,9 @@ export class BattleView implements View {
       const s = projSprite('sigil', Math.floor(this.time * 10), 0, this.fighters[f.id]?.art.specialSkinId);
       const x = Math.round(this.sx(this.lx(f))), y = Math.round(this.sy(this.ly(f) + 2.8));
       g.drawImage(s.img, x - s.ox, y - s.oy);
+      // A legendary sigil sheds its own sparkles (petals, drops...) while it calls the meteor.
+      const v = this.fighters[f.id];
+      if (v) this.itemSparks(v, x, y);
       return;
     }
     if (ab.kind !== 'blade') return;
@@ -1672,6 +1675,9 @@ export class BattleView implements View {
             play: (name, k = 1) => this.play(name, pan, k),
             shake: (a) => this.shake(a),
             flash: (c, a) => this.flash(c, a),
+            light: (l) => { if (this.quiet) return; if (this.gl.ok) this.gl.add(l); else this.soft.add(l); },
+            shock: (sh) => { if (this.gl.ok && !this.quiet) this.gl.shock(sh); },
+            impact: (hi, lo, len) => { if (this.gl.ok && !this.quiet) this.gl.impactFrame(hi, lo, len); },
           };
           meteorImpact(fx, cues, meteorStyle(this.fighters[e.f]?.art.specialSkinId), e.x, e.radius + 0.4, met![0], met![1]);
           this.arena?.cheer(1);

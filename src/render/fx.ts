@@ -67,7 +67,8 @@ export interface Burst {
  */
 interface Pulse {
   kind: 'ring' | 'star' | 'groundRing' | 'crack' | 'pillar' | 'bolt' | 'cloud' | 'clock' | 'runes' | 'eye' | 'swirl' | 'coin' | 'icicles'
-    | 'slash' | 'implode' | 'rays' | 'focus' | 'dome' | 'crater' | 'spires' | 'hellgate' | 'constellation' | 'jet' | 'gust';
+    | 'slash' | 'implode' | 'rays' | 'focus' | 'dome' | 'crater' | 'spires' | 'hellgate' | 'constellation' | 'jet' | 'gust'
+    | 'splash' | 'wave' | 'vines' | 'flower';
   x: number; y: number;
   r: number;
   t: number; max: number;
@@ -80,7 +81,7 @@ interface Pulse {
 }
 
 /** Pulses drawn flat on the ground, under the fighters. */
-const GROUND = new Set<Pulse['kind']>(['groundRing', 'crack', 'crater', 'spires', 'hellgate']);
+const GROUND = new Set<Pulse['kind']>(['groundRing', 'crack', 'crater', 'spires', 'hellgate', 'vines', 'flower']);
 
 interface Pop {
   text: string; x: number; y: number; vy: number;
@@ -199,6 +200,8 @@ export class Fx {
       if (q.kind === 'crater') drawCrater(g, q, cx, cy, k);
       else if (q.kind === 'spires') drawSpires(g, q, cx, cy, k);
       else if (q.kind === 'hellgate') drawHellgate(g, q, cx, cy, k);
+      else if (q.kind === 'vines') drawVines(g, q, cx, cy, k);
+      else if (q.kind === 'flower') drawFlower(g, q, cx, cy, k);
       else if (q.kind === 'groundRing') {
         const rx = q.r * PPM * (0.3 + 0.7 * Math.sqrt(k)), ry = rx * 0.22;
         ellipseOutline(g, cx, cy, rx, ry, css(q.color), k > 0.6 ? 0.5 : 1);
@@ -339,6 +342,10 @@ export class Fx {
         drawDome(g, q, cx, cy, k);
       } else if (q.kind === 'constellation') {
         drawConstellation(g, q, cx, cy, k);
+      } else if (q.kind === 'splash') {
+        drawSplash(g, q, cx, cy, k);
+      } else if (q.kind === 'wave') {
+        drawWave(g, q, cx, cy, k);
       } else if (q.kind === 'jet') {
         drawJet(g, q, cx, cy, k);
       } else if (q.kind === 'gust') {
@@ -725,7 +732,8 @@ function drawDome(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number,
     // scale, colour, alpha, how fast it burns away
     [1, q.color2, 0.55, 1],
     [0.74, q.color, 0.85, 1.5],
-    [0.44, 0xffffff, 1, 2.6],
+    // A void dome has a black heart instead of a white-hot one.
+    [0.44, q.v === 1 ? 0x05020a : 0xffffff, 1, 2.6],
   ];
   for (const [sc, col, al, speed] of layers) {
     const s = sc * grow * (1 - Math.min(1, burn * speed)) ** 0.6;
@@ -745,6 +753,9 @@ function craterLook(q: Pulse): { crust: number; crustA: number; glints: number }
     case 1: return { crust: mix(q.color, 0x6a8ab8, 0.5), crustA: 0.5, glints: 14 };
     case 2: return { crust: 0x14060a, crustA: 0.6, glints: 0 };
     case 3: return { crust: mix(q.color, 0x140a30, 0.7), crustA: 0.35, glints: 16 };
+    case 4: return { crust: mix(q.color, 0x0a2a4a, 0.55), crustA: 0.55, glints: 18 };
+    case 5: return { crust: 0x2a5a24, crustA: 0.4, glints: 12 };
+    case 6: return { crust: 0x05020a, crustA: 0.7, glints: 14 };
     default: return { crust: 0x241014, crustA: 0.5, glints: 0 };
   }
 }
@@ -906,4 +917,149 @@ function drawJet(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, 
       g.fillRect(x - 1, cy - j, 3, 1);
     }
   }
+}
+
+/**
+ * A crown of water thrown up where something crashed in: a hollow sheet
+ * rising highest at its rim, fingers of water breaking off the rim into
+ * drops, then falling back and breaking up.
+ */
+function drawSplash(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+  const R = q.r * PPM;
+  const out = 1 - (1 - Math.min(1, k * 2.2)) ** 2;
+  const rim = R * (0.18 + 0.5 * out);
+  const H = R * 0.62 * Math.sin(Math.PI * Math.min(1, k * 1.15));
+  if (H < 1) return;
+  const ph = Math.floor(q.t * 20);
+  const thin = k > 0.6;
+  // The sheet: tallest at the rim, low in the hollow middle; water with a light edge.
+  for (let dx = -Math.round(rim); dx <= Math.round(rim); dx++) {
+    const u = Math.abs(dx) / Math.max(1, rim);
+    const h = Math.round(H * (0.12 + 0.88 * u ** 2.6));
+    if (thin && ((dx + ph) & 1)) continue;
+    g.globalAlpha = 0.55 + 0.35 * u;
+    g.fillStyle = css(u > 0.82 ? q.color2 : q.color);
+    g.fillRect(cx + dx, cy - h, 1, h);
+    g.globalAlpha = 1;
+    g.fillStyle = '#fff';
+    g.fillRect(cx + dx, cy - h, 1, 1);
+  }
+  // Fingers off the rim, leaning out, a drop breaking from each tip.
+  const rnd = seq(q.seed + 5);
+  for (let i = 0; i < 12; i++) {
+    const side = i & 1 ? 1 : -1;
+    const lean = 0.25 + rnd() * 0.7;
+    const len = H * (0.25 + rnd() * 0.35);
+    const x0 = cx + side * (rim - rnd() * 4), y0 = cy - H * (0.9 + rnd() * 0.1);
+    const x1 = x0 + side * len * lean, y1 = y0 - len * (1 - lean * 0.5);
+    g.fillStyle = css(q.color2);
+    pxLine(g, Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1));
+    const fly = Math.max(0, k - 0.3) * len * 1.4;
+    g.fillStyle = '#fff';
+    g.fillRect(Math.round(x1 + side * fly * lean), Math.round(y1 - fly * 0.4 + fly * fly * 0.02), 2, 2);
+  }
+}
+
+/** A wave rolling out along the ground both ways from a point, cresting white and curling forward, then spent. */
+function drawWave(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+  const R = q.r * PPM;
+  const pos = R * (0.15 + 0.85 * (1 - (1 - k) ** 2));
+  const h = Math.round(R * 0.2 * Math.sin(Math.PI * Math.min(1, k * 1.1 + 0.08)));
+  if (h < 2) return;
+  const w = Math.round(R * 0.32);
+  const ph = Math.floor(q.t * 18);
+  for (const side of [-1, 1]) {
+    const front = cx + side * pos;
+    for (let i = 0; i <= w; i++) {
+      // A steep face ahead, a long back sloping behind.
+      const u = i / w;
+      const hh = Math.round(h * (u < 0.18 ? u / 0.18 : 1 - ((u - 0.18) / 0.82) ** 1.6));
+      if (hh < 1) continue;
+      const x = Math.round(front - side * i);
+      if (k > 0.65 && ((i + ph) & 1)) continue;
+      g.globalAlpha = 0.75;
+      g.fillStyle = css(q.color);
+      g.fillRect(x, cy - hh, 1, hh);
+      g.globalAlpha = 1;
+      g.fillStyle = css(i < w * 0.3 ? 0xffffff : q.color2);
+      g.fillRect(x, cy - hh, 1, Math.min(2, hh));
+    }
+    // The lip curling over in front, foam spilling off it.
+    g.fillStyle = '#fff';
+    for (let j = 0; j < 4; j++) g.fillRect(Math.round(front + side * (j * 0.8 + 1)), cy - h + j + ((ph + j) & 1), 1, 1);
+  }
+}
+
+/**
+ * Vines bursting out of the ground and racing out along it both ways,
+ * curling up in loops, leaves popping along them and a flower opening at
+ * each tip; then they wither and sink.
+ */
+function drawVines(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+  const R = q.r * PPM;
+  const grow = Math.min(1, k / 0.3);
+  const wither = Math.max(0, (k - 0.7) / 0.3);
+  if (wither > 0.5 && (Math.floor(q.t * 20) & 1)) return;
+  const rnd = seq(q.seed + 13);
+  const vine = css(mix(q.color2, 0x6a5030, wither)), leafC = css(mix(mix(q.color2, 0xffffff, 0.3), 0x8a6a40, wither));
+  for (let n = 0; n < 6; n++) {
+    const side = n & 1 ? 1 : -1;
+    const len = R * (0.45 + rnd() * 0.55) * grow;
+    const amp = 4 + rnd() * 7, freq = 0.06 + rnd() * 0.05, off = rnd() * 6, row = Math.round(rnd() * 6 - 3);
+    let lx = cx, ly = cy + row;
+    for (let d = 2; d <= len; d += 2) {
+      const x = Math.round(cx + side * d);
+      const y = Math.round(cy + row - Math.abs(Math.sin(d * freq + off)) * amp * Math.min(1, d / 12) * (1 - wither * 0.7));
+      g.fillStyle = vine;
+      pxLine(g, lx, ly, x, y);
+      if ((d % 12) === 0) {
+        g.fillStyle = leafC;
+        g.fillRect(x, y - 2, 2, 1);
+        g.fillRect(x + side, y - 1, 2, 1);
+      }
+      lx = x; ly = y;
+    }
+    // A bloom at the tip once grown.
+    if (grow >= 1 && wither < 0.6) {
+      g.fillStyle = css(q.color);
+      g.fillRect(lx - 1, ly - 2, 3, 3);
+      g.fillStyle = '#fff3a0';
+      g.fillRect(lx, ly - 1, 1, 1);
+    }
+  }
+}
+
+/**
+ * A giant flower: a stem shooting up, then petals unfolding wide round a
+ * golden heart, held, then the petals let go.
+ */
+function drawFlower(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+  if (k > 0.82 || (k > 0.72 && (Math.floor(q.t * 24) & 1))) return;
+  const R = q.r * PPM;
+  const stem = Math.round(R * 0.55 * Math.min(1, k / 0.15));
+  const hy = cy - stem;
+  // Stem and two leaves.
+  g.fillStyle = css(q.color2);
+  g.fillRect(cx - 1, hy, 3, stem);
+  if (stem > 8) {
+    for (const s of [-1, 1]) for (let j = 0; j < 6; j++) g.fillRect(cx + s * (2 + j), cy - Math.round(stem * 0.35) - Math.round(j * 0.6 * (1 - j / 8)), 1, 2);
+  }
+  const open = Math.max(0, Math.min(1, (k - 0.12) / 0.18));
+  if (open <= 0) return;
+  // Petals: long ovals swinging out from upright to wide.
+  const n = 7, PL = R * 0.32 * (0.5 + open * 0.5);
+  for (let i = 0; i < n; i++) {
+    const a = -Math.PI / 2 + (i - (n - 1) / 2) * (0.28 + open * 0.3);
+    for (let d = 2; d < PL; d++) {
+      const w = Math.round(Math.sin((d / PL) * Math.PI) * PL * 0.22);
+      const px = cx + Math.cos(a) * d, py = hy + Math.sin(a) * d;
+      g.fillStyle = css(d > PL - 3 ? 0xffffff : q.color);
+      g.fillRect(Math.round(px - w * Math.abs(Math.sin(a))), Math.round(py - w * Math.abs(Math.cos(a)) * 0.6), Math.max(1, Math.round(w * 2 * Math.abs(Math.sin(a)))) || 1, Math.max(1, Math.round(w * 1.2 * Math.abs(Math.cos(a)))) || 1);
+    }
+  }
+  // The golden heart.
+  g.fillStyle = '#ffe060';
+  g.fillRect(cx - 3, hy - 2, 7, 4);
+  g.fillStyle = '#fff6c0';
+  g.fillRect(cx - 1, hy - 1, 3, 2);
 }
