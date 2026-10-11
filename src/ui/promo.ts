@@ -11,7 +11,7 @@ const WHY = {
   used: 'You already redeemed that code.',
 } as const;
 
-const HINT = `Type the ${CODE_LEN}-letter code.`;
+const HINT = `${CODE_LEN} letters.`;
 const ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
 
 /**
