@@ -52,20 +52,20 @@ function dust(fx: Fx, x: number, count: number): void {
 /** A flat ring of light racing out along the ground, with the floor's refraction under it. */
 function groundShock(h: SuperHost, look: SuperLook, x: number, r: number, life = 0.5): void {
   h.gl.add({ kind: 'ring', x, y: 0.05, r0: r * 0.15, r1: r, w: 0.07, squash: 0.22, hi: look.hi, lo: look.lo, life, power: 1.1, fin: 0 });
-  h.gl.shock({ x, y: 0.1, r: r * 0.9, amp: 3, life: life * 0.9, hi: look.lo });
+  h.gl.shock({ x, y: 0.1, r: r * 0.9, amp: 3, life: life * 0.9, hi: look.lo, squash: 0.35 });
 }
 
 /**
  * The blow that lands: an impact frame, a shockwave that bends the picture,
  * a burst of light with a long lens streak, and the screen smearing in.
  */
-function blow(h: SuperHost, look: SuperLook, x: number, y: number, size = 1): void {
+function blow(h: SuperHost, look: SuperLook, face: number, x: number, y: number, size = 1): void {
   const { gl } = h;
   gl.impactFrame(look.hi, mixInk(look.lo));
-  gl.shock({ x, y, r: 2.6 * size, amp: 6, life: 0.45, hi: look.hi });
+  gl.shock({ x, y, r: 2.6 * size, amp: 6, life: 0.5, hi: look.hi, dir: face, squash: 0.8 });
   gl.zoomBlur(x, y, 0.035 * size, 0.22);
   glow(h, x, y, 0.3, 0.8 * size, look.hi, look.lo, 0.35, 0.6, { fin: 0, real: true });
-  gl.add({ kind: 'ring', x, y, r0: 0.2, r1: 1.9 * size, w: 0.06, hi: look.hi, lo: look.lo, life: 0.4, power: 1.1, fin: 0, real: true });
+  gl.add({ kind: 'ring', x, y, r0: 0.2, r1: 1.9 * size, w: 0.06, squash: 0.85, hi: look.hi, lo: look.lo, life: 0.4, power: 1.1, fin: 0, real: true });
   gl.add({ kind: 'flare', x, y, r0: 1.0 * size, r1: 3.2 * size, w: 0.045, hi: look.hi, lo: look.lo, life: 0.45, power: 0.9, fin: 0, real: true });
   gl.add({ kind: 'rays', x, y, r0: 0.8 * size, r1: 2.2 * size, hi: look.hi, lo: look.lo, life: 0.35, power: 0.4, seed: Math.random() * 50, real: true });
   sparks(h.fx, look, x, y, Math.round(14 * size));
@@ -149,7 +149,7 @@ export function superRelease(h: SuperHost, id: string, look: SuperLook, f: At): 
     case 'thunderclap':
       // Thunder bursts round the caster: a white-hot dome and the air itself rippling out.
       glow(h, f.x, 1.1, 0.6, 2.0, look.hi, look.lo, 0.4, 1.3, { fin: 0 });
-      gl.shock({ x: f.x, y: 1.0, r: 3.2, amp: 7, life: 0.5, hi: look.hi });
+      gl.shock({ x: f.x, y: 1.0, r: 3.2, amp: 7, life: 0.55, hi: look.hi, squash: 0.75 });
       gl.add({ kind: 'ring', x: f.x, y: 1.0, r0: 0.4, r1: 2.6, w: 0.08, hi: look.hi, lo: look.lo, life: 0.4, power: 1.1, fin: 0 });
       gl.add({ kind: 'rays', x: f.x, y: 1.1, r0: 1.2, r1: 3, hi: look.hi, lo: look.lo, life: 0.35, power: 0.6, seed: Math.random() * 50 });
       groundShock(h, look, f.x, 2.4, 0.45);
@@ -171,23 +171,23 @@ export function superImpactFx(h: SuperHost, id: string, look: SuperLook, x: numb
   }
   switch (id) {
     case 'rising_cleave':
-      blow(h, look, x, y);
+      blow(h, look, face, x, y);
       beam(h, look, x, 0, UP, 3.8, 0.2, 0.45, { power: 0.75, delay: 0.03 });
       break;
     case 'crescent_chop':
-      blow(h, look, x, y, 1.15);
+      blow(h, look, face, x, y, 1.15);
       groundShock(h, look, x, 3.2, 0.6);
       dust(fx, x, 10);
       break;
     case 'skull_crack':
-      blow(h, look, x, y + 0.4);
+      blow(h, look, face, x, y + 0.4);
       gl.add({ kind: 'star', x, y: y + 0.6, r0: 0.6, r1: 1.4, w: 0.05, hi: WHITE, lo: look.hi, life: 0.3, power: 1.2, fin: 0 });
       groundShock(h, look, x, 2.2, 0.5);
       fx.burst({ x, y: y + 0.6, count: 8, speed: [1.5, 3], life: [0.5, 0.9], color: 0xfff0a0, color2: look.hi, drag: 2.5, kind: 'twinkle' });
       dust(fx, x, 6);
       break;
     case 'grave_harvest': {
-      blow(h, look, x, y);
+      blow(h, look, face, x, y);
       // Their soul is torn out and streams back into the reaper.
       const toward = fromX < x ? Math.PI : 0, d = Math.abs(fromX - x);
       fx.burst({ x, y, count: 18, jitter: 0.2, jitterY: 0.3, dir: toward, spread: 0.2, speed: [d * 2.2, d * 3], life: [0.3, 0.45], color: look.hi, color2: look.lo, drag: 0.8, kind: look.kind });
@@ -200,54 +200,54 @@ export function superImpactFx(h: SuperHost, id: string, look: SuperLook, x: numb
       sparks(fx, look, x, y, 8, [2, 5]);
       h.later(0.05, () => {
         for (const r of [0.75, -0.75]) beam(h, look, x - Math.cos(r) * 1.1, y - Math.sin(r) * 1.1, r, 2.2, 0.07, 0.32, { r0: 2.2 });
-        blow(h, look, x, y);
+        blow(h, look, face, x, y);
         h.shake(0.45);
       });
       break;
     case 'fleche':
     case 'skewer':
-      blow(h, look, x, y, id === 'skewer' ? 1.1 : 0.95);
+      blow(h, look, face, x, y, id === 'skewer' ? 1.1 : 0.95);
       beam(h, look, x - face * 0.4, y, fwd, id === 'skewer' ? 3.2 : 3.8, id === 'skewer' ? 0.12 : 0.06, 0.3);
       if (id === 'skewer') groundShock(h, look, x + face * 0.6, 2, 0.45);
       break;
     case 'whirlwind':
-      blow(h, look, x, y, 0.9);
+      blow(h, look, face, x, y, 0.9);
       arc(h, look, x, y, face, 1.0, -0.5, 2.4, 0.1, 0.24);
       break;
     case 'venom_flurry':
-      blow(h, look, x, y, 0.8);
+      blow(h, look, face, x, y, 0.8);
       fx.burst({ x, y, count: 10, speed: [2, 5], life: [0.4, 0.7], color: look.hi, color2: look.lo, gravity: 9, kind: 'drop' });
       break;
     case 'flame_wave':
-      blow(h, look, x, y, 1.1);
+      blow(h, look, face, x, y, 1.1);
       fx.burst({ x, y: 0.3, count: 18, jitter: 0.3, dir: UP, spread: 0.5, speed: [2, 6], life: [0.4, 0.8], color: look.hi, color2: look.lo, gravity: -2, drag: 1.3, kind: 'flame' });
       break;
     case 'ground_slam':
-      blow(h, look, x, y, 1.05);
+      blow(h, look, face, x, y, 1.05);
       groundShock(h, look, x, 2.6, 0.5);
       dust(fx, x, 8);
       break;
     case 'power_shot':
-      blow(h, look, x, y);
+      blow(h, look, face, x, y);
       beam(h, look, x - face * 2, y, fwd, 3.4, 0.05, 0.25, { power: 0.8 });
       break;
     case 'hex_orb':
       // The curse closes in on them, then bursts.
       gl.add({ kind: 'ring', x, y, r0: 1.6, r1: 0.2, w: 0.06, hi: look.hi, lo: look.lo, life: 0.22, power: 1, fin: 0 });
-      h.later(0.14, () => blow(h, look, x, y));
+      h.later(0.14, () => blow(h, look, face, x, y));
       break;
     case 'bone_spikes':
-      blow(h, look, x, y, 0.95);
+      blow(h, look, face, x, y, 0.95);
       for (const dx of [-0.35, 0.1, 0.45]) beam(h, look, x + dx, 0, UP + dx * 0.4, 1.6 + Math.abs(dx), 0.08, 0.35, { power: 0.8 });
       break;
     case 'thunderclap':
-      blow(h, look, x, y, 0.9);
+      blow(h, look, face, x, y, 0.9);
       break;
     case 'chain_hook':
       tap(h, look, x, y);
-      gl.shock({ x, y, r: 1.4, amp: 4, life: 0.3, hi: look.hi });
+      gl.shock({ x, y, r: 1.4, amp: 4, life: 0.3, hi: look.hi, dir: face });
       break;
     default:
-      blow(h, look, x, y);
+      blow(h, look, face, x, y);
   }
 }

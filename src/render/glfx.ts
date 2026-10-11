@@ -57,8 +57,13 @@ export interface Shock {
   amp: number;
   life: number;
   hi: number;
+  /** Vertical squash (below 1 hugs the ground). */
+  squash?: number;
+  /** Which way the blow travelled (±1): the wave runs further that way. */
+  dir?: number;
   t?: number;
   delay?: number;
+  seed?: number;
 }
 
 const MAX_SHOCKS = 4;
@@ -76,12 +81,20 @@ uniform vec2 res, buf, dxy, org;
 uniform float vs;
 uniform vec4 shock[${MAX_SHOCKS}];
 uniform vec4 shockC[${MAX_SHOCKS}];
+uniform vec4 shockD[${MAX_SHOCKS}];
 uniform vec4 zoom;
 uniform float ca;
 uniform vec4 imp;
 uniform vec3 impHi, impLo;
 uniform vec4 vig;
 out vec4 o;
+float h1(float n) { return fract(sin(n) * 43758.5453); }
+// Smooth noise round a circle: angle (radians) at a frequency of n bumps, seeded.
+float ring(float ang, float n, float seed) {
+  float x = (ang / 6.2831853 + 0.5) * n;
+  float i = floor(x), f = fract(x);
+  return mix(h1(mod(i, n) + seed), h1(mod(i + 1.0, n) + seed), f * f * (3.0 - 2.0 * f));
+}
 vec3 at(vec2 p) {
   vec2 a = (p - dxy) / vs + org;
   if (a.x < 0.0 || a.y < 0.0 || a.x >= buf.x || a.y >= buf.y) return vec3(0.0);
@@ -94,12 +107,25 @@ void main() {
   for (int i = 0; i < ${MAX_SHOCKS}; i++) {
     vec4 s = shock[i];
     if (s.w == 0.0) continue;
+    vec4 sd = shockD[i];
     vec2 d = p - s.xy;
+    d.y /= sd.y;
     float l = length(d);
-    float w = shockC[i].w;
-    float f = exp(-pow((l - s.z) / w, 2.0));
-    q -= d / max(l, 1.0) * f * s.w;
-    rim += shockC[i].rgb * f * 0.35 * min(1.0, s.w / (w * 0.25));
+    float ang = atan(d.y, d.x);
+    // The front is never a clean circle: its radius, thickness and strength wander round it, the
+    // noise drifting as it travels, and it runs further in the direction of the blow.
+    float n1 = ring(ang, 7.0, sd.x + floor(sd.w * 6.0)), n2 = ring(ang, 17.0, sd.x + 31.0);
+    float lean = 1.0 + sd.z * cos(ang) * 0.22;
+    float R = s.z * lean * (0.9 + 0.16 * n1 + 0.06 * n2);
+    float w = shockC[i].w * (0.6 + 0.8 * n2);
+    float x = (l - R) / w;
+    // A wave packet, not a bump: a strong leading crest and fainter ripples trailing inside it.
+    float f = sin(x * 2.4 + 1.2) * exp(-x * x * 0.5) * step(x, 2.0) * mix(1.0, exp(x * 0.35), step(x, 0.0));
+    float str = s.w * (0.35 + 0.9 * n1 * n2 + 0.25 * n2);
+    vec2 nd = d / max(l, 1.0);
+    nd.y *= sd.y;
+    q -= nd * f * str;
+    rim += shockC[i].rgb * max(f, 0.0) * 0.28 * n1 * min(1.0, s.w / (w * 0.25));
   }
   vec3 c;
   if (zoom.z > 0.0) {
@@ -140,6 +166,11 @@ uniform float pw;
 out vec4 o;
 const float PI = 3.14159265;
 float hash(float n) { return fract(sin(n) * 43758.5453); }
+float ring(float ang, float n, float seed) {
+  float x = (ang / 6.2831853 + 0.5) * n;
+  float i = floor(x), f = fract(x);
+  return mix(hash(mod(i, n) + seed), hash(mod(i + 1.0, n) + seed), f * f * (3.0 - 2.0 * f));
+}
 void main() {
   vec2 p = vec2(gl_FragCoord.x, res.y - gl_FragCoord.y);
   p = (floor((p - dxy) / vs) + 0.5) * vs + dxy;
@@ -153,10 +184,16 @@ void main() {
     v = exp(-r * r * 3.0);
     core = exp(-r * r * 18.0);
   } else if (kind == 1) {
+    // A ring of light that wobbles, thins and breaks up round its edge like a real blast front.
     q.y /= max(a.z, 0.05);
-    float e = abs(length(q) - R);
-    v = exp(-pow(e / W, 2.0)) + 0.15 * exp(-pow(e / (W * 2.5), 2.0));
-    core = exp(-pow(e / (W * 0.35), 2.0));
+    float ang = atan(q.y, q.x);
+    float n1 = ring(ang, 6.0, b.z + floor(b.w * 5.0)), n2 = ring(ang, 15.0, b.z + 17.0);
+    float rr = R * (0.9 + 0.14 * n1 + 0.05 * n2);
+    float th = W * (0.45 + 0.9 * n2);
+    float e = length(q) - rr;
+    float broken = smoothstep(0.18, 0.6, n1 * 0.6 + n2 * 0.55);
+    v = (exp(-pow(e / th, 2.0)) + 0.35 * exp(-pow((e + th * 2.6) / (th * 0.8), 2.0))) * broken + 0.12 * exp(-pow(e / (th * 3.0), 2.0));
+    core = exp(-pow(e / (th * 0.35), 2.0)) * broken * n1;
   } else if (kind == 2) {
     // A blade arc: angle along the sweep (0..1), head racing ahead, tail fading behind, tapered ends.
     float ang = atan(q.y, q.x);
@@ -263,7 +300,7 @@ export class GlFx {
     };
     this.post = prog(POST);
     this.light = prog(LIGHT);
-    for (const n of ['scene', 'res', 'buf', 'dxy', 'org', 'vs', 'zoom', 'ca', 'imp', 'impHi', 'impLo', 'vig', 'shock', 'shockC']) this.pu[n] = gl.getUniformLocation(this.post, n);
+    for (const n of ['scene', 'res', 'buf', 'dxy', 'org', 'vs', 'zoom', 'ca', 'imp', 'impHi', 'impLo', 'vig', 'shock', 'shockC', 'shockD']) this.pu[n] = gl.getUniformLocation(this.post, n);
     for (const n of ['res', 'dxy', 'vs', 'kind', 'c', 'a', 'b', 'hi', 'lo', 'pw']) this.lu[n] = gl.getUniformLocation(this.light, n);
     const vb = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vb);
@@ -282,6 +319,7 @@ export class GlFx {
   add(l: Light): Light {
     if (!this.gl) return l;
     l.t = -(l.delay ?? 0);
+    l.seed ??= Math.random() * 97;
     if (this.lights.length < 40) this.lights.push(l);
     return l;
   }
@@ -289,6 +327,7 @@ export class GlFx {
   shock(s: Shock): void {
     if (!this.gl) return;
     s.t = -(s.delay ?? 0);
+    s.seed ??= Math.random() * 97;
     if (this.shocks.length >= MAX_SHOCKS) this.shocks.shift();
     this.shocks.push(s);
   }
@@ -370,7 +409,7 @@ export class GlFx {
     gl.uniform2f(u.dxy, dx, dy);
     gl.uniform2f(u.org, ox, oy);
     gl.uniform1f(u.vs, vs);
-    const sh = new Float32Array(MAX_SHOCKS * 4), sc4 = new Float32Array(MAX_SHOCKS * 4);
+    const sh = new Float32Array(MAX_SHOCKS * 4), sc4 = new Float32Array(MAX_SHOCKS * 4), sd4 = new Float32Array(MAX_SHOCKS * 4);
     this.shocks.forEach((s, i) => {
       const k = s.t! / s.life;
       if (k < 0) return;
@@ -379,7 +418,9 @@ export class GlFx {
       sh.set([px, py, m(s.r) * (0.1 + 0.9 * e), s.amp * vs * (1 - k) ** 1.5], i * 4);
       const [r, g, b] = rgb(s.hi);
       sc4.set([r, g, b, Math.max(4, m(s.r) * 0.16 * (1 - k * 0.5))], i * 4);
+      sd4.set([s.seed ?? 0, s.squash ?? 1, s.dir ?? 0, k], i * 4);
     });
+    gl.uniform4fv(u.shockD, sd4);
     gl.uniform4fv(u.shock, sh);
     gl.uniform4fv(u.shockC, sc4);
     const z = this.zoomFx;
@@ -433,7 +474,7 @@ export class GlFx {
           const head = Math.min(1, k / 0.45);
           const tail = Math.max(0, (k - 0.2) / 0.8) ** 0.8;
           gl.uniform4f(l.b, head, tail, 0, 0);
-        } else gl.uniform4f(l.b, 0, 0, li.seed ?? 0, 0);
+        } else gl.uniform4f(l.b, 0, 0, li.seed ?? 0, k);
         gl.uniform3f(l.hi, ...rgb(li.hi));
         gl.uniform3f(l.lo, ...rgb(li.lo));
         gl.uniform1f(l.pw, pw);
