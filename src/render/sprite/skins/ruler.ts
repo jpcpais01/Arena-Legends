@@ -91,7 +91,7 @@ function crownMark(F: Xf, x: number, y: number, s: number): Shape {
 }
 
 // -----------------------------------------------------------------------------
-// Sceptre of the Ruler (mace)
+// Sceptre of the Ruler (mace, a legendary skin outside the set)
 // -----------------------------------------------------------------------------
 
 function sceptre(): WeaponArt {
@@ -129,6 +129,39 @@ function sceptre(): WeaponArt {
       for (const y of [-2.4, 2.4]) r.dot(t.x(15.8, y), t.y(15.8, y), m('ruby'), 3, g);
       // Pearls on the points; the light runs along them, one a frame.
       pts.forEach(([y, len], i) => r.dot(t.x(len + 0.5, y), t.y(len + 0.5, y), m(i === ph + 1 ? 'spark' : 'pearl'), i === ph + 1 ? 3 : 3, g));
+    },
+  };
+}
+
+// -----------------------------------------------------------------------------
+// Gloves of the Undisputed (boxing gloves)
+// -----------------------------------------------------------------------------
+
+function gloves(): WeaponArt {
+  // Padded black leather gloves with a band of gold across the knuckles, a cuff of kente laced in gold,
+  // and on the back of the hand a gold crown holding an emerald. A glint runs over the knuckle band.
+  return {
+    tip: 5,
+    mats: {
+      leather: material(S.onyx()), band: material(S.gold(sweep(7, 1.75, 0.9))), gold: material(S.gold(undefined)),
+      green: material(S.green()), red: material(S.ruby()), ink: material({ base: ONYX[1], ramp: ONYX }), emerald: material(S.emerald()),
+    },
+    draw(r, t, m, o) {
+      const g = o.group ?? 6, b = o.toneBias ?? 0;
+      // The kente cuff up the wrist, laced in gold.
+      const cuff = t.cap(-5.2, 0, -2.4, 0, 2.3, 2.5);
+      fillAll(r, [cuff], m('ink'), o, 1.2);
+      kente(r, -5.4, -2, 0.85, cuff, (x0, x1) => t.poly([x0, -3, x1, -3, x1, 3, x0, 3]), m, { gold: 'gold', green: 'green', red: 'red', black: 'ink' }, g, b);
+      for (const x of [-4.6, -3.4]) r.dot(t.x(x, 0.6), t.y(x, 0.6), m('gold'), 3, g);
+      // The padded mitt, the thumb tucked along the top.
+      const mitt = union(t.ell(1.1, 0, 3.6, 3.1), t.ell(-0.8, 0.2, 2.6, 2.7));
+      fillAll(r, [mitt], m('leather'), o, 2.2);
+      fillAll(r, [t.ell(0.2, 2.5, 2.2, 1.05, -0.15)], m('leather'), o, 1, -1);
+      // A gold band over the knuckles.
+      r.fill(intersect(mitt, t.poly([2.4, -4, 3.5, -4, 3.5, 4, 2.4, 4])), m('band'), { group: g, bevel: 0.6, toneBias: b, noLine: true, local: o.local });
+      // The crown on the back of the hand, an emerald in it.
+      r.fill(crownMark(new Xf(t.x(-0.6, 0.9), t.y(-0.6, 0.9), t.ang - Math.PI / 2, t.sx, t.sy), 0, -1, 0.62), m('gold'), { group: g, bevel: 0.3, toneBias: b + 1 });
+      r.dot(t.x(-0.6, 0.9), t.y(-0.6, 0.9), m('emerald'), 3, g);
     },
   };
 }
@@ -540,6 +573,7 @@ export function rulerAura(g: CanvasRenderingContext2D, x: number, y: number, t: 
 }
 
 export const RULER: Record<string, SkinArt> = {
+  'boxing_gloves.ruler': { weapon: gloves, ...FX },
   'mace.ruler': { weapon: sceptre, ...FX },
   'iron_cestus.ruler': { weapon: knuckles, ...FX },
   'echo_stone.ruler': undisputedTitle,

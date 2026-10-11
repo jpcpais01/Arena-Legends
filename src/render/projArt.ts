@@ -56,6 +56,9 @@ const M = {
   soul: material({ base: 0x7ae8b0, glow: true }),
   soulDim: material({ base: 0x3aa880, glow: true }),
   soulHot: material({ base: 0xeafff2, glow: true }),
+  chi: material({ base: 0x6af0dc, glow: true }),
+  chiDim: material({ base: 0x2a9a9a, glow: true }),
+  chiHot: material({ base: 0xeafff8, glow: true }),
   soulEye: material({ base: 0x1a4a3a }),
   bone: material({ base: 0xe6dec6, step: 0.12 }),
   boneDark: material({ base: 0xa89a80, step: 0.12 }),
@@ -318,6 +321,19 @@ const ART: Record<ProjectileStyle | 'phantom' | 'sigil', ProjArt> = {
       r.dot(t.x(-0.5, 1.5), t.y(-0.5, 1.5), h(M.hexEye), 3);
       r.dot(t.x(2, 1.5), t.y(2, 1.5), h(M.hexEye), 3);
       r.line(t.x(-0.5, -1.5), t.y(-0.5, -1.5), t.x(2, -1.5), t.y(2, -1.5), h(M.hex), 2);
+    },
+  },
+  // Spirit palm: a glowing open hand, fingers up, rushing forward on streaks of qi.
+  palm: {
+    frames: 2, outline: true,
+    draw(r, t, f, h) {
+      for (const [y, l] of [[-3.4, 8 + f], [0, 12 - f], [3.4, 9 + f * 2]]) r.line(t.x(-4, y), t.y(-4, y), t.x(-4 - l, y), t.y(-4 - l, y), h(M.chiDim), 3, 1);
+      const hand: Shape[] = [t.ell(0.8, -1.2, 4.2, 4.4)];
+      for (const [x, top] of [[-2.2, 7.6], [0.2, 9], [2.6, 8.4], [4.6, 6]]) hand.push(t.cap(x, 1.5, x, top, 1));
+      hand.push(t.cap(-2.6, -2, -6, 1.8, 1.1));
+      r.fill(union(...hand), h(M.chi), { group: 1, bevel: 1.6 });
+      r.fill(t.ell(1, -1.6, 2.4, 2.6), h(M.chiHot), { group: 1 });
+      r.dot(t.x(6 - f, -3.4), t.y(6 - f, -3.4), h(M.chiHot), 3, 1);
     },
   },
   wave: {

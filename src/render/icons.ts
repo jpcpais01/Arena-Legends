@@ -1,6 +1,6 @@
 import { DEFAULT_LOOK } from '../character/appearance';
 import { gearOf } from '../sim/gear';
-import type { GearId, GearSet, SpecialId, UsableId } from '../sim/types';
+import type { GearId, GearSet, MainWeaponId, SpecialId, UsableId } from '../sim/types';
 import { material, Raster, type Frame, type Material } from './pixel/raster';
 import { arc, intersect, union } from './pixel/sdf';
 import { grain, speckle } from './pixel/tex';
@@ -9,7 +9,7 @@ import { drawFigure } from './sprite/draw';
 import { makeArt, SPECIES_KEYS } from './sprite/look';
 import { SKIN_ART, skinMaterials } from './sprite/skins';
 import { usableArt } from './sprite/usables';
-import { weaponArt } from './sprite/weapons';
+import { MAIN_FAMILY, weaponArt } from './sprite/weapons';
 import { Xf } from './sprite/xform';
 
 /**
@@ -32,6 +32,7 @@ function handles(r: Raster) {
 }
 
 const SM = {
+  hand: material({ base: 0xd8a07a }),
   gold: material({ base: 0xe0b040, shiny: true }),
   ember: material({ base: 0xff8a2a, glow: true }),
   emberHot: material({ base: 0xfff0a0, glow: true }),
@@ -308,6 +309,14 @@ export function iconFrame(id: GearId, skin?: string | null): Frame {
     const h = handles(r);
     const mats: Record<string, number> = {};
     for (const [k, m] of Object.entries(w.mats)) mats[k] = h(m);
+    if (def.slot === 'main' && MAIN_FAMILY[id as MainWeaponId] === 'fist') {
+      // Fists come as a pair, side by side, each over a clenched hand.
+      const fist = h(SM.hand);
+      const back = new Xf(t.ox + 5, t.oy + 5, ang);
+      r.fill(back.circ(0, 0, 2), fist, { group: 7, bevel: 1.4, toneBias: -1 });
+      w.draw(r, back, (k) => mats[k], { group: 7, toneBias: -1 });
+      r.fill(t.circ(0, 0, 2), fist, { group: 6, bevel: 1.4 });
+    }
     w.draw(r, t, (k) => mats[k], { group: 6 });
     f = r.compose(c, c);
   } else if (def.slot === 'special') {

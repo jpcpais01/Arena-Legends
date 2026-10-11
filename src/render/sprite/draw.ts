@@ -112,9 +112,11 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
   chest.back?.(r, T, m, { top: body.torso, sway, body, g: G.cape });
   if (sp === 'imp' && !chest.cape) drawWings(r, art, T, m, sway);
   drawHairBack(r, art, H, m, sway);
-  if (hold.main === 'back') drawMainOnBack(r, art, sk, OX, OY, m);
+  // Fists never leave the hands: they stay on even when a pose would put a weapon away.
+  const fists = art.family === 'fist' && hold.main !== 'none';
+  if (hold.main === 'back' && !fists) drawMainOnBack(r, art, sk, OX, OY, m);
   if (hold.sec === 'stowed' && art.secFamily === 'shield') drawSecHolster(r, art, sk, T, OX, OY, m, true);
-  if (hold.main === 'hand' && hold.mainBehind) drawMain(r, art, sk, pose, hold, OX, OY, m, -1);
+  if (hold.main === 'hand' && hold.mainBehind && !fists) drawMain(r, art, sk, pose, hold, OX, OY, m, -1);
 
   // --- Far side -------------------------------------------------------------------
   if (hold.sec === 'hand' && !hold.secFront) drawSec(r, art, sk, pose, hold, OX, OY, m, -1);
@@ -123,6 +125,8 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
   if (hold.sec === 'stowed' && art.sec && art.secFamily === 'fist') {
     art.sec.draw(r, frameAt(OX, OY, sk.handF, Math.atan2(sk.handF.y - sk.elF.y, sk.handF.x - sk.elF.x)), (k) => m('s.' + k), { group: G.sec, toneBias: -1 });
   }
+  // The off fist's glove (a cestus goes on in its place).
+  if (fists && art.secFamily !== 'fist') drawFist(r, art, sk, 'F', OX, OY, m);
   if (art.use && hold.use === 'hand' && hold.useBehind) drawUseHand(r, art, sk, pose, hold, OX, OY, m);
   if (art.family === 'bow' && hold.main === 'hand') drawMain(r, art, sk, pose, hold, OX, OY, m, 0);
   drawLeg(r, art, sk, 'F', X, Y, m);
@@ -151,9 +155,10 @@ export function drawFigure(r: Raster, art: CharacterArt, spec: FrameSpec, OX: nu
   // --- Front --------------------------------------------------------------------------
   if (hold.sec === 'hand' && hold.secFront) drawSec(r, art, sk, pose, hold, OX, OY, m, 0);
   if (spec.smear && hold.main === 'hand') drawSmear(r, art, sk, { ...spec.smear, from: spec.smear.from + pose.rot, to: spec.smear.to + pose.rot }, OX, OY);
-  if (hold.main === 'hand' && !hold.mainBehind && art.family !== 'bow') drawMain(r, art, sk, pose, hold, OX, OY, m, 0);
+  if (hold.main === 'hand' && !hold.mainBehind && art.family !== 'bow' && !fists) drawMain(r, art, sk, pose, hold, OX, OY, m, 0);
   if (art.use && hold.use === 'hand' && !hold.useBehind) drawUseHand(r, art, sk, pose, hold, OX, OY, m);
   drawArm(r, art, sk, 'N', X, Y, m, T.ang);
+  if (fists) drawFist(r, art, sk, 'N', OX, OY, m);
   if (sp === 'wisp' || sp === 'myco') drawMotes(r, art, T, m, sway);
   r.space = null;
   return sk;
@@ -969,6 +974,15 @@ function drawMain(r: Raster, art: CharacterArt, sk: Skeleton, pose: Pose, hold: 
   const t = frameAt(OX, OY, sk.handN, pose.wAng + pose.rot, sc);
   art.main.draw(r, t, wm, { group: G.main, toneBias: bias });
   figureMarks.tip = t.p(art.main.tip * 0.85, 0);
+}
+
+/** A fist weapon over one hand, lined up with the forearm so it always points where the punch goes. */
+function drawFist(r: Raster, art: CharacterArt, sk: Skeleton, side: 'N' | 'F', OX: number, OY: number, m: (k: string) => number): void {
+  const far = side === 'F';
+  const hand = far ? sk.handF : sk.handN, el = far ? sk.elF : sk.elN;
+  const t = frameAt(OX, OY, hand, Math.atan2(hand.y - el.y, hand.x - el.x));
+  art.main.draw(r, t, (k) => m('w.' + k), { group: far ? G.sec : G.main, toneBias: far ? -1 : 0 });
+  if (!far) figureMarks.tip = t.p(art.main.tip * 0.85, 0);
 }
 
 function drawMainOnBack(r: Raster, art: CharacterArt, sk: Skeleton, OX: number, OY: number, m: (k: string) => number): void {

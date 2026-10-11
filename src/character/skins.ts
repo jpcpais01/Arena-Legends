@@ -458,7 +458,7 @@ export const SKINS: readonly SkinDef[] = [
   E('skybell', 'mage_robe', 'skybell', 'Robes of the Windward Peak'),
   E('skybell', 'windrunner_leggings', 'skybell', 'Cloudstep Trousers'),
   E('skybell', 'zephyr_boots', 'skybell', 'Cloudwalker Sandals'),
-  E('ruler', 'mace', 'ruler', 'Sceptre of the Ruler'),
+  E('ruler', 'boxing_gloves', 'ruler', 'Gloves of the Undisputed'),
   E('ruler', 'iron_cestus', 'ruler', 'Kingmaker Knuckles'),
   E('ruler', 'echo_stone', 'ruler', 'The Undisputed Title'),
   E('ruler', 'storm_crown', 'ruler', 'Crown of the Ruler'),
@@ -469,6 +469,8 @@ export const SKINS: readonly SkinDef[] = [
   S('meteor_sigil', 'legendary', 'tidefall', 'Tidefall Sigil'),
   S('meteor_sigil', 'legendary', 'bloomfall', 'Bloomfall Sigil'),
   S('meteor_sigil', 'legendary', 'singularity', 'Singularity Sigil'),
+  // The Ruler's sceptre (v0.92.0), made before the set took the boxing gloves
+  S('mace', 'legendary', 'ruler', 'Sceptre of the Ruler'),
 ];
 
 export const SKIN_BY_ID: ReadonlyMap<string, SkinDef> = new Map(SKINS.map((s) => [s.id, s]));

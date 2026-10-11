@@ -41,7 +41,7 @@ const STYLE_COLOR: Record<ProjectileStyle, number> = {
   knife: 0xd0d8e8, bolt: 0xd0d8e8, fire: 0xff9a3a, flamewave: 0xff7a2a, chakram: 0xb8e4f0, wisp: 0x7ae8ff,
   flask: 0xff8a2a,
   hook: 0xc8d0d8, bolas: 0xc89a5a, javelin: 0xd8c8a0, spark: 0x9fe0ff, soul: 0x9affc8, bonespike: 0xe8e0c8,
-  frostflask: 0x9fe8ff, caltrops: 0x9aa0a8, hawk: 0xc8925a, breath: 0xff8a3a,
+  frostflask: 0x9fe8ff, caltrops: 0x9aa0a8, hawk: 0xc8925a, breath: 0xff8a3a, palm: 0x6af0dc,
 };
 
 /** Kiai pitch per body form: bigger bodies shout lower. */
@@ -1453,7 +1453,7 @@ export class BattleView implements View {
     if (style === 'meteor') this.meteorDir[p.owner] = Math.sign(p.vx) || this.meteorDir[p.owner];
     // Shots that fly level are drawn facing right and mirrored when they head left, never turned
     // upside down (a fox, a face or a flame's licks would end up underneath).
-    const level = p.ground || style === 'chakram' || style === 'hex' || style === 'fire' || style === 'arcane' || style === 'wisp';
+    const level = p.ground || style === 'chakram' || style === 'hex' || style === 'fire' || style === 'arcane' || style === 'wisp' || style === 'palm';
     const mirror = level && p.vx < 0;
     let ang = level ? 0 : Math.atan2(p.vy, p.vx);
     if (style === 'flask') ang = 0; // tumbles on its own

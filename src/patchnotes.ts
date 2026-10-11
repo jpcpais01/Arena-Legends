@@ -12,14 +12,27 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.91.0',
+    version: '0.92.0',
     date: '2026-10-11',
     title: 'New Mythic set: Reign of the Ruler',
     notes: [
       'A new Mythic set for the powerhouses: Reign of the Ruler, in black leather and championship gold.',
-      'Seven pieces: the Sceptre of the Ruler (mace), Kingmaker Knuckles (iron cestus), The Undisputed Title (echo stone, a championship belt that floats at your shoulder), a beaded Crown of the Ruler with a gold bird on top (storm crown), the Royal Ring Mantle (a kente-lined royal robe over a bare chest, juggernaut plate), Champion\'s Ring Tights (warlord faulds) and Ruler\'s Stompers (earthshaker boots).',
+      'Seven pieces: the Gloves of the Undisputed (boxing gloves), Kingmaker Knuckles (iron cestus), The Undisputed Title (echo stone, a championship belt that floats at your shoulder), a beaded Crown of the Ruler with a gold bird on top (storm crown), the Royal Ring Mantle (a kente-lined royal robe over a bare chest, juggernaut plate), Champion\'s Ring Tights (warlord faulds) and Ruler\'s Stompers (earthshaker boots).',
       'Wear all seven for its aura: a ring of woven kente at your feet, gold glitter falling like confetti, and every few seconds the ground shakes, dust and pebbles jumping.',
-      'At night its emeralds glow in the crown, the collar, the title, the knuckles, the knee pads and the boots.',
+      'At night its emeralds glow in the crown, the collar, the title, the gloves, the knuckles, the knee pads and the boots.',
+      'Bonus: the Sceptre of the Ruler, a new Legendary mace skin with a crown for a head.',
+    ],
+  },
+  {
+    version: '0.91.0',
+    date: '2026-10-11',
+    title: 'Fight with your fists',
+    notes: [
+      'Three new main weapons with no weapon at all: you fight with your fists, guard up like a boxer, and every punch comes from the hand that throws it.',
+      'Boxing Gloves: the quickest hands and +8% move speed. Jab, cross and a heavy hook land as one string, and the Haymaker stuns and sends them flying.',
+      'Spiked Knuckles: brass-knuckled punches from both hands with +10% crit and +20% crit damage. Pummel is a six-punch rush that leaves them taking 25% more damage.',
+      'Spirit Wraps: a monk\'s bound hands with +20% energy regen. Palm strikes draw out the enemy\'s energy, every third one is a roundhouse kick, and Spirit Palm hurls a glowing hand at them from afar.',
+      'Fists are worn on both hands, so they never need putting away: your off hand still grabs your secondary when you use it, and an Iron Cestus goes on over the off fist.',
     ],
   },
   {
