@@ -1,6 +1,6 @@
 import { clamp } from '../../core/math';
 import { BASE_ENERGY_REGEN, MAX_ENERGY, OVERTIME_DAMAGE } from '../constants';
-import { reachOf as abilityReach, stacksOf, type Fighter } from '../fighter';
+import { comboStep, reachOf as abilityReach, stacksOf, type Fighter } from '../fighter';
 import type { AbilityDef, StatusId } from '../types';
 
 /**
@@ -154,8 +154,23 @@ function onHitBonus(src: Fighter, dst: Fighter, raw: number): number {
   return extra;
 }
 
-/** Damage of `ab` from `src` to `dst` if it lands, including DoTs and on-hit passives. */
+/**
+ * The swing `ab` would actually be next: a basic attack string's last step is
+ * its finisher.
+ */
+export function nextSwing(src: Fighter, ab: AbilityDef): AbilityDef {
+  return ab.combo && comboStep(src, ab) === ab.combo.every ? ab.combo.finisher : ab;
+}
+
+/**
+ * Damage of `ab` from `src` to `dst` if it lands, including DoTs and on-hit
+ * passives. Combo strings count the swing that would come next.
+ */
 export function estDamage(src: Fighter, ab: AbilityDef, dst: Fighter, withPassives = true): number {
+  return swingDamage(src, nextSwing(src, ab), dst, withPassives);
+}
+
+function swingDamage(src: Fighter, ab: AbilityDef, dst: Fighter, withPassives: boolean): number {
   const s = src.stats;
   let raw = s.power * ab.power * (ab.hits ?? 1) * s.damageMult;
   if (ab.kind === 'projectile' && src.has.has('hawkeye_hood')) raw *= 1.2;
@@ -230,6 +245,16 @@ export function dpsAt(src: Fighter, kit: Kit, dst: Fighter, d: number): number {
     // Projectiles lose some value to travel time (easier to answer).
     const travel = a.ab.projectile && a.ab.kind === 'projectile' ? Math.max(0, d - 1) / a.ab.projectile.speed : 0;
     const accuracy = a.ranged ? clamp(1 - travel * 0.5, 0.55, 1) : 0.85;
+    const c = a.ab.combo;
+    if (c) {
+      // A string averages its plain swings with the finisher (and the life it drinks).
+      const fin = c.finisher, n = c.every;
+      const dmg = ((n - 1) * swingDamage(src, a.ab, dst, true) + swingDamage(src, fin, dst, true) * (1 + (fin.drainLife ?? 0) * 0.5)) / n;
+      const per = ((n - 1) * period + periodOf(src, fin)) / n;
+      dps += (dmg * accuracy) / per;
+      busy += ((n - 1) * commit + (fin.windup + fin.recovery) / src.stats.attackSpeed + fin.active) / n / per;
+      continue;
+    }
     dps += (estDamage(src, a.ab, dst) * accuracy) / period;
     // Item attacks don't occupy the body.
     if (!a.item) busy += commit / period;

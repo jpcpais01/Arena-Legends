@@ -53,6 +53,9 @@ interface FighterView {
   bank: SpriteBank;
   out: AnimOut;
   flash: number;
+  /** Combo finisher: the body glows in the blade's colours as it drinks the blow in (real seconds left, colour). */
+  drink: number;
+  drinkCol: string;
   /**
    * Afterimages while hasted or dashing, and the one-off ones (a foresight
    * sidestep drifting off, a rewind trail): screen position, sprite, age,
@@ -224,7 +227,7 @@ export class BattleView implements View {
       const anim = new Animator(art);
       return {
         art, anim, bank: new SpriteBank(art, anim.set), out: anim.update(f, f.x, 0, false, false, false),
-        flash: 0, ghosts: [], ghostT: 0, emberT: 0, sparkT: { main: 0, sec: 0, head: 0, body: 0, feet: 0, set: 0, use: 0, item: 0 }, headY: 2,
+        flash: 0, drink: 0, drinkCol: '#ffffff', ghosts: [], ghostT: 0, emberT: 0, sparkT: { main: 0, sec: 0, head: 0, body: 0, feet: 0, set: 0, use: 0, item: 0 }, headY: 2,
         ...bodyMarks(art), lastS: null, lastX: 0, lastY: 0, lastFlip: false,
         hawkFrom: null, hawkAway: 0, landT: 0, breathT: 0, wardT: 0, puffT: 0, pulledBy: -1, chargeT: 0, sigT: -9, ent: null, pose: null,
       };
@@ -699,6 +702,7 @@ export class BattleView implements View {
     };
     // The hit flash runs on real time, so slow motion never leaves a body washed out white.
     if (v.flash > 0) { tint('#ffffff', Math.min(1, v.flash * 12)); if (dt > 0) v.flash -= this.realDt; }
+    if (v.drink > 0) { tint(v.drinkCol, Math.min(0.65, v.drink * 3)); if (dt > 0) v.drink -= this.realDt; }
     if (getStatus(f, 'frozen')) tint('#bff0ff', 0.6);
     else if (getStatus(f, 'chill')) tint('#8ad8ff', 0.22);
     if (getStatus(f, 'ironskin')) tint('#e8eef8', 0.25 + 0.15 * Math.sin(this.time * 10));
@@ -1510,6 +1514,22 @@ export class BattleView implements View {
         this.arena?.cheer(0.5);
         this.punchIn(1, 0.45, e.x);
         break;
+      case 'finisher': {
+        // The string's closing cut: a crescent across the target in the blade's colours,
+        // and the life it takes runs back into the wielder.
+        const f = b.fighters[e.f];
+        const v = this.fighters[e.f];
+        const skin = v?.art.mainSkin;
+        const [c1, c2]: [number, number] = skin?.fx ? [skin.fx.spark, skin.fx.spark2] : skin?.trail ?? [0xeafff0, 0x5ad88a];
+        const kind = skin?.fx?.kind ?? 'twinkle';
+        fx.slash(e.x, e.y - 0.1, 1.15, f.facing, false, c2, mix(c1, 0xffffff, 0.5), 0.26);
+        fx.pulse('ring', e.x, e.y, 1.1, c1, 0.26, c2);
+        fx.gather(f.x, 1.15, 1.4, 12, c1, c2, kind);
+        fx.burst({ x: f.x, y: 0.9, count: 14, jitter: 0.45, jitterY: 0.7, dir: Math.PI / 2, spread: 0.5, speed: [1, 2.6], life: [0.45, 0.8], color: c1, color2: c2, drag: 1.5, kind });
+        if (v) { v.drink = 0.3; v.drinkCol = css(mix(c1, 0xffffff, 0.25)); }
+        this.play('shing', this.pan(e.x), 0.8);
+        break;
+      }
       case 'heal': {
         const f = b.fighters[e.f];
         fx.burst({ x: f.x, y: 1.0, count: 6, jitter: 0.4, dir: Math.PI / 2, spread: 0.3, speed: [0.8, 1.6], life: [0.5, 0.8], color: 0x8aff9a, color2: 0x3ac860, size: 2 });

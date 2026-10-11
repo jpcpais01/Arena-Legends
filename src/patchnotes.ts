@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.82.0',
+    date: '2026-10-11',
+    title: 'Katana three-cut string',
+    notes: [
+      'The katana now fights in strings of three cuts: a diagonal cut down from the shoulder, a reverse cut rising from low, then a finisher taken in both hands, raised high and split straight down into a deep lunge, ending with a flick of the blade.',
+      'The finisher lands heavy (about 75% more damage than a normal cut) and heals the wielder for part of the damage, with a flash in the colours of your katana skin.',
+      'The string only keeps going while your cuts land. A miss, a block, a parry or too long a pause starts it over.',
+      'Normal katana cuts deal a little less damage to make room for the finisher, and fighters now know to keep a string going when the finisher is close.',
+    ],
+  },
+  {
     version: '0.81.0',
     date: '2026-10-11',
     title: 'The treasure vault',

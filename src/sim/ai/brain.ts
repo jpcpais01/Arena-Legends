@@ -1,9 +1,9 @@
 import { clamp, dsin, lerp } from '../../core/math';
 import type { Battle } from '../battle';
 import { ARENA_HALF_WIDTH, DT, MATCH_TIME } from '../constants';
-import { getStatus, isDisabled, stacksOf, type Fighter } from '../fighter';
+import { actionDef, getStatus, isDisabled, stacksOf, type Fighter } from '../fighter';
 import {
-  analyzeKit, analyzeMatchup, ccValue, dpsAt, estDamage, fastestAnswer, hasControl, liveReach, readyDefenses, STATUS_FX,
+  analyzeKit, analyzeMatchup, ccValue, dpsAt, estDamage, fastestAnswer, hasControl, liveReach, nextSwing, readyDefenses, STATUS_FX,
   type AbilityInfo, type Kit, type Matchup,
 } from './kit';
 import { OpponentModel } from './opponent';
@@ -430,7 +430,7 @@ export class Brain implements FighterBrain {
 
     const a = e.action;
     if (!a || a.feint || !this.perceived(b)) return best;
-    const ab = e.abilities[a.ability];
+    const ab = actionDef(e, a);
     if (ab.power <= 0 && !ab.stun) return best;
     const info = this.ek.info[a.ability];
     const dist = Math.abs(e.x - f.x);
@@ -1064,7 +1064,8 @@ export class Brain implements FighterBrain {
   private scoreAttack(b: Battle, info: AbilityInfo, c: Ctx): { val: number; why: string } | null {
     const f = this.f;
     const e = c.e;
-    const ab = info.ab;
+    // A basic attack string: the swing that comes next (the finisher closes it).
+    const ab = nextSwing(f, info.ab);
     const p = this.p;
     const o = this.opp;
     const plan = this.plan;
@@ -1168,6 +1169,12 @@ export class Brain implements FighterBrain {
     }
 
     val += pHit * dmg;
+    const combo = info.ab.combo;
+    if (combo && ab === info.ab) {
+      // Each swing that lands brings the finisher closer; a broken string gives that up.
+      const extra = estDamage(f, combo.finisher, e) * (1 + (combo.finisher.drainLife ?? 0) * (1.4 - c.myHp)) - dmg;
+      val += pHit * Math.max(0, extra) / combo.every * (1 + f.combo);
+    } else if (combo && pHit > 0.6) why = why || `${ab.name}!`;
     if (hasControl(ab)) val += pHit * ccValue(ab, c.burst);
     if (ab.drainLife) val += pHit * dmg * ab.drainLife * 0.6 * (1.4 - c.myHp);
     // Out of the smoke, the first hit is an ambush.

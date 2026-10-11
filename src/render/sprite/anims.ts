@@ -3,6 +3,7 @@ import type { CharacterArt } from './look';
 import type { Expression, FrameSpec, Hold, Smear } from './draw';
 import { STAND, type Pose, type PoseKey } from './pose';
 import type { MainFamily } from './weapons';
+import type { MainWeaponId } from '../../sim/types';
 
 /**
  * Hand-authored pixel animation. Every clip is a short list of key frames
@@ -237,6 +238,71 @@ function swordClips(): Record<string, Phases> {
     },
   };
 }
+
+/**
+ * Katana basic string (the sim's combo step picks the clip): a diagonal cut
+ * down from the shoulder, a reverse cut rising from low behind, then the
+ * finisher, taken in both hands: raised high on the toes, split straight down
+ * into a deep lunge, held a beat, and the blade flicked clean (chiburi).
+ */
+function katanaCombo(): Record<string, Phases> {
+  const both: Partial<Hold> = { grip: -4.4 };
+  const B = (p: PoseKey, face: Expression = 'fierce', extra: Omit<FrameDef, 'p' | 'face' | 'hold'> = {}): FrameDef => ({ p, face, hold: both, ...extra });
+  return {
+    combo1: {
+      w: [
+        F({ hNx: 0.2, hNy: 0.1, wAng: 1.9, lean: 0.06, hipX: -0.03, hFx: 0.5, hFy: -0.3 }),
+        F({ hNx: 0.0, hNy: 0.38, wAng: 2.45, lean: -0.04, head: 0.06, hipX: -0.05, hipY: -0.09, fFx: 0.34, hFx: 0.52, hFy: -0.18 }),
+      ],
+      a: [
+        F({ hNx: 0.8, hNy: 0.08, wAng: 0.35, lean: 0.24, hipX: 0.07, fFx: 0.42, hFx: 0.18, hFy: -0.48 }, 'shout', { smear: { from: 2.45, to: 0.35 } }),
+        F({ hNx: 0.7, hNy: -0.45, wAng: -0.75, lean: 0.3, hipX: 0.08, hipY: -0.11, fFx: 0.42, hFx: 0.12, hFy: -0.52 }, 'shout', { smear: { from: 1.4, to: -0.75 } }),
+      ],
+      r: [
+        F({ hNx: 0.62, hNy: -0.6, wAng: -1.0, lean: 0.28, hipX: 0.06, hipY: -0.1, fFx: 0.4 }),
+        F({ hNx: 0.48, hNy: -0.58, wAng: -0.2, lean: 0.2 }, 'calm'),
+        F({ hNx: 0.42, hNy: -0.55, wAng: 0.6, lean: 0.15 }, 'calm'),
+      ],
+    },
+    combo2: {
+      w: [
+        F({ hNx: 0.18, hNy: -0.68, wAng: -1.7, lean: 0.14, hipX: -0.02, hipY: -0.1, hFx: 0.5, hFy: -0.3 }),
+        F({ hNx: -0.14, hNy: -0.7, wAng: -2.6, lean: 0.22, hipX: -0.05, hipY: -0.15, head: -0.05, fNx: -0.4, hFx: 0.56, hFy: -0.22 }),
+      ],
+      a: [
+        F({ hNx: 0.72, hNy: -0.38, wAng: -0.45, lean: 0.26, hipX: 0.06, hipY: -0.12, fFx: 0.46, fNx: -0.42, hFx: 0.2, hFy: -0.5 }, 'shout', { smear: { from: -2.6, to: -0.45 } }),
+        F({ hNx: 0.62, hNy: 0.42, wAng: 1.45, lean: 0.12, hipX: 0.08, hipY: -0.06, head: 0.1, fFx: 0.46, fNx: -0.4, hFx: 0.15, hFy: -0.55 }, 'shout', { smear: { from: -1.1, to: 1.45 } }),
+      ],
+      r: [
+        F({ hNx: 0.5, hNy: 0.5, wAng: 1.85, lean: 0.1, hipX: 0.06, head: 0.08 }),
+        F({ hNx: 0.44, hNy: -0.1, wAng: 1.4, lean: 0.12 }, 'calm'),
+        F({ hNx: 0.4, hNy: -0.5, wAng: 1.05, lean: 0.13 }, 'calm'),
+      ],
+    },
+    combo3: {
+      w: [
+        B({ hNx: 0.3, hNy: -0.12, wAng: 1.35, lean: 0.08, hipY: -0.12 }),
+        B({ hNx: 0.06, hNy: 0.82, wAng: 2.45, lean: -0.12, head: 0.12, hipY: -0.03, toeN: -0.3 }),
+        B({ hNx: -0.08, hNy: 0.9, wAng: 2.85, lean: -0.18, head: 0.16, hipY: 0.0, hipX: -0.03, toeN: -0.35, fFx: 0.34 }, 'shout'),
+      ],
+      a: [
+        B({ hNx: 0.6, hNy: 0.55, wAng: 1.3, lean: 0.2, hipX: 0.05, hipY: -0.06, fFx: 0.5 }, 'shout', { smear: { from: 2.85, to: 1.3 } }),
+        B({ hNx: 0.85, hNy: -0.2, wAng: -0.3, lean: 0.42, hipX: 0.09, hipY: -0.18, fFx: 0.56, fNx: -0.55, toeN: -0.4 }, 'shout', { smear: { from: 2.2, to: -0.3 } }),
+        B({ hNx: 0.7, hNy: -0.62, wAng: -1.15, lean: 0.5, hipX: 0.09, hipY: -0.22, fFx: 0.56, fNx: -0.58, toeN: -0.45 }, 'shout', { smear: { from: 0.9, to: -1.15 } }),
+      ],
+      r: [
+        B({ hNx: 0.7, hNy: -0.62, wAng: -1.2, lean: 0.48, hipX: 0.09, hipY: -0.22, fFx: 0.56, fNx: -0.58, toeN: -0.45 }),
+        // Chiburi: the near hand alone snaps the blade out and down, shaking it clean.
+        F({ hNx: 0.88, hNy: -0.32, wAng: -0.5, lean: 0.32, hipX: 0.07, hipY: -0.17, fFx: 0.52, fNx: -0.5, hFx: 0.38, hFy: -0.5 }),
+        F({ hNx: 0.55, hNy: -0.5, wAng: 0.35, lean: 0.2, hipY: -0.11 }, 'calm'),
+        F({ hNx: 0.43, hNy: -0.55, wAng: 0.85, lean: 0.15 }, 'calm'),
+      ],
+    },
+  };
+}
+
+/** Basic attack strings with a clip per step (`combo1`..), per main weapon. */
+const COMBO_CLIPS: Partial<Record<MainWeaponId, () => Record<string, Phases>>> = { katana: katanaCombo };
 
 function wandClips(): Record<string, Phases> {
   return {
@@ -786,6 +852,12 @@ export function clipsFor(art: CharacterArt): ClipSet {
   ]));
 
   for (const [id, ph] of Object.entries(FAMILY_CLIPS[art.family]())) add(id, ph);
+  const combo = COMBO_CLIPS[art.mainId];
+  if (combo) {
+    // The string replaces the alternating swing.
+    clips.delete('slash2');
+    for (const [id, ph] of Object.entries(combo())) add(id, ph);
+  }
   for (const [id, ph] of Object.entries(CHEST)) add(id, ph);
   for (const [id, ph] of Object.entries(evadeClips(stance))) add(id, ph);
 

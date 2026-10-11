@@ -1,5 +1,5 @@
-import { getStatus, type Fighter } from '../../sim/fighter';
-import type { AbilityDef } from '../../sim/types';
+import { actionDef, getStatus, type Fighter } from '../../sim/fighter';
+import type { AbilityDef, ActionState } from '../../sim/types';
 import type { Expression } from './draw';
 import { clipsFor, type ClipSet } from './anims';
 import type { CharacterArt } from './look';
@@ -137,12 +137,12 @@ export class Animator {
   private action(f: Fighter): void {
     this.settle = null;
     const a = f.action!;
-    const ab = f.abilities[a.ability];
+    const ab = actionDef(f, a);
     if (a !== this.lastAction) {
       this.lastAction = a;
       if (ab.slot === 'basic') this.alt = this.swing++ % 2 === 1;
     }
-    const id = this.clipId(ab, a.isCounter);
+    const id = this.clipId(ab, a);
     const c = this.set.clips.get(id) ?? this.set.clips.get('idle')!;
     const D = c.draw.length, W = c.w.length, A = c.a.length, R = c.r.length, S = c.stow.length;
     const at = (n: number, k: number) => Math.min(n - 1, Math.max(0, Math.floor(k * n)));
@@ -183,8 +183,9 @@ export class Animator {
     this.set1(id, i);
   }
 
-  private clipId(ab: AbilityDef, isCounter: boolean): string {
+  private clipId(ab: AbilityDef, a: ActionState): string {
     const has = (k: string) => this.set.clips.has(k);
+    const isCounter = a.isCounter;
     if (ab.slot === 'evade') {
       if (ab.kind === 'blink') return 'blink';
       if (ab.anim === 'stomp') return 'stomp';
@@ -193,6 +194,7 @@ export class Animator {
     if (ab.from === 'secondary') return isCounter && has('sec.riposte') ? 'sec.riposte' : 'sec.' + ab.anim;
     if (ab.from === 'chest') return ab.anim;
     if (ab.from === 'usable') return 'use.' + ab.anim;
+    if (a.combo && has('combo' + a.combo)) return 'combo' + a.combo;
     if (this.alt && ab.slot === 'basic' && has(ab.anim + '2')) return ab.anim + '2';
     if (has(ab.anim)) return ab.anim;
     return [...this.set.clips.keys()].find((k) => k === 'slash' || k === 'thrust' || k === 'cast' || k === 'shoot') ?? 'idle';
