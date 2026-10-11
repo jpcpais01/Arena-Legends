@@ -1,3 +1,8 @@
+/**
+ * Dev-only blade lock lab (open /bindlab.html in `npm run dev`): two fighters
+ * walk in and swing at the same moment, over and over, so binds can be
+ * watched. URL: ?w=longsword&w2=spear&arena=0&seed=3; window.lab.step(n).
+ */
 import '../ui/styles.css';
 import { Battle } from '../sim/battle';
 import { DEFAULT_BUILDS } from '../sim/loadout';
