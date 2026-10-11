@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.69.0',
+    date: '2026-10-11',
+    title: 'New Armory',
+    notes: [
+      'The Armory is rebuilt and reads left to right: pick a slot, see your fighter, pick an item, read its card.',
+      'Picking a slot shows the item you wear there right away, with its stats, skills and skins. No more popup to open and close.',
+      'Tapping another item tries it on your fighter and shows only the stats that would change. Tap Equip, or tap the item again, to wear it.',
+      'Skins sit in a row at the bottom of the card, one tap to change. Your fighter is bigger too.',
+    ],
+  },
+  {
     version: '0.68.0',
     date: '2026-10-11',
     title: 'Supers go cinematic',
