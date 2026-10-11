@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.97.1',
+    date: '2026-10-11',
+    title: 'Promo code keyboard',
+    notes: [
+      'The promo code popup now has its own big-letter keyboard under the code boxes, so the phone keyboard no longer pops up over the game.',
+      'On a computer you can still type or paste the code.',
+    ],
+  },
+  {
     version: '0.97.0',
     date: '2026-10-11',
     title: 'Promo codes',
