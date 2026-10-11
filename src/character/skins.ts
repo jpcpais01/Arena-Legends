@@ -36,7 +36,7 @@ export interface SkinDef {
 export type SkinSetId = 'sunborn' | 'hellforged' | 'foxfire' | 'wildwood' | 'abyssal' | 'clockwork' | 'bloodmoon' | 'starweaver' | 'frostbound' | 'stormcaller' | 'voidborn'
   | 'jadedragon' | 'seraph' | 'lichborne' | 'quetzal' | 'prismheart'
   | 'corsair' | 'oni' | 'beastlord' | 'djinn' | 'plague' | 'sugarrush' | 'hallow' | 'olympian' | 'lionheart' | 'mothqueen'
-  | 'skybell' | 'ruler';
+  | 'skybell' | 'ruler' | 'undertaker';
 
 export interface SkinSet {
   id: SkinSetId;
@@ -74,6 +74,7 @@ export const SKIN_SETS: readonly SkinSet[] = [
   { id: 'mothqueen', name: 'Moth Queen\'s Court', blurb: 'Fae royalty of the moonlit wood: luna-moth wings, silver dust and soft glowing mushrooms.' },
   { id: 'skybell', name: 'Skybell Sanctum', blurb: 'Saffron robes and sea-green bronze of the monks who keep the bells on the windswept peaks, prayer flags snapping in a gale that never dies.' },
   { id: 'ruler', name: 'Reign of the Ruler', blurb: 'Black leather and championship gold of a ring king no one has put down: a beaded crown, the title at his shoulder, a robe lined in kente, and the ground shaking at every step.' },
+  { id: 'undertaker', name: 'The Undertaker', blurb: 'The Deadman rises: a long black leather duster, the wide-brimmed hat pulled low, eyes rolled back to white, purple lightning, and an urn of restless souls that never stays shut.' },
 ];
 export const SKIN_SET_BY_ID: ReadonlyMap<SkinSetId, SkinSet> = new Map(SKIN_SETS.map((s) => [s.id, s]));
 
@@ -465,6 +466,13 @@ export const SKINS: readonly SkinDef[] = [
   E('ruler', 'juggernaut_plate', 'ruler', 'Royal Ring Mantle'),
   E('ruler', 'warlord_faulds', 'ruler', 'Champion\'s Ring Tights'),
   E('ruler', 'earthshaker_boots', 'ruler', 'Ruler\'s Stompers'),
+  E('undertaker', 'spirit_wraps', 'undertaker', 'Deadman\'s Grips'),
+  E('undertaker', 'tower_shield', 'undertaker', 'Rest in Peace'),
+  E('undertaker', 'wisp_lantern', 'undertaker', 'The Urn'),
+  E('undertaker', 'executioner_hood', 'undertaker', 'The Phenom\'s Hat'),
+  E('undertaker', 'shadow_garb', 'undertaker', 'Deadman\'s Duster'),
+  E('undertaker', 'ghoststep_leggings', 'undertaker', 'Graveyard Leathers'),
+  E('undertaker', 'shadow_treads', 'undertaker', 'Tombstone Boots'),
   // Meteor sigil (v0.85.0): three legendary meteors, each with its own fall and impact
   S('meteor_sigil', 'legendary', 'tidefall', 'Tidefall Sigil'),
   S('meteor_sigil', 'legendary', 'bloomfall', 'Bloomfall Sigil'),

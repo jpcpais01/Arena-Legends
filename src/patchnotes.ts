@@ -12,6 +12,18 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.93.0',
+    date: '2026-10-11',
+    title: 'New Mythic set: The Undertaker',
+    notes: [
+      'The Deadman rises: a new Mythic set, The Undertaker, in black leather and purple.',
+      'Seven pieces: Deadman\'s Grips (spirit wraps, black fingerless gloves whose spirit palm becomes a great ghost hand closing for a chokeslam), Rest in Peace (tower shield, a cracked granite tombstone), The Urn (wisp lantern), The Phenom\'s Hat (a wide-brimmed hat with long black hair and eyes rolled back to white), Deadman\'s Duster (a long leather coat lined in purple), Graveyard Leathers and Tombstone Boots.',
+      'The Urn raises the dead: it floats at your shoulder, and when it charges its lid rattles open, a ghost climbs out and then flies at the enemy, wailing.',
+      'Wear all seven for its aura: graveyard fog at your feet, hands of the dead clawing up out of the ground, ghosts rising around you, and every few seconds purple lightning strikes behind you.',
+      'At night the white eyes, the urn\'s seam, the tombstone\'s crack and a few amethysts glow purple.',
+    ],
+  },
+  {
     version: '0.92.0',
     date: '2026-10-11',
     title: 'New Mythic set: Reign of the Ruler',
