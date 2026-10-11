@@ -114,3 +114,19 @@ export function bodyFor(form: FormId, species: SpeciesId): BodySpec {
     crouch: f.crouch ?? 0,
   };
 }
+
+/** A body bulked up by a muscle-bound chest piece (`k` 0..1): broader chest and shoulders, thicker arms. */
+export function muscled(b: BodySpec, k: number): BodySpec {
+  if (!k) return b;
+  return {
+    ...b,
+    armR: b.armR * (1 + 0.3 * k),
+    elbowR: b.elbowR * (1 + 0.24 * k),
+    wristR: b.wristR * (1 + 0.12 * k),
+    hand: b.hand * (1 + 0.1 * k),
+    chestW: b.chestW * (1 + 0.16 * k),
+    chestPush: b.chestPush + 0.8 * k,
+    shoulderSpread: b.shoulderSpread * (1 + 0.14 * k),
+    waistW: b.waistW * (1 + 0.04 * k),
+  };
+}

@@ -12,6 +12,18 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.93.0',
+    date: '2026-10-11',
+    title: 'New Mythic set: Oba, The Ruler',
+    notes: [
+      'A new Mythic set that turns your hero into Oba Femi: shaved head, black beard, no shirt, just a wall of muscle.',
+      'Seven pieces: Oba\'s Taped Fists (spirit wraps), Fall From Grace Wraps (iron cestus), Oba\'s Championship (echo stone, his title floating at your shoulder), Oba\'s Beard (gladiator helm, shaves your head clean), Oba\'s Muscles (juggernaut plate: the chest piece is pure muscle, bulking up your chest, neck and arms), Oba\'s Ring Trunks with black kneepads (charger cuisses) and Oba\'s Ring Boots (colossus boots).',
+      'Wear all seven for its aura: a gold and black ring at your feet beating like a heart, steam rising off your shoulders, and every few seconds a flex that cracks the ground and shoots gold power streaks up around you.',
+      'At night the diamonds on the title glow, the gold on the trunks, kneepads, boots and tape glints, and sweat catches the light on your head.',
+      'Reign of the Ruler is now called Reign of the Kente King (same look, new name), with its crown, stompers and sceptre renamed to match.',
+    ],
+  },
+  {
     version: '0.92.0',
     date: '2026-10-11',
     title: 'New Mythic set: Reign of the Ruler',

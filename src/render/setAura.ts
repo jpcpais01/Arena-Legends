@@ -24,6 +24,7 @@ import { LIONHEART_FX, lionheartAura } from './sprite/skins/lionheart';
 import { MOTHQUEEN_FX, mothqueenAura } from './sprite/skins/mothqueen';
 import { SKYBELL_FX, skybellAura } from './sprite/skins/skybell';
 import { RULER_FX, rulerAura } from './sprite/skins/ruler';
+import { OBA_FX, obaAura } from './sprite/skins/oba';
 
 /**
  * Set auras: what a fighter wearing a whole epic set gets around them, in
@@ -62,6 +63,7 @@ export const SET_FX: Record<SkinSetId, SkinFx> = {
   mothqueen: MOTHQUEEN_FX,
   skybell: SKYBELL_FX,
   ruler: RULER_FX,
+  oba: OBA_FX,
 };
 
 type G = CanvasRenderingContext2D;
@@ -222,6 +224,7 @@ const DRAW: Record<SkinSetId, (g: G, x: number, y: number, t: number, layer: Lay
   corsair: corsairAura, oni: oniAura, beastlord: beastlordAura, djinn: djinnAura, plague: plagueAura, sugarrush: sugarrushAura, hallow: hallowAura, olympian: olympianAura, lionheart: lionheartAura, mothqueen: mothqueenAura,
   skybell: skybellAura,
   ruler: rulerAura,
+  oba: obaAura,
 };
 
 /** Draws one layer of a set's aura around feet at (x, y) art pixels; `t` is seconds. */

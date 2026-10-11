@@ -8,7 +8,7 @@ import { mix, toHsl, fromHsl } from '../pixel/color';
 import { grain, lattice, speckle } from '../pixel/tex';
 import { material, type Material } from '../pixel/raster';
 import { ARMOUR2 } from './armour2';
-import { bodyFor, type BodySpec } from './body';
+import { bodyFor, muscled, type BodySpec } from './body';
 import { SKIN_ART, type SkinArt } from './skins';
 import type { BodyDraw, LegDraw, ShoulderDraw, ThighDraw } from './skins/armour';
 import type { HeadDraw } from './skins/heads';
@@ -58,6 +58,8 @@ export interface CharacterArt {
   headDraw: HeadDraw | null;
   /** Reshaped hood or mask that shows the face. */
   headFace: boolean;
+  /** The headgear skin shaves the head: no hair at all. */
+  headBald: boolean;
   /** The epic set worn in full, if any (its aura plays around the fighter). */
   set: SkinSetId | null;
 }
@@ -86,6 +88,8 @@ export interface ChestLook {
   shoulder?: ShoulderDraw | null;
   /** Its own scarf replaces the human's. */
   noScarf?: boolean;
+  /** Bulks the wearer up (0..1): broader chest, thick neck, bigger arms with biceps. Looks only. */
+  muscle?: number;
 }
 
 export interface LegsLook {
@@ -373,6 +377,7 @@ export function makeArt(build: CharacterBuild): CharacterArt {
   // Armour skins recolour the body's armour materials; reshaped headgear brings its own.
   let headDraw: HeadDraw | null = null;
   let headFace = false;
+  let headBald = false;
   let headMats: string[] = [];
   // Second-wave stock pieces bring their own materials.
   for (const slot of ['head', 'chest', 'legs', 'boots'] as const) {
@@ -392,6 +397,7 @@ export function makeArt(build: CharacterBuild): CharacterArt {
       headMats = Object.keys(hs.mats);
       headDraw = hs.draw;
       headFace = !!hs.face;
+      headBald = !!hs.bald;
     }
   }
   // Special item skins only recolour what the body wears of them (feather, fang).
@@ -417,7 +423,7 @@ export function makeArt(build: CharacterBuild): CharacterArt {
   ], headMats);
   return {
     build, look, form: build.form,
-    body: bodyFor(build.form, look.species),
+    body: muscled(bodyFor(build.form, look.species), chest.muscle ?? 0),
     gear: build.gear,
     mats,
     mainId, main, family: MAIN_FAMILY[mainId],
@@ -428,7 +434,7 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     legs,
     boots,
     useId, use, useSkin, useSkinId,
-    skins, mainSkin, secSkin, headDraw, headFace,
+    skins, mainSkin, secSkin, headDraw, headFace, headBald,
     headSkin: worn.head, chestSkin: worn.chest, legsSkin: worn.legs, bootsSkin: worn.boots,
     specialSkin, specialSkinId,
     set: fullSet(build.gear, skins),

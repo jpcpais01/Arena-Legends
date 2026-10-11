@@ -330,6 +330,15 @@ export function iconFrame(id: GearId, skin?: string | null): Frame {
     const full = r.compose(c, c);
     const side = Math.max(16, full.w, full.h);
     f = crop(full, (full.w - side) / 2, (full.h - side) / 2, side, side);
+  } else if (def.slot === 'head' && skin && SKIN_ART[skin]?.head?.().bald) {
+    // A shaved head is the wearer's own: shown on a dark-skinned human's head, cropped to the head.
+    const gear = { main: 'dagger', head: id } as unknown as GearSet;
+    const art = makeArt({ name: '', form: 'balanced', gear, look: { ...DEFAULT_LOOK, species: 'human', skin: 4 }, skins: { [id]: skin } });
+    const ox = 70, oy = 120;
+    const sk = drawFigure(r, art, { pose: STAND, hold: { main: 'none', sec: 'gone' }, face: 'calm' }, ox, oy);
+    const full = r.compose(ox, oy);
+    const side = 17, hx = full.ox + sk.head.x, hy = full.oy - sk.head.y;
+    f = crop(full, hx - side / 2 + 1, hy - side / 2 - 1, side, side);
   } else {
     // Armour: drawn on an invisible body, so only the piece itself shows.
     const gear = { main: 'dagger', [def.slot]: id } as unknown as GearSet;
