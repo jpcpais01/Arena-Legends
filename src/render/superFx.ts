@@ -65,7 +65,7 @@ function blow(h: SuperHost, look: SuperLook, face: number, x: number, y: number,
   gl.shock({ x, y, r: 2.6 * size, amp: 6, life: 0.5, hi: look.hi, dir: face, squash: 0.8 });
   gl.zoomBlur(x, y, 0.035 * size, 0.22);
   glow(h, x, y, 0.3, 0.8 * size, look.hi, look.lo, 0.35, 0.6, { fin: 0, real: true });
-  gl.add({ kind: 'ring', x, y, r0: 0.2, r1: 1.9 * size, w: 0.06, squash: 0.85, hi: look.hi, lo: look.lo, life: 0.4, power: 1.1, fin: 0, real: true });
+  gl.add({ kind: 'ring', x, y, r0: 0.2, r1: 1.9 * size, w: 0.07, squash: 0.85, hi: look.hi, lo: look.lo, life: 0.4, power: 0.9, fin: 0, real: true });
   gl.add({ kind: 'flare', x, y, r0: 1.0 * size, r1: 3.2 * size, w: 0.045, hi: look.hi, lo: look.lo, life: 0.45, power: 0.9, fin: 0, real: true });
   gl.add({ kind: 'rays', x, y, r0: 0.8 * size, r1: 2.2 * size, hi: look.hi, lo: look.lo, life: 0.35, power: 0.4, seed: Math.random() * 50, real: true });
   sparks(h.fx, look, x, y, Math.round(14 * size));

@@ -187,12 +187,15 @@ void main() {
     // A ring of light that wobbles, thins and breaks up round its edge like a real blast front.
     q.y /= max(a.z, 0.05);
     float ang = atan(q.y, q.x);
-    float n1 = ring(ang, 6.0, b.z + floor(b.w * 5.0)), n2 = ring(ang, 15.0, b.z + 17.0);
-    float rr = R * (0.9 + 0.14 * n1 + 0.05 * n2);
-    float th = W * (0.45 + 0.9 * n2);
+    float n1 = ring(ang, 5.0, b.z + floor(b.w * 4.0)), n2 = ring(ang, 13.0, b.z + 17.0), n3 = ring(ang, 29.0, b.z + floor(b.w * 9.0) * 3.0);
+    float rr = R * (0.8 + 0.3 * n1 + 0.1 * n2 + 0.04 * n3);
+    float th = W * (0.3 + 1.2 * n2 * n3 + 0.3 * n1);
     float e = length(q) - rr;
-    float broken = smoothstep(0.18, 0.6, n1 * 0.6 + n2 * 0.55);
-    v = (exp(-pow(e / th, 2.0)) + 0.35 * exp(-pow((e + th * 2.6) / (th * 0.8), 2.0))) * broken + 0.12 * exp(-pow(e / (th * 3.0), 2.0));
+    float broken = smoothstep(0.3, 0.75, n1 * 0.55 + n2 * 0.35 + n3 * 0.3);
+    // Grain on the art-pixel grid, re-rolled as it travels, so the front reads as churned air.
+    float grain = 0.6 + 0.4 * hash(floor(p.x / vs) * 12.9898 + floor(p.y / vs) * 78.233 + floor(b.w * 12.0));
+    float echo = length(q) - rr * (0.72 + 0.1 * n3);
+    v = (exp(-pow(e / th, 2.0)) + 0.3 * exp(-pow(echo / (th * 0.9), 2.0)) * n2) * broken * grain + 0.1 * exp(-pow(e / (th * 3.0), 2.0)) * grain;
     core = exp(-pow(e / (th * 0.35), 2.0)) * broken * n1;
   } else if (kind == 2) {
     // A blade arc: angle along the sweep (0..1), head racing ahead, tail fading behind, tapered ends.
