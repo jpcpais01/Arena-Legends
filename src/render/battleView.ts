@@ -24,6 +24,7 @@ import {
 } from './specialArt';
 import { bottleSprite, isUsableShot, projFrames, projSprite, skinDraws, skinTints } from './projArt';
 import { drawSetAura, SET_FX } from './setAura';
+import { champUnseen } from './sprite/skins/champ';
 import type { Screen } from './screen';
 import { clipLength } from './sprite/anims';
 import { Animator, PPM, type AnimOut } from './sprite/animator';
@@ -804,9 +805,12 @@ export class BattleView implements View {
 
     // Invulnerability frames blink; in smoke the body is only a faint shape.
     const set = alive && !hidden ? v.art.set : null;
-    if (set) drawSetAura(g, set, px, py + o.hop, this.time, 'back');
+    if (set) drawSetAura(g, set, px, py + o.hop, this.time, 'back', f.facing);
     if (hidden) g.globalAlpha = 0.38 + 0.06 * Math.sin(this.time * 7);
     else if (f.invuln > 0 && alive && Math.floor(this.time * 30) % 2 === 0) g.globalAlpha = 0.55;
+    // The Champ Is Here: every few seconds the hand waves and he fades out of sight. You can't see him.
+    const seen = set === 'champ' && !pose ? champUnseen(this.time) : 1;
+    g.globalAlpha *= seen;
     if (pose) this.blitEntrance(g, v, o, s, pose, px, py, flip);
     else blit(g, s, px, py, flip);
     if (hidden) {
@@ -815,8 +819,8 @@ export class BattleView implements View {
       blit(g, v.bank.flash(o, '#c8c8d4'), px, py, flip);
     }
     g.globalAlpha = 1;
-    if (!hidden) this.glowList.push({ s, x: px, y: py, flip });
-    if (set) drawSetAura(g, set, px, py + o.hop, this.time, 'front');
+    if (!hidden && seen > 0.6) this.glowList.push({ s, x: px, y: py, flip });
+    if (set) drawSetAura(g, set, px, py + o.hop, this.time, 'front', f.facing);
 
     if (dt > 0 && alive && !hidden) this.legendSparks(f, v, s, x, y, flip);
 
@@ -1759,7 +1763,7 @@ export class BattleView implements View {
         fx.pulse('groundRing', f.x, 0, 3, mid, 0.6);
         fx.burst({ x: f.x, y: 1, count: 50, jitter: 0.5, speed: [2, 7], life: [0.5, 1.0], color: c[0], color2: c[1], gravity: -3, drag: 1.5, kind: 'ember' });
         this.play('revive', this.pan(f.x));
-        fx.pop('REVIVE!', f.x, this.fighters[e.f].headY + 0.4, { color: css(mix(c[0], c[1], 0.3)), scale: 2, shade: css(c[1]) }, 1.3);
+        fx.pop(this.fighters[e.f].art.specialSkin?.revive ?? 'REVIVE!', f.x, this.fighters[e.f].headY + 0.4, { color: css(mix(c[0], c[1], 0.3)), scale: 2, shade: css(c[1]) }, 1.3);
         this.shake(0.4);
         this.arena?.cheer(0.9);
         this.slowmo(0.35, 0.6);

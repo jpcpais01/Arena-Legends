@@ -16,6 +16,8 @@ export interface HeadSkin {
   draw: HeadDraw;
   /** A hood or mask that leaves the face open: the wearer's eyes are drawn as usual. */
   face?: boolean;
+  /** Covers the hair on top (a cap or a close helm): the front hair isn't drawn, only what hangs behind. */
+  hair?: boolean;
 }
 
 export function hornedWarhelm(): HeadSkin {
