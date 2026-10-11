@@ -421,7 +421,7 @@ export function makeArt(build: CharacterBuild): CharacterArt {
     gear: build.gear,
     mats,
     mainId, main, family: MAIN_FAMILY[mainId],
-    hands: MAIN_FAMILY[mainId] === 'sword' || MAIN_FAMILY[mainId] === 'wand' ? 1 : 2,
+    hands: MAIN_FAMILY[mainId] === 'sword' || MAIN_FAMILY[mainId] === 'wand' || MAIN_FAMILY[mainId] === 'fist' ? 1 : 2,
     secId, sec, secFamily: secId ? SEC_FAMILY[secId] : null,
     chest,
     headgear: build.gear.head ?? null,

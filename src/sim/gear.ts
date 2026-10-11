@@ -32,6 +32,8 @@ export interface WeaponInfo {
   ranged: boolean;
   /** Ideal fighting distance, centre to centre. */
   preferredRange: number;
+  /** Worn on both fists (gloves, knuckles, wraps); one-handed as far as the secondary goes. */
+  fists?: boolean;
 }
 
 export interface GearDef<S extends GearSlot = GearSlot> {
@@ -451,6 +453,100 @@ const MAIN: Catalog['main'] = {
         applies: [{ status: 'root', duration: 1.6 }],
         projectile: { speed: 12, radius: 0.55, style: 'bonespike', ground: true },
         anim: 'castBig', desc: 'Bone spikes burst along the ground: root for 1.6s.',
+      },
+    ],
+  },
+  // Fists: worn on both hands, so there is nothing to draw or put away. They
+  // count as one-handed: the off hand grabs the secondary when it is used
+  // (an iron cestus simply goes on over the off fist).
+  boxing_gloves: {
+    id: 'boxing_gloves', slot: 'main', name: 'Boxing Gloves', rarity: 'rare', color: 0xd83a3a,
+    desc: 'Fists. +8% move speed. The shortest reach, the quickest hands: jab, cross and a heavy hook that come as one string, and a haymaker that knocks them out cold.',
+    mul: { moveSpeed: 1.08 },
+    weapon: { hands: 1, ranged: false, preferredRange: 1.35, fists: true },
+    tags: ['melee', 'physical', 'fast', 'control', 'mobility'],
+    abilities: [
+      {
+        id: 'jab', name: 'Jab', slot: 'basic', kind: 'melee',
+        range: 1.65, cost: 0, cooldown: 0.08,
+        windup: 0.12, active: 0.07, recovery: 0.18,
+        power: 0.72, damageType: 'physical', stagger: 0.14, knockback: 0.5, lunge: 0.35,
+        anim: 'punch', desc: 'Snapping jab, then a cross. Land both and the third punch is a heavy hook.',
+        combo: {
+          every: 3, window: 1.2,
+          finisher: {
+            id: 'jab', name: 'Hook', slot: 'basic', kind: 'melee',
+            range: 1.75, cost: 0, cooldown: 0.08,
+            windup: 0.2, active: 0.09, recovery: 0.28,
+            power: 1.4, damageType: 'physical', heavy: true, stagger: 0.36, knockback: 2.4, lunge: 0.5,
+            anim: 'punch', desc: 'The string\'s closing hook: lands heavy and rocks them back.',
+          },
+        },
+      },
+      {
+        id: 'haymaker', name: 'Haymaker', slot: 'skill', kind: 'melee',
+        range: 1.8, cost: 15, cooldown: 7,
+        windup: 0.44, active: 0.12, recovery: 0.44,
+        power: 2.8, damageType: 'physical', heavy: true, stun: 1.0, knockback: 5.5, lunge: 1.1, stagger: 0.5,
+        anim: 'haymaker', desc: 'A huge looping haymaker: stuns and sends them flying.',
+      },
+    ],
+  },
+  spiked_knuckles: {
+    id: 'spiked_knuckles', slot: 'main', name: 'Spiked Knuckles', rarity: 'epic', color: 0xe0a83a,
+    desc: 'Fists. +10% crit, +20% crit damage. Dirty brass punches from both hands, and a pummelling rush of six blows that cracks their guard (+25% damage taken).',
+    add: { critChance: 0.1, critMult: 0.2 },
+    weapon: { hands: 1, ranged: false, preferredRange: 1.35, fists: true },
+    tags: ['melee', 'physical', 'fast', 'crit', 'burst'],
+    abilities: [
+      {
+        id: 'knuckle_punch', name: 'Brawl', slot: 'basic', kind: 'melee',
+        range: 1.55, cost: 0, cooldown: 0.1,
+        windup: 0.14, active: 0.07, recovery: 0.2,
+        power: 0.74, damageType: 'physical', stagger: 0.18, knockback: 0.8, lunge: 0.35,
+        anim: 'punch', desc: 'Brass-knuckled punches, left and right.',
+      },
+      {
+        id: 'pummel', name: 'Pummel', slot: 'skill', kind: 'melee',
+        range: 1.7, cost: 15, cooldown: 7,
+        windup: 0.24, active: 0.54, recovery: 0.4,
+        power: 0.4, damageType: 'physical', hits: 6, stagger: 0.2, knockback: 0.35, lunge: 1.0,
+        applies: [{ status: 'vulnerable', duration: 3 }],
+        anim: 'flurry', desc: 'Six-punch rush that leaves them vulnerable (+25% damage taken).',
+      },
+    ],
+  },
+  spirit_wraps: {
+    id: 'spirit_wraps', slot: 'main', name: 'Spirit Wraps', rarity: 'epic', color: 0x6ae0d0,
+    desc: 'Fists. +20% energy regen. A monk\'s bound hands: palm strikes that draw out the enemy\'s energy, a spinning kick to close each string, and a spirit palm that strikes from afar.',
+    mul: { energyRegen: 1.2 },
+    weapon: { hands: 1, ranged: false, preferredRange: 1.4, fists: true },
+    tags: ['melee', 'physical', 'magic', 'fast', 'control'],
+    abilities: [
+      {
+        id: 'palm_strike', name: 'Palm Strike', slot: 'basic', kind: 'melee',
+        range: 1.7, cost: 0, cooldown: 0.1,
+        windup: 0.14, active: 0.08, recovery: 0.2,
+        power: 0.76, damageType: 'physical', stagger: 0.15, knockback: 0.7, lunge: 0.35, drainEnergy: 3,
+        anim: 'palm', desc: 'Open-palm strike that draws 3 energy. The third in a row is a spinning kick.',
+        combo: {
+          every: 3, window: 1.3,
+          finisher: {
+            id: 'palm_strike', name: 'Whirling Kick', slot: 'basic', kind: 'melee',
+            range: 1.9, cost: 0, cooldown: 0.1,
+            windup: 0.22, active: 0.1, recovery: 0.32,
+            power: 1.3, damageType: 'physical', heavy: true, stagger: 0.34, knockback: 3.6, lunge: 0.5, drainEnergy: 8,
+            anim: 'palm', desc: 'The string\'s closing kick: knocks them back and draws 8 energy.',
+          },
+        },
+      },
+      {
+        id: 'spirit_palm', name: 'Spirit Palm', slot: 'skill', kind: 'projectile',
+        range: 7, cost: 15, cooldown: 6.5,
+        windup: 0.34, active: 0.06, recovery: 0.34,
+        power: 1.45, damageType: 'magic', heavy: true, stagger: 0.4, knockback: 5.5,
+        projectile: { speed: 15, radius: 0.55, style: 'palm' },
+        anim: 'chi', desc: 'Both palms push out a spirit hand that flies at the enemy and blasts them back.',
       },
     ],
   },

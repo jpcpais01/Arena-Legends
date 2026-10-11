@@ -21,6 +21,9 @@ const BUILDS: [FormId, Partial<Appearance>, CharacterBuild['gear']][] = [
   ['agile', { species: 'wisp', hair: 0 }, { main: 'dagger', secondary: 'frost_wand', head: 'executioner_hood', boots: 'leaping_boots' }],
   ['balanced', { species: 'imp', hair: 4 }, { main: 'katana', secondary: 'wind_chakram', head: 'berserker_mask' }],
   ['slender', { species: 'wisp', hair: 1 }, { main: 'ember_wand', secondary: 'kite_shield', chest: 'mage_robe' }],
+  ['balanced', { species: 'human', hair: 2 }, { main: 'boxing_gloves', secondary: 'buckler', chest: 'leather_jerkin', boots: 'leather_boots' }],
+  ['mighty', { species: 'ogrin', hair: 3 }, { main: 'spiked_knuckles', secondary: 'iron_cestus', chest: 'thornmail', usable: 'healing_potion' }],
+  ['agile', { species: 'myco', hair: 2 }, { main: 'spirit_wraps', secondary: 'throwing_knives', boots: 'zephyr_boots' }],
 ];
 
 /** Dev preview: every clip of one build, one clip per row (`BUILD=0 OUT=... npm run ...`). */
