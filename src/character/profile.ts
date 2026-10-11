@@ -2,6 +2,7 @@ import { DEFAULT_BUILDS, randomBuild, sanitizeBuild, type CharacterBuild } from 
 import { BACKDROPS, fitForm, randomAppearance, sanitizeAppearance, type Appearance } from './appearance';
 import { randomSkins } from './skins';
 import { randomEntrance } from './entrances';
+import { randomFinisher, randomPose } from './finales';
 
 /**
  * The player's one persistent character: name, body form, look and the gear
@@ -66,6 +67,6 @@ export function generateRival(avoidName?: string): PlayerCharacter {
   for (let i = 0; i < 4 && name === avoidName; i++) name = randomName();
   const build = randomBuild();
   // The backdrop is rolled here, not in randomBuild, so seeded builds keep their sequence.
-  const look = { ...(build.look ?? randomAppearance(Math.random, build.form)), backdrop: Math.floor(Math.random() * BACKDROPS.length), entrance: randomEntrance() };
+  const look = { ...(build.look ?? randomAppearance(Math.random, build.form)), backdrop: Math.floor(Math.random() * BACKDROPS.length), entrance: randomEntrance(), finisher: randomFinisher(), pose: randomPose() };
   return { ...build, name, look, skins: randomSkins(build.gear), style: 'balanced' };
 }

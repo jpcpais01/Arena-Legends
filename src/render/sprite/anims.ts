@@ -40,6 +40,9 @@ export interface Clip {
    * (flurry, spin), or −1 to loop on time (horn).
    */
   cycle?: number;
+  /** Victory poses (winPoses.ts): seconds each `w` frame is held, and where the loop after the intro starts. */
+  beats?: number[];
+  loopFrom?: number;
 }
 
 /** Loops (idle, walk...) use `w` only. */
