@@ -12,7 +12,7 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.73.0',
+    version: '0.74.0',
     date: '2026-10-11',
     title: 'New special item: the Gale Bell',
     notes: [
@@ -20,6 +20,17 @@ export const PATCH_NOTES: PatchNote[] = [
       'Made for archers and casters who want their distance back, and it also gives +8% move speed. Thrown into a wall, the enemy splats against it for extra damage.',
       "Watch the wind rune on the bell: it glows when the bell is ready and goes dark while it recharges. A quick dodge can slip through the gale if you see the bell start to swing.",
       'Fighters know how to use it: they ring it when you are mid-swing, stuck, or out of dodges, and they are careful about stepping into a ready bell themselves.',
+    ],
+  },
+  {
+    version: '0.73.0',
+    date: '2026-10-11',
+    title: 'New home menu',
+    notes: [
+      'The home screen has a new castle rampart along the bottom. The big gold Fight crest sits in the middle and shows who you will face.',
+      'Hero and Armory are on its left, Online and Cup on its right, and the Shop stall with your gems is at the right end.',
+      'Account, friends, leaderboard, sound, settings and patch notes are together at the left end.',
+      'The dice to draw a new rival now sits right beside the rival card.',
     ],
   },
   {
