@@ -1,5 +1,6 @@
 import type { FormId } from '../sim/types';
 import { isEntrance, type EntranceId } from './entrances';
+import { isFinisher, isPose, type FinisherId, type PoseId } from './finales';
 
 /**
  * What a character looks like. Pure data: the sim carries it, the renderer
@@ -123,6 +124,9 @@ export interface Appearance {
   backdrop?: number;
   /** How the hero walks on before a fight (character/entrances.ts). Older saves have none (the free one). */
   entrance?: EntranceId;
+  /** The KO finisher and the victory pose (character/finales.ts). Older saves have none (the free ones). */
+  finisher?: FinisherId;
+  pose?: PoseId;
 }
 
 export const DEFAULT_LOOK: Appearance = { species: 'human', skin: 0, hair: 0, hairColor: 2, eyes: 1, outfit: 0, accent: 0 };
@@ -144,6 +148,8 @@ export function sanitizeAppearance(raw: unknown): Appearance {
     accent: idx(o.accent, ACCENT_COLORS.length, 0),
     backdrop: idx(o.backdrop, BACKDROPS.length, 0),
     ...(isEntrance(o.entrance) ? { entrance: o.entrance } : {}),
+    ...(isFinisher(o.finisher) ? { finisher: o.finisher } : {}),
+    ...(isPose(o.pose) ? { pose: o.pose } : {}),
   };
 }
 

@@ -34,6 +34,10 @@ function parse(raw: string | undefined): unknown {
   try { return raw ? JSON.parse(raw) : undefined; } catch { return undefined; }
 }
 
+/** Both sides' string lists, merged. */
+const union = (a: unknown, b: unknown): string[] =>
+  [...new Set([...(Array.isArray(b) ? b : []), ...(Array.isArray(a) ? a : [])].filter((v): v is string => typeof v === 'string'))];
+
 /** Keys that combine guest and account progress instead of the account's value winning. */
 const MERGERS: Record<string, (local: unknown, cloud: unknown) => unknown> = {
   'al.record': (a, b) => {
@@ -42,8 +46,10 @@ const MERGERS: Record<string, (local: unknown, cloud: unknown) => unknown> = {
   },
   // Hero XP: the side that earned more.
   'al.progress': (a, b) => ({ xp: Math.max(0, Number((a as { xp?: unknown })?.xp) || 0, Number((b as { xp?: unknown })?.xp) || 0) }),
-  // Entrances bought on either side are kept.
-  'al.entrances': (a, b) => [...new Set([...(Array.isArray(b) ? b : []), ...(Array.isArray(a) ? a : [])].filter((v) => typeof v === 'string'))],
+  // Entrances, finishers and victory poses bought on either side are kept.
+  'al.entrances': union,
+  'al.finishers': union,
+  'al.poses': union,
   // Skins pulled on either side are kept; the bigger gem purse wins.
   'al.collection': (a, b) => {
     const o = (x: unknown) => (x && typeof x === 'object' ? x as Record<string, unknown> : {});

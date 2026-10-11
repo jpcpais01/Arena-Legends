@@ -75,7 +75,7 @@ export function superLook(ab: AbilityDef, art: CharacterArt | undefined): SuperL
  * a mythic one's trail, or for a rare one (colours only) its glowing
  * material, else its brightest polished one.
  */
-function skinColours(skin: SkinArt | null | undefined): [number, number] | undefined {
+export function skinColours(skin: SkinArt | null | undefined): [number, number] | undefined {
   if (!skin) return undefined;
   if (skin.fx) return [skin.fx.spark, skin.fx.spark2];
   if (skin.trail) return skin.trail;
