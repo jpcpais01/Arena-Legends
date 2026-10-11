@@ -676,11 +676,11 @@ export function hairCap(H: Xf, front: number, back: number, grow = 0.9): Shape {
 }
 
 function hidesHair(art: CharacterArt): boolean {
-  return art.headHair || art.headgear === 'iron_helm' || art.headgear === 'executioner_hood' || !!stockHead(art.headgear)?.hair;
+  return art.headHair || !!art.headBald || art.headgear === 'iron_helm' || art.headgear === 'executioner_hood' || !!stockHead(art.headgear)?.hair;
 }
 
 function drawHairBack(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => number, sway: number): void {
-  if (!hasHair(art)) return;
+  if (!hasHair(art) || art.headBald) return;
   const style = art.look.hair;
   const hm = m('hair');
   const s = sway * 2;

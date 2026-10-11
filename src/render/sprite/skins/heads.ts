@@ -18,6 +18,8 @@ export interface HeadSkin {
   face?: boolean;
   /** Covers the hair on top (a cap or a close helm): the front hair isn't drawn, only what hangs behind. */
   hair?: boolean;
+  /** A bald head: no hair is drawn at all, front or back (nor a myco cap or golem crystals). */
+  bald?: boolean;
 }
 
 export function hornedWarhelm(): HeadSkin {

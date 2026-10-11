@@ -35,6 +35,7 @@ import { SKYBELL } from './skybell';
 import { RULER } from './ruler';
 import { UNDERTAKER } from './undertaker';
 import { CHAMP } from './champ';
+import { ROCK } from './rock';
 import { WAVE4_MAINS } from './wave4Mains';
 import { WAVE4_OFFHAND } from './wave4Offhand';
 import { WAVE4_SPECIALS } from './wave4Specials';
@@ -111,6 +112,8 @@ export interface SkinFx {
 /** A battle sprite drawn pointing +x around the frame origin; `f` is the animation frame. */
 export interface ProjArt {
   frames: number;
+  /** Frames follow the item's windup instead of the clock (a meteor sigil that plays out once as it charges). */
+  timed?: boolean;
   outline?: boolean;
   draw(r: Raster, t: Xf, f: number, h: (m: Material) => number): void;
 }
@@ -398,6 +401,7 @@ export const SKIN_ART: Record<string, SkinArt> = {
   ...RULER,
   ...UNDERTAKER,
   ...CHAMP,
+  ...ROCK,
   ...WAVE4_MAINS,
   ...WAVE4_OFFHAND,
   ...WAVE4_SPECIALS,

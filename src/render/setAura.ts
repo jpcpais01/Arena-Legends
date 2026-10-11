@@ -26,6 +26,7 @@ import { SKYBELL_FX, skybellAura } from './sprite/skins/skybell';
 import { RULER_FX, rulerAura } from './sprite/skins/ruler';
 import { UNDERTAKER_FX, undertakerAura } from './sprite/skins/undertaker';
 import { CHAMP_FX, champAura } from './sprite/skins/champ';
+import { ROCK_FX, rockAura } from './sprite/skins/rock';
 
 /**
  * Set auras: what a fighter wearing a whole epic set gets around them, in
@@ -66,6 +67,7 @@ export const SET_FX: Record<SkinSetId, SkinFx> = {
   ruler: RULER_FX,
   undertaker: UNDERTAKER_FX,
   champ: CHAMP_FX,
+  rock: ROCK_FX,
 };
 
 type G = CanvasRenderingContext2D;
@@ -228,6 +230,7 @@ const DRAW: Record<SkinSetId, (g: G, x: number, y: number, t: number, layer: Lay
   ruler: rulerAura,
   undertaker: undertakerAura,
   champ: champAura,
+  rock: rockAura,
 };
 
 /** Draws one layer of a set's aura around feet at (x, y) art pixels; `t` is seconds, `facing` which way the fighter looks. */

@@ -476,6 +476,11 @@ export function projFrames(id: ProjArtId, skin?: string | null): number {
   return artFor(id, skin)?.frames ?? 1;
 }
 
+/** Whether a skin's sprite plays its frames over the item's windup rather than on the clock. */
+export function projTimed(id: ProjArtId, skin?: string | null): boolean {
+  return !!skin && !!SKIN_ART[skin]?.proj?.[id]?.timed;
+}
+
 /** Sprite for a projectile flying at `angle` (world radians, y up), optionally in a special item skin's colours. */
 export function projSprite(id: ProjArtId, frame: number, angle = 0, skin?: string | null): Sprite {
   const a = ((Math.round((angle / (Math.PI * 2)) * STEPS) % STEPS) + STEPS) % STEPS;

@@ -36,7 +36,7 @@ export interface SkinDef {
 export type SkinSetId = 'sunborn' | 'hellforged' | 'foxfire' | 'wildwood' | 'abyssal' | 'clockwork' | 'bloodmoon' | 'starweaver' | 'frostbound' | 'stormcaller' | 'voidborn'
   | 'jadedragon' | 'seraph' | 'lichborne' | 'quetzal' | 'prismheart'
   | 'corsair' | 'oni' | 'beastlord' | 'djinn' | 'plague' | 'sugarrush' | 'hallow' | 'olympian' | 'lionheart' | 'mothqueen'
-  | 'skybell' | 'ruler' | 'undertaker' | 'champ';
+  | 'skybell' | 'ruler' | 'undertaker' | 'champ' | 'rock';
 
 export interface SkinSet {
   id: SkinSetId;
@@ -76,6 +76,7 @@ export const SKIN_SETS: readonly SkinSet[] = [
   { id: 'ruler', name: 'Reign of the Ruler', blurb: 'Black leather and championship gold of a ring king no one has put down: a beaded crown, the title at his shoulder, a robe lined in kente, and the ground shaking at every step.' },
   { id: 'undertaker', name: 'The Undertaker', blurb: 'The Deadman rises: a long black leather duster, the wide-brimmed hat pulled low, eyes rolled back to white, purple lightning, and an urn of restless souls that never stays shut.' },
   { id: 'champ', name: 'The Champ Is Here', blurb: 'John Cena\'s ring gear: a lime Never Give Up tee and cap, dog tags, jorts and high-tops, the spinner title at his shoulder and a trumpet for his entrance. You can\'t see him.' },
+  { id: 'rock', name: 'The People\'s Champion', blurb: 'The Rock himself: a polished bald dome and the People\'s Eyebrow, the Brahma Bull on his shoulder, black trunks and taped fists, the mic in hand, and a pot on a red-hot stone. Can you smell what he\'s cooking?' },
 ];
 export const SKIN_SET_BY_ID: ReadonlyMap<SkinSetId, SkinSet> = new Map(SKIN_SETS.map((s) => [s.id, s]));
 
@@ -487,6 +488,14 @@ export const SKINS: readonly SkinDef[] = [
   S('meteor_sigil', 'legendary', 'singularity', 'Singularity Sigil'),
   // The Ruler's sceptre (v0.92.0), made before the set took the boxing gloves
   S('mace', 'legendary', 'ruler', 'Sceptre of the Ruler'),
+  // The People's Champion (v0.95.0)
+  E('rock', 'spiked_knuckles', 'rock', 'The Rock\'s Taped Fists'),
+  E('rock', 'war_horn', 'rock', 'The People\'s Mic'),
+  E('rock', 'meteor_sigil', 'rock', 'What The Rock Is Cooking'),
+  E('rock', 'gladiator_helm', 'rock', 'The People\'s Eyebrow'),
+  E('rock', 'leather_jerkin', 'rock', 'Brahma Bull Physique'),
+  E('rock', 'charger_cuisses', 'rock', 'People\'s Champ Trunks'),
+  E('rock', 'savate_boots', 'rock', 'Rock Bottom Boots'),
 ];
 
 export const SKIN_BY_ID: ReadonlyMap<string, SkinDef> = new Map(SKINS.map((s) => [s.id, s]));
