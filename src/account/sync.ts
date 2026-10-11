@@ -50,6 +50,11 @@ const MERGERS: Record<string, (local: unknown, cloud: unknown) => unknown> = {
   'al.entrances': union,
   'al.finishers': union,
   'al.poses': union,
+  // Promo codes redeemed on either side stay redeemed; admin on either side stays admin.
+  'al.promo': (a, b) => ({
+    used: union((a as { used?: unknown })?.used, (b as { used?: unknown })?.used),
+    admin: (a as { admin?: unknown })?.admin === true || (b as { admin?: unknown })?.admin === true,
+  }),
   // Skins pulled on either side are kept; the bigger gem purse wins.
   'al.collection': (a, b) => {
     const o = (x: unknown) => (x && typeof x === 'object' ? x as Record<string, unknown> : {});

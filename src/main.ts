@@ -64,6 +64,7 @@ import { judgeRound } from './net/judge';
 import { confirmBox } from './ui/confirm';
 import { isCupCode } from './net/protocol';
 import { isOnline } from './account/presence';
+import { isAdmin, onPromo } from './character/promo';
 
 type State = 'menu' | 'intro' | 'battle' | 'results';
 
@@ -79,10 +80,11 @@ let player: PlayerCharacter | null = loadCharacter();
 let rival: PlayerCharacter = loadRival() ?? generateRival(player?.name);
 // Gems and owned skins. Whatever the hero already wears stays owned.
 loadCollection(player?.skins);
-// The owners' accounts (João, Tiago, Batuca) always own every skin, entrance, finisher and pose, including ones added later.
-const ownsAll = () => /^(joao|tiago|batuca)$/i.test(accountStatus().name ?? '');
-setAllSkins(ownsAll);
-onAccount(() => setAllSkins(ownsAll));
+// Admins (the owners' accounts, and saves that redeemed an admin promo code) always own every skin,
+// entrance, finisher and pose, including ones added later.
+setAllSkins(isAdmin);
+onAccount(() => setAllSkins(isAdmin));
+onPromo(() => setAllSkins(isAdmin));
 let record = store<WinLoss>('al.record', { w: 0, l: 0 });
 
 /** Keeps the saved hero's level in step with its XP (friends and cup brackets show it). */
