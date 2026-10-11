@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.97.2',
+    date: '2026-10-11',
+    title: 'Promo code keyboard, take two',
+    notes: [
+      'The 0.97.1 update with the promo code keyboard didn\'t make it to the live game. It\'s out now.',
+      'Tidier hint line in the promo code popup on upright phones.',
+    ],
+  },
+  {
     version: '0.97.1',
     date: '2026-10-11',
     title: 'Promo code keyboard',
