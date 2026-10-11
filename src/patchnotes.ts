@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.89.0',
+    date: '2026-10-11',
+    title: 'Clearer menus on phones, part 3',
+    notes: [
+      'In the Arena Cup the Fight button always shows on a phone, even with the browser bar taking space.',
+      'Train your stats fits on one screen sideways: each stat shows its value beside the buttons.',
+      'Before an online round, both fighter cards line up and your style is no longer named twice.',
+      'Empty loadout slots only offer Save, the signed-out Friends window is small and to the point, and the leaderboard drops a repeated hint.',
+    ],
+  },
+  {
     version: '0.88.0',
     date: '2026-10-11',
     title: 'Clearer menus on phones, part 2',
