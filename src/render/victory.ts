@@ -200,6 +200,21 @@ const SPECS: Record<PoseId, Spec> = {
       if (e.every('beam', 0.5)) e.light({ kind: 'beam', x: p.x + p.facing * 0.05, y: p.y, r0: 9, r1: 9, w: 0.5, rot: UP, hi: 0xfff4c0, lo: 0xffb040, life: 1.1, power: 0.42, fin: 0.45 });
       if (e.every('rise', e.scale < 1 ? 0.12 : 0.07)) e.fx.burst({ x: p.x, y: p.y + 0.1, count: 1, jitter: 0.5, dir: UP, spread: 0.1, speed: [1, 2.2], life: [0.6, 1], color: 0xfff4c0, color2: 0xffb040, kind: 'twinkle' });
     },
+    under(e, g, v, t, p) {
+      // The pillar itself, drawn so it shows on a bright day too: a soft gold column with a white core, breathing.
+      if (t < 0.18) return;
+      const k = Math.min(1, (t - 0.18) / 0.25) * (0.85 + 0.15 * Math.sin(t * 6));
+      const x = Math.round(v.sx(p.x)), gy = Math.round(v.sy(p.y));
+      const w = Math.round(10 * e.scale + 2);
+      const gr = g.createLinearGradient(x - w, 0, x + w, 0);
+      gr.addColorStop(0, 'rgba(255,224,140,0)');
+      gr.addColorStop(0.3, `rgba(255,224,140,${(0.28 * k).toFixed(3)})`);
+      gr.addColorStop(0.5, `rgba(255,252,230,${(0.6 * k).toFixed(3)})`);
+      gr.addColorStop(0.7, `rgba(255,224,140,${(0.28 * k).toFixed(3)})`);
+      gr.addColorStop(1, 'rgba(255,224,140,0)');
+      g.fillStyle = gr;
+      g.fillRect(x - w, 0, w * 2, gy + 1);
+    },
   },
 
   // Foot up on a rock; the crowd roars and confetti goes up, then keeps drifting down.

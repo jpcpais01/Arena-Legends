@@ -314,7 +314,8 @@ export function drawDragon(g: CanvasRenderingContext2D, pts: DragonPt[], front: 
   const ux = dx / dl, uy = dy / dl;
   let px = -uy, py = ux;
   if (py > 0) { px = -px; py = -py; } // "up" on the head is up on screen
-  const S = scale;
+  // The head is bigger than the thickest coil, so it leads.
+  const S = scale * 1.7;
   const at = (f: number, s: number): [number, number] => [h.x + ux * f * S + px * s * S, h.y + uy * f * S + py * s * S];
   const jaw = open * 2.6;
   const part = (f: number, s: number, rx: number, ry: number, col: string, out = true) => {

@@ -450,7 +450,8 @@ export class BattleView implements View {
       this.fin = null;
       this.finAfter = 0;
       const w = b.winner !== -1 ? b.fighters[b.winner] : undefined;
-      if (w?.alive) this.fighters[w.id].anim.restartPose();
+      // The pose strikes, and the camera leans in on the winner for it.
+      if (w?.alive) { this.fighters[w.id].anim.restartPose(); this.cinema(1, 1.7, w.x, 0.85); }
     }
     if (this.finAfter >= 0) this.finAfter += fdt;
     const fin = this.fin;
