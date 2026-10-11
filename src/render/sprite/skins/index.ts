@@ -36,6 +36,7 @@ import { RULER } from './ruler';
 import { UNDERTAKER } from './undertaker';
 import { CHAMP } from './champ';
 import { ROCK } from './rock';
+import { OBA } from './oba';
 import { WAVE4_MAINS } from './wave4Mains';
 import { WAVE4_OFFHAND } from './wave4Offhand';
 import { WAVE4_SPECIALS } from './wave4Specials';
@@ -402,6 +403,7 @@ export const SKIN_ART: Record<string, SkinArt> = {
   ...UNDERTAKER,
   ...CHAMP,
   ...ROCK,
+  ...OBA,
   ...WAVE4_MAINS,
   ...WAVE4_OFFHAND,
   ...WAVE4_SPECIALS,

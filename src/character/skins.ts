@@ -36,7 +36,7 @@ export interface SkinDef {
 export type SkinSetId = 'sunborn' | 'hellforged' | 'foxfire' | 'wildwood' | 'abyssal' | 'clockwork' | 'bloodmoon' | 'starweaver' | 'frostbound' | 'stormcaller' | 'voidborn'
   | 'jadedragon' | 'seraph' | 'lichborne' | 'quetzal' | 'prismheart'
   | 'corsair' | 'oni' | 'beastlord' | 'djinn' | 'plague' | 'sugarrush' | 'hallow' | 'olympian' | 'lionheart' | 'mothqueen'
-  | 'skybell' | 'ruler' | 'undertaker' | 'champ' | 'rock';
+  | 'skybell' | 'ruler' | 'undertaker' | 'champ' | 'rock' | 'oba';
 
 export interface SkinSet {
   id: SkinSetId;
@@ -73,10 +73,11 @@ export const SKIN_SETS: readonly SkinSet[] = [
   { id: 'lionheart', name: 'Lionheart', blurb: 'A paladin king\'s white steel and gold, lion crests and royal blue, sunlight blazing at every edge.' },
   { id: 'mothqueen', name: 'Moth Queen\'s Court', blurb: 'Fae royalty of the moonlit wood: luna-moth wings, silver dust and soft glowing mushrooms.' },
   { id: 'skybell', name: 'Skybell Sanctum', blurb: 'Saffron robes and sea-green bronze of the monks who keep the bells on the windswept peaks, prayer flags snapping in a gale that never dies.' },
-  { id: 'ruler', name: 'Reign of the Ruler', blurb: 'Black leather and championship gold of a ring king no one has put down: a beaded crown, the title at his shoulder, a robe lined in kente, and the ground shaking at every step.' },
+  { id: 'ruler', name: 'Reign of the Kente King', blurb: 'Black leather and championship gold of a ring king no one has put down: a beaded crown, the title at his shoulder, a robe lined in kente, and the ground shaking at every step.' },
   { id: 'undertaker', name: 'The Undertaker', blurb: 'The Deadman rises: a long black leather duster, the wide-brimmed hat pulled low, eyes rolled back to white, purple lightning, and an urn of restless souls that never stays shut.' },
   { id: 'champ', name: 'The Champ Is Here', blurb: 'John Cena\'s ring gear: a lime Never Give Up tee and cap, dog tags, jorts and high-tops, the spinner title at his shoulder and a trumpet for his entrance. You can\'t see him.' },
   { id: 'rock', name: 'The People\'s Champion', blurb: 'The Rock himself: a polished bald dome and the People\'s Eyebrow, the Brahma Bull on his shoulder, black trunks and taped fists, the mic in hand, and a pot on a red-hot stone. Can you smell what he\'s cooking?' },
+  { id: 'oba', name: 'Oba, The Ruler', blurb: 'Oba Femi as he walks to the ring: shaved head, black beard, no shirt, just a wall of muscle. Black and gold trunks, kneepads and boots, taped fists, and his championship floating at his shoulder.' },
 ];
 export const SKIN_SET_BY_ID: ReadonlyMap<SkinSetId, SkinSet> = new Map(SKIN_SETS.map((s) => [s.id, s]));
 
@@ -464,10 +465,10 @@ export const SKINS: readonly SkinDef[] = [
   E('ruler', 'boxing_gloves', 'ruler', 'Gloves of the Undisputed'),
   E('ruler', 'iron_cestus', 'ruler', 'Kingmaker Knuckles'),
   E('ruler', 'echo_stone', 'ruler', 'The Undisputed Title'),
-  E('ruler', 'storm_crown', 'ruler', 'Crown of the Ruler'),
+  E('ruler', 'storm_crown', 'ruler', 'Crown of the Kente King'),
   E('ruler', 'juggernaut_plate', 'ruler', 'Royal Ring Mantle'),
   E('ruler', 'warlord_faulds', 'ruler', 'Champion\'s Ring Tights'),
-  E('ruler', 'earthshaker_boots', 'ruler', 'Ruler\'s Stompers'),
+  E('ruler', 'earthshaker_boots', 'ruler', 'Kente King\'s Stompers'),
   E('undertaker', 'spirit_wraps', 'undertaker', 'Deadman\'s Grips'),
   E('undertaker', 'tower_shield', 'undertaker', 'Rest in Peace'),
   E('undertaker', 'wisp_lantern', 'undertaker', 'The Urn'),
@@ -482,12 +483,19 @@ export const SKINS: readonly SkinDef[] = [
   E('champ', 'leather_jerkin', 'champ', 'Never Give Up Tee'),
   E('champ', 'leather_leggings', 'champ', 'Cena\'s Jorts'),
   E('champ', 'leather_boots', 'champ', 'Cenation High-Tops'),
+  E('oba', 'spirit_wraps', 'oba', 'Oba\'s Taped Fists'),
+  E('oba', 'iron_cestus', 'oba', 'Fall From Grace Wraps'),
+  E('oba', 'echo_stone', 'oba', 'Oba\'s Championship'),
+  E('oba', 'gladiator_helm', 'oba', 'Oba\'s Beard'),
+  E('oba', 'juggernaut_plate', 'oba', 'Oba\'s Muscles'),
+  E('oba', 'charger_cuisses', 'oba', 'Oba\'s Ring Trunks'),
+  E('oba', 'colossus_boots', 'oba', 'Oba\'s Ring Boots'),
   // Meteor sigil (v0.85.0): three legendary meteors, each with its own fall and impact
   S('meteor_sigil', 'legendary', 'tidefall', 'Tidefall Sigil'),
   S('meteor_sigil', 'legendary', 'bloomfall', 'Bloomfall Sigil'),
   S('meteor_sigil', 'legendary', 'singularity', 'Singularity Sigil'),
-  // The Ruler's sceptre (v0.92.0), made before the set took the boxing gloves
-  S('mace', 'legendary', 'ruler', 'Sceptre of the Ruler'),
+  // The Kente King's sceptre (v0.92.0), made before the set took the boxing gloves
+  S('mace', 'legendary', 'ruler', 'Sceptre of the Kente King'),
   // The People's Champion (v0.95.0)
   E('rock', 'spiked_knuckles', 'rock', 'The Rock\'s Taped Fists'),
   E('rock', 'war_horn', 'rock', 'The People\'s Mic'),

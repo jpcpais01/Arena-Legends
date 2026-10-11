@@ -8,7 +8,7 @@ import { mix, toHsl, fromHsl } from '../pixel/color';
 import { grain, lattice, speckle } from '../pixel/tex';
 import { material, type Material } from '../pixel/raster';
 import { ARMOUR2 } from './armour2';
-import { bodyFor, type BodySpec } from './body';
+import { bodyFor, muscled, type BodySpec } from './body';
 import { SKIN_ART, type SkinArt } from './skins';
 import type { BodyDraw, LegDraw, ShoulderDraw, ThighDraw } from './skins/armour';
 import type { HeadDraw } from './skins/heads';
@@ -90,6 +90,8 @@ export interface ChestLook {
   shoulder?: ShoulderDraw | null;
   /** Its own scarf replaces the human's. */
   noScarf?: boolean;
+  /** Bulks the wearer up (0..1): broader chest, thick neck, bigger arms with biceps. Looks only. */
+  muscle?: number;
 }
 
 export interface LegsLook {
@@ -428,7 +430,7 @@ export function makeArt(build: CharacterBuild): CharacterArt {
   ], headMats);
   return {
     build, look, form: build.form,
-    body: bodyFor(build.form, look.species),
+    body: muscled(bodyFor(build.form, look.species), chest.muscle ?? 0),
     gear: build.gear,
     mats,
     mainId, main, family: MAIN_FAMILY[mainId],

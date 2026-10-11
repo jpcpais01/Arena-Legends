@@ -9,7 +9,7 @@ import type { ProjArt, SkinArt, SkinFx } from './index';
 import { epicFx, mats, wrap } from './kit';
 
 /**
- * Mythic set: Reign of the Ruler. A champion king of the ring: black leather
+ * Mythic set: Reign of the Kente King. A champion king of the ring: black leather
  * and championship gold, a beaded crown in the style of a West African
  * king's adé with a gold bird on top, a royal robe lined in kente (gold,
  * green and red woven in blocks), the title belt floating at his shoulder,
@@ -91,7 +91,7 @@ function crownMark(F: Xf, x: number, y: number, s: number): Shape {
 }
 
 // -----------------------------------------------------------------------------
-// Sceptre of the Ruler (mace, a legendary skin outside the set)
+// Sceptre of the Kente King (mace, a legendary skin outside the set)
 // -----------------------------------------------------------------------------
 
 function sceptre(): WeaponArt {
@@ -282,7 +282,7 @@ const undisputedTitle: SkinArt = {
 };
 
 // -----------------------------------------------------------------------------
-// Crown of the Ruler (storm crown)
+// Crown of the Kente King (storm crown)
 // -----------------------------------------------------------------------------
 
 function rulerCrown(): SkinArt {
@@ -458,7 +458,7 @@ function ringTights(): SkinArt {
 }
 
 // -----------------------------------------------------------------------------
-// Ruler's Stompers (earthshaker boots)
+// Kente King's Stompers (earthshaker boots)
 // -----------------------------------------------------------------------------
 
 function stompers(): SkinArt {

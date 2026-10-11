@@ -239,6 +239,17 @@ function drawArm(r: Raster, art: CharacterArt, sk: Skeleton, side: 'N' | 'F', X:
   else r.fill(cap(sh, el, body.armR, body.elbowR), m('skin'), { group: g, bevel: 2, toneBias: bias });
   const fore = chest.forearm ?? 'skin';
   r.fill(cap(el, wr, body.elbowR, body.wristR + (chest.forearm ? 0.35 : 0)), m(fore), { group: g, bevel: 1.8, toneBias: bias });
+  if (chest.muscle && !chest.sleeve) {
+    // Muscle-bound: a round deltoid capping the shoulder, a bicep bulging mid upper arm, a heavy forearm.
+    const k = chest.muscle;
+    const along = (a: P, b: P, u: number) => ({ x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u });
+    const ang = (a: P, b: P) => -Math.atan2(b.y - a.y, b.x - a.x);
+    const bi = along(sh, el, 0.48), fa = along(el, wr, 0.3);
+    const up = Math.hypot(el.x - sh.x, el.y - sh.y), lo = Math.hypot(wr.x - el.x, wr.y - el.y);
+    if (!chest.forearm) r.fill(ellipseR(X(fa), Y(fa), lo * 0.36, body.elbowR * (1 + 0.12 * k), ang(el, wr)), m('skin'), { group: g, bevel: 1.8, toneBias: bias });
+    r.fill(ellipseR(X(bi), Y(bi), up * 0.36, body.armR * (1 + 0.2 * k), ang(sh, el)), m('skin'), { group: g, bevel: 2.2, toneBias: bias });
+    r.fill(circleR(X(sh) + 0.2, Y(sh) - 0.3, body.armR * (1 + 0.16 * k)), m('skin'), { group: g, bevel: 2.4, toneBias: bias, lightBias: 0.15 });
+  }
   if (chest.forearm && chest.forearm !== 'robe') {
     // Cuff at the wrist end of the bracer.
     const c = { x: wr.x + (el.x - wr.x) * 0.15, y: wr.y + (el.y - wr.y) * 0.15 };
@@ -307,7 +318,8 @@ function blendShapes(k: number, s: Shape[]): Shape {
 function drawTorso(r: Raster, art: CharacterArt, sk: Skeleton, T: Xf, X: (p: P) => number, Y: (p: P) => number, m: (k: string) => number): void {
   const { body, chest } = art;
   // Neck first so the collar overlaps it.
-  r.fill(capsuleR(X(sk.neck), Y(sk.neck), X(sk.chest), Y(sk.chest), 1.9, 2.2), m('skin'), { group: G.torso, bevel: 1.6, toneBias: -1 });
+  const mu = chest.muscle ?? 0;
+  r.fill(capsuleR(X(sk.neck), Y(sk.neck), X(sk.chest), Y(sk.chest), 1.9 + mu * 0.9, 2.2 + mu * 1.4), m('skin'), { group: G.torso, bevel: 1.6, toneBias: -1 });
   const shape = torsoShape(art, T);
   r.fill(shape, m(chest.torso), { group: G.torso, bevel: 3.2 });
   const top = body.torso;
