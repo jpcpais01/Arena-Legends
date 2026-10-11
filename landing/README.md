@@ -12,7 +12,8 @@ players to it: Play in browser, or Install for computer, Android or iPhone.
 ## Deploy on Vercel
 
 New project > import `jpcpais01/Arena-Legends` > set **Root Directory** to `landing`,
-Framework Preset **Other**, no build command. `vercel.json` here skips rebuilds when a
-commit doesn't touch this folder.
+Framework Preset **Other**, leave Build Command and Output Directory empty. No ignored-build
+step on purpose: a skip-when-unchanged check made Vercel skip the very first deploy (the
+latest commit on main rarely touches this folder).
 
 Preview locally: `npx serve landing`.
