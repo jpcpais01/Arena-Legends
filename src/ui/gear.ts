@@ -9,6 +9,7 @@ import { FORMS } from '../sim/forms';
 import { withGear } from '../sim/loadout';
 import type { GearId, GearSlot } from '../sim/types';
 import { confirmBox } from './confirm';
+import { openLoadouts } from './loadouts';
 import { h } from './dom';
 import { icon } from './icons';
 import { Preview } from './preview';
@@ -94,6 +95,16 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     title: 'Unequip all skins', 'aria-label': 'Unequip all skins',
     onclick: () => { if (Object.keys(c.skins ?? {}).length) { peek = null; save({ ...c, skins: {} }, false); } },
   }, icon('star'), 'No skins');
+
+  /** Saved builds: five slots of gear and skins, loaded in one tap (Undo brings the old build back). */
+  const loadBtn = h<HTMLButtonElement>('button.btn.sm.hist.loads', {
+    title: 'Loadouts: save and load builds', 'aria-label': 'Loadouts',
+    onclick: () => openLoadouts(root, () => c, (gear, skins) => {
+      peek = null;
+      pick = gear[slot] ?? null;
+      save({ ...c, gear, skins }, true);
+    }),
+  }, icon('bag'), 'Loadouts');
 
   /** Steps back (or forward) one change: the current build goes on the other stack. */
   function travel(from: PlayerCharacter[], to: PlayerCharacter[]): void {
@@ -365,7 +376,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     h('header.scr-head', null,
       h('div.scr-title', null, h('h1', null, opts.title ?? 'Armory')),
       h('div.grow'),
-      h('div.hist-btns', null, plainBtn, undoBtn, redoBtn),
+      h('div.hist-btns', null, loadBtn, plainBtn, undoBtn, redoBtn),
       h('button.btn.primary.done', { onclick: close }, icon('check'), 'Done')),
     rail, stage, listBox, card,
   );

@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.76.0',
+    date: '2026-10-11',
+    title: 'Loadouts',
+    notes: [
+      'New Loadouts button in the Armory: five slots to save your build, with all eight items and their skins.',
+      'Load one with a single tap. Undo brings your old build back. Tap a loadout\'s name to rename it, and Save over a slot to replace it (it asks first).',
+      'Loadouts are saved to your account, and they work when you pick your build in online matches too.',
+    ],
+  },
+  {
     version: '0.75.0',
     date: '2026-10-11',
     title: 'New epic set: Skybell Sanctum',

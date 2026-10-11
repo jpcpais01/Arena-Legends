@@ -1857,8 +1857,8 @@ button.lb-pick:hover { filter: brightness(1.2); }
 .scr.forge-scr { background: radial-gradient(ellipse 34% 46% at 22% 72%, rgba(255, 120, 40, 0.22), transparent 70%), linear-gradient(180deg, rgba(18, 10, 14, 0.92), rgba(8, 5, 10, 0.97)); }
 /* Display text keeps the pixel face: the Fight button, battle banners, the clock, the results banner, the title prompt, the hero name field. */
 .btn.fight, .banner, .clock, .res-banner b, .title-start, input.name { font-family: var(--font-pixel); }
-.hist-btns .plain { gap: 5px; padding-left: 0.6rem; padding-right: 0.7rem; font-size: 0.75rem; }
-.hist-btns .plain svg { width: 0.85rem; height: 0.85rem; }
+.hist-btns .plain, .hist-btns .loads { gap: 5px; padding-left: 0.6rem; padding-right: 0.7rem; font-size: 0.75rem; }
+.hist-btns .plain svg, .hist-btns .loads svg { width: 0.85rem; height: 0.85rem; }
 
 /* --- Confirm popup (equip set) ----------------------------------------------------------------- */
 .sheet-wrap.confirm { z-index: 40; }
@@ -2509,4 +2509,53 @@ button.lb-pick:hover { filter: brightness(1.2); }
   .ds-ic svg { width: 2.4rem; height: 2.4rem; }
   .ds-text b { font-size: 1.35rem; }
   .ds-text .gem-tag { font-size: 0.875rem; }
+}
+
+/* --- Loadouts (v0.74): five saved builds, opened from the Armory header ----------------------- */
+.sheet-wrap.loadouts .sheet { width: min(36rem, 100%); grid-template-rows: auto minmax(0, 1fr); }
+.lo-body { padding: 0.5rem 0.7rem 0.7rem; display: grid; gap: 8px; align-content: start; }
+.lo-hint { font-size: 0.75rem; line-height: 1.35; color: var(--muted); }
+.lo-rows { display: grid; gap: 6px; }
+.lo-row {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px;
+  padding: 5px 6px 6px; background: rgba(0, 0, 0, 0.28); border: var(--px) solid #3a2e5a;
+}
+.lo-row.worn { border-color: var(--gold-lo); background: color-mix(in srgb, var(--gold) 9%, rgba(0, 0, 0, 0.3)); }
+.lo-num { display: grid; place-items: center; width: 1.7rem; height: 1.7rem; font: 700 1rem/1 var(--font-pixel); color: var(--gold-hi); background: #241b40; box-shadow: inset 0 0 0 var(--px) var(--gold-lo); text-shadow: 0 var(--px) 0 var(--ink); }
+.lo-row.empty .lo-num { color: var(--muted); box-shadow: inset 0 0 0 var(--px) #3a2e5a; }
+.lo-main { display: grid; gap: 4px; min-width: 0; }
+.lo-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.lo-name {
+  flex: 1; min-width: 0; height: 1.6rem; padding: 0 6px; font: 600 0.875rem/1 var(--font); color: var(--text);
+  background: transparent; border: var(--px) solid transparent; outline: none;
+}
+.lo-name:not(:disabled):hover, .lo-name:focus { background: rgba(0, 0, 0, 0.35); border-color: var(--line); }
+.lo-name:focus { border-color: var(--gold-lo); }
+.lo-name:disabled { color: var(--muted); font-style: italic; }
+.lo-worn { display: flex; align-items: center; gap: 4px; flex: none; font: 700 0.625rem/1 var(--font); text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); }
+.lo-worn svg { width: 0.7rem; height: 0.7rem; }
+.lo-gear { display: flex; gap: 3px; flex-wrap: wrap; padding-left: 6px; }
+.lo-sock { width: 1.7rem; height: 1.7rem; }
+.lo-sock canvas { width: 100%; height: 100%; }
+.lo-sock.empty { opacity: 0.4; }
+.lo-btns { display: flex; gap: 5px; }
+.lo-btns .btn { padding-left: 0.55rem; padding-right: 0.6rem; gap: 4px; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .sheet-wrap.loadouts .sheet { width: min(38rem, 100%); }
+  .lo-body { padding: 0.35rem 0.5rem 0.5rem; gap: 5px; }
+  .lo-hint { display: none; }
+  .lo-rows { gap: 4px; }
+  .lo-row { padding: 3px 5px 4px; gap: 6px; }
+  .lo-top { gap: 6px; }
+  .lo-name { height: 1.4rem; font-size: 0.8125rem; }
+  .lo-sock { width: 1.45rem; height: 1.45rem; }
+  .lo-gear { flex-wrap: nowrap; }
+}
+@media (orientation: portrait) and (max-width: 720px), (max-width: 560px) {
+  .lo-row { grid-template-columns: auto minmax(0, 1fr); }
+  .lo-btns { grid-column: 1 / -1; justify-content: flex-end; }
+}
+/* Upright phones: the Armory header gives its title's room to the buttons. */
+@media (orientation: portrait) and (max-width: 720px), (max-width: 560px) {
+  .scr.gear.loadout .scr-title { display: none; }
 }
