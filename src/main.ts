@@ -25,6 +25,7 @@ import { TitleScreen } from './ui/title';
 import { h, save, store } from './ui/dom';
 import { icon } from './ui/icons';
 import { setupPhoneFullscreen } from './ui/fullscreen';
+import { setupInstall } from './ui/install';
 import { chestScreen } from './ui/gacha';
 import { forgeScreen } from './ui/forge';
 import { shopScreen } from './ui/shop';
@@ -1275,6 +1276,8 @@ toMenu();
   else if (consumeResume()) { if (!player) openCreator(true); }
   else showTitle();
   restoreAccount();
+  // Sent by the landing page's Install button (?install): offer to install the app.
+  setupInstall(ui);
 }
 
 /** The title over the live arena; the first tap opens the menu, or character creation for a new player. */
