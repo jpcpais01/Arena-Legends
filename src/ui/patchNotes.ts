@@ -69,15 +69,31 @@ export function openPatchNotes(parent: HTMLElement): void {
     window.removeEventListener('keydown', onKey, true);
     wrap.remove();
   };
+  // Wide screens get an index of versions beside the notes: tap one to jump to it.
+  const sections = PATCH_NOTES.map((n) => h('section.note', null,
+    h('div.note-head', null, h('span.note-ver', null, 'v' + n.version), h('b', null, n.title), h('span.note-date', null, formatDate(n.date))),
+    h('ul', null, ...n.notes.map((t) => h('li', null, t))),
+  ));
+  const body = h('div.sheet-body.notes-body', null, ...sections);
+  const links = PATCH_NOTES.map((n, i) => h<HTMLButtonElement>(`button.notes-link${i ? '' : '.on'}`, {
+    onclick: () => { sfx.play('select'); body.scrollTo({ top: sections[i].offsetTop - 6 }); },
+  }, h('b', null, 'v' + n.version), h('span', null, n.title)));
+  let on = 0;
+  body.addEventListener('scroll', () => {
+    const y = body.scrollTop + 24;
+    let i = sections.findIndex((el) => el.offsetTop + el.offsetHeight > y);
+    if (i < 0) i = sections.length - 1;
+    if (i === on) return;
+    links[on].classList.remove('on');
+    links[i].classList.add('on');
+    on = i;
+    links[i].scrollIntoView({ block: 'nearest' });
+  }, { passive: true });
   const wrap: HTMLDivElement = h<HTMLDivElement>('div.sheet-wrap', { onclick: (e: Event) => { if (e.target === wrap) close(); } },
-    h('div.sheet.plate.notes-sheet', { role: 'dialog', 'aria-label': 'Patch notes', style: { width: 'min(640px, 100%)' } },
+    h('div.sheet.plate.notes-sheet', { role: 'dialog', 'aria-label': 'Patch notes' },
       h('div.sheet-head', null, h('h2', null, 'Patch notes'),
         h('button.btn.icon', { title: 'Close', 'aria-label': 'Close', onclick: close }, icon('close'))),
-      h('div.sheet-body.notes-body', null,
-        ...PATCH_NOTES.map((n) => h('section.note', null,
-          h('div.note-head', null, h('span.note-ver', null, 'v' + n.version), h('b', null, n.title), h('span.note-date', null, formatDate(n.date))),
-          h('ul', null, ...n.notes.map((t) => h('li', null, t))),
-        ))),
+      h('div.notes-panes', null, h('nav.notes-index', { 'aria-label': 'Versions' }, ...links), body),
     ),
   );
   window.addEventListener('keydown', onKey, true);

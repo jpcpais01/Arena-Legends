@@ -86,10 +86,10 @@ export function openOnlineSheet(parent: HTMLElement, cb: OnlineSheetCallbacks, p
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
   sync();
   const body = h('div.sheet-body.online-body.online-pick', null,
-    h('p.muted.online-intro', null, 'Duel a friend. Best of five: the first to three victories takes the match. You both pick a new build before every round.'),
+    h('p.muted.online-intro', null, 'Best of five against a friend. You both pick a new build before every round.'),
     h('section.online-opt.host', null,
       h('b', null, 'Host a match'),
-      h('p.muted', null, 'Get a room code and a link to send to your friend.'),
+      h('p.muted', null, 'Get a code and a link to send to your friend.'),
       h('button.btn.primary', { onclick: () => { sfx.play('ui'); close(); cb.onHost(); } }, icon('globe'), 'Create room')),
     h('section.online-opt', null,
       h('b', null, 'Join a friend'),
@@ -184,13 +184,15 @@ export class Lobby {
           : inv.state === 'declined' ? `${inv.name} declined. You can still send them the code.`
           : inv.state === 'expired' ? `${inv.name} didn't answer in time. You can still send them the code.`
           : `Couldn't send the invite to ${inv.name}. Send them the code instead.${inv.error ? ` (${inv.error})` : ''}`);
+        // The code and how to send it on one side, who you wait for on the other (stacked when narrow).
         content = [
-          invNote || null,
-          h('button.room-code', { title: 'Copy the code', 'aria-label': `Room code ${v.code.split('').join(' ')}`, onclick: () => { sfx.play('ui'); void copy(v.code); } }, ...codeTiles(v.code)),
-          h('p.muted', null, 'Send the code or the link to a friend. The match starts as soon as they join.'),
-          h('div.opts', null, copyBtn, shareBtn),
-          inv && inv.state !== 'declined' ? status(`Waiting for ${inv.name}`) : status('Waiting for your rival'),
-          h('div.opts', null, cancel),
+          h('div.lobby-code', null,
+            h('button.room-code', { title: 'Copy the code', 'aria-label': `Room code ${v.code.split('').join(' ')}`, onclick: () => { sfx.play('ui'); void copy(v.code); } }, ...codeTiles(v.code)),
+            h('div.opts', null, copyBtn, shareBtn)),
+          h('div.lobby-side', null,
+            invNote || h('p.muted', null, 'Send the code or the link to a friend. The match starts as soon as they join.'),
+            inv && inv.state !== 'declined' ? status(`Waiting for ${inv.name}`) : status('Waiting for your rival'),
+            h('div.opts', null, cancel)),
         ];
         break;
       }
@@ -207,7 +209,7 @@ export class Lobby {
         ];
         break;
     }
-    this.el.replaceChildren(h('div.sheet.plate', { role: 'dialog', 'aria-label': title, style: { width: 'min(440px, 100%)' } },
+    this.el.replaceChildren(h(`div.sheet.plate.lobby-sheet.k-${v.kind}`, { role: 'dialog', 'aria-label': title },
       h('div.sheet-head', null, h('h2', null, title)),
       h('div.sheet-body.online-body.lobby-body', null, ...content)));
   }

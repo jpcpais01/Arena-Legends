@@ -44,7 +44,7 @@
   --skin-epic-sweep: linear-gradient(90deg, #ffd860, #ff7ac8, #7ad8ff, #7ff0e0, #ffd860);
   /* Text is Rubik (clear at small sizes on a phone); big titles and names keep the pixel face. */
   --font: 'Rubik', system-ui, sans-serif;
-  --font-pixel: 'Pixelify Sans', ui-monospace, monospace;
+  --font-pixel: 'AL Digits', 'Pixelify Sans', ui-monospace, monospace;
   /* Ink outline for text, one art pixel thick. */
   --outline: var(--px) 0 0 var(--ink), calc(var(--px) * -1) 0 0 var(--ink), 0 var(--px) 0 var(--ink), 0 calc(var(--px) * -1) 0 var(--ink),
     var(--px) var(--px) 0 var(--ink), calc(var(--px) * -1) var(--px) 0 var(--ink), var(--px) calc(var(--px) * -1) 0 var(--ink), calc(var(--px) * -1) calc(var(--px) * -1) 0 var(--ink),
@@ -631,6 +631,9 @@ svg.flip { transform: scaleX(-1); }
 
 /* --- Settings ----------------------------------------------------------------------------------- */
 .settings-body { padding: 0.5rem 1rem 1rem; display: grid; gap: 4px; }
+.set-col { display: grid; align-content: start; min-width: 0; }
+.set-cap { margin: 0.5rem 0 0; font: 700 0.75rem/1 var(--font); letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+.set-hint { margin: 0; font-size: 0.75rem; line-height: 1.3; color: var(--muted); }
 .setting { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0.7rem 0; border-bottom: 2px solid rgba(59, 47, 92, 0.6); }
 .setting-text { display: grid; gap: 3px; min-width: 0; }
 .setting-text b { display: flex; align-items: center; gap: 8px; font: 700 1rem/1.1 var(--font); }
@@ -650,7 +653,7 @@ svg.flip { transform: scaleX(-1); }
 .vol::-webkit-slider-thumb { -webkit-appearance: none; width: 1.1rem; height: 1.5rem; margin-top: calc(-0.4rem - 2px); background: var(--gold); border: 2px solid var(--ink); border-radius: 0; }
 .vol::-moz-range-thumb { width: 1.1rem; height: 1.5rem; background: var(--gold); border: 2px solid var(--ink); border-radius: 0; }
 .vol:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-.arena-field { display: grid; gap: 8px; padding-top: 0.8rem; }
+.arena-field { display: grid; gap: 6px; align-content: start; }
 .arena-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr)); gap: 6px; }
 .arena-opt { display: grid; gap: 6px; padding: 5px 5px 7px; text-align: left; line-height: 1.1; font-size: 0.8125rem; }
 .arena-swatch { display: block; height: 2.2rem; border: 2px solid var(--ink); }
@@ -686,8 +689,22 @@ svg.flip { transform: scaleX(-1); }
 .results .score-line { margin-top: 2px; }
 
 /* --- Notes --------------------------------------------------------------------------------------- */
-.notes-body { padding: 0.8rem 1rem; }
+.notes-sheet { width: min(640px, 100%); }
+.notes-panes { display: grid; min-height: 0; }
+.notes-index { display: none; }
+.notes-body { position: relative; padding: 0.8rem 1rem; }
 .note { margin-bottom: 1.1rem; }
+@media (min-width: 760px) {
+  .notes-sheet { width: min(60rem, 100%); }
+  .notes-panes { grid-template-columns: minmax(10rem, 15rem) minmax(0, 1fr); }
+  .notes-index { display: grid; align-content: start; gap: 2px; padding: 0.5rem 0.4rem; overflow: auto; overscroll-behavior: contain; border-right: 2px solid var(--ink); background: rgba(0, 0, 0, 0.22); scrollbar-width: thin; scrollbar-color: var(--gold-lo) transparent; }
+  .notes-link { display: grid; gap: 2px; padding: 0.35rem 0.5rem; text-align: left; background: none; border: 0; border-left: calc(var(--px) * 2) solid transparent; cursor: pointer; }
+  .notes-link b { font: 700 0.75rem/1 var(--font); color: var(--gold); }
+  .notes-link span { font-size: 0.8125rem; line-height: 1.2; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .notes-link:hover span { color: var(--text); }
+  .notes-link.on { background: rgba(242, 181, 66, 0.12); border-left-color: var(--gold); }
+  .notes-link.on span { color: var(--text); }
+}
 .note-head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .note-ver { color: var(--gold-ink); background: var(--gold); padding: 0.1rem 0.35rem 0.15rem; font: 700 0.75rem/1 var(--font); }
 .note-head b { font-size: 1rem; }
@@ -727,8 +744,12 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
 .room-code span { display: grid; place-items: center; width: 2.75rem; height: 3.4rem; background: #0b0814; border: 2px solid var(--line); font: 700 2rem/1 var(--font-pixel); color: var(--gold); }
 .room-code.static { cursor: default; }
 .lobby { z-index: 25; }
+.lobby-sheet { width: min(440px, 100%); }
 .lobby-body { justify-items: center; text-align: center; }
 .lobby-body .opts { justify-content: center; }
+.lobby-code, .lobby-side { display: grid; gap: 12px; justify-items: center; align-content: center; }
+.online-pick .online-opt.host, .cs-opts .online-opt { grid-template-rows: auto minmax(0, 1fr) auto; }
+.online-pick .online-opt.host > .btn, .cs-opts .online-opt > .btn { justify-self: stretch; justify-content: center; }
 .lobby-status { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 0.875rem; }
 .spinner { width: 12px; height: 12px; flex: none; background: var(--gold); animation: spin-px 0.9s steps(4) infinite; }
 @keyframes spin-px { to { transform: rotate(360deg); } }
@@ -988,10 +1009,20 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
   .sk-info { font-size: 0.6875rem; }
 
   .sheet { max-height: 100%; }
-  .res-banner { padding: 0.6rem 1rem 0.5rem; }
-  .res-banner b { font-size: 1.8rem; }
-  .res-body { padding: 0.5rem 0.9rem 0.7rem; gap: 6px; }
-  .res-rows { gap: 3px; }
+  /* Results: the verdict, rewards and buttons on the left, the stat duel on the right. Nothing scrolls. */
+  .sheet.results { width: min(52rem, 100%); grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); grid-template-rows: minmax(0, 1fr) auto; grid-template-areas: "banner body" "foot body"; }
+  .results .res-banner { grid-area: banner; align-content: center; gap: 5px; padding: 0.5rem 0.8rem; border-bottom: 0; border-right: 2px solid var(--ink); background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 26%, transparent), transparent 85%); }
+  .res-banner b { font-size: 1.9rem; }
+  .res-banner > span { font-size: 0.8125rem; line-height: 1.25; }
+  .results .res-body { grid-area: body; align-content: center; padding: 0.5rem 0.9rem 0.6rem; gap: 6px; }
+  .results .sheet-foot { grid-area: foot; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0.45rem 0.6rem 0.3rem; border-right: 2px solid var(--ink); }
+  .results .sheet-foot .btn { min-width: 0; justify-content: center; padding-left: 0.4rem; padding-right: 0.4rem; }
+  .results .sheet-foot .btn.primary { grid-column: 1 / -1; order: -1; min-height: 2.7rem; font-size: 1.05rem; }
+  .results .sheet-foot .btn:first-child:nth-last-child(2), .results .sheet-foot .btn:only-child { grid-column: 1 / -1; }
+  .res-rows { gap: 4px; }
+  .res-row { grid-template-columns: 3.2rem minmax(0, 1fr) 3.2rem; font-size: 0.875rem; }
+  .res-mid { gap: 2px; }
+  .res-xp { grid-template-columns: auto auto minmax(4rem, 9rem); }
   .sheet-foot { padding: 0.4rem 0.2rem 0.1rem; }
   .sheet-head { padding: 0.2rem 0.2rem 0.35rem 0.5rem; }
 
@@ -1012,13 +1043,40 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
   .field { gap: 5px; }
   .swatch { width: 1.65rem; height: 1.65rem; }
   .arrow.sm { width: 1.9rem; height: 1.9rem; }
-  .settings-sheet { width: min(46rem, 100%) !important; }
-  .settings-body { grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); column-gap: 1.2rem; align-items: start; }
-  .settings-body .arena-field { grid-column: 2; grid-row: 1 / span 4; padding-top: 0.6rem; }
-  .settings-body .setting { padding: 0.5rem 0; }
+  /* Settings: sound | battle | arena, side by side, so nothing scrolls. */
+  .settings-sheet { width: min(60rem, 100%) !important; }
+  .settings-body { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 1.2rem; align-items: start; padding: 0.2rem 0.9rem 0.7rem; }
+  .settings-body .setting { padding: 0.45rem 0; }
+  .settings-body .vol-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "lab val" "bar bar"; gap: 0 8px; }
+  .settings-body .vol-row > b { grid-area: lab; font-size: 0.9375rem; }
+  .settings-body .vol-row > .vol { grid-area: bar; height: 1.6rem; }
+  .settings-body .vol-row > .vol-val { grid-area: val; }
+  .settings-body .setting-text b { font-size: 0.9375rem; }
+  .settings-body .arena-opt { font-size: 0.75rem; }
+  .settings-body .arena-swatch { height: 1.7rem; }
   .arena-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+@media (orientation: landscape) and (max-height: 560px) {
+  .lobby-sheet.k-waiting { width: min(44rem, 100%); }
+  .k-waiting .lobby-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 1rem; }
+  .k-waiting .lobby-code { padding-right: 1rem; border-right: 2px solid rgba(59, 47, 92, 0.6); }
+}
+/* Short phone screens (the browser's bars showing): tighter sheet chrome so dialogs fit without scrolling. */
 @media (orientation: landscape) and (max-height: 400px) {
+  .sheet-head { padding: 0.15rem 0.15rem 0.25rem 0.5rem; }
+  .sheet-head h2 { font-size: 1.1rem; }
+  .sheet-head .btn.icon { min-height: 2.1rem; min-width: 2.3rem; }
+  .online-body { padding: 0.6rem 0.8rem; gap: 8px; }
+  .online-opt { padding: 0.55rem 0.7rem; gap: 6px; }
+  .key { min-height: 2.05rem; }
+  .cs-body { gap: 8px; padding: 0.5rem 0.8rem 0.7rem; }
+  .cs-intro, .online-body p { font-size: 0.8125rem; line-height: 1.3; }
+  .settings-body .setting { padding: 0.3rem 0; }
+  .settings-body .setting-text span, .set-hint { font-size: 0.6875rem; }
+  .room-code span { width: 2.3rem; height: 2.9rem; font-size: 1.6rem; }
+  .res-banner b { font-size: 1.6rem; }
+  .res-rows { gap: 2px; }
+  .res-mid span { font-size: 0.625rem; }
 }
 
 /* Phones in portrait (and very narrow windows). */

@@ -43,16 +43,16 @@ export function openCupStart(parent: HTMLElement, cb: CupStartCallbacks): void {
       h('div.sheet-head', null, h('h2', null, icon('trophy'), 'Arena Cup'),
         h('button.btn.icon', { title: 'Close', 'aria-label': 'Close', onclick: () => { sfx.play('ui'); close(); } }, icon('close'))),
       h('div.sheet-body.cs-body', null,
-        h('p.muted.cs-intro', null, '32 fighters, five knockout rounds. Lose once and you are out; win five in a row to lift the cup. Every win pays gems and XP, more the deeper you go and the more health you keep.'),
+        h('p.muted.cs-intro', null, '32 fighters, five knockout rounds, one loss and you are out. Every win pays gems and XP, more the deeper you go.'),
         track,
         h('div.cs-opts', null,
           h('section.online-opt.host', null,
             h('b', null, 'Solo'),
-            h('p.muted', null, 'You and 31 challengers. Change your gear and spend stat points between rounds.'),
+            h('p.muted', null, 'You and 31 challengers. Tune your gear and stats between rounds.'),
             h('button.btn.primary.go', { onclick: go(cb.onSolo) }, icon('trophy'), 'Enter the cup')),
           h('section.online-opt', null,
             h('b', null, 'With friends'),
-            h('p.muted', null, 'Invite up to 7 friends into one bracket. Builds lock when the cup starts.'),
+            h('p.muted', null, 'Up to 8 heroes in one bracket. Builds lock when it starts.'),
             h('button.btn', { onclick: go(cb.onFriends) }, icon('friends'), 'Open a lobby'))))));
   window.addEventListener('keydown', onKey, true);
   parent.appendChild(wrap);

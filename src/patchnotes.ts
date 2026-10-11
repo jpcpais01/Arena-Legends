@@ -12,6 +12,18 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.85.0',
+    date: '2026-10-11',
+    title: 'Clearer menus on phones, part 1',
+    notes: [
+      'Numbers are easier to read everywhere: gem counts, prices, levels and room codes no longer turn a 5 into an S.',
+      'Fight results lay out sideways on a phone: the verdict, rewards and buttons on the left and the stat duel on the right, with nothing to scroll.',
+      'Settings fit on one screen: sound, battle and arena side by side.',
+      'Patch notes have a list of versions beside them. Tap one to jump to it.',
+      'Play online, the room code screen and the Arena Cup start screen are shorter and tidier, and fit with the browser bar showing.',
+    ],
+  },
+  {
     version: '0.84.0',
     date: '2026-10-11',
     title: 'Grand entrances',

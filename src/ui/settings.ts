@@ -33,7 +33,7 @@ interface Row {
 
 const ROWS: Row[] = [
   { key: 'quotes', icon: 'quote', label: 'Battle quotes', hint: 'Speech bubbles with what each fighter is thinking.' },
-  { key: 'smallNumbers', icon: 'eye', label: 'Hide small numbers', hint: 'Hides damage, heal and energy numbers under 50 in battle.' },
+  { key: 'smallNumbers', icon: 'eye', label: 'Hide small numbers', hint: 'Hides damage, heal and energy numbers under 50.' },
 ];
 
 const SLIDERS: { key: keyof Volume; icon: IconName; label: string }[] = [
@@ -52,7 +52,8 @@ export function settingsSheet(start: Settings, arenas: ArenaChoice[], onChange: 
   const set = (next: Settings) => { s = next; onChange(s); sfx.play('ui'); render(); };
   const random = { id: 'random', name: 'Random', bg: `linear-gradient(to right, ${arenas.map((a) => css(a.sky[2])).join(', ')})` };
   const arenaPicker = () => h('div.arena-field', null,
-    h('div.setting-text', null, h('b', null, icon('swords'), 'Arena'), h('span', null, 'Where every fight takes place, and the view behind the menu.')),
+    h('h3.set-cap', null, 'Arena'),
+    h('p.set-hint', null, 'Where every fight takes place, and the view behind the menu.'),
     h('div.arena-grid', null, ...[...arenas.map((a) => ({ id: a.id, name: a.name, bg: swatch(a) })), random].map((a) =>
       h(`button.opt.arena-opt${s.arena === a.id ? '.on' : ''}`, {
         'aria-pressed': String(s.arena === a.id),
@@ -76,12 +77,16 @@ export function settingsSheet(start: Settings, arenas: ArenaChoice[], onChange: 
     return h('div.setting.vol-row', null, h('b', null, icon(r.icon), r.label), input, out);
   };
   const volumes = SLIDERS.map(slider);
-  const render = () => body.replaceChildren(...volumes, ...ROWS.map((r) => h('div.setting', null,
-    h('div.setting-text', null, h('b', null, icon(r.icon), r.label), h('span', null, r.hint)),
-    h(`button.toggle${s[r.key] ? '.on' : ''}`, {
-      role: 'switch', 'aria-checked': String(s[r.key]), 'aria-label': r.label, title: s[r.key] ? 'On' : 'Off',
-      onclick: () => set({ ...s, [r.key]: !s[r.key] }),
-    }))), arenaPicker());
+  // Three groups: sound, battle switches and the arena. Phone landscape lays them side by side.
+  const render = () => body.replaceChildren(
+    h('section.set-col', null, h('h3.set-cap', null, 'Sound'), ...volumes),
+    h('section.set-col', null, h('h3.set-cap', null, 'Battle'), ...ROWS.map((r) => h('div.setting', null,
+      h('div.setting-text', null, h('b', null, icon(r.icon), r.label), h('span', null, r.hint)),
+      h(`button.toggle${s[r.key] ? '.on' : ''}`, {
+        role: 'switch', 'aria-checked': String(s[r.key]), 'aria-label': r.label, title: s[r.key] ? 'On' : 'Off',
+        onclick: () => set({ ...s, [r.key]: !s[r.key] }),
+      })))),
+    arenaPicker());
   render();
   const close = () => { sfx.play('ui'); onClose(); };
   const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopImmediatePropagation(); close(); } };
