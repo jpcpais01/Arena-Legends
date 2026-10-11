@@ -688,7 +688,7 @@ export function hairCap(H: Xf, front: number, back: number, grow = 0.9): Shape {
 }
 
 function hidesHair(art: CharacterArt): boolean {
-  return art.headgear === 'iron_helm' || art.headgear === 'executioner_hood' || !!stockHead(art.headgear)?.hair;
+  return art.headHair || !!art.headBald || art.headgear === 'iron_helm' || art.headgear === 'executioner_hood' || !!stockHead(art.headgear)?.hair;
 }
 
 function drawHairBack(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => number, sway: number): void {
@@ -802,7 +802,7 @@ function drawCrystals(r: Raster, H: Xf, m: (k: string) => number, style: number)
 
 function drawHairFront(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => number): void {
   if (!hasHair(art)) { drawCrown(r, art, H, m); return; }
-  if (hidesHair(art) || art.headBald) return;
+  if (hidesHair(art)) return;
   const style = art.look.hair;
   const hm = m('hair');
   const parts: Shape[] = [];

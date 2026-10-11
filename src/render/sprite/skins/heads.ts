@@ -16,7 +16,9 @@ export interface HeadSkin {
   draw: HeadDraw;
   /** A hood or mask that leaves the face open: the wearer's eyes are drawn as usual. */
   face?: boolean;
-  /** A shaved head: no hair is drawn at all, front or back. */
+  /** Covers the hair on top (a cap or a close helm): the front hair isn't drawn, only what hangs behind. */
+  hair?: boolean;
+  /** A bald head: no hair is drawn at all, front or back (nor a myco cap or golem crystals). */
   bald?: boolean;
 }
 

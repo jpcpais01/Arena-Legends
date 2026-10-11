@@ -22,12 +22,15 @@ import { PPM } from './sprite/animator';
  *   opens in the middle, then a storm of petals as it lets go;
  * - void (Singularity): a black hole; it drags light and dust in, the arena
  *   bends round it, then it collapses into a blinding nova.
+ * - soup (What The Rock Is Cooking): a steaming glob of soup thrown out of a
+ *   pot; it lands in a scalding splash, chunks of carrot and potato flying,
+ *   a wave of broth and a great cloud of steam over the pool.
  * The shader light layer adds glows, rings and a refraction shockwave on top
  * where the device has it.
  */
-export type MeteorStyle = 'inferno' | 'frost' | 'hell' | 'star' | 'tide' | 'bloom' | 'void';
+export type MeteorStyle = 'inferno' | 'frost' | 'hell' | 'star' | 'tide' | 'bloom' | 'void' | 'soup';
 
-const BY_SKIN: Record<string, MeteorStyle> = { frostfall: 'frost', doom: 'hell', comet: 'star', tidefall: 'tide', bloomfall: 'bloom', singularity: 'void' };
+const BY_SKIN: Record<string, MeteorStyle> = { frostfall: 'frost', doom: 'hell', comet: 'star', tidefall: 'tide', bloomfall: 'bloom', singularity: 'void', rock: 'soup' };
 
 /** The look for a meteor sigil skin (unknown skins strike the stock way in their own colours). */
 export function meteorStyle(skinId?: string | null): MeteorStyle {
@@ -42,7 +45,7 @@ const TAU = Math.PI * 2;
 
 /** The shadow each meteor throws on the ground as it falls. */
 const SHADOW: Record<MeteorStyle, string> = {
-  inferno: '#120608', hell: '#120608', frost: '#0a1a30', star: '#140a30', tide: '#06203a', bloom: '#0e2410', void: '#000000',
+  inferno: '#120608', hell: '#120608', frost: '#0a1a30', star: '#140a30', tide: '#06203a', bloom: '#0e2410', void: '#000000', soup: '#3a1806',
 };
 
 /**
@@ -133,6 +136,24 @@ export function meteorMark(g: CanvasRenderingContext2D, v: View, x: number, reac
       }
       break;
     }
+    case 'soup': {
+      // The ground already simmering: bubbles swelling and popping inside the ring, wisps of steam.
+      for (let i = 0; i < 9; i++) {
+        const a = (i / 9) * TAU + i * 2.3, d = 0.25 + ((i * 41) % 10) / 14;
+        const life = (time * 1.6 + i * 0.37) % 1;
+        const px = Math.round(cx + Math.cos(a) * rx * d), py = Math.round(cy + Math.sin(a) * ry * d);
+        if (life < 0.7) {
+          g.fillStyle = css(life > 0.55 ? hi : lo);
+          g.fillRect(px, py, life > 0.3 ? 2 : 1, 1);
+        } else if (k > 0.3) {
+          g.fillStyle = '#e8eef2';
+          g.globalAlpha = 0.8 * (1 - life);
+          g.fillRect(px, py - Math.round((life - 0.7) * 20), 1, 2);
+          g.globalAlpha = 1;
+        }
+      }
+      break;
+    }
     case 'frost': {
       // Frost creeping in from the rim: little spikes standing up round the ring.
       g.fillStyle = css(hi);
@@ -191,6 +212,10 @@ export function meteorTrail(fx: Fx, style: MeteorStyle, x: number, y: number, ba
       fx.gather(x, y, 1.6, 2, hi, lo, 'streak');
       if (Math.random() < 0.5) fx.burst({ x, y, count: 1, dir: back, spread: 0.3, speed: [0.4, 1], life: [0.5, 0.9], color: 0x2a0a4a, color2: 0x05020a, kind: 'smoke', size: 4, drag: 1, jitter: 0.2 });
       break;
+    case 'soup':
+      fx.burst({ x, y, count: 2, dir: back, spread: 0.5, speed: [1, 3.5], life: [0.4, 0.7], color: 0xffd890, color2: lo, gravity: 9, kind: 'drop', jitter: 0.35 });
+      if (Math.random() < 0.6) fx.burst({ x, y, count: 1, dir: back + 0.4, spread: 0.4, speed: [0.4, 1], life: [0.6, 1.1], color: 0xf4f6f8, color2: 0xa8b0b8, kind: 'smoke', size: 4, drag: 1, jitter: 0.3 });
+      break;
     case 'star':
       fx.burst({ x, y, count: 2, dir: back, spread: 0.3, speed: [1, 3], life: [0.4, 0.8], color: 0xffffff, color2: hi, kind: 'twinkle', jitter: 0.35 });
       if (Math.random() < 0.5) fx.burst({ x, y, count: 1, dir: back, spread: 0.6, speed: [0.3, 1], life: [0.6, 1], color: 0xffd858, color2: lo, kind: 'twinkle', jitter: 0.5 });
@@ -204,7 +229,7 @@ export function meteorTrail(fx: Fx, style: MeteorStyle, x: number, y: number, ba
 /** The dust wall each impact rolls out along the ground (mist for water and ice, dark matter for the void). */
 const DUST: Record<MeteorStyle, [number, number]> = {
   inferno: [0xb8a898, 0x5a4a50], hell: [0xb8a898, 0x5a4a50], star: [0xb8a898, 0x5a4a50], frost: [0xe8f4ff, 0x8ab0d8],
-  tide: [0xe8f8ff, 0x7ab8e0], bloom: [0xc8d8a0, 0x6a7a50], void: [0x3a1a5a, 0x0a0614],
+  tide: [0xe8f8ff, 0x7ab8e0], bloom: [0xc8d8a0, 0x6a7a50], void: [0x3a1a5a, 0x0a0614], soup: [0xf4f6f8, 0xb0b8c0],
 };
 
 /** Camera and sound hooks the impact calls into (owned by the battle view). */
@@ -239,7 +264,7 @@ export function meteorImpact(fx: Fx, cues: ImpactCues, style: MeteorStyle, x: nu
     cues.play('explosion', style === 'bloom' ? 0.6 : 1);
     cues.light({ kind: 'glow', x, y: 0.8, r0: R * 0.3, r1: R * 0.75, hi, lo, life: 0.55, power: 0.9, fin: 0 });
     cues.light({ kind: 'ring', x, y: 0.05, r0: R * 0.2, r1: R * 1.05, w: 0.08, squash: 0.22, hi, lo, life: 0.55, power: 1, fin: 0 });
-    cues.shock({ x, y: 0.2, r: R, amp: style === 'tide' ? 8 : 5, life: 0.6, hi, squash: 0.45 });
+    cues.shock({ x, y: 0.2, r: R, amp: style === 'tide' || style === 'soup' ? 8 : 5, life: 0.6, hi, squash: 0.45 });
   }
   switch (style) {
     case 'frost': return frost(fx, cues, x, R, hi, lo);
@@ -248,6 +273,7 @@ export function meteorImpact(fx: Fx, cues: ImpactCues, style: MeteorStyle, x: nu
     case 'tide': return tide(fx, cues, x, R, hi, lo);
     case 'bloom': return bloom(fx, cues, x, R, hi, lo);
     case 'void': return singularity(fx, cues, x, R, hi, lo);
+    case 'soup': return soup(fx, cues, x, R, hi, lo, dir);
     default: return inferno(fx, cues, x, R, hi, lo);
   }
 }
@@ -370,6 +396,50 @@ function tide(fx: Fx, cues: ImpactCues, x: number, R: number, hi: number, lo: nu
     fx.burst({ x, y: 4.5, count: 40, jitter: R * 0.8, jitterY: 0.8, dir: -Math.PI / 2, spread: 0.08, speed: [2, 4], life: [0.6, 1.0], color: 0xe8fbff, color2: hi, gravity: 10, kind: 'drop' });
     cues.play('splash', 0.5);
   });
+}
+
+function soup(fx: Fx, cues: ImpactCues, x: number, R: number, hi: number, lo: number, dir: number): void {
+  const broth = mix(hi, lo, 0.5);
+  cues.flash(0xfff0c8, 1);
+  cues.play('splash', 1.3);
+  cues.play('hiss', 1);
+  // The splash crown of broth, the pool scalding hot under it, a wave rolling out both ways.
+  fx.pulse('splash', x, 0, R, broth, 1.1, hi);
+  fx.pulse('jet', x, 0, R * 0.7, broth, 0.8, hi);
+  fx.pulse('crater', x, 0, R * 0.9, mix(hi, 0xffffff, 0.2), 3, 0xfff0c0);
+  fx.later(0.1, () => fx.pulse('wave', x, 0, R * 1.05, broth, 1.0, hi));
+  // Broth thrown everywhere, and what was in it: carrots, potatoes, herbs, meat.
+  fx.burst({ x, y: 0.5, count: 56, jitter: 0.6, dir: Math.PI / 2, spread: 1.2, speed: [5, 12], life: [0.7, 1.3], color: 0xffd890, color2: broth, gravity: 13, kind: 'drop' });
+  for (const [col, col2, n] of [[0xff8a20, 0xc85a10, 10], [0xf0dca0, 0xc8a870, 8], [0x5ac040, 0x2a7a20, 10], [0x8a4422, 0x4a2010, 5]] as const) {
+    fx.burst({ x, y: 0.5, count: n, jitter: 0.5, dir: Math.PI / 2 + dir * 0.15, spread: 1.0, speed: [4, 10], life: [0.8, 1.3], color: col, color2: col2, gravity: 16, size: 2 });
+  }
+  // A great cloud of steam boiling up off it, and more rising from the pool after.
+  fx.pulse('cloud', x, 0.6, R * 0.75, 0xf4f6f8, 1.8, 0xb8c0c8);
+  fx.burst({ x, y: 0.6, count: 16, jitter: R * 0.5, dir: Math.PI / 2, spread: 0.5, speed: [1.2, 3], life: [1.0, 1.8], color: 0xf4f6f8, color2: 0xa8b0b8, kind: 'smoke', size: 6, drag: 1.2 });
+  for (let i = 0; i < 6; i++) fx.later(0.3 + i * 0.2, () => {
+    fx.burst({ x, y: 0.1, count: 3, jitter: R * 0.6, jitterY: 0, dir: Math.PI / 2, spread: 0.3, speed: [0.8, 1.8], life: [0.8, 1.4], color: 0xf4f6f8, color2: 0xb8c0c8, kind: 'smoke', size: 4, drag: 1 });
+  });
+  // The rest of the soup rains back down over the ring.
+  fx.later(0.5, () => {
+    fx.burst({ x, y: 4, count: 30, jitter: R * 0.8, jitterY: 0.8, dir: -Math.PI / 2 + dir * 0.2, spread: 0.1, speed: [2, 4], life: [0.6, 1.0], color: 0xffd890, color2: broth, gravity: 10, kind: 'drop' });
+    cues.play('splash', 0.5);
+  });
+}
+
+/**
+ * The meteor leaves the sigil at (x, y): by default a beam into the sky; the Rock's pot instead flings its
+ * soup up and forward (`dir` +1 rightward) in a spray of broth and steam.
+ */
+export function meteorLaunch(fx: Fx, style: MeteorStyle, x: number, y: number, hi: number, dir: number): void {
+  if (style === 'soup') {
+    const a = Math.PI / 2 - dir * 0.55;
+    fx.burst({ x: x + dir * 0.4, y: y + 0.3, count: 22, jitter: 0.2, dir: a, spread: 0.35, speed: [6, 12], life: [0.5, 0.9], color: 0xffd890, color2: 0xc8601a, gravity: 6, kind: 'drop' });
+    fx.burst({ x: x + dir * 0.4, y: y + 0.3, count: 6, jitter: 0.2, dir: a, spread: 0.3, speed: [5, 10], life: [0.5, 0.9], color: 0xff8a20, color2: 0xf0dca0, gravity: 6, size: 2 });
+    fx.burst({ x, y: y + 0.4, count: 6, jitter: 0.3, dir: Math.PI / 2, spread: 0.6, speed: [0.8, 2], life: [0.7, 1.2], color: 0xf4f6f8, color2: 0xa8b0b8, kind: 'smoke', size: 4, drag: 1 });
+    return;
+  }
+  fx.pulse('pillar', x, y, 0.22, hi, 0.35);
+  fx.burst({ x, y, count: 14, speed: [2, 5], life: [0.25, 0.5], color: 0xffffff, color2: hi, drag: 2, kind: 'twinkle' });
 }
 
 function bloom(fx: Fx, cues: ImpactCues, x: number, R: number, hi: number, lo: number): void {

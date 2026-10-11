@@ -3,6 +3,7 @@ import { material, type MaterialSpec, type Raster, type Tex } from '../../pixel/
 import { intersect, subtract, union, type Shape } from '../../pixel/sdf';
 import { hash } from '../../pixel/tex';
 import { ring, type Layer } from '../../auraKit';
+import { hairCap } from '../draw';
 import { fillAll, type WeaponArt } from '../weaponKit';
 import { Xf } from '../xform';
 import type { ProjArt, SkinArt, SkinFx } from './index';
@@ -204,11 +205,14 @@ function obaBeard(): SkinArt {
       mats: {
         'h.beard': material({ base: BEARD[2], ramp: BEARD, tex: curls }),
         'h.sweat': material({ base: 0xe8f4ff, ramp: [0x8aa0b4, 0xb8cadc, 0xe8f4ff, 0xf6fbff, WHITE], shiny: true }),
+        // The wearer's own skin (look.ts recolours `flesh.*`), so the scalp and ear also show on the icon.
+        'flesh.scalp': material({ base: 0x6a4230 }),
       },
       bald: true,
       draw(r, H, m, g) {
-        const ph = r.phase % 4, sk = m('skin');
-        // The ear, behind the sideburn.
+        const ph = r.phase % 4, sk = m('flesh.scalp');
+        // The shaved scalp, then the ear behind the sideburn.
+        r.fill(hairCap(H, 3.4, -2, 0.3), sk, { group: g, bevel: 3, softLight: true, noLine: true });
         r.fill(H.ell(-3.1, 0.1, 1.15, 1.7, -0.15), sk, { group: g, bevel: 1, toneBias: -1 });
         r.dot(H.x(-3, 0), H.y(-3, 0), sk, 1, g);
         // The beard: sideburns down into a full jaw, the moustache over the lip, the mouth left open.
@@ -241,6 +245,8 @@ function obaMuscles(): SkinArt {
   return {
     mats: {
       'k.oTrunk': S.black(), 'k.oBand': S.gold(sweep(9, 2.2, 1)), 'k.oTrim': S.gold(undefined),
+      // The wearer's own skin and its shade (look.ts recolours `flesh.*`), so the muscle shows on the icon too.
+      'flesh.muscle': { base: 0x6a4230 }, 'flesh.dark': { base: 0x4a2a1e },
     },
     chest: {
       torso: 'skin', sleeve: null, sleeveLen: 0, forearm: null, hands: 'skin', pauldron: null,
@@ -248,7 +254,7 @@ function obaMuscles(): SkinArt {
       back: null, shoulder: null,
       over(r, T, m, c) {
         const b = c.body, top = c.top, fx = b.chestPush * 0.7, front = fx + b.chestW;
-        const sk = m('skin'), sd = m('skinDark'), o = { group: c.g, noLine: true };
+        const sk = m('flesh.muscle'), sd = m('flesh.dark'), o = { group: c.g, noLine: true };
         // Traps sloping from the neck to the shoulders.
         r.fill(T.poly([-2.6, top - 0.6, -1.2, top + 2.4, fx + 1.4, top + 2.6, fx + 3.6, top + 0.4, fx + 1, top - 1.4]), sk, { ...o, bevel: 1.8, softLight: true });
         // The pecs: a slab either side of the breastbone, the far one turned away.

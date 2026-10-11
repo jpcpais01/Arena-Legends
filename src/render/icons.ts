@@ -330,19 +330,14 @@ export function iconFrame(id: GearId, skin?: string | null): Frame {
     const full = r.compose(c, c);
     const side = Math.max(16, full.w, full.h);
     f = crop(full, (full.w - side) / 2, (full.h - side) / 2, side, side);
-  } else if (def.slot === 'head' && skin && SKIN_ART[skin]?.head?.().bald) {
-    // A shaved head is the wearer's own: shown on a dark-skinned human's head, cropped to the head.
-    const gear = { main: 'dagger', head: id } as unknown as GearSet;
-    const art = makeArt({ name: '', form: 'balanced', gear, look: { ...DEFAULT_LOOK, species: 'human', skin: 4 }, skins: { [id]: skin } });
-    const ox = 70, oy = 120;
-    const sk = drawFigure(r, art, { pose: STAND, hold: { main: 'none', sec: 'gone' }, face: 'calm' }, ox, oy);
-    const full = r.compose(ox, oy);
-    const side = 17, hx = full.ox + sk.head.x, hy = full.oy - sk.head.y;
-    f = crop(full, hx - side / 2 + 1, hy - side / 2 - 1, side, side);
   } else {
     // Armour: drawn on an invisible body, so only the piece itself shows.
     const gear = { main: 'dagger', [def.slot]: id } as unknown as GearSet;
-    let art = makeArt({ name: '', form: 'balanced', gear, look: { ...DEFAULT_LOOK, species: 'golem', outfit: 7 }, skins: skin ? { [id]: skin } : {} });
+    // A piece made of bare skin (a bald dome, muscles) shows on a human with warm brown skin rather than a golem.
+    const sa = skin ? SKIN_ART[skin] : undefined;
+    const flesh = !!sa && [...Object.keys(sa.mats ?? {}), ...Object.keys(sa.head?.().mats ?? {})].some((k) => k.startsWith('flesh.'));
+    const look = flesh ? { ...DEFAULT_LOOK, species: 'human' as const, skin: 2, outfit: 7 } : { ...DEFAULT_LOOK, species: 'golem' as const, outfit: 7 };
+    let art = makeArt({ name: '', form: 'balanced', gear, look, skins: skin ? { [id]: skin } : {} });
     // A cloak worn over the tunic: its cloth wraps the torso too, so the icon reads as one garment.
     const { torso, sleeve } = art.chest;
     const wrap = def.slot === 'chest' && torso === 'outfit' && !!sleeve && sleeve !== 'outfit';

@@ -33,6 +33,9 @@ import { LIONHEART } from './lionheart';
 import { MOTHQUEEN } from './mothqueen';
 import { SKYBELL } from './skybell';
 import { RULER } from './ruler';
+import { UNDERTAKER } from './undertaker';
+import { CHAMP } from './champ';
+import { ROCK } from './rock';
 import { OBA } from './oba';
 import { WAVE4_MAINS } from './wave4Mains';
 import { WAVE4_OFFHAND } from './wave4Offhand';
@@ -96,6 +99,8 @@ export interface SkinArt {
   proj?: Partial<Record<string, ProjArt>>;
   /** Phoenix feather worn in the hair: drawn in head space instead of the stock plume. */
   plume?: (r: Raster, H: Xf, m: (k: string) => number, g: number, sway: number) => void;
+  /** Revive items: the word that pops up when it brings the wearer back (instead of REVIVE!). */
+  revive?: string;
 }
 
 export interface SkinFx {
@@ -108,6 +113,8 @@ export interface SkinFx {
 /** A battle sprite drawn pointing +x around the frame origin; `f` is the animation frame. */
 export interface ProjArt {
   frames: number;
+  /** Frames follow the item's windup instead of the clock (a meteor sigil that plays out once as it charges). */
+  timed?: boolean;
   outline?: boolean;
   draw(r: Raster, t: Xf, f: number, h: (m: Material) => number): void;
 }
@@ -393,6 +400,9 @@ export const SKIN_ART: Record<string, SkinArt> = {
   ...MOTHQUEEN,
   ...SKYBELL,
   ...RULER,
+  ...UNDERTAKER,
+  ...CHAMP,
+  ...ROCK,
   ...OBA,
   ...WAVE4_MAINS,
   ...WAVE4_OFFHAND,

@@ -22,8 +22,9 @@ import {
   totemSprite, totemTop, wardSprite, whelpSprite, type HawkPose, type PatchLook,
   type BellState,
 } from './specialArt';
-import { bottleSprite, isUsableShot, projFrames, projSprite, skinDraws, skinTints } from './projArt';
+import { bottleSprite, isUsableShot, projFrames, projSprite, projTimed, skinDraws, skinTints } from './projArt';
 import { drawSetAura, SET_FX } from './setAura';
+import { champUnseen } from './sprite/skins/champ';
 import type { Screen } from './screen';
 import { clipLength } from './sprite/anims';
 import { Animator, PPM, type AnimOut } from './sprite/animator';
@@ -34,7 +35,7 @@ import { isSuper, skinColours, superLook, type SuperLook } from './supers';
 import { superImpactFx, superRelease as superReleaseFx, superWindup, type SuperHost } from './superFx';
 import { GlFx, type Light } from './glfx';
 import { SoftLights } from './softLight';
-import { METEOR_GLOW, meteorImpact, meteorMark, meteorStyle, meteorTrail, type ImpactCues } from './meteorFx';
+import { METEOR_GLOW, meteorImpact, meteorLaunch, meteorMark, meteorStyle, meteorTrail, type ImpactCues } from './meteorFx';
 
 const STYLE_COLOR: Record<ProjectileStyle, number> = {
   arcane: 0xc58cff, hex: 0xa04aff, wave: 0xd8f4ff, groundwave: 0xc8a070, meteor: 0xff7a1a, arrow: 0xf0e0c0,
@@ -804,9 +805,12 @@ export class BattleView implements View {
 
     // Invulnerability frames blink; in smoke the body is only a faint shape.
     const set = alive && !hidden ? v.art.set : null;
-    if (set) drawSetAura(g, set, px, py + o.hop, this.time, 'back');
+    if (set) drawSetAura(g, set, px, py + o.hop, this.time, 'back', f.facing);
     if (hidden) g.globalAlpha = 0.38 + 0.06 * Math.sin(this.time * 7);
     else if (f.invuln > 0 && alive && Math.floor(this.time * 30) % 2 === 0) g.globalAlpha = 0.55;
+    // The Champ Is Here: every few seconds the hand waves and he fades out of sight. You can't see him.
+    const seen = set === 'champ' && !pose ? champUnseen(this.time) : 1;
+    g.globalAlpha *= seen;
     if (pose) this.blitEntrance(g, v, o, s, pose, px, py, flip);
     else blit(g, s, px, py, flip);
     if (hidden) {
@@ -815,8 +819,8 @@ export class BattleView implements View {
       blit(g, v.bank.flash(o, '#c8c8d4'), px, py, flip);
     }
     g.globalAlpha = 1;
-    if (!hidden) this.glowList.push({ s, x: px, y: py, flip });
-    if (set) drawSetAura(g, set, px, py + o.hop, this.time, 'front');
+    if (!hidden && seen > 0.6) this.glowList.push({ s, x: px, y: py, flip });
+    if (set) drawSetAura(g, set, px, py + o.hop, this.time, 'front', f.facing);
 
     if (dt > 0 && alive && !hidden) this.legendSparks(f, v, s, x, y, flip);
 
@@ -903,7 +907,9 @@ export class BattleView implements View {
     if (!alive) return;
     if (f.has.has('ward_stone')) this.drawWard(g, f, v, px, py, false);
     // An epic core floats at the far shoulder, bobbing.
-    if (skinDraws('core', v.art.specialSkinId)) {
+    // (A core that is also the meteor's sigil rises over the head while the meteor is called.)
+    const calling = f.item?.phase === 'windup' && f.abilities[f.item.ability].kind === 'meteor' && skinDraws('sigil', v.art.specialSkinId);
+    if (skinDraws('core', v.art.specialSkinId) && !calling) {
       const s = projSprite('core', Math.floor(this.time * 6), 0, v.art.specialSkinId);
       const cx = Math.round(this.sx(x - f.facing * 0.42)), cy = Math.round(this.sy(y + 1.75) + Math.sin(this.time * 2.4) * 1.5);
       blit(g, s, cx, cy, f.facing < 0);
@@ -921,7 +927,9 @@ export class BattleView implements View {
     const skinId = v.art.specialSkinId;
     if (skinDraws('lantern', skinId)) {
       // An epic lantern brings its own sprite; it flickers faster while charging a shot.
-      const s = projSprite('lantern', Math.floor(this.time * (charging ? 16 : 6)), 0, skinId);
+      // One that brings a charging sprite (the Undertaker's urn rattling open) shows it while it charges.
+      const id = charging && skinDraws('lanternCharge', skinId) ? 'lanternCharge' : 'lantern';
+      const s = projSprite(id, Math.floor(this.time * (charging ? (id === 'lanternCharge' ? 10 : 16) : 6)), 0, skinId);
       blit(g, s, fx, fy, f.facing < 0);
       return;
     }
@@ -1367,7 +1375,10 @@ export class BattleView implements View {
     const ab = f.abilities[it.ability];
     if (ab.kind === 'meteor') {
       if (it.phase !== 'windup') return;
-      const s = projSprite('sigil', Math.floor(this.time * 10), 0, this.fighters[f.id]?.art.specialSkinId);
+      const skin = this.fighters[f.id]?.art.specialSkinId;
+      // A timed sigil plays out once over the windup (the Rock's pot boils, rocks back and is thrown).
+      const frame = projTimed('sigil', skin) ? Math.floor(Math.min(0.999, it.t / ab.windup) * projFrames('sigil', skin)) : Math.floor(this.time * 10);
+      const s = projSprite('sigil', frame, 0, skin);
       const x = Math.round(this.sx(this.lx(f))), y = Math.round(this.sy(this.ly(f) + SIGIL_Y));
       blit(g, s, x, y, f.facing < 0);
       // A legendary sigil sheds its own sparkles (petals, drops...) while it calls the meteor.
@@ -1440,8 +1451,9 @@ export class BattleView implements View {
       const c = this.glow(p.owner, METEOR_GLOW[0], METEOR_GLOW[1]);
       // From the sigil, which turns over the caster's head.
       const ox = this.lx(owner), oy = this.ly(owner) + SIGIL_Y;
-      this.fx.pulse('pillar', ox, oy, 0.22, c[0], 0.35);
-      this.fx.burst({ x: ox, y: oy, count: 14, speed: [2, 5], life: [0.25, 0.5], color: 0xffffff, color2: c[0], drag: 2, kind: 'twinkle' });
+      const style = meteorStyle(this.fighters[p.owner]?.art.specialSkinId);
+      meteorLaunch(this.fx, style, ox, oy, c[0], owner.facing);
+      if (style === 'soup') this.play('splash', this.pan(ox), 0.7);
       this.play('entFall', this.pan(p.targetX), 0.9);
     }
     if (p.style === 'breath' && !this.heard.has(p.id)) {
@@ -1759,7 +1771,7 @@ export class BattleView implements View {
         fx.pulse('groundRing', f.x, 0, 3, mid, 0.6);
         fx.burst({ x: f.x, y: 1, count: 50, jitter: 0.5, speed: [2, 7], life: [0.5, 1.0], color: c[0], color2: c[1], gravity: -3, drag: 1.5, kind: 'ember' });
         this.play('revive', this.pan(f.x));
-        fx.pop('REVIVE!', f.x, this.fighters[e.f].headY + 0.4, { color: css(mix(c[0], c[1], 0.3)), scale: 2, shade: css(c[1]) }, 1.3);
+        fx.pop(this.fighters[e.f].art.specialSkin?.revive ?? 'REVIVE!', f.x, this.fighters[e.f].headY + 0.4, { color: css(mix(c[0], c[1], 0.3)), scale: 2, shade: css(c[1]) }, 1.3);
         this.shake(0.4);
         this.arena?.cheer(0.9);
         this.slowmo(0.35, 0.6);
