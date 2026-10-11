@@ -12,6 +12,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.86.0',
+    date: '2026-10-11',
+    title: 'Mythic is the rarest',
+    notes: [
+      'Skin tiers have swapped names: Mythic is now the rarest tier of all, and Epic sits between Rare and Legendary. The order is now Rare, Epic, Legendary, Mythic.',
+      'Nothing you own changed, only the names. The seven-piece sets with their auras are now Mythic sets, and the chest guarantee now promises a Mythic.',
+      'Epic skins and cards now glow purple. Entrances follow the same naming: the tier below Legendary is now Epic.',
+    ],
+  },
+  {
     version: '0.85.0',
     date: '2026-10-11',
     title: 'Three new meteors',

@@ -14,6 +14,9 @@ import type { GearId, GearSet } from '../sim/types';
 export type SkinRarity = 'rare' | 'mythic' | 'legendary' | 'epic';
 export const SKIN_RARITIES: readonly SkinRarity[] = ['rare', 'mythic', 'legendary', 'epic'];
 
+/** The tier names players see. Ids stay as they are (saves, odds and tests use them); only the labels moved. */
+export const RARITY_NAME: Record<SkinRarity, string> = { rare: 'Rare', mythic: 'Epic', legendary: 'Legendary', epic: 'Mythic' };
+
 export const RARITY_INFO: Record<SkinRarity, string> = {
   rare: 'New colours and finish.',
   mythic: 'Reshaped: a new silhouette.',
