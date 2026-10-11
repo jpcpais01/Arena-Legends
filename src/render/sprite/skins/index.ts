@@ -34,6 +34,7 @@ import { MOTHQUEEN } from './mothqueen';
 import { SKYBELL } from './skybell';
 import { RULER } from './ruler';
 import { UNDERTAKER } from './undertaker';
+import { CHAMP } from './champ';
 import { WAVE4_MAINS } from './wave4Mains';
 import { WAVE4_OFFHAND } from './wave4Offhand';
 import { WAVE4_SPECIALS } from './wave4Specials';
@@ -96,6 +97,8 @@ export interface SkinArt {
   proj?: Partial<Record<string, ProjArt>>;
   /** Phoenix feather worn in the hair: drawn in head space instead of the stock plume. */
   plume?: (r: Raster, H: Xf, m: (k: string) => number, g: number, sway: number) => void;
+  /** Revive items: the word that pops up when it brings the wearer back (instead of REVIVE!). */
+  revive?: string;
 }
 
 export interface SkinFx {
@@ -394,6 +397,7 @@ export const SKIN_ART: Record<string, SkinArt> = {
   ...SKYBELL,
   ...RULER,
   ...UNDERTAKER,
+  ...CHAMP,
   ...WAVE4_MAINS,
   ...WAVE4_OFFHAND,
   ...WAVE4_SPECIALS,

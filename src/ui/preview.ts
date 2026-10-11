@@ -288,7 +288,7 @@ export class Preview {
       const s = this.bank.get(this.out);
       const set = this.bank.art.set;
       if (pose.clipGround) { g.save(); g.beginPath(); g.rect(0, 0, this.w, gy + 1); g.clip(); }
-      if (set && pose.alpha >= 1) drawSetAura(g, set, x, y, this.clock, 'back');
+      if (set && pose.alpha >= 1) drawSetAura(g, set, x, y, this.clock, 'back', this.flip !== pose.flip ? -1 : 1);
       const flip = this.flip !== pose.flip;
       const k: [number, number] = [pose.sx, pose.sy];
       for (let i = pose.ghosts; i >= 1; i--) {
@@ -303,7 +303,7 @@ export class Preview {
       }
       this.lastTip = s.tip ? [x + (flip ? -s.tip[0] : s.tip[0]), y + s.tip[1]] : null;
       g.globalAlpha = 1;
-      if (set && pose.alpha >= 1) drawSetAura(g, set, x, y, this.clock, 'front');
+      if (set && pose.alpha >= 1) drawSetAura(g, set, x, y, this.clock, 'front', this.flip !== pose.flip ? -1 : 1);
       if (pose.clipGround) g.restore();
     }
     ent.draw(g, v, 'over');
@@ -352,7 +352,7 @@ export class Preview {
     g.fillStyle = 'rgba(0,0,0,0.3)';
     g.fillRect(gx - 11, gy - 1, 22, 3);
     const set = this.bank.art.set;
-    if (set) drawSetAura(g, set, gx, gy, this.clock, 'back');
+    if (set) drawSetAura(g, set, gx, gy, this.clock, 'back', this.flip ? -1 : 1);
     const art = this.bank.art, facing = this.flip ? -1 : 1;
     drawCompanions(g, art, this.special, gx, gy, this.clock, facing, 'back');
     if (this.flip) {
@@ -360,7 +360,7 @@ export class Preview {
       g.drawImage(s.img, -s.ox, gy - s.oy);
       g.restore();
     } else g.drawImage(s.img, gx - s.ox, gy - s.oy);
-    if (set) drawSetAura(g, set, gx, gy, this.clock, 'front');
+    if (set) drawSetAura(g, set, gx, gy, this.clock, 'front', this.flip ? -1 : 1);
     this.compSpot = drawCompanions(g, art, this.special, gx, gy, this.clock, facing, 'front');
     return [gx, gy];
   }

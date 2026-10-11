@@ -676,7 +676,7 @@ export function hairCap(H: Xf, front: number, back: number, grow = 0.9): Shape {
 }
 
 function hidesHair(art: CharacterArt): boolean {
-  return art.headgear === 'iron_helm' || art.headgear === 'executioner_hood' || !!stockHead(art.headgear)?.hair;
+  return art.headHair || art.headgear === 'iron_helm' || art.headgear === 'executioner_hood' || !!stockHead(art.headgear)?.hair;
 }
 
 function drawHairBack(r: Raster, art: CharacterArt, H: Xf, m: (k: string) => number, sway: number): void {

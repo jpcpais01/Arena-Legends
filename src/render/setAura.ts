@@ -25,6 +25,7 @@ import { MOTHQUEEN_FX, mothqueenAura } from './sprite/skins/mothqueen';
 import { SKYBELL_FX, skybellAura } from './sprite/skins/skybell';
 import { RULER_FX, rulerAura } from './sprite/skins/ruler';
 import { UNDERTAKER_FX, undertakerAura } from './sprite/skins/undertaker';
+import { CHAMP_FX, champAura } from './sprite/skins/champ';
 
 /**
  * Set auras: what a fighter wearing a whole epic set gets around them, in
@@ -64,6 +65,7 @@ export const SET_FX: Record<SkinSetId, SkinFx> = {
   skybell: SKYBELL_FX,
   ruler: RULER_FX,
   undertaker: UNDERTAKER_FX,
+  champ: CHAMP_FX,
 };
 
 type G = CanvasRenderingContext2D;
@@ -218,16 +220,17 @@ function clockwork(g: G, x: number, y: number, t: number, layer: Layer): void {
   }
 }
 
-const DRAW: Record<SkinSetId, (g: G, x: number, y: number, t: number, layer: Layer) => void> = { sunborn, hellforged, foxfire, wildwood, abyssal, clockwork,
+const DRAW: Record<SkinSetId, (g: G, x: number, y: number, t: number, layer: Layer, facing: number) => void> = { sunborn, hellforged, foxfire, wildwood, abyssal, clockwork,
   bloodmoon: bloodmoonAura, starweaver: starweaverAura, frostbound: frostboundAura, stormcaller: stormcallerAura, voidborn: voidbornAura,
   jadedragon: jadedragonAura, seraph: seraphAura, lichborne: lichborneAura, quetzal: quetzalAura, prismheart: prismheartAura,
   corsair: corsairAura, oni: oniAura, beastlord: beastlordAura, djinn: djinnAura, plague: plagueAura, sugarrush: sugarrushAura, hallow: hallowAura, olympian: olympianAura, lionheart: lionheartAura, mothqueen: mothqueenAura,
   skybell: skybellAura,
   ruler: rulerAura,
   undertaker: undertakerAura,
+  champ: champAura,
 };
 
-/** Draws one layer of a set's aura around feet at (x, y) art pixels; `t` is seconds. */
-export function drawSetAura(g: G, set: SkinSetId, x: number, y: number, t: number, layer: Layer): void {
-  DRAW[set](g, x, y, t, layer);
+/** Draws one layer of a set's aura around feet at (x, y) art pixels; `t` is seconds, `facing` which way the fighter looks. */
+export function drawSetAura(g: G, set: SkinSetId, x: number, y: number, t: number, layer: Layer, facing = 1): void {
+  DRAW[set](g, x, y, t, layer, facing);
 }

@@ -12,6 +12,18 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.94.0',
+    date: '2026-10-11',
+    title: 'New Mythic set: The Champ Is Here',
+    notes: [
+      'A new Mythic set: The Champ Is Here, John Cena\'s ring gear in Cenation lime, black and denim.',
+      'Seven pieces: Never Give Up Wristbands (spirit wraps: taped fists and lime sweatbands), The Time Is Now Trumpet (war horn), The Spinner Title (phoenix feather: the spinner belt floats at your shoulder, its disc turning), the Cenation Cap, the Never Give Up Tee with dog tags, Cena\'s Jorts (leather leggings) and Cenation High-Tops (leather boots).',
+      'With the wristbands, Spirit Palm becomes the "You can\'t see me" hand, waving as it flies. With the Spinner Title, coming back from the dead pops NEVER GIVE UP!',
+      'Wear all seven for its aura: a lime ring at your feet, trumpet notes rising off your shoulders, and every few seconds the hand waves in front of your face and you fade out of sight. You can\'t see him.',
+      'At night the spinner\'s diamonds, the logos on the cap, wristbands and heels, the dog tags and the trumpet catch the light.',
+    ],
+  },
+  {
     version: '0.93.0',
     date: '2026-10-11',
     title: 'New Mythic set: The Undertaker',
