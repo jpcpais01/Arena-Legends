@@ -9,6 +9,7 @@ import type { AbilityDef, ActionState, BattleEvent, FighterId, FormId, Projectil
 import { ArenaView } from './arena';
 import { bodyMarks } from './companions';
 import { THEMES, type Theme } from './arenaArt';
+import { kickSand } from './desertFx';
 import { Entrance, entranceLength, wrapFrame, type EntrancePose } from './entrance';
 import { drawText } from './font';
 import { ellipseOutline, Fx, type View } from './fx';
@@ -409,6 +410,7 @@ export class BattleView implements View {
       while (this.acc >= DT && steps < 12) {
         b.step();
         for (const e of b.drainEvents()) this.handle(e);
+        this.touchdowns();
         this.acc -= DT;
         steps++;
       }
@@ -1440,6 +1442,18 @@ export class BattleView implements View {
     if (k) fx.burst({ x: f.x, y: 1.2, count: 14, jitter: 0.4, jitterY: 0.5, speed: [1, 2.5], life: [0.6, 1.1], color: k.spark, color2: k.spark2, drag: 2, kind: k.kind ?? 'twinkle' });
   }
 
+  /** How high each fighter has been since leaving the ground: on loose sand, touching down from a leap or a fall kicks it up. */
+  private airY = [0, 0];
+  private touchdowns(): void {
+    const sand = this.arena?.art.wind?.sand;
+    for (const f of this.battle!.fighters) {
+      const peak = this.airY[f.id] ?? 0;
+      if (f.y > 0.01) { this.airY[f.id] = Math.max(peak, f.y); continue; }
+      this.airY[f.id] = 0;
+      if (sand && peak > 0.35) kickSand(this.fx, sand, f.x, 'land', 0, Math.min(1.4, 0.6 + peak * 0.25));
+    }
+  }
+
   private handle(e: BattleEvent): void {
     this.listener?.onEvent?.(e);
     const b = this.battle!;
@@ -1494,6 +1508,9 @@ export class BattleView implements View {
           if (ab.anim === 'horn') { this.shake(0.3); this.arena?.cheer(0.6); }
         }
         if (isSuper(ab)) this.superRelease(f, ab);
+        // Loose sand (the mesa): a dodge or dash pushing off kicks some up.
+        const sand = this.arena?.art.wind?.sand;
+        if (sand && ab.kind === 'dash' && f.y < 0.3) kickSand(fx, sand, f.x, 'dodge', f.action?.dir ?? f.facing, ab.slot === 'evade' ? 1 : 0.7);
         if (ab.kind === 'dash' && ab.slot !== 'evade') {
           fx.burst({ x: f.x, y: 0.1, count: 6, jitter: 0.3, dir: Math.PI / 2 + f.facing * 1.2, spread: 0.5, speed: [1, 3], life: [0.4, 0.6], color: 0xd8c8b0, color2: 0x8a7a70, kind: 'smoke', size: 3 });
           fx.burst({ x: f.x, y: 1.0, count: 12, dir: f.facing > 0 ? Math.PI : 0, spread: 0.15, speed: [4, 9], life: [0.15, 0.3], color: 0xffffff, color2: 0x9ad8ff, kind: 'streak' });
@@ -1633,6 +1650,7 @@ export class BattleView implements View {
         this.bindBreak(e.winner, e.x, e.y);
         break;
       case 'wallSplat':
+        if (this.arena?.art.wind) kickSand(fx, this.arena.art.wind.sand, e.x, 'wall');
         fx.pulse('star', e.x, 1.2, 0.8, 0xffd27a, 0.2);
         fx.burst({ x: e.x, y: 1, count: 10, jitter: 0.5, jitterY: 0.8, speed: [1, 3], life: [0.5, 0.9], color: 0xb0a090, color2: 0x6a5a60, kind: 'smoke', size: 4 });
         this.shake(0.55);
@@ -1848,6 +1866,9 @@ export class BattleView implements View {
       }
       case 'ko': {
         const f = b.fighters[e.f];
+        const sand = this.arena?.art.wind?.sand;
+        // The body hitting the ground, a beat later.
+        if (sand) fx.later(0.4, () => kickSand(fx, sand, f.x, 'land', 0, 1.3));
         fx.pulse('groundRing', f.x, 0, 4, 0xffffff, 0.7);
         fx.pulse('star', f.x, 1.2, 1.2, 0xfff0c0, 0.3);
         fx.burst({ x: f.x, y: 1.2, count: 50, speed: [4, 11], life: [0.4, 0.9], color: 0xffffff, color2: 0xffd27a, gravity: 6, drag: 1, kind: 'streak' });
