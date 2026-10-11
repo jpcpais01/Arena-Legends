@@ -52,13 +52,16 @@ import { friendsSheet } from './ui/friends';
 import { leaderboardSheet } from './ui/leaderboard';
 import { FIGHT_STYLE_IDS } from './sim/styles';
 import { invitePopup, type InvitePopup } from './ui/invite';
-import { addXp, CHAMPION_GEMS, CHAMPION_XP, cupLossXp, cupWinXp, FINALIST_GEMS, heroLevel, pointsAt, quickXp } from './character/progress';
+import { addXp, heroLevel, pointsAt, quickXp } from './character/progress';
 import { autoTraining, spentPoints, strHash } from './sim/training';
 import {
-  entrantAt, fromBattle, loadCup, matchSeed, newCup, parseCup, ROUND_COUNT, ROUNDS, saveCup, settleRound, statusOf, type Cup, type Judge,
+  cupPay, entrantAt, fromBattle, loadCup, matchSeed, newCup, parseCup, roundOf, roundsOf, saveCup, settleRound, statusOf, tournamentOfCup, type Cup, type Judge,
 } from './cup/cup';
 import { CupGuest, CupHost, type CupLobbyError, type LobbyMember } from './net/cupLobby';
-import { CupLobbyScreen, CupScreen, openCupStart, type CupLobbyView, type InviteState, type LobbyFriend } from './ui/cup';
+import { CupLobbyScreen, CupScreen, type CupLobbyView, type InviteState, type LobbyFriend } from './ui/cup';
+import { WorldScreen, type WorldStatus } from './ui/world';
+import { loadWorld } from './render/worldLoad';
+import { placeOfTournament, tournamentOf, type Place } from './world/world';
 import { cupResultsSheet } from './ui/results';
 import { judgeRound } from './net/judge';
 import { confirmBox } from './ui/confirm';
@@ -189,7 +192,7 @@ const menu = new Menu({
   onAccount: accountsEnabled ? () => openAccount() : undefined,
   onFriends: accountsEnabled ? () => openFriends() : undefined,
   onLeaderboard: accountsEnabled ? () => openLeaderboard() : undefined,
-  onCup: () => openCup(),
+  onWorld: () => openWorld(),
 });
 
 function openFriends(): void {
@@ -416,7 +419,7 @@ function refreshMenu(): void {
   menu.set(player, rivalNow(), record);
   menu.setPoints(freePoints());
   const st = cup && statusOf(cup);
-  menu.setCup(st?.kind === 'play' ? ROUNDS[st.round].short : null);
+  menu.setLive(cup && st?.kind === 'play' ? roundOf(cup, st.round).short : null);
 }
 
 function closeSheet(): void {
@@ -611,7 +614,7 @@ function startFight(): void {
 const yourSide = (): 0 | 1 => session?.you ?? cupMatch?.side ?? 0;
 
 /** Loads a battle and runs the intro (names, warm-up, 3-2-1). `sub` replaces the arena name under the VS banner. */
-function beginBattle(seed: number, fighters: [CharacterBuild, CharacterBuild], sub?: string): void {
+function beginBattle(seed: number, fighters: [CharacterBuild, CharacterBuild], sub?: string, arena?: Theme): void {
   closeSheet();
   resultsEl?.remove();
   resultsEl = null;
@@ -620,7 +623,7 @@ function beginBattle(seed: number, fighters: [CharacterBuild, CharacterBuild], s
   badge.hidden = true;
   demoRunning = false;
   battle = new Battle({ seed, fighters: [{ ...fighters[0] }, { ...fighters[1] }] });
-  const theme = arenaFor(seed);
+  const theme = arena ?? arenaFor(seed);
   view.quiet = false;
   view.camMode = camMode;
   view.focus = yourSide();
@@ -935,18 +938,45 @@ function myPid(): string {
   return id;
 }
 
-function openCup(): void {
-  if (!player) { openCreator(true); return; }
-  sfx.unlock();
-  if (cup) { sfx.play('ui'); showCup(); return; }
-  sfx.play('ui');
-  openCupStart(ui, { onSolo: () => startSoloCup(), onFriends: () => openCupLobby('host') });
+// --- The world map ------------------------------------------------------------------------------
+// Each place on the map holds one tournament, always fought in its own arena.
+
+/** Titles won per tournament (`al.world`). */
+let worldWins: Record<string, number> = store<{ wins?: Record<string, number> }>('al.world', {}).wins ?? {};
+
+function worldStatus(): WorldStatus {
+  const st = cup && statusOf(cup);
+  const live = cup && st?.kind === 'play' ? { tour: tournamentOfCup(cup).id, label: roundOf(cup, st.round).short } : null;
+  return { live, wins: worldWins, level: heroLevel() };
 }
 
-function startSoloCup(): void {
+/** Opens the world map, on a place's card when `focus` names one. */
+function openWorld(focus?: string): void {
+  if (!player) { openCreator(true); return; }
+  sfx.unlock();
+  sfx.play('ui');
+  closeSheet();
+  const scr = new WorldScreen({
+    onClose: () => { closeSheet(); refreshMenu(); },
+    onEnter: (p, friends) => enterPlace(p, friends),
+    onContinue: () => showCup(),
+  }, worldStatus(), focus);
+  sheet = { el: scr.el, dispose: () => scr.dispose() };
+  ui.append(scr.el);
+  setCovered(true);
+}
+
+function enterPlace(p: Place, friends: boolean): void {
+  const tid = tournamentOf(p.tournament).id;
+  if (cup && statusOf(cup).kind === 'play') { if (tournamentOfCup(cup).id === tid) showCup(); return; }
+  if (friends) openCupLobby('host', '', tid);
+  else startSoloCup(tid);
+}
+
+function startSoloCup(tid: string): void {
   if (!player) return;
   const lv = heroLevel();
-  setCup(newCup([{ build: player, level: lv, pid: myPid() }], lv, false));
+  setCup(newCup([{ build: player, level: lv, pid: myPid() }], lv, false, undefined, tid));
   showCup();
 }
 
@@ -974,8 +1004,8 @@ function showCup(): void {
     }, 'exit'),
     onGear: () => openGear(() => showCup()),
     onHero: () => openCreator(false, true, () => showCup()),
-    onNewCup: () => { setCup(null); closeSheet(); refreshMenu(); openCup(); },
-    onFinish: () => void settleCup(ROUND_COUNT - 1),
+    onNewCup: () => { const at = placeOfTournament(tournamentOfCup(c).id); setCup(null); closeSheet(); refreshMenu(); openWorld(at?.id); },
+    onFinish: () => void settleCup(roundsOf(c) - 1),
   });
   sheet = { el: scr.el, dispose: () => scr.dispose() };
   cupScreen = scr;
@@ -984,7 +1014,7 @@ function showCup(): void {
   renderCup();
   // Fights that should be settled by now (a reload mid-cup, or knocked out): settle them.
   const st = statusOf(c);
-  const upto = st.kind === 'play' ? st.round - 1 : st.kind === 'out' ? st.round : ROUND_COUNT - 1;
+  const upto = st.kind === 'play' ? st.round - 1 : st.kind === 'out' ? st.round : roundsOf(c) - 1;
   if (upto >= 0 && c.results.slice(0, upto + 1).some((row) => row.some((x) => !x))) void settleCup(upto);
 }
 
@@ -1006,7 +1036,7 @@ async function settleCup(upto: number): Promise<void> {
   const known = new Set<string>();
   c.results.forEach((row, r) => row.forEach((x, m) => { if (x) known.add(`${r}:${m}`); }));
   try {
-    for (let r = 0; r <= Math.min(upto, ROUND_COUNT - 1); r++) await settleRound(c, r, judgeCup);
+    for (let r = 0; r <= Math.min(upto, roundsOf(c) - 1); r++) await settleRound(c, r, judgeCup);
   } catch (e) {
     console.warn('[cup]', e);
   }
@@ -1030,7 +1060,8 @@ function startCupFight(): void {
   sfx.unlock();
   sfx.play('ui');
   // The upper slot is always the left corner, so every device plays this match the same way.
-  beginBattle(matchSeed(c, st.round, st.match), [c.entrants[a].build, c.entrants[b].build], ROUNDS[st.round].name);
+  const arena = THEMES.find((t) => t.id === tournamentOfCup(c).arena);
+  beginBattle(matchSeed(c, st.round, st.match), [c.entrants[a].build, c.entrants[b].build], `${tournamentOfCup(c).name} · ${roundOf(c, st.round).name}`, arena);
 }
 
 /** A cup fight ended: record it, pay gems and XP, and show how it went. */
@@ -1042,12 +1073,18 @@ function endCupFight(b: Battle, cm: NonNullable<typeof cupMatch>, c: Cup): void 
   const won = res.w === cm.side;
   record = won ? { ...record, w: record.w + 1 } : { ...record, l: record.l + 1 };
   save('al.record', record);
-  const final = cm.r === ROUND_COUNT - 1;
-  const reward: WinReward | null = won ? { gems: winGems(res.hp), hp: res.hp } : null;
-  const bonus = final ? (won ? CHAMPION_GEMS : FINALIST_GEMS) : 0;
-  const gemsWon = (reward?.gems ?? 0) + bonus;
+  const final = cm.r === roundsOf(c) - 1;
+  const pay = cupPay(c, cm.r, won, res.hp);
+  const reward: WinReward | null = won ? { gems: pay.gems, hp: res.hp } : null;
+  const bonus = pay.bonus;
+  const gemsWon = pay.gems + bonus;
   if (gemsWon) addGems(gemsWon);
-  const xp = addXp((won ? cupWinXp(cm.r, res.hp) : cupLossXp(cm.r)) + (final && won ? CHAMPION_XP : 0));
+  const xp = addXp(pay.xp + pay.bonusXp);
+  if (final && won) {
+    const tid = tournamentOfCup(c).id;
+    worldWins = { ...worldWins, [tid]: (worldWins[tid] ?? 0) + 1 };
+    save('al.world', { wins: worldWins });
+  }
   c.gems += gemsWon;
   c.xp += xp.gained;
   saveCup(c);
@@ -1058,7 +1095,7 @@ function endCupFight(b: Battle, cm: NonNullable<typeof cupMatch>, c: Cup): void 
   // The rest of the round plays out while the results are up.
   void settleCup(cm.r);
   resultsEl = cupResultsSheet(b, {
-    you: cm.side, won, round: ROUNDS[cm.r].name, ko, champion: final && won, finalist: final && !won, bonus,
+    you: cm.side, won, round: roundOf(c, cm.r).name, cupName: tournamentOfCup(c).name, ko, champion: final && won, finalist: final && !won, bonus,
   }, () => { sfx.play('ui'); backToCup(); }, reward, xp);
   ui.append(resultsEl);
 }
@@ -1102,13 +1139,13 @@ function joinCup(code: string): void {
   if (!player) { pendingRoom = code; openCreator(true); return; }
   const st = cup && statusOf(cup);
   if (st?.kind === 'play') {
-    confirmBox(ui, 'Join a new cup?', `You are in the ${ROUNDS[st.round].name} of your cup. Joining this one ends it.`, 'Join', () => openCupLobby('guest', code), 'trophy');
+    confirmBox(ui, 'Join a new cup?', `You are in the ${roundOf(cup!, st.round).name} of the ${tournamentOfCup(cup!).name}. Joining this one ends it.`, 'Join', () => openCupLobby('guest', code), 'trophy');
     return;
   }
   openCupLobby('guest', code);
 }
 
-function openCupLobby(role: 'host' | 'guest', code = ''): void {
+function openCupLobby(role: 'host' | 'guest', code = '', tid = 'cup'): void {
   if (!player || session) return;
   closeCupRoom();
   closeSheet();
@@ -1123,7 +1160,7 @@ function openCupLobby(role: 'host' | 'guest', code = ''): void {
   const room: CupRoom = { screen, host: null, guest: null, friends: null, invites: new Map(), poll: 0 };
   cupRoom = room;
   if (role === 'host') {
-    const host = new CupHost(lobbyMember());
+    const host = new CupHost(lobbyMember(), tid);
     room.host = host;
     host.onChange = () => { if (cupRoom === room) syncCupRoom(); };
     void host.start();
@@ -1154,10 +1191,10 @@ function syncCupRoom(): void {
   if (r.host) {
     const h = r.host;
     const friends = Array.isArray(r.friends) ? r.friends.map((f) => ({ ...f, invite: r.invites.get(f.uid)?.state })) : r.friends;
-    v = { role: 'host', state: h.state, error: h.error ? LOBBY_ERRORS[h.error] : undefined, code: h.code, members: h.members, friends };
+    v = { role: 'host', state: h.state, error: h.error ? LOBBY_ERRORS[h.error] : undefined, code: h.code, members: h.members, friends, tour: tournamentOf(h.tour) };
   } else {
     const g = r.guest!;
-    v = { role: 'guest', state: g.state === 'in' ? 'in' : g.state === 'error' ? 'error' : 'joining', error: g.error ? LOBBY_ERRORS[g.error] : undefined, code: g.code, members: g.members };
+    v = { role: 'guest', state: g.state === 'in' ? 'in' : g.state === 'error' ? 'error' : 'joining', error: g.error ? LOBBY_ERRORS[g.error] : undefined, code: g.code, members: g.members, tour: tournamentOf(g.tour) };
   }
   r.screen.set(v);
 }
@@ -1212,7 +1249,7 @@ function beginSharedCup(): void {
   const room = cupRoom, host = room?.host;
   if (!room || !host || host.state !== 'open') return;
   const members = host.members;
-  const drawn = newCup(members.map((m) => ({ build: m.build, level: m.level, pid: m.pid })), members[0].level, members.length > 1);
+  const drawn = newCup(members.map((m) => ({ build: m.build, level: m.level, pid: m.pid })), members[0].level, members.length > 1, undefined, host.tour);
   // Keep exactly what the others will read back, so every device fights the same builds.
   const c = parseCup(JSON.parse(JSON.stringify(drawn))) ?? drawn;
   host.begin(c);
@@ -1331,3 +1368,9 @@ requestAnimationFrame((t) => {
 
 // Handle for poking at the running game from the console.
 (window as unknown as { game?: unknown }).game = { view, get battle() { return battle; } };
+
+// Paint the world map in the background once the game has settled, so the World opens at once.
+setTimeout(() => {
+  const go = () => void loadWorld().catch(() => {});
+  if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 4000 }); else go();
+}, 3500);

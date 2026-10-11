@@ -55,6 +55,8 @@ export interface CupOutcome {
   won: boolean;
   /** The round's name, e.g. "Quarter-finals". */
   round: string;
+  /** The tournament's name, e.g. "Arena Cup". */
+  cupName: string;
   ko: boolean;
   /** Won the final. */
   champion: boolean;
@@ -68,7 +70,7 @@ export interface CupOutcome {
 export function cupResultsSheet(b: Battle, o: CupOutcome, onBracket: () => void, reward?: WinReward | null, xp?: XpGain | null): HTMLElement {
   const head = o.champion ? 'Champion!' : o.won ? 'Victory!' : 'Knocked out';
   const rival = b.fighters[o.you === 0 ? 1 : 0].name;
-  const sub = o.champion ? `You won the Arena Cup${o.ko ? ' by K.O.' : ''}!`
+  const sub = o.champion ? `You won the ${o.cupName}${o.ko ? ' by K.O.' : ''}!`
     : o.won ? `${o.round} won ${o.ko ? 'by K.O.!' : 'on remaining health.'} On to the next round.`
     : `${rival} knocks you out of the ${o.round}${o.finalist ? ': runner-up!' : '.'}`;
   return h('div.sheet-wrap', null,

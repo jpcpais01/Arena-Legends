@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { newCharacter } from '../character/profile';
-import { champion, entrantAt, matchCount, newCup, openRound, parseCup, quickResult, ROUND_COUNT, settleRound, statusOf, type Judge } from './cup';
+import { champion, cupPay, entrantAt, matchCount, newCup, openRound, parseCup, quickResult, ROUND_COUNT, roundOf, roundsOf, settleRound, statusOf, type Judge } from './cup';
 
 const hero = () => ({ ...newCharacter(), name: 'Tester' });
 // A judge that never runs a battle: the upper slot always wins.
@@ -45,5 +45,33 @@ describe('arena cup', () => {
     expect(quickResult(cup, 0, m)).toEqual(quickResult(cup, 0, m));
     expect(entrantAt(cup, 0, m, 0)).toBe(2 * m);
     expect(matchCount(4)).toBe(1);
+  });
+
+  it('runs smaller world tournaments: 8 fighters from the quarter-finals, rivals above you, a bigger purse', async () => {
+    const cup = newCup([{ build: hero(), level: 4, pid: 'me' }], 4, false, 5, 'crown');
+    expect(cup.entrants).toHaveLength(8);
+    expect(roundsOf(cup)).toBe(3);
+    expect(roundOf(cup, 0).name).toBe('Quarter-finals');
+    expect(Math.min(...cup.entrants.filter((e) => !e.human).map((e) => e.level))).toBeGreaterThanOrEqual(10);
+    expect(cupPay(cup, 2, true, 1).bonus).toBeGreaterThan(cupPay(newCup([{ build: hero(), level: 4, pid: 'me' }], 4, false, 5), 4, true, 1).bonus);
+    for (let r = 0; r < roundsOf(cup); r++) {
+      const s = statusOf(cup);
+      if (s.kind !== 'play') throw new Error('out');
+      cup.results[r][s.match] = { w: s.side, hp: 0.5, ko: true };
+      await settleRound(cup, r, judge);
+    }
+    expect(champion(cup)).toBe(cup.me);
+    const back = parseCup(JSON.parse(JSON.stringify(cup)));
+    expect(back?.t).toBe('crown');
+    expect(back?.results).toEqual(cup.results);
+  });
+
+  it('draws a 16-fighter cup with friends apart', () => {
+    const cup = newCup([{ build: hero(), level: 1, pid: 'a' }, { build: { ...hero(), name: 'Friend' }, level: 1, pid: 'b' }], 1, true, 3, 'blossom');
+    expect(cup.entrants).toHaveLength(16);
+    const [a, b] = cup.entrants.map((e, i) => (e.human ? i : -1)).filter((i) => i >= 0);
+    expect(Math.floor(a / 8)).not.toBe(Math.floor(b / 8));
+    // An unknown tournament id doesn't load as a broken bracket.
+    expect(parseCup({ ...JSON.parse(JSON.stringify(cup)), t: 'nope' })).toBeNull();
   });
 });

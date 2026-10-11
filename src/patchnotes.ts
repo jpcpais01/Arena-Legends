@@ -12,6 +12,18 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.98.0',
+    date: '2026-10-11',
+    title: 'The World map',
+    notes: [
+      'New World button on the home screen: it opens a big hand-painted map of the first region, the Sunhaven Coast. Drag it around and pinch or scroll to zoom.',
+      'Explore the harbour town of Sunhaven, its beaches, the Ember Wastes, the snowy Whitecap Peaks and Lighthouse Point. The waves, the clouds and the floating isle all move.',
+      'Tournaments now live on the map, each in its own arena: the Arena Cup on Skygrove Isle, the gentle 16-fighter Blossom Trials at the Cherry Blossom Shrine, the tougher Sandstorm Gauntlet at the Desert Mesa, and the brutal 8-legend Starfall Crown at the Astral Sanctum.',
+      'Harder tournaments pay more gems and XP. Every title you win shows as a crown on the map.',
+      'Any tournament can be played with friends from its card on the map. Your current cup carries on where you left it.',
+    ],
+  },
+  {
     version: '0.97.2',
     date: '2026-10-11',
     title: 'Promo code keyboard, take two',
