@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.90.1',
+    date: '2026-10-11',
+    title: 'Specials face the right way',
+    notes: [
+      'Special items now always face the way their fighter does: epic cores, epic lanterns (The Watcher looks ahead, not behind you), the Sands of Time, the Gale Bell and the Meteor Sigil turn round when you face left.',
+      'Spirit shots no longer fly upside down from the right side of the arena. The Foxfire Lantern\'s fox and the Quetzal Spirit\'s serpent keep their heads up both ways, and so do fireballs, hex orbs and chakrams.',
+      'A planted Thunder Totem faces the way you did when you planted it.',
+      'Meteor Sigil: the beam into the sky now shoots from the sigil itself, and the showers after a Comet or Doomcaller blast slant the same way the meteor fell.',
+    ],
+  },
+  {
     version: '0.90.0',
     date: '2026-10-11',
     title: 'Blade Locks, Finishers and two new arenas',

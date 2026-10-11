@@ -222,9 +222,10 @@ export interface ImpactCues {
 /**
  * The meteor lands at `x`; `R` is the reach of the blast (metres). The first
  * frame carries the hit; follow-up beats (aftershocks, the shatter, the star
- * shower) play out over the next second or so.
+ * shower) play out over the next second or so. `dir` is the way the meteor
+ * was flying (+1 rightward): whatever rains in after it slants the same way.
  */
-export function meteorImpact(fx: Fx, cues: ImpactCues, style: MeteorStyle, x: number, R: number, hi: number, lo: number): void {
+export function meteorImpact(fx: Fx, cues: ImpactCues, style: MeteorStyle, x: number, R: number, hi: number, lo: number, dir = 1): void {
   // Shared: the shock ring racing out across the full reach, the dust wall rolling both ways.
   fx.pulse('groundRing', x, 0, R * 1.05, hi, 0.55);
   fx.later(0.07, () => fx.pulse('groundRing', x, 0, R * 0.75, lo, 0.5));
@@ -242,8 +243,8 @@ export function meteorImpact(fx: Fx, cues: ImpactCues, style: MeteorStyle, x: nu
   }
   switch (style) {
     case 'frost': return frost(fx, cues, x, R, hi, lo);
-    case 'hell': return hell(fx, cues, x, R, hi, lo);
-    case 'star': return star(fx, cues, x, R, hi, lo);
+    case 'hell': return hell(fx, cues, x, R, hi, lo, dir);
+    case 'star': return star(fx, cues, x, R, hi, lo, dir);
     case 'tide': return tide(fx, cues, x, R, hi, lo);
     case 'bloom': return bloom(fx, cues, x, R, hi, lo);
     case 'void': return singularity(fx, cues, x, R, hi, lo);
@@ -293,7 +294,7 @@ function frost(fx: Fx, cues: ImpactCues, x: number, R: number, hi: number, lo: n
   });
 }
 
-function hell(fx: Fx, cues: ImpactCues, x: number, R: number, hi: number, lo: number): void {
+function hell(fx: Fx, cues: ImpactCues, x: number, R: number, hi: number, lo: number, dir: number): void {
   cues.flash(mix(lo, 0xff8040, 0.4), 1.2);
   cues.play('entIgnite', 1);
   fx.pulse('hellgate', x, 0, R, lo, 2.2, hi);
@@ -317,11 +318,11 @@ function hell(fx: Fx, cues: ImpactCues, x: number, R: number, hi: number, lo: nu
       fx.pulse('jet', x + u * R, 0, 1.8, lo, 0.55, hi);
       fx.burst({ x: x + u * R, y: 0.1, count: 7, jitter: 0.12, jitterY: 0, dir: Math.PI / 2, spread: 0.12, speed: [4, 8], life: [0.3, 0.55], color: hi, color2: lo, gravity: 6, kind: 'flame' });
     }
-    fx.burst({ x, y: 6.5, count: 18, jitter: R, jitterY: 1.2, dir: -Math.PI / 2 - 0.25, spread: 0.15, speed: [6, 9], life: [0.6, 0.9], color: hi, color2: lo, gravity: 8, kind: 'flame' });
+    fx.burst({ x, y: 6.5, count: 18, jitter: R, jitterY: 1.2, dir: -Math.PI / 2 + dir * 0.25, spread: 0.15, speed: [6, 9], life: [0.6, 0.9], color: hi, color2: lo, gravity: 8, kind: 'flame' });
   });
 }
 
-function star(fx: Fx, cues: ImpactCues, x: number, R: number, hi: number, lo: number): void {
+function star(fx: Fx, cues: ImpactCues, x: number, R: number, hi: number, lo: number, dir: number): void {
   const mid = mix(hi, lo, 0.5);
   cues.flash(0xffffff, 1.2);
   cues.play('entStars', 1.2);
@@ -337,9 +338,9 @@ function star(fx: Fx, cues: ImpactCues, x: number, R: number, hi: number, lo: nu
   // A shower of shooting stars streaking in over the ring.
   for (let i = 0; i < 6; i++) fx.later(0.22 + i * 0.09, () => {
     const tx = x + (Math.random() * 2 - 1) * R * 0.9;
-    const dir = -Math.PI / 2 - 0.5;
+    const a = -Math.PI / 2 + dir * 0.5;
     const fall = 0.32;
-    fx.burst({ x: tx - Math.cos(dir) * 13 * fall, y: 0.2 - Math.sin(dir) * 13 * fall, count: 1, dir, spread: 0, speed: [13, 13], life: [fall, fall], color: 0xffffff, color2: hi, kind: 'streak' });
+    fx.burst({ x: tx - Math.cos(a) * 13 * fall, y: 0.2 - Math.sin(a) * 13 * fall, count: 1, dir: a, spread: 0, speed: [13, 13], life: [fall, fall], color: 0xffffff, color2: hi, kind: 'streak' });
     fx.later(fall, () => fx.burst({ x: tx, y: 0.2, count: 6, speed: [1, 3], life: [0.25, 0.5], color: 0xffd858, color2: hi, drag: 2, kind: 'twinkle' }));
   });
 }

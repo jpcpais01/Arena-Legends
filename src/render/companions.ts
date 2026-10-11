@@ -45,8 +45,7 @@ export function drawCompanions(
   const flip = facing < 0;
   if (layer === 'front' && skinDraws('core', skin)) {
     // An epic core floats at the far shoulder, bobbing.
-    const s = projSprite('core', Math.floor(t * 6), 0, skin);
-    g.drawImage(s.img, gx - facing * 13 - s.ox, Math.round(gy - 56 + Math.sin(t * 2.4) * 1.5) - s.oy);
+    put(g, projSprite('core', Math.floor(t * 6), 0, skin), gx - facing * 13, Math.round(gy - 56 + Math.sin(t * 2.4) * 1.5), flip);
   }
   if (special === 'ward_stone') {
     const a = t * 2.2;
@@ -60,12 +59,12 @@ export function drawCompanions(
   if (layer === 'back') return null;
   if (special === 'hourglass') {
     const x = gx - facing * 12, y = Math.round(gy - m.shPx - 4 + Math.sin(t * 2.2) * 1.5);
-    put(g, hourglassSprite(Math.floor(t * 5), skin), x, y, false);
+    put(g, hourglassSprite(Math.floor(t * 5), skin), x, y, flip);
     return [x, y];
   }
   if (special === 'gale_bell') {
     const x = gx - facing * 12, y = Math.round(gy - m.shPx - 12 + Math.sin(t * 2.4) * 1.5);
-    put(g, bellSprite('ready', Math.sin(t * 1.7) * 0.7, skin, Math.floor(t * 6)), x, y, false);
+    put(g, bellSprite('ready', Math.sin(t * 1.7) * 0.7, skin, Math.floor(t * 6)), x, y, flip);
     return [x, y + 6];
   }
   if (special === 'thunder_totem') {
@@ -90,8 +89,7 @@ export function drawCompanions(
     // The wisp lantern floats behind the shoulder.
     const fx = gx - facing * 16, fy = Math.round(gy - 67 + Math.sin(t * 3) * 2);
     if (skinDraws('lantern', skin)) {
-      const s = projSprite('lantern', Math.floor(t * 6), 0, skin);
-      g.drawImage(s.img, fx - s.ox, fy - s.oy);
+      put(g, projSprite('lantern', Math.floor(t * 6), 0, skin), fx, fy, flip);
       return [fx, fy];
     }
     const sk = art.specialSkin?.mats;

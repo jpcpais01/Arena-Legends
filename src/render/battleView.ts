@@ -130,6 +130,9 @@ export interface BattleListener {
  * fixed 60 Hz and interpolates for the display; speed, pause and slow motion
  * only change how many steps run per frame.
  */
+/** Height (metres over the feet) where the meteor sigil turns while it calls the meteor. */
+const SIGIL_Y = 2.8;
+
 const smooth01 = (t: number) => { const u = clamp(t, 0, 1); return u * u * (3 - 2 * u); };
 
 /** Damage number looks per corner: index 0 is the blue (left) fighter, 1 the red (right) one. */
@@ -208,8 +211,12 @@ export class BattleView implements View {
   private lastDt = 0;
   /** Totems that just struck (zone id → seconds the crystal stays bright). */
   private zoneHot = new Map<number, number>();
+  /** Which way each planted totem faces: as its owner did when planting it (it keeps that facing). */
+  private zoneFace = new Map<number, boolean>();
   /** Whelp breaths already heard. */
   private heard = new Set<number>();
+  /** Which way each fighter's last meteor was flying (+1 rightward), so its impact streaks in the same way. */
+  private meteorDir: [number, number] = [1, -1];
   /** A super attack begins (its name goes up on screen); `side` is where its user stands. */
   onSuper: ((f: FighterId, look: SuperLook, side: 'left' | 'right') => void) | null = null;
   /** A super's windup was cancelled (feint): its name comes down. */
@@ -259,7 +266,9 @@ export class BattleView implements View {
     this.finAfter = -1;
     clearPatches();
     this.zoneHot.clear();
+    this.zoneFace.clear();
     this.heard.clear();
+    this.meteorDir = [1, -1];
     this.fx.clear();
     this.cues.length = 0;
     this.bottles.length = 0;
@@ -897,7 +906,7 @@ export class BattleView implements View {
     if (skinDraws('core', v.art.specialSkinId)) {
       const s = projSprite('core', Math.floor(this.time * 6), 0, v.art.specialSkinId);
       const cx = Math.round(this.sx(x - f.facing * 0.42)), cy = Math.round(this.sy(y + 1.75) + Math.sin(this.time * 2.4) * 1.5);
-      g.drawImage(s.img, cx - s.ox, cy - s.oy);
+      blit(g, s, cx, cy, f.facing < 0);
     }
     if (f.has.has('hourglass')) this.drawHourglass(g, f, v, px, py);
     if (f.has.has('gale_bell')) this.drawBell(g, f, v, px, py, dt);
@@ -913,7 +922,7 @@ export class BattleView implements View {
     if (skinDraws('lantern', skinId)) {
       // An epic lantern brings its own sprite; it flickers faster while charging a shot.
       const s = projSprite('lantern', Math.floor(this.time * (charging ? 16 : 6)), 0, skinId);
-      g.drawImage(s.img, fx - s.ox, fy - s.oy);
+      blit(g, s, fx, fy, f.facing < 0);
       return;
     }
     const sk = v.art.specialSkin?.mats;
@@ -1036,7 +1045,7 @@ export class BattleView implements View {
     const used = f.rewindUsed;
     const cx = px - f.facing * 12, cy = Math.round(py - v.shPx - 4 + Math.sin(this.time * 2.2 + f.id) * 1.5);
     if (used) g.globalAlpha = 0.6;
-    this.put(g, hourglassSprite(used ? 0 : Math.floor(this.time * 5), v.art.specialSkinId), cx, cy, false);
+    this.put(g, hourglassSprite(used ? 0 : Math.floor(this.time * 5), v.art.specialSkinId), cx, cy, f.facing < 0);
     g.globalAlpha = 1;
     if (!used) this.itemSparks(v, cx, cy);
   }
@@ -1064,7 +1073,7 @@ export class BattleView implements View {
     }
     const state: BellState = it ? 'toll' : ready ? 'ready' : 'spent';
     const cx = px - f.facing * 12, cy = Math.round(py - v.shPx - 12 + Math.sin(this.time * 2.4 + f.id) * 1.5 - lift);
-    this.put(g, bellSprite(state, tilt, v.art.specialSkinId, Math.floor(this.time * 6 + f.id)), cx, cy, false);
+    this.put(g, bellSprite(state, tilt, v.art.specialSkinId, Math.floor(this.time * 6 + f.id)), cx, cy, f.facing < 0);
     this.itemSparks(v, cx, cy + 6);
     // Ready: now and then a wisp of wind curls off the rim.
     if (ready && dt > 0 && Math.random() < dt * 2.5) {
@@ -1219,9 +1228,11 @@ export class BattleView implements View {
     if (a <= 0) return;
     const skin = this.fighters[z.owner]?.art.specialSkinId;
     const s = totemSprite(hot > 0 || (Math.floor(this.time * 7) % 9 === 0), skin, Math.floor(this.time * 6));
+    let flip = this.zoneFace.get(z.id);
+    if (flip === undefined) this.zoneFace.set(z.id, (flip = this.battle!.fighters[z.owner].facing < 0));
     g.globalAlpha = Math.min(1, a + 0.2);
-    blit(g, s, cx, cy - drop, false);
-    if (a > 0.5) this.glowList.push({ s, x: cx, y: cy - drop, flip: false });
+    blit(g, s, cx, cy - drop, flip);
+    if (a > 0.5) this.glowList.push({ s, x: cx, y: cy - drop, flip });
     g.globalAlpha = 1;
     if (dt <= 0 || drop) return;
     // Crackling: sparks off the crystal, and now and then a little arc to the ground.
@@ -1357,8 +1368,8 @@ export class BattleView implements View {
     if (ab.kind === 'meteor') {
       if (it.phase !== 'windup') return;
       const s = projSprite('sigil', Math.floor(this.time * 10), 0, this.fighters[f.id]?.art.specialSkinId);
-      const x = Math.round(this.sx(this.lx(f))), y = Math.round(this.sy(this.ly(f) + 2.8));
-      g.drawImage(s.img, x - s.ox, y - s.oy);
+      const x = Math.round(this.sx(this.lx(f))), y = Math.round(this.sy(this.ly(f) + SIGIL_Y));
+      blit(g, s, x, y, f.facing < 0);
       // A legendary sigil sheds its own sparkles (petals, drops...) while it calls the meteor.
       const v = this.fighters[f.id];
       if (v) this.itemSparks(v, x, y);
@@ -1427,8 +1438,10 @@ export class BattleView implements View {
       this.heard.add(p.id);
       const owner = this.battle!.fighters[p.owner];
       const c = this.glow(p.owner, METEOR_GLOW[0], METEOR_GLOW[1]);
-      this.fx.pulse('pillar', owner.x - owner.facing * 0.5, owner.y + 2.8, 0.22, c[0], 0.35);
-      this.fx.burst({ x: owner.x - owner.facing * 0.5, y: owner.y + 2.8, count: 14, speed: [2, 5], life: [0.25, 0.5], color: 0xffffff, color2: c[0], drag: 2, kind: 'twinkle' });
+      // From the sigil, which turns over the caster's head.
+      const ox = this.lx(owner), oy = this.ly(owner) + SIGIL_Y;
+      this.fx.pulse('pillar', ox, oy, 0.22, c[0], 0.35);
+      this.fx.burst({ x: ox, y: oy, count: 14, speed: [2, 5], life: [0.25, 0.5], color: 0xffffff, color2: c[0], drag: 2, kind: 'twinkle' });
       this.play('entFall', this.pan(p.targetX), 0.9);
     }
     if (p.style === 'breath' && !this.heard.has(p.id)) {
@@ -1437,10 +1450,13 @@ export class BattleView implements View {
       this.play('firebomb', this.pan(x), 0.3);
     }
     const style = p.style;
-    let ang = Math.atan2(p.vy, p.vx);
-    if (p.ground || style === 'chakram' || style === 'hex' || style === 'fire' || style === 'arcane' || style === 'wisp') ang = p.vx < 0 ? Math.PI : 0;
+    if (style === 'meteor') this.meteorDir[p.owner] = Math.sign(p.vx) || this.meteorDir[p.owner];
+    // Shots that fly level are drawn facing right and mirrored when they head left, never turned
+    // upside down (a fox, a face or a flame's licks would end up underneath).
+    const level = p.ground || style === 'chakram' || style === 'hex' || style === 'fire' || style === 'arcane' || style === 'wisp';
+    const mirror = level && p.vx < 0;
+    let ang = level ? 0 : Math.atan2(p.vy, p.vx);
     if (style === 'flask') ang = 0; // tumbles on its own
-    if (style === 'flamewave' || style === 'groundwave') ang = p.vx < 0 ? Math.PI : 0;
     const thrower = this.fighters[p.owner]?.art;
     // Meteors, wisp shots, the hawk's dive and the whelp's breath come from the special item, in its skin's colours.
     const fromItem = style === 'meteor' || style === 'wisp' || style === 'hawk' || style === 'breath';
@@ -1453,13 +1469,8 @@ export class BattleView implements View {
     if (p.def.from === 'usable') this.useShots.set(p.id, p.owner);
     const look = skin ?? uskin ?? (skinDraws(style, wskin) || skinTints(wskin) ? wskin : null);
     const frame = Math.floor(this.time * (style === 'chakram' || style === 'knife' ? 24 : 12)) % projFrames(style, look);
-    let s = projSprite(style, frame, ang, look);
-    const sx = Math.round(this.sx(x)), sy = Math.round(this.sy(y));
-    if ((style === 'flamewave' || style === 'groundwave') && p.vx < 0) {
-      // Ground waves are drawn upright and mirrored rather than rotated.
-      s = projSprite(style, frame, 0, look);
-      blit(g, s, sx, sy, true);
-    } else g.drawImage(s.img, sx - s.ox, sy - s.oy);
+    const s = projSprite(style, frame, ang, look);
+    blit(g, s, Math.round(this.sx(x)), Math.round(this.sy(y)), mirror);
     // Legendary weapons leave sparkles behind their shots.
     const legend = p.def.from === 'main' ? thrower?.mainSkin?.fx : p.def.from === 'secondary' ? thrower?.secSkin?.fx : undefined;
     if (legend && Math.random() < 0.6) this.fx.burst({ x, y, jitter: 0.05, count: 1, speed: [0, 0.3], life: [0.2, 0.4], color: legend.spark, color2: legend.spark2, kind: legend.kind ?? 'twinkle' });
@@ -1796,7 +1807,7 @@ export class BattleView implements View {
             shock: (sh) => { if (this.gl.ok && !this.quiet) this.gl.shock(sh); },
             impact: (hi, lo, len) => { if (this.gl.ok && !this.quiet) this.gl.impactFrame(hi, lo, len); },
           };
-          meteorImpact(fx, cues, meteorStyle(this.fighters[e.f]?.art.specialSkinId), e.x, e.radius + 0.4, met![0], met![1]);
+          meteorImpact(fx, cues, meteorStyle(this.fighters[e.f]?.art.specialSkinId), e.x, e.radius + 0.4, met![0], met![1], this.meteorDir[e.f]);
           this.arena?.cheer(1);
           this.punchIn(1, 0.6, e.x);
         } else if (e.style === 'nova') {
@@ -2226,7 +2237,9 @@ export class BattleView implements View {
     if (it.phase !== 'windup' || !isSuper(ab) || (v.chargeT -= this.lastDt) > 0) return;
     v.chargeT = 0.05;
     const look = superLook(ab, v.art);
-    this.fx.gather(x - f.facing * 0.45, y + 1.9, 0.8, 2, look.hi, look.lo, 'twinkle');
+    // Into the item: the sigil over the head, or whatever rides at the back shoulder.
+    if (ab.kind === 'meteor') this.fx.gather(x, y + SIGIL_Y, 0.8, 2, look.hi, look.lo, 'twinkle');
+    else this.fx.gather(x - f.facing * 0.45, y + 1.9, 0.8, 2, look.hi, look.lo, 'twinkle');
   }
 
   /** Where a fighter's weapon tip was last drawn (world), if its sprite has one. */
