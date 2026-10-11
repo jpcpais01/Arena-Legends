@@ -13,6 +13,9 @@ const LINES: [keyof Stats, string, (v: number) => string][] = [
   ['critChance', 'Crit', (v) => `${Math.round(v * 100)}%`],
 ];
 
+/** The stats `statCompare` shows (so other summaries can leave them out). */
+export const SHOWN_STATS: ReadonlySet<keyof Stats> = new Set(LINES.map(([k]) => k));
+
 /** Label/value pairs for a build's stats (for a `.statline` grid). */
 export function statLines(form: FormId, gear: GearSet, train?: Training): HTMLElement[] {
   const s = computeBaseStats(form, gear, train);
@@ -20,7 +23,7 @@ export function statLines(form: FormId, gear: GearSet, train?: Training): HTMLEl
 }
 
 /** One-line summary of a gear piece's stat changes, e.g. "+10 armor · +6% attack speed". */
-export function modText(add?: Partial<Stats>, mul?: Partial<Stats>): string {
+export function modText(add?: Partial<Stats>, mul?: Partial<Stats>, skip?: ReadonlySet<keyof Stats>): string {
   const names: Partial<Record<keyof Stats, string>> = {
     maxHp: 'health', power: 'power', armor: 'armor', resist: 'resist', attackSpeed: 'attack speed', moveSpeed: 'move speed',
     critChance: 'crit', critMult: 'crit damage', lifesteal: 'lifesteal', cdr: 'cooldowns', energyRegen: 'energy regen',
@@ -29,11 +32,11 @@ export function modText(add?: Partial<Stats>, mul?: Partial<Stats>): string {
   const pct = new Set<keyof Stats>(['critChance', 'critMult', 'lifesteal', 'cdr', 'tenacity', 'poise']);
   const out: string[] = [];
   for (const [k, v] of Object.entries(add ?? {}) as [keyof Stats, number][]) {
-    if (!names[k]) continue;
+    if (!names[k] || skip?.has(k)) continue;
     out.push(pct.has(k) ? `${v >= 0 ? '+' : ''}${Math.round(v * 100)}% ${names[k]}` : `${v >= 0 ? '+' : ''}${Math.round(v)} ${names[k]}`);
   }
   for (const [k, v] of Object.entries(mul ?? {}) as [keyof Stats, number][]) {
-    if (!names[k]) continue;
+    if (!names[k] || skip?.has(k)) continue;
     const d = Math.round((v - 1) * 100);
     if (d) out.push(`${d > 0 ? '+' : ''}${d}% ${names[k]}`);
   }
@@ -44,9 +47,10 @@ export function modText(add?: Partial<Stats>, mul?: Partial<Stats>): string {
  * Every stat of a build as an inspector cell: the value with `to`, and how far
  * it moved from `from` (for an `.ins-stats` grid). Unchanged stats are dimmed.
  */
-export function statCompare(form: FormId, from: GearSet, to: GearSet, train?: Training): HTMLElement[] {
+export function statCompare(form: FormId, from: GearSet, to: GearSet, train?: Training, changedOnly = false): HTMLElement[] {
   const a = computeBaseStats(form, from, train), b = computeBaseStats(form, to, train);
-  return LINES.map(([k, label, f]) => {
+  const lines = changedOnly ? LINES.filter(([k, , f]) => f(a[k] as number) !== f(b[k] as number)) : LINES;
+  return lines.map(([k, label, f]) => {
     const x = a[k] as number, y = b[k] as number;
     const same = f(x) === f(y);
     const pct = f(y).endsWith('%');
