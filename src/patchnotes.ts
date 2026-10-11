@@ -12,7 +12,7 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.76.0',
+    version: '0.77.0',
     date: '2026-10-11',
     title: 'Supers redone with real light',
     notes: [
@@ -21,6 +21,16 @@ export const PATCH_NOTES: PatchNote[] = [
       'Every main weapon has its own look: Rising Cleave throws a column of light, Iaido Dash opens an X-cut a beat after the dash, Grave Harvest drags the soul back to the reaper, Thunderclap ripples the air around the caster, and more.',
       'Special items no longer look like weapon supers: they show a small badge with the item\'s icon on their user\'s side, with no slow motion or widescreen bars. The big SUPER letters and the cinematic camera are only for main weapon supers now.',
       'Cleaner hits: the old scratchy focus lines and the white wash over fighters during slow motion are gone.',
+    ],
+  },
+  {
+    version: '0.76.0',
+    date: '2026-10-11',
+    title: 'Loadouts',
+    notes: [
+      'New Loadouts button in the Armory: five slots to save your build, with all eight items and their skins.',
+      'Load one with a single tap. Undo brings your old build back. Tap a loadout\'s name to rename it, and Save over a slot to replace it (it asks first).',
+      'Loadouts are saved to your account, and they work when you pick your build in online matches too.',
     ],
   },
   {
