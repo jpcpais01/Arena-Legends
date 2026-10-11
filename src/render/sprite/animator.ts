@@ -3,6 +3,8 @@ import type { AbilityDef, ActionState } from '../../sim/types';
 import type { Expression } from './draw';
 import { clipsFor, type ClipSet } from './anims';
 import type { CharacterArt } from './look';
+import { poseOf, type PoseId } from '../../character/finales';
+import { ensureFinClips, ensurePose, poseFrame } from './winPoses';
 
 /** World metres to art pixels. */
 export const PPM = 32;
@@ -47,9 +49,33 @@ export class Animator {
   private ranFor = 0;
   private settle: { clip: string; t: number; len: number } | null = null;
   private out: AnimOut = { clip: 'idle', frame: 0, face: null, secOut: false, useOut: false, jitter: 0, hop: 0, key: '' };
+  /** The victory pose's clip (the classic cheer until one is picked). */
+  private winClip = 'victory';
 
   constructor(readonly art: CharacterArt) {
     this.set = clipsFor(art);
+    ensureFinClips(this.set, art);
+    this.setPose(poseOf(art.look));
+  }
+
+  /** The victory pose picked. */
+  pose: PoseId = 'cheer';
+
+  /** Picks the victory pose played after a win; returns its clip name. */
+  setPose(id: PoseId): string {
+    this.pose = id;
+    this.winClip = ensurePose(this.set, this.art, id);
+    return this.winClip;
+  }
+
+  /** Starts the victory pose over from its first beat (it waits out a finisher). */
+  restartPose(): void {
+    this.winT = 0.6;
+  }
+
+  /** Seconds into the victory pose, or −1 before it shows. */
+  get poseT(): number {
+    return this.winT >= 0.6 && this.out.clip === this.winClip ? this.winT - 0.6 : -1;
   }
 
   /** `x` is the interpolated world position, `dt` real seconds since the last call. */
@@ -67,7 +93,11 @@ export class Animator {
       // Topple, hit the floor, bounce once and lie still.
       this.set1('ko', k < 0.09 ? 0 : k < 0.18 ? 1 : k < 0.26 ? 2 : k < 0.32 ? 3 : k < 0.4 ? 4 : 3);
     } else if (over && winner && (this.winT += dt) > 0.6) {
-      this.set1('victory', Math.floor(this.winT * 4) % 2);
+      const c = this.set.clips.get(this.winClip);
+      this.set1(this.winClip, c?.beats ? poseFrame(c, this.winT - 0.6) : Math.floor(this.winT * 4) % 2);
+    } else if (f.action?.lock) {
+      // Weapons bound: straining against each other.
+      this.set1('bind', Math.floor(this.time * 9) % 2);
     } else if (f.action) {
       this.action(f);
     } else if (getStatus(f, 'stun')) {

@@ -1600,8 +1600,8 @@ button.lb-pick:hover { filter: brightness(1.2); }
 .owned-tag { display: inline-flex; align-items: center; gap: 0.3em; font: 700 0.8125rem/1 var(--font); letter-spacing: 0.08em; text-transform: uppercase; color: var(--green); text-shadow: 0 var(--px) 0 var(--ink); }
 .owned-tag svg { width: 1.1em; height: 1.1em; }
 
-/* Shelves: tabs along the top (Daily skins, Entrances, Mythic sets), one shelf below them at a time. */
-.shop-shelves { grid-area: shelves; display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; margin: 0.25rem var(--safe-r) 0.5rem 0.25rem; padding: 0.45rem 0.6rem 0.5rem; }
+/* Shelves: tabs along the top (Daily skins, Entrances, Finishers, Poses, Mythic sets), one shelf below them at a time. */
+.shop-shelves { grid-area: shelves; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); min-height: 0; margin: 0.25rem var(--safe-r) 0.5rem 0.25rem; padding: 0.45rem 0.6rem 0.5rem; }
 .shelf-tabs { display: flex; gap: 4px; padding-bottom: 0.4rem; border-bottom: var(--px) solid var(--line); }
 .shelf-tab {
   flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 0.4em; min-height: 2.3rem; padding: 0 0.5rem var(--px);
@@ -1698,6 +1698,8 @@ button.lb-pick:hover { filter: brightness(1.2); }
   .shop-shelves { margin-bottom: 0.35rem; padding: 0.3rem 0.4rem 0.35rem; }
   .shelf-tabs { padding-bottom: 0.3rem; }
   .shelf-tab { min-height: 2.1rem; font-size: 0.75rem; letter-spacing: 0.02em; }
+  /* Five shelves on a phone: the labels need the room more than the counts do. */
+  .shelf-tab small { display: none; }
   .shelf-body { padding-top: 0.3rem; }
   .shelf-hint { margin-bottom: 0.3rem; font-size: 0.6875rem; }
   .shelf-picks { grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr)); gap: 0.35rem; }

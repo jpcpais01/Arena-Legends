@@ -15,6 +15,11 @@ import { Preview } from './preview';
 import { buyEntrance, entranceOf, ENTRANCE_IDS, ENTRANCES, ownsEntrance, type EntranceDef, type EntranceId } from '../character/entrances';
 import { css } from '../render/pixel/color';
 import { ENTRANCE_ICON, ENTRANCE_TIER } from './entranceUi';
+import {
+  buyFinisher, buyPose, FINISHER_IDS, finisherOf, FINISHERS, ownsFinisher, ownsPose, POSE_IDS, poseOf, POSES, type FinaleDef, type FinisherId, type PoseId,
+} from '../character/finales';
+import { FINISHER_ICON, POSE_ICON } from './finaleUi';
+import type { IconName } from './icons';
 
 export interface ShopCallbacks {
   onClose(): void;
@@ -25,6 +30,9 @@ export interface ShopCallbacks {
   onEquipSet(set: SkinSetId): void;
   /** Makes an owned entrance the hero's. */
   onEntrance(id: EntranceId): void;
+  /** Makes an owned finisher or victory pose the hero's. */
+  onFinisher(id: FinisherId): void;
+  onPose(id: PoseId): void;
   player(): PlayerCharacter | null;
 }
 
@@ -48,10 +56,12 @@ function countdown(ms: number): string {
  * as a bundle priced by the pieces you still miss. The Chests tab opens the
  * gacha. Everything costs gems. A buy button asks once more before paying.
  */
-type Shelf = 'daily' | 'ent' | 'sets';
+type Shelf = 'daily' | 'ent' | 'fin' | 'pose' | 'sets';
 const SHELVES: [Shelf, string, string][] = [
   ['daily', 'Daily skins', 'New ones every day.'],
   ['ent', 'Entrances', 'Tap one to watch it on the stage.'],
+  ['fin', 'Finishers', 'Tap one to watch it on the stage.'],
+  ['pose', 'Poses', 'Victory poses: tap one to watch it on the stage.'],
   ['sets', 'Mythic sets', 'Pay only for the pieces you miss.'],
 ];
 /** The shelf the shop opens on: the one the player last looked at (this session). */
@@ -64,6 +74,8 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
   let armT = 0;
   /** The entrance last tapped (it plays on the featured stage). */
   let peek: EntranceId | null = null;
+  /** The finisher or pose last tapped ("fin:frost", "pose:flex"). */
+  let peekFin: string | null = null;
 
   // Gem counter.
   const gemNum = h('b', null, fmtInt(gems()));
@@ -171,16 +183,21 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
 
   function buyEnt(e: EntranceDef): void {
     if (!buyEntrance(e.id)) return;
+    unlocked(e, ENTRANCE_ICON[e.id], 'boot', () => cb.onEntrance(e.id));
+  }
+
+  /** The "unlocked" pop-up for an entrance, finisher or pose, with a button to use it. */
+  function unlocked(e: { name: string; tier: EntranceDef['tier']; color: number }, glyph: IconName, useGlyph: IconName, use: () => void): void {
     sfx.play(e.tier === 'legendary' ? 'revealLegendary' : e.tier === 'mythic' ? 'revealMythic' : 'revealRare');
     const eq = h<HTMLButtonElement>('button.btn.primary', {
-      onclick: () => { cb.onEntrance(e.id); sfx.play('equip'); eq.disabled = true; eq.replaceChildren(icon('check'), 'In use'); render(); },
-    }, icon('boot'), 'Use it');
+      onclick: () => { use(); sfx.play('equip'); eq.disabled = true; eq.replaceChildren(icon('check'), 'In use'); render(); },
+    }, icon(useGlyph), 'Use it');
     got.replaceChildren(h('div.shop-got', { onclick: (ev: MouseEvent) => { if (ev.target === ev.currentTarget) dismiss(); } },
       h(`div.shop-got-card.frame.r-${e.tier}`, null,
         h('div.shop-got-rays'),
         h('div.ribbon', null, h('span', null, 'Unlocked!')),
         h('b.shop-got-name', null, e.name),
-        h('div.shop-got-icons', null, h(`span.sock.r-${e.tier}`, { style: { '--d': '120ms', color: css(e.color) } }, icon(ENTRANCE_ICON[e.id]))),
+        h('div.shop-got-icons', null, h(`span.sock.r-${e.tier}`, { style: { '--d': '120ms', color: css(e.color) } }, icon(glyph))),
         h('div.shop-got-foot', null, h('button.btn', { onclick: () => dismiss() }, 'Nice'), eq))));
     got.classList.add('on');
   }
@@ -188,8 +205,50 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
   /** Plays an entrance on the featured stage. */
   function watch(id: EntranceId): void {
     peek = id;
+    peekFin = null;
     previews[0]?.playEntrance(id);
     for (const t of shelves.querySelectorAll<HTMLElement>('.offer.ent')) t.classList.toggle('peek', t.dataset.ent === id);
+  }
+
+  /** The finisher and pose shelves: like the entrances, tap to watch on the featured stage. */
+  interface FinaleShelf { key: string; title: string; item: string; ids: readonly string[]; def(id: string): FinaleDef; owns(id: string): boolean; buy(id: string): boolean; glyph(id: string): IconName; using(id: string): boolean; use(id: string): void; play(id: string): void }
+  const finales: FinaleShelf[] = [
+    {
+      key: 'fin', title: 'Finishers', item: 'Finisher', ids: FINISHER_IDS, def: (id) => FINISHERS[id as FinisherId], owns: (id) => ownsFinisher(id as FinisherId),
+      buy: (id) => buyFinisher(id as FinisherId), glyph: (id) => FINISHER_ICON[id as FinisherId], using: (id) => finisherOf(cb.player()?.look, true) === id,
+      use: (id) => cb.onFinisher(id as FinisherId), play: (id) => previews[0]?.playFinisher(id as FinisherId, poseOf(cb.player()?.look, true)),
+    },
+    {
+      key: 'pose', title: 'Victory poses', item: 'Pose', ids: POSE_IDS, def: (id) => POSES[id as PoseId], owns: (id) => ownsPose(id as PoseId),
+      buy: (id) => buyPose(id as PoseId), glyph: (id) => POSE_ICON[id as PoseId], using: (id) => poseOf(cb.player()?.look, true) === id,
+      use: (id) => cb.onPose(id as PoseId), play: (id) => previews[0]?.playPose(id as PoseId),
+    },
+  ];
+
+  function watchFinale(s: FinaleShelf, id: string): void {
+    peek = null;
+    peekFin = `${s.key}:${id}`;
+    s.play(id);
+    for (const t of shelves.querySelectorAll<HTMLElement>('.offer.ent')) t.classList.toggle('peek', t.dataset.ent === peekFin);
+  }
+
+  function finaleShelf(s: FinaleShelf): HTMLElement {
+    return h('div.shelf-picks', null, ...s.ids.filter((id) => s.def(id).price > 0).map((id) => {
+        const e = s.def(id), key = `${s.key}:${id}`;
+        const mine = s.owns(id);
+        const using = mine && s.using(id);
+        return h(`div.offer.ent.r-${e.tier}${mine ? '.mine' : ''}${peekFin === key ? '.peek' : ''}`, {
+          'data-ent': key, title: e.blurb, style: { '--ent': css(e.color) },
+          onclick: () => { sfx.play('select'); watchFinale(s, id); },
+        },
+          h('span.offer-tier', null, ENTRANCE_TIER[e.tier]),
+          h('span.sock', null, icon(s.glyph(id))),
+          h('b.offer-name', null, e.name),
+          h('small.offer-item', null, s.item),
+          !mine ? buyBtn(e.price, '', () => { if (s.buy(id)) unlocked(e, s.glyph(id), 'trophy', () => s.use(id)); })
+            : using ? h('span.owned-tag', null, icon('check'), 'In use')
+              : h('button.btn.sm', { onclick: (ev: MouseEvent) => { ev.stopPropagation(); s.use(id); sfx.play('equip'); render(); } }, icon('trophy'), 'Use'));
+      }));
   }
 
   function featured(): void {
@@ -226,7 +285,8 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
     // Sets you can still complete first, owned ones last.
     sets.sort((a, b) => (a.missing.length ? 0 : 1) - (b.missing.length ? 0 : 1));
     const ents = ENTRANCE_IDS.filter((id) => ENTRANCES[id].price > 0);
-    const counts: Record<Shelf, number> = { daily: picks.length, ent: ents.length, sets: sets.length };
+    const priced = (f: FinaleShelf) => f.ids.filter((id) => f.def(id).price > 0).length;
+    const counts: Record<Shelf, number> = { daily: picks.length, ent: ents.length, fin: priced(finales[0]), pose: priced(finales[1]), sets: sets.length };
     const scroll = shelfBody.scrollTop;
     // One shelf at a time, picked on the tabs: less to take in, and every card gets room for its full name.
     shelfTabs.replaceChildren(...SHELVES.map(([id, label]) => h(`button.shelf-tab${shelf === id ? '.on' : ''}`, {
@@ -270,7 +330,8 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
               ? buyBtn(o.price, have ? `Last ${o.missing.length}` : 'Set', () => buySet(o))
               : h('button.btn.sm', { onclick: () => askEquip(o) }, icon('bag'), 'Equip')));
       }));
-    shelfBody.replaceChildren(h('p.shelf-hint', null, hint), shelf === 'daily' ? daily() : shelf === 'ent' ? entrances() : setList());
+    shelfBody.replaceChildren(h('p.shelf-hint', null, hint), shelf === 'daily' ? daily() : shelf === 'ent' ? entrances()
+      : shelf === 'fin' ? finaleShelf(finales[0]) : shelf === 'pose' ? finaleShelf(finales[1]) : setList());
     shelfBody.scrollTop = shownShelf === shelf ? scroll : 0;
     shownShelf = shelf;
   }

@@ -2,6 +2,7 @@ import { ARENA_HALF_WIDTH } from '../sim/constants';
 import { css, mix } from './pixel/color';
 import type { Pix } from './pixel/paint';
 import { buildArena, floorRow, type ArenaArt, type Layer, type SkyKey, type Theme } from './arenaArt';
+import { devils, embers, hawks, nightSky, sandDrift, shimmer } from './desertFx';
 import { hash } from './scenery';
 import { PPM } from './sprite/animator';
 
@@ -97,8 +98,12 @@ export class ArenaView {
   /** This frame's light for shafts and shadows: screen position, colour, shaft strength, cast-shadow length/side/strength. */
   private sun = { x: 0, y: 0, color: 0xffffff, power: 0, len: 0, dir: 1, shade: 0.2 };
   private floaters: FloaterImg[];
-  private amb: { petals: string[]; wings: string[]; sparkle: string; bird: string } | null;
-  private sky: { stars: HTMLCanvasElement; rainbow: HTMLCanvasElement; moon: HTMLCanvasElement; lamp: HTMLCanvasElement; firefly: HTMLCanvasElement } | null;
+  private amb: { petals: string[]; wings: string[]; sparkle: string; bird: string; fall: string[] } | null;
+  /** A windswept arena's sand and hawk colours. */
+  private wind: { sand: string[]; hawk: string; dust: string } | null;
+  private sky: { stars: HTMLCanvasElement; rainbow: HTMLCanvasElement | null; moon: HTMLCanvasElement; lamp: HTMLCanvasElement; firefly: HTMLCanvasElement; lit: HTMLCanvasElement[] } | null;
+  /** Lit lamps on screen this frame, for petals catching their light: x, y, reach, strength. */
+  private glowing: number[] = [];
   /** Share of the round gone by (0 noon … 1 night) for arenas with a day cycle. */
   private day = 0;
   /** The same, unclamped (past 1 in overtime): how far a deep-space arena's sky has stirred. */
@@ -124,8 +129,16 @@ export class ArenaView {
     this.floaters = this.art.floaters.map((f) => ({ ...f, img: canvasOf(f.pix) }));
     const a = this.art.ambience;
     const cy = this.art.cycle;
-    this.sky = cy && { stars: canvasOf(cy.stars), rainbow: canvasOf(cy.rainbow), moon: canvasOf(cy.moon), lamp: glowSprite(cy.lampColor), firefly: glowSprite(0xd8ff70) };
-    this.amb = a && { petals: a.petals.map((c) => css(c)), wings: a.butterflies.map((c) => css(c)), sparkle: css(a.sparkle), bird: css(a.bird) };
+    this.sky = cy && {
+      stars: canvasOf(cy.stars), rainbow: cy.rainbow ? canvasOf(cy.rainbow) : null, moon: canvasOf(cy.moon), lamp: glowSprite(cy.lampColor), firefly: glowSprite(0xd8ff70),
+      lit: (cy.lit ?? []).map(canvasOf),
+    };
+    this.amb = a && {
+      petals: a.petals.map((c) => css(c)), wings: a.butterflies.map((c) => css(c)), sparkle: css(a.sparkle), bird: css(a.bird),
+      fall: (a.fall?.colors ?? []).map((c) => css(c)),
+    };
+    const wd = this.art.wind;
+    this.wind = wd ? { sand: wd.sand.map((c) => css(c)), hawk: css(wd.hawk), dust: css(wd.dust) } : null;
     this.crowd = this.art.crowd.map(canvasOf);
     this.floor = canvasOf(this.art.floor);
     this.pillar = canvasOf(this.art.pillar);
@@ -153,14 +166,31 @@ export class ArenaView {
     this.round = Math.max(0, p);
   }
 
+  /**
+   * How far lamp `i` is lit (0..1). Lamps with their own `on` light one by
+   * one, sputtering for a moment as they catch; the rest come up together.
+   */
+  private lampOn(i: number, t: number): number {
+    const on = this.art.cycle!.lamps[i].on;
+    if (on === undefined) return smooth(0.66, 0.86, this.day);
+    const a = smooth(on, on + 0.02, this.day);
+    return a * (1 - (1 - a) * 0.6 * (0.5 + 0.5 * Math.sin(t * 31 + i * 2.7)));
+  }
+
   private sunPos(): [number, number] {
-    const s = Math.min(1, this.day / 0.76), hz = this.art.cycle!.hz;
-    return [this.W * (0.18 + 0.64 * s), hz * (0.14 + s * s)];
+    const cy = this.art.cycle!, path = cy.sunPath;
+    if (path) {
+      const s = Math.min(1, this.day / path.set);
+      return [this.W * (path.x[0] + (path.x[1] - path.x[0]) * s), cy.hz * (path.y[0] + (path.y[1] - path.y[0]) * s * s)];
+    }
+    const s = Math.min(1, this.day / 0.76);
+    return [this.W * (0.18 + 0.64 * s), cy.hz * (0.14 + s * s)];
   }
 
   private moonPos(): [number, number] {
-    const m = smooth(0.76, 1, this.day), hz = this.art.cycle!.hz;
-    return [this.W * (0.12 + 0.14 * m), hz * (1.08 - 0.72 * m)];
+    const cy = this.art.cycle!, m = smooth(0.76, 1, this.day);
+    const [ex, ey] = cy.moonAt ?? [0.26, 0.36];
+    return [this.W * (ex - 0.14 * (1 - m)), cy.hz * (1.08 - (1.08 - ey) * m)];
   }
 
   /**
@@ -177,22 +207,24 @@ export class ArenaView {
       elev = 1 - b.y; cast = 0.2;
     } else if (this.day < 0.78) {
       const p = this.day;
+      // With a path of its own the sun is gone a little before it reaches its end.
+      const end = cy.sunPath ? cy.sunPath.set * 0.93 : 0.77;
       [L.x, L.y] = this.sunPos();
       L.color = mix(0xfff2cc, 0xffb068, smooth(0.42, 0.7, p));
-      L.power = (0.6 + 0.4 * smooth(0.45, 0.68, p)) * (1 - smooth(0.68, 0.77, p));
+      L.power = (0.6 + 0.4 * smooth(0.45, 0.68, p)) * (1 - smooth(end - 0.09, end, p)) * (cy.rays ?? 1);
       elev = 1 - L.y / cy.hz;
-      cast = 0.32 * (1 - smooth(0.7, 0.77, p));
+      cast = 0.32 * (1 - smooth(end - 0.07, end, p)) * (cy.shade ?? 1);
     } else {
       const m = smooth(0.8, 0.95, this.day);
       [L.x, L.y] = this.moonPos();
       L.color = 0x9cb6ff;
-      L.power = 0.45 * m;
+      L.power = 0.45 * m * (cy.rays ?? 1);
       elev = 1 - L.y / cy.hz;
       cast = 0.16 * m;
     }
     const az = Math.max(-1, Math.min(1, (L.x - W / 2) / (W / 2)));
     L.dir = az > 0 ? -1 : 1;
-    L.len = (4 + 40 * Math.max(0, 1 - elev) ** 1.5) * (0.4 + 0.6 * Math.abs(az));
+    L.len = (4 + 40 * Math.max(0, 1 - elev) ** 1.5) * (0.4 + 0.6 * Math.abs(az)) * (cy?.cast ?? 1);
     L.shade = cast;
   }
 
@@ -252,6 +284,12 @@ export class ArenaView {
       if (l.after === 'birds' && this.amb && this.day < 0.8) this.drawBirds(g, cam, t);
       else if (l.after === 'floaters') this.drawFloaters(g, cam, t, false);
       else if (l.after === 'stars') this.drawStars(g, t);
+      else if (l.after === 'shimmer' && this.art.wind) shimmer(g, l.img, off(l.img, l.factor), l.y, this.art.wind.shimmer, t, 1 - smooth(0.36, 0.56, this.day));
+      else if (l.after === 'devils' && this.wind) {
+        const sun = 1 - smooth(0.5, 0.66, this.day);
+        devils(g, cam, l.factor, W, this.art.wind!.devils, t, sun, this.wind.dust);
+        hawks(g, cam, W, this.art.cycle?.hz ?? this.gy, t, sun, this.wind.hawk);
+      }
     }
     const cx = off(this.crowd[0], wf);
     g.drawImage(this.crowd[this.crowdFrame], cx, shakeY);
@@ -274,6 +312,7 @@ export class ArenaView {
     if (this.floaters.length) this.drawFloaters(g, cam, t, true);
     if (this.amb) this.drawAmbience(g, cam, t);
     if (this.stars) this.drawDust(g, cam, t);
+    if (this.wind) sandDrift(g, near, W, this.art.floorTop + shakeY, this.gy + shakeY, t, this.wind.sand);
     // Pillars at the arena bounds, with a floating crystal or a fire bowl.
     const gy = this.gy + shakeY;
     for (const side of [-1, 1]) {
@@ -286,9 +325,27 @@ export class ArenaView {
         g.drawImage(this.crystal, x + ((this.pillar.width - this.crystal.width) >> 1), gy - this.pillar.height - this.crystal.height + bob);
         continue;
       }
+      if (this.art.bareTop) continue;
       const fr = this.brazier[(fi + (side > 0 ? 1 : 0)) % 3];
       g.drawImage(fr, x + (this.pillar.width >> 1) - (fr.width >> 1), gy - this.pillar.height + 2 - fr.height + 3);
     }
+    if (this.sky?.lit.length) this.drawLit(g, cam, t);
+  }
+
+  /** Lamps with a lit look (paper lanterns, lantern windows) fade it in, in place, as each one lights. */
+  private drawLit(g: CanvasRenderingContext2D, cam: number, t: number): void {
+    const cy = this.art.cycle!, lit = this.sky!.lit;
+    for (let i = 0; i < cy.lamps.length; i++) {
+      const l = cy.lamps[i];
+      if (l.sprite === undefined) continue;
+      const a = this.lampOn(i, t);
+      if (a <= 0.01) continue;
+      const near = l.factor >= this.art.wallFactor;
+      const img = lit[l.sprite];
+      g.globalAlpha = a;
+      g.drawImage(img, Math.round(l.x - (near ? cam - this.shake[0] : cam) * l.factor) - (img.width >> 1), Math.round(l.y + (near ? this.shake[1] : 0)) - (img.height >> 1));
+    }
+    g.globalAlpha = 1;
   }
 
   /**
@@ -328,9 +385,9 @@ export class ArenaView {
     const [sx, sy] = this.sunPos();
     const r = cy.sunR;
     if (sy < hz + r) {
-      g.fillStyle = css(mix(0xffffff, 0xffe9a8, smooth(0.3, 0.7, p)));
+      g.fillStyle = css(mix(mix(0xffffff, 0xffe9a8, smooth(0.3, 0.7, p)), 0xffdc8a, cy.warm ?? 0));
       g.beginPath(); g.arc(sx, sy, r - 4, 0, Math.PI * 2); g.fill();
-      g.fillStyle = css(mix(0xfffbe2, 0xff9a50, smooth(0.45, 0.74, p)));
+      g.fillStyle = css(mix(0xfffbe2, 0xff9a50, Math.max(cy.warm ?? 0, smooth(0.45, 0.74, p))));
       g.beginPath(); g.arc(sx, sy, r, 0, Math.PI * 2); g.fill();
     }
     const moon = smooth(0.76, 1, p);
@@ -356,9 +413,10 @@ export class ArenaView {
       g.restore();
     }
     const bow = 1 - smooth(0.32, 0.5, p);
-    if (bow > 0) { g.globalAlpha = bow; g.drawImage(sk.rainbow, 0, 0); }
+    if (bow > 0 && sk.rainbow) { g.globalAlpha = bow; g.drawImage(sk.rainbow, 0, 0); }
     const stars = smooth(0.74, 0.9, p);
     if (stars > 0) { g.globalAlpha = stars; g.drawImage(sk.stars, 0, 0); }
+    if (cy.twinkle) nightSky(g, cy.twinkle, W, hz, t, stars);
     g.globalAlpha = 1;
     const sg = g.createLinearGradient(0, 0, 0, hz + 8);
     k.sky.forEach((c, i) => sg.addColorStop(i / 3, css(c)));
@@ -375,18 +433,24 @@ export class ArenaView {
     // Night lights.
     const lamps = smooth(0.66, 0.86, p);
     g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < cy.lamps.length; i++) {
+      const a = this.lampOn(i, t);
+      if (a <= 0) continue;
+      const l = cy.lamps[i];
+      const near = l.factor >= this.art.wallFactor;
+      const x = l.x - (near ? cam - this.shake[0] : cam) * l.factor, y = l.y + (near ? this.shake[1] : 0);
+      if (x < -l.r || x > W + l.r) continue;
+      g.globalAlpha = a * (0.85 + 0.15 * Math.sin(t * 2.3 + i * 1.7));
+      g.drawImage(sk.lamp, x - l.r, y - l.r, l.r * 2, l.r * 2);
+    }
     if (lamps > 0) {
-      for (let i = 0; i < cy.lamps.length; i++) {
-        const l = cy.lamps[i];
-        const near = l.factor >= this.art.wallFactor;
-        const x = l.x - (near ? cam - this.shake[0] : cam) * l.factor, y = l.y + (near ? this.shake[1] : 0);
-        if (x < -l.r || x > W + l.r) continue;
-        g.globalAlpha = lamps * (0.85 + 0.15 * Math.sin(t * 2.3 + i * 1.7));
-        g.drawImage(sk.lamp, x - l.r, y - l.r, l.r * 2, l.r * 2);
+      // Embers off the markers' fire bowls, or fireflies drifting over the meadow.
+      if (cy.motes === 'embers') {
+        const bowl = this.art.gy + this.shake[1] - this.pillar.height + 6;
+        for (const side of [-1, 1]) embers(g, W / 2 + side * (ARENA_HALF_WIDTH + 0.75) * PPM - cam + this.shake[0], bowl, t, lamps, side);
       }
-      // Fireflies drifting over the meadow.
       const span = W + 40;
-      for (let i = 0; i < 18; i++) {
+      for (let i = 0; i < (cy.motes === 'embers' ? 0 : cy.fireflies ?? 18); i++) {
         const tw = Math.sin(t * (1.1 + (i % 4) * 0.35) + i * 2.3);
         if (tw < -0.2) continue;
         const x = ((((i * 71.3 + Math.sin(t * 0.25 + i) * 40 - cam * 0.85) % span) + span) % span) - 20;
@@ -399,6 +463,7 @@ export class ArenaView {
     }
     g.globalAlpha = 1;
     g.globalCompositeOperation = 'source-over';
+    if (this.amb?.fall.length) this.drawFall(g, cam, t, k);
   }
 
   /**
@@ -587,12 +652,64 @@ export class ArenaView {
     }
   }
 
+  /**
+   * Petals drifting slowly down over the whole scene, each at its own depth:
+   * the far ones settle on the courtyard behind the fighters, a few near ones
+   * tumble past in front of them (drawn after the light, `k` its sky key, so
+   * they are tinted by hand). At night they catch the moonlight, and glow
+   * warm as they pass a lit lamp.
+   */
+  private drawFall(g: CanvasRenderingContext2D, cam: number, t: number, k: SkyKey | null): void {
+    const fall = this.art.ambience!.fall!, cols = this.amb!.fall, art = this.art, cy = art.cycle;
+    const front = k !== null;
+    const span = this.W + 40, D = art.gy - art.hy;
+    const moon = cy ? smooth(0.74, 0.92, this.day) : 0;
+    const lit = this.glowing;
+    lit.length = 0;
+    if (cy) for (let i = 0; i < cy.lamps.length; i++) {
+      const a = this.lampOn(i, t);
+      if (a <= 0.02) continue;
+      const l = cy.lamps[i], near = l.factor >= art.wallFactor;
+      lit.push(l.x - (near ? cam - this.shake[0] : cam) * l.factor, l.y, l.r * 2.8, a);
+    }
+    const tint = k && k.tintA > 0.004 ? css(k.tint) : null;
+    const i0 = front ? fall.n : 0, i1 = front ? fall.n + fall.front : fall.n;
+    for (let i = i0; i < i1; i++) {
+      const r1 = hash(i, 1, 2203), r2 = hash(i, 2, 2203), r3 = hash(i, 3, 2203);
+      const depth = front ? 1.14 + r1 * 0.3 : 0.5 + r1 * 0.5;
+      // Each falls to its own depth's ground line, then starts again from the top.
+      const land = art.hy + D * depth, fallH = land + 14;
+      const y = ((t * (3.5 + r2 * 4.5) * depth + r3 * fallH) % fallH) - 14;
+      const fade = Math.min(1, (land - y) / 10);
+      if (fade <= 0) continue;
+      const x = ((((r2 * 7919 + t * 5 * depth + Math.sin(t * (0.35 + r3 * 0.5) + i) * 10 * depth - cam * depth) % span) + span) % span) - 20;
+      const spin = Math.sin(t * (1.1 + r3 * 2) + i * 1.7);
+      const px = Math.round(x), py = Math.round(y);
+      const w = front ? (spin > 0.2 ? 3 : 2) : spin > -0.2 ? 2 : 1, h = front ? (spin < -0.3 ? 2 : 1) : spin < -0.6 ? 2 : 1;
+      g.globalAlpha = fade;
+      g.fillStyle = cols[(i + (spin > 0 ? 0 : 1)) % cols.length];
+      g.fillRect(px, py, w, h);
+      if (front && w === 3) { g.fillStyle = cols[2 % cols.length]; g.fillRect(px + 1, py, 1, 1); }
+      if (tint) { g.globalAlpha = fade * k!.tintA; g.fillStyle = tint; g.fillRect(px, py, w, h); }
+      if (moon > 0.01) { g.globalAlpha = fade * moon * (front ? 0.3 : 0.45); g.fillStyle = '#dce4ff'; g.fillRect(px, py, w, h); }
+      let q = 0;
+      for (let j = 0; j < lit.length; j += 4) {
+        const dx = px - lit[j], dy = py - lit[j + 1], R = lit[j + 2];
+        const d2 = (dx * dx + dy * dy) / (R * R);
+        if (d2 < 1) q = Math.max(q, lit[j + 3] * (1 - d2) * (1 - d2));
+      }
+      if (q > 0.02) { g.globalAlpha = fade * Math.min(1, q * (front ? 1.5 : 2)); g.fillStyle = '#ffd89a'; g.fillRect(px, py, w, h); }
+    }
+    g.globalAlpha = 1;
+  }
+
   /** Petals on the wind, twinkling pollen and a few butterflies, all behind the fighters. */
   private drawAmbience(g: CanvasRenderingContext2D, cam: number, t: number): void {
     const a = this.amb!;
     const W = this.W, spanX = W + 40, spanY = this.gy + 30;
     const wrap = (v: number, span: number) => (((v % span) + span) % span) - 20;
-    for (let i = 0; i < 24; i++) {
+    if (a.fall.length) this.drawFall(g, cam, t, null);
+    for (let i = 0; i < (a.fall.length ? 0 : 24); i++) {
       const y = ((i * 53.7 + t * (7 + ((i * 7) % 11))) % spanY) - 16;
       const x = wrap(i * 97.3 + t * (9 + (i % 4) * 4) - cam * (0.6 + (i % 3) * 0.2), spanX) + Math.sin(t * (0.9 + (i % 5) * 0.21) + i) * 7;
       const spin = Math.sin(t * (3 + (i % 3)) + i * 1.7);

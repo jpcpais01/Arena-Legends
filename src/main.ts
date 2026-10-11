@@ -11,6 +11,7 @@ import { sfx } from './audio/sfx';
 import { sanitizeAppearance } from './character/appearance';
 import { setAllSkins, addGems, gems, loadCollection, onCollection, payRound, PULL_COST, winGems } from './character/collection';
 import { entranceOf } from './character/entrances';
+import { finisherOf, poseOf } from './character/finales';
 import { generateRival, loadCharacter, newCharacter, saveCharacter, type PlayerCharacter } from './character/profile';
 import { BattleView, CAM_MODES, type CamMode } from './render/battleView';
 import { THEMES, type Theme } from './render/arenaArt';
@@ -78,7 +79,7 @@ let player: PlayerCharacter | null = loadCharacter();
 let rival: PlayerCharacter = loadRival() ?? generateRival(player?.name);
 // Gems and owned skins. Whatever the hero already wears stays owned.
 loadCollection(player?.skins);
-// The owners' accounts (João, Tiago, Batuca) always own every skin and entrance, including ones added later.
+// The owners' accounts (João, Tiago, Batuca) always own every skin, entrance, finisher and pose, including ones added later.
 const ownsAll = () => /^(joao|tiago|batuca)$/i.test(accountStatus().name ?? '');
 setAllSkins(ownsAll);
 onAccount(() => setAllSkins(ownsAll));
@@ -482,6 +483,16 @@ function openShop(): void {
       player = { ...player, look: { ...player.look, entrance: id } };
       saveCharacter(player);
     },
+    onFinisher: (id) => {
+      if (!player) return;
+      player = { ...player, look: { ...player.look, finisher: id } };
+      saveCharacter(player);
+    },
+    onPose: (id) => {
+      if (!player) return;
+      player = { ...player, look: { ...player.look, pose: id } };
+      saveCharacter(player);
+    },
     player: () => player,
   });
   ui.append(sheet.el);
@@ -623,6 +634,10 @@ function beginBattle(seed: number, fighters: [CharacterBuild, CharacterBuild], s
   // Each hero walks on their own way (yours only if you own it); the countdown waits for both.
   const me = yourSide();
   introLen = view.playEntrances([entranceOf(fighters[0].look, me === 0), entranceOf(fighters[1].look, me === 1)]);
+  view.setFinales(
+    [finisherOf(fighters[0].look, me === 0), finisherOf(fighters[1].look, me === 1)],
+    [poseOf(fighters[0].look, me === 0), poseOf(fighters[1].look, me === 1)],
+  );
   state = 'intro';
   introT = 0;
   countdown = -1;

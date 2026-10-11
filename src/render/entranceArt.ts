@@ -23,7 +23,7 @@ export interface EntSpot {
 export const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
 export const easeOut = (k: number): number => 1 - (1 - clamp01(k)) ** 2;
 export const easeIn = (k: number): number => clamp01(k) ** 2;
-const rnd = (n: number): number => {
+export const rnd = (n: number): number => {
   const s = Math.sin(n * 127.1 + 311.7) * 43758.5453;
   return s - Math.floor(s);
 };
@@ -32,7 +32,7 @@ export const FIRE = [0xfff4c0, 0xffd060, 0xff8030, 0xd83a1a, 0x7a1a10];
 const INK = '#140c18';
 
 /** A filled pixel ellipse, row by row. */
-function blob(g: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number, color: string): void {
+export function blob(g: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number, color: string): void {
   if (rx < 1 || ry < 1) return;
   g.fillStyle = color;
   for (let i = -ry; i <= ry; i++) {
@@ -42,7 +42,7 @@ function blob(g: CanvasRenderingContext2D, cx: number, cy: number, rx: number, r
 }
 
 /** A one-pixel line. */
-function line(g: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, w = 1): void {
+export function line(g: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, w = 1): void {
   const n = Math.max(1, Math.round(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))));
   for (let i = 0; i <= n; i++) g.fillRect(Math.round(x0 + ((x1 - x0) * i) / n), Math.round(y0 + ((y1 - y0) * i) / n), w, w);
 }

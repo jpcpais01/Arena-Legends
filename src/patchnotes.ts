@@ -12,6 +12,18 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.90.0',
+    date: '2026-10-11',
+    title: 'Blade Locks, Finishers and two new arenas',
+    notes: [
+      'Blade Locks: when two melee swings meet head on, the blades bind and grind. A tug bar shows who is winning, and the stronger fighter breaks through with a heavy hit and bonus energy. Even fights end in a standoff that throws both apart.',
+      'Finishers: the final blow of a match now plays your chosen finisher, with 10 to collect. Victory poses: the winner strikes your chosen pose, with 9 to collect.',
+      'Pick your finisher and pose in the new Finale step of the hero creator, and find more on the new Finishers and Poses tabs in the Shop.',
+      'New arena, Desert Mesa: red rock towers under a burning sunset, drifting sand that kicks up under your feet, and a starry desert night.',
+      'New arena, Cherry Blossom Shrine: a torii gate and stone lanterns among pink trees, falling petals, and fireflies once the lanterns light up at night.',
+    ],
+  },
+  {
     version: '0.89.0',
     date: '2026-10-11',
     title: 'Clearer menus on phones, part 3',

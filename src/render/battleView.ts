@@ -2,6 +2,7 @@ import { sfx, type Sfx } from '../audio/sfx';
 import { clamp } from '../core/math';
 import type { Battle } from '../sim/battle';
 import type { EntranceId } from '../character/entrances';
+import { finisherOf, type FinisherId, type PoseId } from '../character/finales';
 import { ARENA_HALF_WIDTH, DT, ROUND_TIME } from '../sim/constants';
 import { getStatus, type Fighter } from '../sim/fighter';
 import { HAWK_DIVE, WHELP_BREATH } from '../sim/battle';
@@ -9,7 +10,10 @@ import type { AbilityDef, ActionState, BattleEvent, FighterId, FormId, Projectil
 import { ArenaView } from './arena';
 import { bodyMarks } from './companions';
 import { THEMES, type Theme } from './arenaArt';
-import { Entrance, entranceLength, wrapFrame, type EntrancePose } from './entrance';
+import { kickSand } from './desertFx';
+import { Entrance, entranceLength, wrapFrame, type EntranceHost, type EntrancePose } from './entrance';
+import { Finisher } from './finisher';
+import { PoseFx } from './victory';
 import { drawText } from './font';
 import { ellipseOutline, Fx, type View } from './fx';
 import { css, mix } from './pixel/color';
@@ -26,7 +30,7 @@ import { Animator, PPM, type AnimOut } from './sprite/animator';
 import { SpriteBank, type Sprite } from './sprite/bank';
 import { makeArt, type CharacterArt } from './sprite/look';
 import type { SkinFx } from './sprite/skins';
-import { isSuper, superLook, type SuperLook } from './supers';
+import { isSuper, skinColours, superLook, type SuperLook } from './supers';
 import { superImpactFx, superRelease as superReleaseFx, superWindup, type SuperHost } from './superFx';
 import { GlFx, type Light } from './glfx';
 import { SoftLights } from './softLight';
@@ -126,6 +130,8 @@ export interface BattleListener {
  * fixed 60 Hz and interpolates for the display; speed, pause and slow motion
  * only change how many steps run per frame.
  */
+const smooth01 = (t: number) => { const u = clamp(t, 0, 1); return u * u * (3 - 2 * u); };
+
 /** Damage number looks per corner: index 0 is the blue (left) fighter, 1 the red (right) one. */
 const DMG_INK = [
   { hit: { color: '#9cc8ff', shade: '#2f6ad0' }, heavy: { color: '#b4d6ff', scale: 2, shade: '#2f6ad0' }, crit: { color: '#dcecff', scale: 2, shade: '#3a7cf0' }, blocked: { color: '#7c98c0', shade: '#34486a' }, dot: { color: '#86b4f0', shade: '#2a5aa8' } },
@@ -210,8 +216,19 @@ export class BattleView implements View {
   onSuperCancel: ((f: FighterId) => void) | null = null;
   /** The arena dims behind a super so the move stands out. */
   private dim = 0;
+  /** Blade lock: seconds until the next grinding spark and scrape, and how far the strength meter has faded in. */
+  private grindT = 0;
+  private bindA = 0;
   /** Fighter sprites drawn this frame, for their night accents: feet position and facing. */
   private glowList: { s: Sprite; x: number; y: number; flip: boolean }[] = [];
+  /** Each side's KO finisher, the one playing, and seconds since it ended (−1: none played). */
+  private finIds: [FinisherId, FinisherId] = ['clean', 'clean'];
+  private fin: Finisher | null = null;
+  private finAfter = -1;
+  /** World height of the top of the open view, under the HUD (finishers keep their skies in sight). */
+  private viewTop = 6;
+  /** The winner's victory pose extras. */
+  private poseFx: PoseFx | null = null;
 
   constructor(readonly screen: Screen) {
     screen.onResize = () => this.layout();
@@ -237,6 +254,9 @@ export class BattleView implements View {
         hawkFrom: null, hawkAway: 0, landT: 0, breathT: 0, wardT: 0, puffT: 0, pulledBy: -1, chargeT: 0, sigT: -9, ent: null, pose: null,
       };
     });
+    this.finIds = [finisherOf(b.fighters[0].look), finisherOf(b.fighters[1].look)];
+    this.fin = this.poseFx = null;
+    this.finAfter = -1;
     clearPatches();
     this.zoneHot.clear();
     this.heard.clear();
@@ -273,8 +293,31 @@ export class BattleView implements View {
   playEntrances(ids: [EntranceId, EntranceId]): number {
     const b = this.battle;
     if (!b) return 0;
+    const host = (id: FighterId) => this.entHost(id);
+    // The second hero comes on as the first strikes their pose, so the camera can show each one.
+    const gap = clamp(entranceLength(ids[0]) - 0.6, 0.55, 1.6);
+    let end = 0;
+    this.fighters.forEach((v, i) => {
+      const f = b.fighters[i];
+      const delay = i * gap;
+      v.ent = new Entrance(ids[i], host(f.id), f.x, f.facing, { delay, stage: true });
+      v.pose = v.ent.update(0);
+      end = Math.max(end, delay + entranceLength(ids[i]));
+    });
+    return end;
+  }
+
+  /** Overrides the heroes' finishers and victory poses (yours fall back to the free ones unless owned). */
+  setFinales(fins: [FinisherId, FinisherId], poses: [PoseId, PoseId]): void {
+    this.finIds = [...fins];
+    this.fighters.forEach((v, i) => v.anim.setPose(poses[i]));
+  }
+
+  /** What entrances and finishers play through: effects, light and the camera, toned down when quiet. */
+  private entHost(id: FighterId): EntranceHost {
+    const b = this.battle!;
     const shader = () => this.gl.ok && !this.quiet;
-    const host = (id: FighterId) => ({
+    return {
       fx: this.fx,
       shake: (a: number) => this.shake(a),
       flash: (c: number, a: number) => this.flash(c, a),
@@ -287,18 +330,27 @@ export class BattleView implements View {
       vignette: (c: number, k: number, life: number) => { if (shader()) this.gl.vignette(c, k, life); },
       focus: (x: number, seconds: number, levels = 1) => this.cinema(levels, seconds, x, 0.8),
       tip: () => this.tipOf(b.fighters[id]) ?? null,
-    });
-    // The second hero comes on as the first strikes their pose, so the camera can show each one.
-    const gap = clamp(entranceLength(ids[0]) - 0.6, 0.55, 1.6);
-    let end = 0;
-    this.fighters.forEach((v, i) => {
-      const f = b.fighters[i];
-      const delay = i * gap;
-      v.ent = new Entrance(ids[i], host(f.id), f.x, f.facing, { delay, stage: true });
-      v.pose = v.ent.update(0);
-      end = Math.max(end, delay + entranceLength(ids[i]));
-    });
-    return end;
+    };
+  }
+
+  /** The finisher a knockout of `fallen` plays, or null for the plain KO (double KO, the free finisher). */
+  finisherFor(fallen: FighterId): FinisherId | null {
+    const b = this.battle;
+    if (!b || this.fin || this.finAfter >= 0 || b.winner === -1 || b.winner === fallen) return null;
+    const id = this.finIds[b.winner];
+    return id === 'clean' ? null : id;
+  }
+
+  /** The winner's finisher takes over the knockout; false when there is none to play (a double KO). */
+  private startFinisher(fallen: FighterId): boolean {
+    const b = this.battle!;
+    const w = b.fighters[fallen === 0 ? 1 : 0], down = b.fighters[fallen];
+    if (this.fin || this.finAfter >= 0 || !b.over || b.winner !== w.id) return false;
+    const [hi, lo] = skinColours(this.fighters[w.id].art.mainSkin) ?? [];
+    // It sets the pace from here: no super's slow motion or punch-in carries over.
+    this.slow = 1; this.slowT = 0; this.beat = null; this.punchT = 0;
+    this.fin = new Finisher(this.finIds[w.id], this.entHost(w.id), () => [this.lx(w), this.ly(w)], () => [this.lx(down), this.ly(down)], { stage: true, quiet: this.quiet, hi, lo, top: () => this.viewTop });
+    return true;
   }
 
   /** Pre-draws sprites within a time budget; true when everything is ready. */
@@ -398,24 +450,38 @@ export class BattleView implements View {
         this.slow = this.beat.scale + (1 - this.beat.scale) * up * up;
       }
     }
+    // A finisher runs on (near) real time and sets the pace the sim is stepped at itself.
+    const fdt = this.paused ? 0 : dt * Math.sqrt(this.speed);
+    if (this.fin && fdt > 0 && !this.fin.update(fdt)) {
+      this.fin = null;
+      this.finAfter = 0;
+      const w = b.winner !== -1 ? b.fighters[b.winner] : undefined;
+      // The pose strikes, and the camera leans in on the winner for it.
+      if (w?.alive) { this.fighters[w.id].anim.restartPose(); this.cinema(1, 1.7, w.x, 0.85); }
+    }
+    if (this.finAfter >= 0) this.finAfter += fdt;
+    const fin = this.fin;
     if (!this.paused && !this.hold) {
-      this.acc += dt * this.speed * this.slow;
+      // The killing blow's hit-stop passes on a steady beat, whatever pace the finisher sets.
+      this.acc += fin ? fdt * (b.hitstop > 0 ? Math.max(fin.pace, 1.5) : fin.pace) : dt * this.speed * this.slow;
       let steps = 0;
       while (this.acc >= DT && steps < 12) {
         b.step();
         for (const e of b.drainEvents()) this.handle(e);
+        this.touchdowns();
         this.acc -= DT;
         steps++;
       }
       if (steps === 12) this.acc = 0;
-      if (b.over && !this.ended && b.endTime > 2.2) {
+      // After a finisher, the results wait for the victory pose to strike.
+      if (b.over && !this.ended && (this.finAfter >= 0 ? this.finAfter > 1.1 : !fin && b.endTime > 2.2)) {
         this.ended = true;
         this.listener?.onEnd?.(b);
       }
     }
     this.alpha = this.acc / DT;
     // Before the fight (entrances, countdown) effects run on real time whatever the battle speed.
-    const vdt = this.paused ? 0 : dt * (this.hold ? 1 : this.speed * this.slow);
+    const vdt = this.paused ? 0 : fin ? fdt : dt * (this.hold ? 1 : this.speed * this.slow);
     for (let i = this.laters.length - 1; i >= 0 && vdt > 0; i--) {
       const l = this.laters[i];
       if ((l.t -= vdt) <= 0) { this.laters.splice(i, 1); l.fn(); }
@@ -505,6 +571,7 @@ export class BattleView implements View {
     const vh = sc.h / this.zoom;
     const cy = this.gy - (this.gy / sc.h - 0.5) * vh - Math.min(this.viewY, 2.5) * PPM * 0.5 * (1 - 1 / this.zoom);
     sc.setView(this.zoom, sc.w / 2 + (this.viewX - this.camX) * PPM, cy);
+    this.viewTop = (this.gy - (cy - vh * 0.26)) / PPM;
     if (this.shakeT > 0) {
       this.shakeT -= dt;
       const a = this.shakeAmp * PPM * 0.12 * Math.max(0, this.shakeT * 3);
@@ -533,6 +600,7 @@ export class BattleView implements View {
     }
     this.fx.drawUnder(g, this);
     for (const v of this.fighters) v.ent?.draw(g, this, 'under');
+    this.fin?.draw(g, this, 'under');
     for (const z of b.zones) this.drawZoneGround(g, z);
     // Where a meteor is about to land.
     for (const p of b.projectiles) if (p.alive && p.style === 'meteor') this.drawMeteorMark(g, p);
@@ -548,8 +616,12 @@ export class BattleView implements View {
     // The fighter mid-attack draws in front.
     const order: FighterId[] = b.fighters[0].action && !b.fighters[1].action ? [1, 0] : [0, 1];
     const secOut = (id: FighterId) => b.projectiles.some((p) => p.alive && p.owner === id && p.style === 'chakram');
-    for (const id of order) this.drawFighter(g, b.fighters[id], this.fighters[id], dt, secOut(id));
+    this.victoryFx(g);
+    // Under a finisher the bodies keep the sim's pace (a fallen frozen in mid-air holds still).
+    const fdt = this.fin ? dt * this.fin.pace : dt;
+    for (const id of order) this.drawFighter(g, b.fighters[id], this.fighters[id], fdt, secOut(id));
     for (const v of this.fighters) v.ent?.draw(g, this, 'over');
+    this.fin?.draw(g, this, 'over');
     for (const f of b.fighters) this.drawItem(g, f);
     this.drawChains(g);
     for (const p of b.projectiles) if (p.alive) this.drawProjectile(g, p);
@@ -559,8 +631,10 @@ export class BattleView implements View {
     for (const z of b.zones) if (z.kind === 'caltrops') this.caltropGlints(g, z);
     const night = this.arena!.night();
     if (night > 0.01) this.nightGlow(g, night);
+    if (b.lock) this.bindTick(dt);
     this.fx.draw(g, this);
     this.soft.draw(g, this);
+    this.drawBindMeter(g, dt);
     if (this.flashT > 0) {
       g.globalAlpha = Math.min(0.5, this.flashT * 4);
       g.fillStyle = css(this.flashCol);
@@ -612,6 +686,19 @@ export class BattleView implements View {
     g.globalCompositeOperation = 'source-over';
   }
 
+  /** The winner's victory pose extras (sparkles, light, a rock for the champion's foot), drawn behind the bodies. */
+  private victoryFx(g: CanvasRenderingContext2D): void {
+    const b = this.battle!;
+    const w = b.over && !this.fin && b.winner !== -1 ? b.fighters[b.winner] : undefined;
+    const v = w?.alive ? this.fighters[w.id] : undefined;
+    const t = v ? v.anim.poseT : -1;
+    if (!w || !v || t < 0) return;
+    this.poseFx ??= new PoseFx(v.anim.pose, this.entHost(w.id));
+    const spot = { x: this.lx(w), y: this.ly(w), facing: w.facing, tip: this.tipOf(w) ?? null };
+    if (!this.paused) this.poseFx.update(t, v.out.frame, spot);
+    this.poseFx.drawUnder(g, this, spot);
+  }
+
   /** The fighter's body during an entrance: faded, washed with a colour, or cut off at the ground. */
   private blitEntrance(g: CanvasRenderingContext2D, v: FighterView, o: AnimOut, s: Sprite, pose: EntrancePose, px: number, py: number, flip: boolean): void {
     const ground = pose.clipGround;
@@ -645,16 +732,20 @@ export class BattleView implements View {
     const over = b.over;
     // The belt is empty once every use of the usable item is spent.
     const useOut = f.uses.some((u, i) => u === 0 && f.abilities[i].from === 'usable');
-    v.out = v.anim.update(f, x, dt, over, b.winner === f.id, secOut, useOut);
+    // The winner stands by while their finisher plays; the victory pose follows it.
+    v.out = v.anim.update(f, x, dt, over, b.winner === f.id && !this.fin, secOut, useOut);
     let o = v.out;
-    const pose = v.pose;
+    const fin = this.fin?.frame;
+    const pose = v.pose ?? (fin ? (f.alive ? fin.win : fin.fall) : null);
     if (pose) {
-      // Entrance: its own clip and frame, moved off the spot; hidden until it begins.
+      // Entrance (or finisher): its own clip and frame, moved off the spot; hidden until it begins. No clip: just a wash.
       if (pose.alpha <= 0) return;
-      const clip = v.bank.set.clips.has(pose.clip) ? pose.clip : 'idle';
-      const frame = wrapFrame(pose.frame, clipLength(v.bank.set.clips.get(clip)!));
-      o = { ...o, clip, frame, face: pose.face, jitter: 0, hop: 0 };
-      o.key = `${o.clip}.${o.frame}.${o.face ?? ''}${o.secOut ? '.o' : ''}${o.useOut ? '.u' : ''}`;
+      if (pose.clip) {
+        const clip = v.bank.set.clips.has(pose.clip) ? pose.clip : 'idle';
+        const frame = wrapFrame(pose.frame, clipLength(v.bank.set.clips.get(clip)!));
+        o = { ...o, clip, frame, face: pose.face, jitter: 0, hop: 0 };
+        o.key = `${o.clip}.${o.frame}.${o.face ?? ''}${o.secOut ? '.o' : ''}${o.useOut ? '.u' : ''}`;
+      }
       x += pose.dx;
       y += pose.dy;
     }
@@ -664,7 +755,9 @@ export class BattleView implements View {
     const hidden = alive && !!getStatus(f, 'hidden');
     const fear = alive ? getStatus(f, 'fear') : undefined;
     // Afraid: the whole body trembles.
-    const shiver = fear && dt > 0 ? (Math.floor(this.time * 26) & 1 ? 1 : -1) : 0;
+    // Afraid: the whole body trembles; straining in a blade lock, it shudders.
+    const shiver = fear && dt > 0 ? (Math.floor(this.time * 26) & 1 ? 1 : -1)
+      : f.action?.lock && dt > 0 ? ((Math.floor(this.time * 30) + f.id) & 1 ? 1 : 0) * -f.facing : 0;
     const px = Math.round(this.sx(x)) + o.jitter + shiver, py = Math.round(this.sy(y)) - o.hop;
     v.headY = y + 2.0;
     v.lastS = s; v.lastX = px; v.lastY = py; v.lastFlip = flip;
@@ -725,8 +818,10 @@ export class BattleView implements View {
       g.globalAlpha = 1;
     };
     // The hit flash runs on real time, so slow motion never leaves a body washed out white.
-    if (v.flash > 0) { tint('#ffffff', Math.min(1, v.flash * 12)); if (dt > 0) v.flash -= this.realDt; }
-    if (v.drink > 0) { tint(v.drinkCol, Math.min(0.65, v.drink * 3)); if (dt > 0) v.drink -= this.realDt; }
+    // (A finisher can hold the bodies still; the flash still fades.)
+    const fade = dt > 0 || !!this.fin;
+    if (v.flash > 0) { tint('#ffffff', Math.min(1, v.flash * 12)); if (fade) v.flash -= this.realDt; }
+    if (v.drink > 0) { tint(v.drinkCol, Math.min(0.65, v.drink * 3)); if (fade) v.drink -= this.realDt; }
     if (getStatus(f, 'frozen')) tint('#bff0ff', 0.6);
     else if (getStatus(f, 'chill')) tint('#8ad8ff', 0.22);
     if (getStatus(f, 'ironskin')) tint('#e8eef8', 0.25 + 0.15 * Math.sin(this.time * 10));
@@ -1431,6 +1526,18 @@ export class BattleView implements View {
     if (k) fx.burst({ x: f.x, y: 1.2, count: 14, jitter: 0.4, jitterY: 0.5, speed: [1, 2.5], life: [0.6, 1.1], color: k.spark, color2: k.spark2, drag: 2, kind: k.kind ?? 'twinkle' });
   }
 
+  /** How high each fighter has been since leaving the ground: on loose sand, touching down from a leap or a fall kicks it up. */
+  private airY = [0, 0];
+  private touchdowns(): void {
+    const sand = this.arena?.art.wind?.sand;
+    for (const f of this.battle!.fighters) {
+      const peak = this.airY[f.id] ?? 0;
+      if (f.y > 0.01) { this.airY[f.id] = Math.max(peak, f.y); continue; }
+      this.airY[f.id] = 0;
+      if (sand && peak > 0.35) kickSand(this.fx, sand, f.x, 'land', 0, Math.min(1.4, 0.6 + peak * 0.25));
+    }
+  }
+
   private handle(e: BattleEvent): void {
     this.listener?.onEvent?.(e);
     const b = this.battle!;
@@ -1485,6 +1592,9 @@ export class BattleView implements View {
           if (ab.anim === 'horn') { this.shake(0.3); this.arena?.cheer(0.6); }
         }
         if (isSuper(ab)) this.superRelease(f, ab);
+        // Loose sand (the mesa): a dodge or dash pushing off kicks some up.
+        const sand = this.arena?.art.wind?.sand;
+        if (sand && ab.kind === 'dash' && f.y < 0.3) kickSand(fx, sand, f.x, 'dodge', f.action?.dir ?? f.facing, ab.slot === 'evade' ? 1 : 0.7);
         if (ab.kind === 'dash' && ab.slot !== 'evade') {
           fx.burst({ x: f.x, y: 0.1, count: 6, jitter: 0.3, dir: Math.PI / 2 + f.facing * 1.2, spread: 0.5, speed: [1, 3], life: [0.4, 0.6], color: 0xd8c8b0, color2: 0x8a7a70, kind: 'smoke', size: 3 });
           fx.burst({ x: f.x, y: 1.0, count: 12, dir: f.facing > 0 ? Math.PI : 0, spread: 0.15, speed: [4, 9], life: [0.15, 0.3], color: 0xffffff, color2: 0x9ad8ff, kind: 'streak' });
@@ -1617,7 +1727,14 @@ export class BattleView implements View {
         else if (e.status === 'mark' && e.stacks === 1) fx.pop('HEXED', f.x, hy, { color: '#d8a8ff' }, 0.8);
         break;
       }
+      case 'bind':
+        this.bindStart(e.x, e.y, e.dur);
+        break;
+      case 'unbind':
+        this.bindBreak(e.winner, e.x, e.y);
+        break;
       case 'wallSplat':
+        if (this.arena?.art.wind) kickSand(fx, this.arena.art.wind.sand, e.x, 'wall');
         fx.pulse('star', e.x, 1.2, 0.8, 0xffd27a, 0.2);
         fx.burst({ x: e.x, y: 1, count: 10, jitter: 0.5, jitterY: 0.8, speed: [1, 3], life: [0.5, 0.9], color: 0xb0a090, color2: 0x6a5a60, kind: 'smoke', size: 4 });
         this.shake(0.55);
@@ -1833,13 +1950,17 @@ export class BattleView implements View {
       }
       case 'ko': {
         const f = b.fighters[e.f];
+        const sand = this.arena?.art.wind?.sand;
+        // The body hitting the ground, a beat later.
+        if (sand) fx.later(0.4, () => kickSand(fx, sand, f.x, 'land', 0, 1.3));
+        this.arena?.cheer(1);
+        if (this.startFinisher(e.f)) break;
         fx.pulse('groundRing', f.x, 0, 4, 0xffffff, 0.7);
         fx.pulse('star', f.x, 1.2, 1.2, 0xfff0c0, 0.3);
         fx.burst({ x: f.x, y: 1.2, count: 50, speed: [4, 11], life: [0.4, 0.9], color: 0xffffff, color2: 0xffd27a, gravity: 6, drag: 1, kind: 'streak' });
         this.play('ko', this.pan(f.x));
         this.shake(1.1);
         this.flash(0xffffff, 1.4);
-        this.arena?.cheer(1);
         this.slowmo(0.25, 1.3);
         this.punchIn(2, 2.2, f.x);
         break;
@@ -2168,6 +2289,122 @@ export class BattleView implements View {
     this.punchIn(1, 0.45, x);
     this.cinema(this.camMode === 'classic' ? 1 : 2, 0.55, x);
     this.arena?.cheer(0.4);
+  }
+
+  // --- Blade locks ---------------------------------------------------------------
+
+  /** Where the weapons meet: between the two blade tips when both are drawn, else between the fighters at chest height. */
+  private bindPoint(): [number, number] {
+    const [a, b] = this.battle!.fighters;
+    const ta = this.tipOf(a), tb = this.tipOf(b);
+    if (ta && tb) return [(ta[0] + tb[0]) / 2, clamp((ta[1] + tb[1]) / 2, 0.9, 2.4)];
+    return [(this.lx(a) + this.lx(b)) / 2, 1.35];
+  }
+
+  /** A fighter's weapon colours (its skin's sparks or trail, else hot steel). */
+  private bladeCols(id: FighterId): [number, number] {
+    const skin = this.fighters[id]?.art.mainSkin;
+    return skin?.fx ? [skin.fx.spark, skin.fx.spark2] : skin?.trail ?? [0xfff4d0, 0xff9a30];
+  }
+
+  /** Two swings meet and the weapons bind: a crack of steel, a shower of sparks, time catches its breath. */
+  private bindStart(x: number, y: number, dur: number): void {
+    const fx = this.fx;
+    fx.pulse('star', x, y, 1.1, 0xffffff, 0.22, 0xffd890);
+    fx.pulse('ring', x, y, 1.3, 0xfff0c0, 0.3, 0xff9a30);
+    fx.burst({ x, y, count: 34, speed: [5, 12], life: [0.18, 0.45], color: 0xffffff, color2: 0xffb040, gravity: 9, drag: 2, kind: 'streak' });
+    fx.pop('BLADE LOCK!', x, y + 1.9, { color: '#fff0c8', scale: 2, shade: '#c86a20' }, 1.1, 0.6);
+    this.play('bind', this.pan(x));
+    this.shake(0.5);
+    this.flash(0xfff0d0, 0.6);
+    this.arena?.cheer(0.7);
+    this.grindT = 0.12;
+    if (this.quiet) return;
+    this.superBeat(0.3, 0.4);
+    this.cinema(1, 0.75 + dur * 0.5, x, 0.9);
+    if (this.gl.ok) {
+      this.gl.add({ kind: 'star', x, y, r0: 0.4, r1: 1.6, w: 0.07, hi: 0xffffff, lo: 0xffb040, life: 0.3, power: 1, real: true });
+      this.gl.add({ kind: 'glow', x, y, r0: 0.45, r1: 0.7, hi: 0xfff0c8, lo: 0xff8a30, life: dur, power: 0.55, fin: 0.05 });
+      this.gl.shock({ x, y, r: 1.6, amp: 3, life: 0.3, hi: 0xffffff });
+    }
+  }
+
+  /** While the weapons are bound: sparks grind out of the bind, steel scrapes, the camera trembles. */
+  private bindTick(dt: number): void {
+    if (dt <= 0 || (this.grindT -= dt) > 0) return;
+    const L = this.battle!.lock!;
+    const k = L.t / L.dur;
+    this.grindT = 0.07 - 0.03 * k;
+    const [x, y] = this.bindPoint();
+    const [a, b] = this.battle!.fighters;
+    // Each side's weapon sheds its own sparks, flying back over the shoulder of whoever is giving ground.
+    for (const f of [a, b]) {
+      const [c1, c2] = this.bladeCols(f.id);
+      this.fx.burst({ x, y, count: 2 + Math.round(k * 3), dir: Math.PI / 2 + f.facing * 0.9, spread: 0.7, speed: [3, 8], life: [0.15, 0.35], color: c1, color2: c2, gravity: 14, drag: 1.5, kind: 'streak' });
+    }
+    if (Math.random() < 0.45) this.play('grind', this.pan(x), 0.7 + k * 0.5);
+    this.shake(0.08 + k * 0.12);
+  }
+
+  /** The bind breaks: the winner drives through in a burst of their weapon's colours, or both are hurled apart. */
+  private bindBreak(winner: FighterId | -1, x0: number, y0: number): void {
+    const fx = this.fx;
+    const [x, y] = this.bindPoint();
+    const at = Math.abs(x - x0) < 1.5 ? x : x0, ay = Number.isFinite(y) ? y : y0;
+    this.play('unbind', this.pan(at));
+    this.arena?.cheer(1);
+    if (winner === -1) {
+      fx.pulse('ring', at, ay, 1.6, 0xffffff, 0.3, 0xffb040);
+      for (const side of [-1, 1]) fx.burst({ x: at, y: ay, count: 16, dir: side > 0 ? 0.25 : Math.PI - 0.25, spread: 0.6, speed: [5, 11], life: [0.2, 0.45], color: 0xffffff, color2: 0xffb040, gravity: 8, drag: 2, kind: 'streak' });
+      fx.pop('STANDOFF', at, ay + 1.2, { color: '#e8ecff', scale: 2, shade: '#5a6aa0' }, 1, 0.7);
+      this.shake(0.5);
+      this.flash(0xffffff, 0.5);
+      if (this.gl.ok && !this.quiet) this.gl.shock({ x: at, y: ay, r: 2.2, amp: 4, life: 0.35, hi: 0xffffff });
+      return;
+    }
+    const f = this.battle!.fighters[winner];
+    const [c1, c2] = this.bladeCols(winner);
+    fx.pulse('star', at, ay, 1.3, mix(c1, 0xffffff, 0.5), 0.25, c2);
+    fx.pulse('ring', at, ay, 1.8, c1, 0.35, c2);
+    fx.burst({ x: at, y: ay, count: 40, dir: f.facing > 0 ? 0 : Math.PI, spread: 0.9, speed: [6, 14], life: [0.2, 0.5], color: c1, color2: c2, gravity: 6, drag: 2, kind: 'streak' });
+    fx.pop('BREAK!', f.x, this.fighters[winner].headY + 0.5, { color: '#ffe8b0', scale: 2, shade: '#c8501a' }, 1, 0.9);
+    this.shake(0.9);
+    this.flash(0xffffff, 0.8);
+    this.punchIn(1, 0.5, at);
+    if (this.gl.ok && !this.quiet) {
+      this.gl.impactFrame(0xfff4e0, 0x140a18, 0.05);
+      this.gl.shock({ x: at, y: ay, r: 2.8, amp: 6, life: 0.45, hi: c1, dir: f.facing });
+      this.gl.add({ kind: 'flare', x: at, y: ay, r0: 0.6, r1: 2.6, w: 0.08, rot: 0, hi: 0xffffff, lo: c2, life: 0.3, power: 0.9, real: true });
+    }
+  }
+
+  /**
+   * A small strength meter over the bind: each side's colour pushing at a
+   * marker that wavers, then gives way toward whoever is losing.
+   */
+  private drawBindMeter(g: CanvasRenderingContext2D, dt: number): void {
+    const b = this.battle!, L = b.lock;
+    this.bindA = clamp(this.bindA + (L ? dt * 6 : -dt * 4), 0, 1);
+    if (this.bindA <= 0 || this.quiet || !L) return;
+    const [a, c] = b.fighters;
+    const left: FighterId = a.x <= c.x ? 0 : 1;
+    const k = L.t / L.dur;
+    const push = L.winner === -1 ? 0 : L.winner === left ? 1 : -1;
+    const waver = Math.sin(this.time * 7.3) * 0.22 + Math.sin(this.time * 12.1) * 0.08;
+    const m = clamp(waver * (1 - k) + push * smooth01((k - 0.35) / 0.65) * 0.85, -1, 1);
+    const [x, y] = this.bindPoint();
+    const w = 34, cx = Math.round(this.sx(x)), top = Math.round(this.sy(y)) - 30;
+    const x0 = cx - (w >> 1), mx = x0 + Math.round(((m + 1) / 2) * w);
+    g.globalAlpha = this.bindA;
+    g.fillStyle = '#140c18';
+    g.fillRect(x0 - 1, top - 1, w + 2, 5);
+    g.fillStyle = left === 0 ? '#5a9cff' : '#ff6a6a';
+    g.fillRect(x0, top, mx - x0, 3);
+    g.fillStyle = left === 0 ? '#ff6a6a' : '#5a9cff';
+    g.fillRect(mx, top, x0 + w - mx, 3);
+    g.fillStyle = '#ffffff';
+    g.fillRect(mx - 1, top - 2, 2, 7);
+    g.globalAlpha = 1;
   }
 
   /** Legendary skins: hits with the weapon burst in its colours; a legendary shield flares when it blocks. */

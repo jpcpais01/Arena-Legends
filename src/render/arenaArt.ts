@@ -1,6 +1,8 @@
 import type { Pix } from './pixel/paint';
 import { buildCosmos } from './cosmosArt';
 import { buildIsle } from './isleArt';
+import { buildShrine } from './shrineArt';
+import { buildMesa } from './mesaArt';
 
 /**
  * Hand-painted (procedurally) arena backdrops. Everything is built as plain
@@ -16,7 +18,7 @@ export interface Theme {
   id: string;
   name: string;
   /** Which painter builds it. */
-  kind: 'isle' | 'cosmos';
+  kind: 'isle' | 'cosmos' | 'shrine' | 'mesa';
   /** Sky swatch (top to horizon), also used by the arena picker. */
   sky: number[];
   /** Where the main light sits (fractions of the screen) and the sun's radius. */
@@ -46,6 +48,22 @@ export const THEMES: Theme[] = [
     floor: 0x1e1d4c,
     fire: 0xb8a0ff,
   },
+  {
+    id: 'shrine', name: 'Cherry Blossom Shrine', kind: 'shrine',
+    sky: [0x4a86d6, 0x6ea4e4, 0xa4caee, 0xd4e4f2, 0xf6dce4],
+    body: { r: 14, x: 0.7, y: 0.24 },
+    mountFar: 0x8c9ec8, snow: 0xf6f8ff,
+    floor: 0x7a8794,
+    fire: 0xffb066,
+  },
+  {
+    id: 'mesa', name: 'Desert Mesa', kind: 'mesa',
+    sky: [0x34609e, 0x7290b4, 0xecb886, 0xff9a5c, 0xffc884],
+    body: { r: 24, x: 0.66, y: 0.5 },
+    mountFar: 0x8a4a5a, snow: null,
+    floor: 0xd88046,
+    fire: 0xff9a3a,
+  },
 ];
 
 export interface Layer {
@@ -57,7 +75,7 @@ export interface Layer {
   /** Slow wind drift in px/s (the layer must tile horizontally). */
   drift?: number;
   /** Ambient things drawn right after this layer. */
-  after?: 'birds' | 'floaters' | 'stars';
+  after?: 'birds' | 'floaters' | 'stars' | 'shimmer' | 'devils';
 }
 
 /** A rock floating near the arena, bobbing gently. */
@@ -93,11 +111,47 @@ export interface DayCycle {
   keys: SkyKey[];
   sunR: number;
   stars: Pix;
-  rainbow: Pix;
+  rainbow?: Pix;
   moon: Pix;
-  /** Spots that glow at night: screen x at camera 0, screen y, parallax factor, radius. */
-  lamps: { x: number; y: number; factor: number; r: number }[];
+  /**
+   * Spots that glow at night: screen x at camera 0, screen y, parallax factor, radius.
+   * `on`: the day progress at which this one lights by itself (else all come up together);
+   * `sprite`: its lit look, an index into `lit` drawn centred on it.
+   */
+  lamps: { x: number; y: number; factor: number; r: number; on?: number; sprite?: number }[];
   lampColor: number;
+  /** Lit looks of lamps (paper lanterns, lantern windows), faded in over the arena as each one lights. */
+  lit?: Pix[];
+  /** Where the moon ends up, as fractions of the width and of `hz` (default 0.26, 0.36); it rises from below the horizon a little to the left. */
+  moonAt?: [number, number];
+  /** Fireflies at night (default 18). */
+  fireflies?: number;
+  /** The sun's way across the sky: x from/to (share of the width), y from/to (share of the horizon's height), and when it gets there (share of the round). Skygrove's when unset. */
+  sunPath?: { x: [number, number]; y: [number, number]; set: number };
+  /** Scales how long shadows grow and how dark they fall (1 when unset). */
+  cast?: number;
+  shade?: number;
+  /** How golden the sun's disc is even early in the round (0 when unset). */
+  warm?: number;
+  /** Scales the light shafts (1 when unset): a low sun right behind the fight needs fewer. */
+  rays?: number;
+  /** Bright stars that twinkle once night falls, flat x, y, size (left out of `stars`). */
+  twinkle?: number[];
+  /** What drifts about at night: fireflies over the ground (the default) or embers off the markers' fire bowls. */
+  motes?: 'fireflies' | 'embers';
+}
+
+/** A windswept arena: sand blowing over the floor and kicked up by the fighters, heat shimmer, dust devils, hawks. */
+export interface Wind {
+  /** Sand, dark to light. */
+  sand: number[];
+  /** Screen rows of the far layer that shimmer in the heat. */
+  shimmer: [number, number];
+  /** The screen row dust devils wander along (on the layer marked 'devils'), and their colour. */
+  devils: number;
+  dust: number;
+  /** Colour of the hawks circling high up. */
+  hawk: number;
 }
 
 /** Living details over a nature arena. */
@@ -110,6 +164,8 @@ export interface Ambience {
   sparkle: number;
   /** Distant birds. */
   bird: number;
+  /** Petals drifting slowly down over the whole scene instead of `petals`: colours, how many behind the fighters, how many in front. */
+  fall?: { colors: number[]; n: number; front: number };
 }
 
 /** A deep-space arena: what twinkles, streaks and glows at runtime. */
@@ -147,17 +203,22 @@ export interface ArenaArt {
   floorEnd: number;
   /** Floating crystal over each pillar; without one the pillars carry burning braziers. */
   crystal: Pix | null;
+  /** Pillars carry nothing on top (no crystal, no brazier). */
+  bareTop?: boolean;
   /** Live sky and day-to-night lighting; when set, `layers` has no sky of its own. */
   cycle: DayCycle | null;
   floaters: Floater[];
   ambience: Ambience | null;
   /** Twinkles, shooting stars and starlight; arenas without one ignore it. */
   cosmos: Cosmos | null;
+  wind?: Wind;
 }
 
 /** `travel`: how far (px) the camera can travel from centre. */
 export function buildArena(theme: Theme, W: number, H: number, gy: number, travel: number, seed = 7): ArenaArt {
   if (theme.kind === 'cosmos') return buildCosmos(theme, W, H, gy, travel, seed);
+  if (theme.kind === 'shrine') return buildShrine(theme, W, H, gy, travel, seed);
+  if (theme.kind === 'mesa') return buildMesa(theme, W, H, gy, travel, seed);
   return buildIsle(theme, W, H, gy, travel, seed);
 }
 

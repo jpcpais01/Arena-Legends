@@ -11,7 +11,10 @@ import type { GearId } from '../sim/types';
 import { fitPixels } from './pixelfit';
 import { sfx } from '../audio/sfx';
 import type { EntranceId } from '../character/entrances';
-import { Entrance, wrapFrame, type EntrancePose } from '../render/entrance';
+import { Entrance, wrapFrame, type EntranceHost, type EntrancePose } from '../render/entrance';
+import type { FinisherId, PoseId } from '../character/finales';
+import { FinaleShow } from '../render/finaleShow';
+import { skinColours } from '../render/supers';
 import { Fx } from '../render/fx';
 import { SoftLights } from '../render/softLight';
 import { PPM } from '../render/sprite/animator';
@@ -73,6 +76,8 @@ export class Preview {
   private clock = 0;
   /** An entrance being shown, its effects, and the screen flash and shake it asks for. */
   private ent: Entrance | null = null;
+  /** A finisher or victory pose being shown (they take the entrance's place). */
+  private show: FinaleShow | null = null;
   private fx: Fx | null = null;
   private flashT = 0;
   private flashCol = 0xffffff;
@@ -147,15 +152,44 @@ export class Preview {
   /** Plays a pre-fight entrance on the spot (creator and shop previews), with its sounds. */
   playEntrance(id: EntranceId): void {
     if (this.still) return;
+    this.ent = new Entrance(id, this.stage(), 0, this.flip ? -1 : 1, { delay: 0.15, room: this.h - this.ground - 64 });
+    this.show = null;
+    // Hold off the next random move until it's over.
+    this.t = 0;
+    if (this.next > 0) this.next = 4.5;
+  }
+
+  /** Acts out a KO finisher on a shadow double of the hero, then the victory pose `pose`. */
+  playFinisher(id: FinisherId, pose: PoseId): void {
+    if (this.still) return;
+    const [hi, lo] = skinColours(this.bank.art.mainSkin) ?? [];
+    this.show = new FinaleShow(this.bank, this.stage(), this.flip ? -1 : 1, { finisher: id, pose, hi, lo, top: (this.h - this.ground) / PPM, room: this.w / 2 / PPM });
+    this.ent = null;
+    this.t = 0;
+    if (this.next > 0) this.next = 6;
+  }
+
+  /** Strikes a victory pose (with its little extras). */
+  playPose(id: PoseId): void {
+    if (this.still) return;
+    this.show = new FinaleShow(this.bank, this.stage(), this.flip ? -1 : 1, { pose: id });
+    this.ent = null;
+    this.t = 0;
+    if (this.next > 0) this.next = 5;
+  }
+
+  /** Clears the stage for an entrance or finale and gives it the preview's effects to play through. */
+  private stage(): EntranceHost {
     this.fx ??= new Fx();
     this.fx.clear();
     this.playing = null;
     this.soft ??= new SoftLights();
     this.soft.clear();
     this.impactT = 0;
+    this.flashT = 0;
     this.lastTip = null;
     const soft = this.soft;
-    this.ent = new Entrance(id, {
+    return {
       fx: this.fx,
       shake: (a) => { this.shakeA = Math.max(this.shakeA, a); this.shakeT = 0.25 + a * 0.3; },
       flash: (c, a) => { this.flashCol = c; this.flashT = Math.max(this.flashT, a * 0.12); },
@@ -172,10 +206,7 @@ export class Preview {
         const t = this.lastTip;
         return t ? [(t[0] - Math.round(this.w / 2) - this.shakeX) / PPM, (this.h - this.ground - t[1]) / PPM] : null;
       },
-    }, 0, this.flip ? -1 : 1, { delay: 0.15, room: this.h - this.ground - 64 });
-    // Hold off the next random move until it's over.
-    this.t = 0;
-    if (this.next > 0) this.next = 4.5;
+    };
   }
 
   /** Plays a move (a given clip, or a random one). */
@@ -187,6 +218,7 @@ export class Preview {
   dispose(): void {
     this.alive = false;
     this.ent = null;
+    this.show = null;
     cancelAnimationFrame(this.raf);
     this.unfit?.();
   }
@@ -199,8 +231,12 @@ export class Preview {
       this.shakeT -= dt;
       this.shakeX = this.shakeT > 0 ? Math.round((Math.random() - 0.5) * this.shakeA * 6 * Math.min(1, this.shakeT * 3)) : 0;
     }
-    const pose = this.ent ? this.ent.update(dt) : null;
+    let pose = this.ent ? this.ent.update(dt) : null;
     if (this.ent && !pose) this.ent = null;
+    if (this.show) {
+      if (this.show.update(dt)) pose = this.show.hero;
+      else this.show = null;
+    }
     this.fx?.update(dt);
     this.soft?.update(dt);
     if (pose) {
@@ -236,7 +272,7 @@ export class Preview {
 
   /** One frame of an entrance: the effects around the fighter, who may be faded, washed or half in the ground. */
   private drawEntrance(dt: number, pose: EntrancePose): void {
-    const g = this.g, v = this.view, ent = this.ent!, fx = this.fx!;
+    const g = this.g, v = this.view, ent = this.show ?? this.ent!, fx = this.fx!;
     g.clearRect(0, 0, this.w, this.h);
     const gx = Math.round(this.w / 2) + this.shakeX, gy = this.h - this.ground;
     if (this.pedestal) drawPedestal(g, gx, gy);
