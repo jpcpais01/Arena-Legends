@@ -12,6 +12,18 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.85.0',
+    date: '2026-10-11',
+    title: 'Three new meteors',
+    notes: [
+      'Three new legendary skins for the Meteor Sigil, each with its own fall and its own impact.',
+      'Tidefall: a globe of sea water rains spray as it falls and lands in a huge splash, a crown of water that bursts up and out, then waves roll across the sand and the drops rain back down.',
+      'Bloomfall: a glowing seed sheds petals on the way down. Where it lands, vines curl out of the ground, a giant flower opens and a storm of petals and pollen drifts across the arena.',
+      'Singularity: a tiny black hole falls through a ring of light. On impact it pulls everything in, the picture bends towards it, and then it bursts in a violet nova.',
+      'At night only their accents shine: the foam crest, the seams of the seed and the ring around the black hole.',
+    ],
+  },
+  {
     version: '0.84.0',
     date: '2026-10-11',
     title: 'Grand entrances',

@@ -18,7 +18,9 @@ export type Sfx =
   // Super attacks: the callout stingers, the power gathering, the blade ring on release
   | 'superSkill' | 'superUlt' | 'charge' | 'shing'
   // The gale bell: a bronze toll and the wind it lets loose
-  | 'bell' | 'gale';
+  | 'bell' | 'gale'
+  // Meteor skins: a crash of water
+  | 'splash';
 
 /** Elements of the super attacks, for their impact sounds (see render/supers.ts). */
 export type SfxElement = 'steel' | 'fire' | 'storm' | 'arcane' | 'soul' | 'venom' | 'earth' | 'wind';
@@ -586,6 +588,13 @@ class AudioEngine {
         this.burst(t, 1.1, 0.4, 'lowpass', 400, 1600, 0.7);
         this.burst(t + 0.05, 0.9, 0.12, 'bandpass', 1800, 900, 1.5);
         this.tone('sine', 55, 70, t, 1, 0.3);
+        break;
+      // A crash of water, then droplets pattering back down.
+      case 'splash':
+        this.burst(t, 0.12, 0.5 * k, 'highpass', 3000, 1500, 0.8, pan);
+        this.burst(t, 0.9, 0.45 * k, 'bandpass', 2200, 450, 0.7, pan);
+        this.tone('sine', 160, 70, t, 0.3, 0.3 * k, pan);
+        [0.2, 0.29, 0.37, 0.48, 0.6, 0.71].forEach((d, i) => this.tone('sine', 700 + ((i * 290) % 900), 1300 + ((i * 370) % 1000), t + d, 0.05, 0.05 * k, pan));
         break;
       // Quenching: a long hiss.
       case 'steam':
