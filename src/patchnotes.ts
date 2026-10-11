@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.69.1',
+    date: '2026-10-11',
+    title: 'Battles framed a little higher',
+    notes: [
+      'During battles the arena now sits a bit higher on screen (about 10%), so the camera no longer feels like it is looking down from too high. This works with every camera mode and every arena.',
+    ],
+  },
+  {
     version: '0.69.0',
     date: '2026-10-11',
     title: 'New Armory',
