@@ -25,6 +25,15 @@ export const PATCH_NOTES: PatchNote[] = [
     ],
   },
   {
+    version: '0.70.2',
+    date: '2026-10-11',
+    title: 'Easy install',
+    notes: [
+      'Arena Legends has a website now, with screenshots, what the game is about, and buttons to play or install it on a computer, Android or iPhone.',
+      'Its Install button opens the game with an install box: one tap installs the app, or it shows the steps for your device when your browser can\'t do it in one tap.',
+    ],
+  },
+  {
     version: '0.70.1',
     date: '2026-10-11',
     title: 'Home screen framed a little higher',
