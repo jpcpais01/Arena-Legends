@@ -12,6 +12,14 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.70.1',
+    date: '2026-10-11',
+    title: 'Home screen framed a little higher',
+    notes: [
+      'The fight playing behind the home screen now sits a bit higher too, matching the battles.',
+    ],
+  },
+  {
     version: '0.70.0',
     date: '2026-10-11',
     title: 'Global leaderboard',
