@@ -291,13 +291,13 @@ function paintMoon(): Pix {
   return p;
 }
 
-/** A few soft, flat-bottomed clouds and thin streaks (tile horizontally, they drift). */
+/** A few soft, flat-bottomed clouds and thin streaks (tile horizontally, they drift), all below where the moon rides. */
 function paintClouds(p: Pix, rng: Rng, hz: number): void {
   const pal = [0xd6dcee, 0xe8ecf6, 0xf6f7fc, 0xffffff];
   const n = Math.max(2, Math.round(p.w / 230));
   for (let i = 0; i < n; i++) {
-    const cx = (i + rng.range(0.1, 0.8)) * (p.w / n), base = rng.range(hz * 0.16, hz * 0.55);
-    const w = rng.range(46, 100), k = rng.int(4, 7);
+    const cx = (i + rng.range(0.1, 0.8)) * (p.w / n), base = rng.range(hz * 0.5, hz * 0.64);
+    const w = rng.range(40, 84), k = rng.int(4, 7);
     for (let j = 0; j < k; j++) {
       const u = rng.range(-1, 1), r = (1 - Math.abs(u) * 0.6) * w * rng.range(0.13, 0.2);
       const cy = base - r * rng.range(0.15, 0.6), rx = r * 1.7, ry = r * 0.85;
@@ -312,7 +312,7 @@ function paintClouds(p: Pix, rng: Rng, hz: number): void {
     }
   }
   for (let i = 0; i < n + 1; i++) {
-    const y = Math.round(rng.range(hz * 0.1, hz * 0.6)), x0 = rng.range(0, p.w), len = rng.range(40, 120);
+    const y = Math.round(rng.range(hz * 0.48, hz * 0.7)), x0 = rng.range(0, p.w), len = rng.range(40, 120);
     for (let x = 2; x < len - 2; x++) p.set((Math.round(x0 + x) + p.w) % p.w, y, pal[3], 200);
     for (let x = len * 0.3; x < len * 0.75; x++) p.set((Math.round(x0 + x + 8) + p.w) % p.w, y + 1, pal[1], 170);
   }
