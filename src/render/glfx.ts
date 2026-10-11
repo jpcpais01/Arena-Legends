@@ -155,7 +155,7 @@ void main() {
   } else if (kind == 1) {
     q.y /= max(a.z, 0.05);
     float e = abs(length(q) - R);
-    v = exp(-pow(e / W, 2.0)) + 0.35 * exp(-pow(e / (W * 4.0), 2.0));
+    v = exp(-pow(e / W, 2.0)) + 0.15 * exp(-pow(e / (W * 2.5), 2.0));
     core = exp(-pow(e / (W * 0.35), 2.0));
   } else if (kind == 2) {
     // A blade arc: angle along the sweep (0..1), head racing ahead, tail fading behind, tapered ends.
@@ -200,7 +200,8 @@ void main() {
     v = pow(k, 3.0) * smoothstep(R, R * 0.15, r) * smoothstep(0.0, R * 0.12, r);
     core = 0.0;
   }
-  vec3 col = mix(lo, hi, clamp(v, 0.0, 1.0)) * v + vec3(1.0) * core;
+  // Saturated colour in the body, the dark colour at the soft edges, a little white only at the very core.
+  vec3 col = mix(lo, hi, smoothstep(0.15, 0.85, v)) * v * 1.15 + vec3(1.0) * core * 0.7;
   o = vec4(col * pw, 0.0);
 }`;
 

@@ -64,8 +64,8 @@ function blow(h: SuperHost, look: SuperLook, x: number, y: number, size = 1): vo
   gl.impactFrame(look.hi, mixInk(look.lo));
   gl.shock({ x, y, r: 2.6 * size, amp: 6, life: 0.45, hi: look.hi });
   gl.zoomBlur(x, y, 0.035 * size, 0.22);
-  gl.split(1, 0.16);
-  glow(h, x, y, 0.35, 1.0 * size, look.hi, look.lo, 0.4, 0.7, { fin: 0, real: true });
+  glow(h, x, y, 0.3, 0.8 * size, look.hi, look.lo, 0.35, 0.6, { fin: 0, real: true });
+  gl.add({ kind: 'ring', x, y, r0: 0.2, r1: 1.9 * size, w: 0.06, hi: look.hi, lo: look.lo, life: 0.4, power: 1.1, fin: 0, real: true });
   gl.add({ kind: 'flare', x, y, r0: 1.0 * size, r1: 3.2 * size, w: 0.045, hi: look.hi, lo: look.lo, life: 0.45, power: 0.9, fin: 0, real: true });
   gl.add({ kind: 'rays', x, y, r0: 0.8 * size, r1: 2.2 * size, hi: look.hi, lo: look.lo, life: 0.35, power: 0.4, seed: Math.random() * 50, real: true });
   sparks(h.fx, look, x, y, Math.round(14 * size));
@@ -120,7 +120,7 @@ export function superRelease(h: SuperHost, id: string, look: SuperLook, f: At): 
     case 'skewer': {
       const thick = id === 'skewer' ? 0.13 : 0.08;
       beam(h, look, f.x + face * 0.3, 1.2, fwd, id === 'skewer' ? 3.0 : 2.6, thick, 0.26);
-      gl.add({ kind: 'ring', x: f.x + face * 0.8, y: 1.2, r0: 0.25, r1: 0.6, w: 0.05, squash: 2.4, hi: look.hi, lo: look.lo, life: 0.24, power: 0.9, fin: 0 });
+      gl.add({ kind: 'flare', x: f.x + face * 1.2, y: 1.2, r0: 0.8, r1: 1.8, w: 0.035, hi: look.hi, lo: look.lo, life: 0.22, power: 0.9, fin: 0 });
       dust(fx, f.x - face * 0.3, 5);
       break;
     }
