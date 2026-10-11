@@ -27,6 +27,7 @@ import { SpriteBank, type Sprite } from './sprite/bank';
 import { makeArt, type CharacterArt } from './sprite/look';
 import type { SkinFx } from './sprite/skins';
 import { isSuper, superLook, type SuperLook } from './supers';
+import { superImpactFx, superRelease as superReleaseFx, type SuperHost } from './superFx';
 
 const STYLE_COLOR: Record<ProjectileStyle, number> = {
   arcane: 0xc58cff, hex: 0xa04aff, wave: 0xd8f4ff, groundwave: 0xc8a070, meteor: 0xff7a1a, arrow: 0xf0e0c0,
@@ -163,6 +164,19 @@ export class BattleView implements View {
   private punchL = 0;
   private punchT = 0;
   private punchX = 0;
+  /** Super cinematics: a short zoom toward the move in every camera mode, and the letterbox bars (0..1). */
+  private cineT = 0;
+  private cineL = 0;
+  private cineX = 0;
+  private cineBars = 0;
+  /** Super animation beats waiting to play (battle seconds left). */
+  private laters: { t: number; fn: () => void }[] = [];
+  private host: SuperHost = {
+    fx: this.fx,
+    shake: (n) => this.shake(n),
+    flash: (c, n) => this.flash(c, n),
+    later: (t, fn) => { if (this.laters.length < 24) this.laters.push({ t, fn }); },
+  };
   private shakeT = 0;
   private shakeAmp = 0;
   private flashT = 0;
@@ -224,6 +238,8 @@ export class BattleView implements View {
     this.zoom = 1;
     this.level = 0;
     this.punchT = 0;
+    this.cineT = this.cineBars = 0;
+    this.laters.length = 0;
     this.layout();
   }
 
@@ -267,7 +283,9 @@ export class BattleView implements View {
 
   private layout(): void {
     const { w, h } = this.screen;
-    this.gy = h > w ? Math.round(h * 0.6) : h - Math.max(44, Math.round(h * 0.17));
+    // The ground sits 10% of the screen higher than the original framing (João, v0.69.1).
+    const lift = Math.round(h * 0.1);
+    this.gy = (h > w ? Math.round(h * 0.6) : h - Math.max(44, Math.round(h * 0.17))) - lift;
     const travel = Math.max(0, (ARENA_HALF_WIDTH + 1.8) * PPM - w / 2) + 12;
     this.arena = new ArenaView(this.theme, w, h, this.gy, travel);
   }
@@ -299,6 +317,19 @@ export class BattleView implements View {
     this.punchL = levels;
     this.punchT = seconds;
     this.punchX = x;
+  }
+
+  /** A super's cinematic: the camera leans in on `x` (in every mode) and the letterbox bars close in. */
+  private cinema(levels: number, seconds: number, x: number): void {
+    if (this.quiet) return;
+    this.cineL = Math.max(levels, this.cineT > 0 ? this.cineL : 0);
+    this.cineT = Math.max(this.cineT, seconds);
+    this.cineX = x;
+  }
+
+  /** How far the letterbox bars are in (0..1), for the HUD. */
+  get bars(): number {
+    return this.cineBars;
   }
 
   slowmo(scale: number, seconds: number): void {
@@ -352,6 +383,10 @@ export class BattleView implements View {
     }
     this.alpha = this.acc / DT;
     const vdt = this.paused ? 0 : dt * this.speed * this.slow;
+    for (let i = this.laters.length - 1; i >= 0 && vdt > 0; i--) {
+      const l = this.laters[i];
+      if ((l.t -= vdt) <= 0) { this.laters.splice(i, 1); l.fn(); }
+    }
     this.fx.update(vdt);
     this.arena.update(vdt);
     this.updateCamera(dt);
@@ -408,14 +443,22 @@ export class BattleView implements View {
       zl = Math.min(L + this.punchL, tight + 1);
       tx = mid + (this.punchX - mid) * 0.6;
     }
-    const zt = mode === 'classic' ? 1 : zl / s;
+    const cine = this.cineT > 0 && !this.paused;
+    if (cine) {
+      this.cineT -= dt;
+      zl = Math.max(zl, Math.min(L + this.cineL, tight + 1));
+      tx = mid + (this.cineX - mid) * 0.5;
+    }
+    this.cineBars += ((cine ? 1 : 0) - this.cineBars) * Math.min(1, dt * (cine ? 10 : 4));
+    if (this.cineBars < 0.01) this.cineBars = 0;
+    const zt = mode === 'classic' && !cine ? 1 : zl / s;
     // Never look past the arena's ends at the zoom we're heading for.
     const edge = Math.max(0, ARENA_HALF_WIDTH + 1.8 - sc.w / zt / 2 / PPM);
     tx = clamp(tx, -edge, edge);
     const zoomIn = zt > this.zoom;
-    this.zoom += (zt - this.zoom) * Math.min(1, dt * (zoomIn ? (this.punchT > 0 ? 16 : 6) : 4));
+    this.zoom += (zt - this.zoom) * Math.min(1, dt * (zoomIn ? (this.punchT > 0 ? 16 : cine ? 11 : 6) : cine ? 6 : 4));
     if (Math.abs(zt - this.zoom) < 0.004) this.zoom = zt;
-    this.viewX += (tx - this.viewX) * Math.min(1, dt * (this.punchT > 0 ? 9 : 5));
+    this.viewX += (tx - this.viewX) * Math.min(1, dt * (this.punchT > 0 || cine ? 9 : 5));
     this.viewY += (ty - this.viewY) * Math.min(1, dt * 4);
     // The buffer is drawn as far as the arena art reaches; the zoom crop looks past that.
     const half = sc.w / 2 / PPM;
@@ -652,6 +695,7 @@ export class BattleView implements View {
     if (sup && superK > 0.05) tint(css(sup.hi), (0.08 + 0.26 * superK) * (Math.floor(this.time * 20) & 1 ? 1 : 0.7));
     else if (superHot) tint(css(sup!.hi), 0.22);
     if (sup && superK > 0 && dt > 0 && !hidden) this.superCharge(f, v, s, sup, superK, x, y, flip);
+    else if (superHot && dt > 0 && !hidden) this.superTrail(f, v, s, sup!, x, y, flip);
     else if (alive && dt > 0 && f.item && !hidden) this.ultCharge(f, v, x, y);
 
     // Status particles.
@@ -1942,7 +1986,12 @@ export class BattleView implements View {
     this.play('charge', pan, look.ult ? 0.8 : 1);
     this.fx.pulse('implode', f.x, f.y + 1.1, 1.7, look.hi, 0.4, look.lo);
     this.fx.pulse('groundRing', f.x, 0, 1.6, look.lo, 0.4);
-    if (look.ult) { this.flash(look.hi, 0.4); this.superBeat(0.35, 0.7); }
+    if (look.ult) {
+      this.flash(look.hi, 0.4);
+      this.superBeat(0.3, 0.8);
+      this.cinema(1, 1.1, f.x);
+      this.fx.pulse('focus', f.x, f.y + 1.6, 3.2, look.hi, 0.5, look.lo);
+    }
     if (v) v.chargeT = 0;
   }
 
@@ -1954,6 +2003,16 @@ export class BattleView implements View {
     this.fx.gather(at[0], at[1], 1.0 - k * 0.35, 2 + Math.round(k * 2), look.hi, look.lo, k > 0.5 ? 'twinkle' : 'streak');
     // Dust lifts off the ground around the feet as it peaks.
     if (k > 0.55) this.fx.burst({ x, y: 0.05, count: 1, jitter: 0.5, dir: Math.PI / 2, spread: 0.2, speed: [0.6, 1.4], life: [0.3, 0.5], color: look.hi, color2: look.lo, kind: 'ember' });
+  }
+
+  /** A melee super striking: the weapon's edge leaves a stream of its own sparks. */
+  private superTrail(f: Fighter, v: FighterView, s: Sprite, look: SuperLook, x: number, y: number, flip: boolean): void {
+    if ((v.chargeT -= this.lastDt) > 0) return;
+    v.chargeT = 0.02;
+    const tx = s.tip ? x + (flip ? -s.tip[0] : s.tip[0]) / PPM : x + f.facing * 0.6;
+    const ty = s.tip ? y + (v.out.hop - s.tip[1]) / PPM : y + 1.2;
+    this.fx.burst({ x: tx, y: ty, count: 2, jitter: 0.06, speed: [0.2, 1.2], life: [0.18, 0.36], color: 0xffffff, color2: look.hi, drag: 3, kind: 'twinkle' });
+    this.fx.burst({ x: tx, y: ty, count: 1, jitter: 0.1, speed: [0.4, 1.6], life: [0.3, 0.55], color: look.hi, color2: look.lo, drag: 2, kind: look.kind });
   }
 
   /** An item ultimate charging: power gathers on the item at the back shoulder. */
@@ -1976,8 +2035,11 @@ export class BattleView implements View {
     fx.burst({ x: f.x, y: cy, count: 10, jitter: 0.1, jitterY: 0.5, dir: f.facing > 0 ? Math.PI : 0, spread: 0.08, speed: [6, 11], life: [0.12, 0.22], color: 0xffffff, color2: look.hi, kind: 'streak' });
     fx.burst({ x: f.x - f.facing * 0.2, y: 0.1, count: 6, jitter: 0.2, dir: Math.PI / 2 - f.facing * 0.9, spread: 0.35, speed: [1.5, 3.5], life: [0.35, 0.6], color: 0xd8c8b0, color2: 0x8a7a70, kind: 'smoke', size: 3, drag: 1.5 });
     if (!this.quiet) sfx.kiai(pan, VOICE[f.form] ?? 1);
-    // Time slows as the strike comes out, and catches up after the impact.
-    this.superBeat(0.3, 0.6);
+    // Its own signature move, focus lines, and the camera leaning in as time slows.
+    superReleaseFx(this.host, ab.id, look, f);
+    fx.pulse('focus', cx, cy, 3, look.hi, 0.42, look.lo);
+    this.superBeat(0.25, 0.7);
+    this.cinema(1, 0.85, cx);
     if (look.el === 'steel' || look.el === 'wind') this.play('shing', pan);
     this.shake(0.18);
   }
@@ -1992,6 +2054,8 @@ export class BattleView implements View {
     fx.pulse('ring', x, y, 1.2 * k + 0.3, hi, 0.3, lo);
     if (!this.quiet) sfx.superHit(look.el, this.pan(x), k);
     if (blocked) return;
+    if (first) fx.pulse('focus', x, y, 2.6, hi, 0.3, lo);
+    if (ab.id !== 'meteor' && superImpactFx(this.host, ab.id, look, x, y, face, first, this.lx(att))) return this.superLanded(first, x, look);
     switch (look.el) {
       case 'steel':
       case 'wind': {
@@ -2036,7 +2100,18 @@ export class BattleView implements View {
         fx.burst({ x, y: 0.2, count: Math.round(18 * k), jitter: 0.5, dir: Math.PI / 2, spread: 0.9, speed: [3, 7], life: [0.4, 0.8], color: hi, color2: lo, gravity: 16, size: 2 });
         break;
     }
-    if (first) { this.shake(0.35); this.punchIn(1, 0.4, x); this.arena?.cheer(0.4); }
+    this.superLanded(first, x, look);
+  }
+
+  /** The first blow of a super lands: a deep hit-stop, the camera snaps onto it, the crowd roars. */
+  private superLanded(first: boolean, x: number, look: SuperLook): void {
+    if (!first) return;
+    this.superBeat(0.12, 0.42);
+    this.shake(0.4);
+    this.flash(look.hi, 0.25);
+    this.punchIn(1, 0.45, x);
+    this.cinema(this.camMode === 'classic' ? 1 : 2, 0.55, x);
+    this.arena?.cheer(0.4);
   }
 
   /** Legendary skins: hits with the weapon burst in its colours; a legendary shield flares when it blocks. */

@@ -53,12 +53,13 @@ export interface Burst {
  * - slash: a crescent blade arc swept across a point (super strikes), `x2` the facing;
  * - implode: a ring closing in on a point (a super gathering power);
  * - rays: speed lines bursting out of a point (a super let loose);
+ * - focus: anime focus lines closing in on a point from far round it, flickering (a super's big moment);
  * - gust: wind fronts racing out to both sides of a point, broken into
  *   dashes, with curls at their tips (the gale bell).
  */
 interface Pulse {
   kind: 'ring' | 'star' | 'groundRing' | 'crack' | 'pillar' | 'bolt' | 'cloud' | 'clock' | 'runes' | 'eye' | 'swirl' | 'coin' | 'icicles'
-    | 'slash' | 'implode' | 'rays' | 'gust';
+    | 'slash' | 'implode' | 'rays' | 'focus' | 'gust';
   x: number; y: number;
   r: number;
   t: number; max: number;
@@ -304,6 +305,8 @@ export class Fx {
         if (r >= 1) ellipseOutline(g, cx, cy, r, r * 0.8, css(k > 0.6 ? q.color2 : q.color), k < 0.3 ? 0.5 : 1);
       } else if (q.kind === 'rays') {
         drawRays(g, q, cx, cy, k);
+      } else if (q.kind === 'focus') {
+        drawFocus(g, q, cx, cy, k);
       } else if (q.kind === 'gust') {
         drawGust(g, q, cx, cy, k);
       } else if (q.kind === 'pillar') {
@@ -428,7 +431,7 @@ export class Fx {
 const BOLT_PTS: number[] = [];
 
 /** Pixel line in the current fill colour. */
-function pxLine(g: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number): void {
+export function pxLine(g: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number): void {
   const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0);
   const sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
   let err = dx + dy;
@@ -612,6 +615,26 @@ function drawRays(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number,
     pxLine(g, Math.round(cx + Math.cos(a) * r0), Math.round(cy + Math.sin(a) * r0 * 0.75),
       Math.round(cx + Math.cos(a) * r1), Math.round(cy + Math.sin(a) * r1 * 0.75));
   }
+}
+
+/**
+ * Focus lines: thin streaks pointing in at the centre from well outside it,
+ * redrawn at new angles every few frames so they flicker like a manga panel.
+ * Fades from the outside in.
+ */
+function drawFocus(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+  const R = q.r * PPM, inner = R * 0.32;
+  let s = q.seed * 31 + Math.floor(q.t * 24) * 977;
+  const rnd = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
+  g.globalAlpha = k < 0.15 ? k / 0.15 : 1 - (k - 0.15) / 0.85 * 0.85;
+  for (let i = 0; i < 34; i++) {
+    const a = rnd() * Math.PI * 2;
+    const r0 = inner * (0.9 + rnd() * 0.6), r1 = R * (1.1 + rnd() * 0.5);
+    g.fillStyle = css(i % 3 ? q.color : q.color2);
+    pxLine(g, Math.round(cx + Math.cos(a) * r0), Math.round(cy + Math.sin(a) * r0 * 0.7),
+      Math.round(cx + Math.cos(a) * r1), Math.round(cy + Math.sin(a) * r1 * 0.7));
+  }
+  g.globalAlpha = 1;
 }
 
 /** One-pixel ellipse outline (dithered when fading). */

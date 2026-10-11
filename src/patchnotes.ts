@@ -12,6 +12,65 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.71.0',
+    date: '2026-10-11',
+    title: 'New special item: the Gale Bell',
+    notes: [
+      'New special item, the Gale Bell: a bronze bell that floats at your shoulder. When the enemy gets close it tolls, and a gale bursts out around you that hurls them far away, stuns them for a moment and breaks off whatever attack they were winding up. It rings again after 20 seconds.',
+      'Made for archers and casters who want their distance back, and it also gives +8% move speed. Thrown into a wall, the enemy splats against it for extra damage.',
+      "Watch the wind rune on the bell: it glows when the bell is ready and goes dark while it recharges. A quick dodge can slip through the gale if you see the bell start to swing.",
+      'Fighters know how to use it: they ring it when you are mid-swing, stuck, or out of dodges, and they are careful about stepping into a ready bell themselves.',
+    ],
+  },
+  {
+    version: '0.70.1',
+    date: '2026-10-11',
+    title: 'Home screen framed a little higher',
+    notes: [
+      'The fight playing behind the home screen now sits a bit higher too, matching the battles.',
+    ],
+  },
+  {
+    version: '0.70.0',
+    date: '2026-10-11',
+    title: 'Global leaderboard',
+    notes: [
+      'New global leaderboard: the podium button next to Friends on the menu shows the top 100 players, ranked by wins or by level.',
+      'Tap anyone in the top 25 to see their hero, their body and fighting style, and every piece of gear and skin they have equipped. You can send them a friend request from there too.',
+      'Every signed-in player is on the board automatically, and your row updates after your fights. Guests can browse it as well, and sign in to join.',
+    ],
+  },
+  {
+    version: '0.69.1',
+    date: '2026-10-11',
+    title: 'Battles framed a little higher',
+    notes: [
+      'During battles the arena now sits a bit higher on screen (about 10%), so the camera no longer feels like it is looking down from too high. This works with every camera mode and every arena.',
+    ],
+  },
+  {
+    version: '0.69.0',
+    date: '2026-10-11',
+    title: 'New Armory',
+    notes: [
+      'The Armory is rebuilt and reads left to right: pick a slot, see your fighter, pick an item, read its card.',
+      'Picking a slot shows the item you wear there right away, with its stats, skills and skins. No more popup to open and close.',
+      'Tapping another item tries it on your fighter and shows only the stats that would change. Tap Equip, or tap the item again, to wear it.',
+      'Skins sit in a row at the bottom of the card, one tap to change. Your fighter is bigger too.',
+    ],
+  },
+  {
+    version: '0.68.0',
+    date: '2026-10-11',
+    title: 'Supers go cinematic',
+    notes: [
+      'Super attack names are much bigger and hit harder: each letter slams in one after another in the move\'s colours, over an angled plate with a SUPER or ULTIMATE tag.',
+      'Supers are now a proper cinematic moment: widescreen bars close in, the camera leans in on the move in every camera mode, manga focus lines frame it, and time slows harder as the blow lands.',
+      'Every main weapon super has its own animation now: Rising Cleave throws a column of light, Iaido Dash leaves a cross cut a beat after the draw, Grave Harvest tears the soul back to the reaper, Crescent Chop splits the floor, and more.',
+      'Weapon skins play their super in their own colours and particles (flames, petals, snowflakes...), and the blade leaves a trail of its sparks as it strikes.',
+    ],
+  },
+  {
     version: '0.67.0',
     date: '2026-10-10',
     title: 'Arena Cup and hero levels',
