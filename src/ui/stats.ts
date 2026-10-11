@@ -22,6 +22,12 @@ export function statLines(form: FormId, gear: GearSet, train?: Training): HTMLEl
   return LINES.flatMap(([k, label, f]) => [h('span', null, label), h('b', null, f(s[k] as number))]);
 }
 
+/** Every stat of a build as an inspector cell (for an `.st` grid). */
+export function statCells(form: FormId, gear: GearSet, train?: Training): HTMLElement[] {
+  const s = computeBaseStats(form, gear, train);
+  return LINES.map(([k, label, f]) => h('div.st', null, h('span', null, label), h('b', null, f(s[k] as number))));
+}
+
 /** One-line summary of a gear piece's stat changes, e.g. "+10 armor · +6% attack speed". */
 export function modText(add?: Partial<Stats>, mul?: Partial<Stats>, skip?: ReadonlySet<keyof Stats>): string {
   const names: Partial<Record<keyof Stats, string>> = {
