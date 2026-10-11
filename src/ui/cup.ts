@@ -1,11 +1,8 @@
-// Arena Cup screens: the start sheet (solo or with friends), the lobby where
-// friends gather, and the cup itself: the round track, your next match and the
-// whole 32-fighter bracket.
+// Tournament screens: the lobby where friends gather, and the cup itself: the
+// round track, your next match and the whole bracket (8 to 32 fighters).
 import { sfx } from '../audio/sfx';
 import { DEFAULT_LOOK, SPECIES } from '../character/appearance';
-import { cupWinXp, CHAMPION_GEMS } from '../character/progress';
-import { winGems } from '../character/collection';
-import { champion, entrantAt, matchCount, openRound, pathOf, ROUND_COUNT, ROUNDS, statusOf, type Cup, type Entrant } from '../cup/cup';
+import { champion, cupPay, entrantAt, matchCount, openRound, pathOf, roundOf, roundsOf, statusOf, tournamentOfCup, type Cup, type Entrant } from '../cup/cup';
 import type { LobbyMember } from '../net/cupLobby';
 import { applyBackdrop, BH, BW } from '../render/backdrops';
 import { FORMS } from '../sim/forms';
@@ -18,45 +15,6 @@ import { copy, inviteLink } from './online';
 import { Preview } from './preview';
 import { statCells } from './stats';
 import { levelBadge } from './xp';
-
-// --- Start sheet -------------------------------------------------------------------------------
-
-export interface CupStartCallbacks {
-  onSolo(): void;
-  onFriends(): void;
-}
-
-/** "Arena Cup": what it is, and two ways in. */
-export function openCupStart(parent: HTMLElement, cb: CupStartCallbacks): void {
-  const onKey = (e: KeyboardEvent) => {
-    e.stopImmediatePropagation();
-    if (e.key === 'Escape') { sfx.play('ui'); close(); }
-  };
-  const close = () => { window.removeEventListener('keydown', onKey, true); wrap.remove(); };
-  const go = (f: () => void) => () => { sfx.play('confirm'); close(); f(); };
-  const track = h('div.cs-track', null, ...ROUNDS.flatMap((r, i) => [
-    i ? h('i.cs-line') : null,
-    h(`span.cs-node${i === ROUND_COUNT - 1 ? '.final' : ''}`, null, h('b', null, i === ROUND_COUNT - 1 ? icon('trophy') : String(i + 1)), h('small', null, r.short)),
-  ]));
-  const wrap: HTMLDivElement = h<HTMLDivElement>('div.sheet-wrap', { onclick: (e: Event) => { if (e.target === wrap) { sfx.play('ui'); close(); } } },
-    h('div.sheet.plate.cup-start', { role: 'dialog', 'aria-label': 'Arena Cup', style: { width: 'min(640px, 100%)' } },
-      h('div.sheet-head', null, h('h2', null, icon('trophy'), 'Arena Cup'),
-        h('button.btn.icon', { title: 'Close', 'aria-label': 'Close', onclick: () => { sfx.play('ui'); close(); } }, icon('close'))),
-      h('div.sheet-body.cs-body', null,
-        h('p.muted.cs-intro', null, '32 fighters, five knockout rounds, one loss and you are out. Every win pays gems and XP, more the deeper you go.'),
-        track,
-        h('div.cs-opts', null,
-          h('section.online-opt.host', null,
-            h('b', null, 'Solo'),
-            h('p.muted', null, 'You and 31 challengers. Tune your gear and stats between rounds.'),
-            h('button.btn.primary.go', { onclick: go(cb.onSolo) }, icon('trophy'), 'Enter the cup')),
-          h('section.online-opt', null,
-            h('b', null, 'With friends'),
-            h('p.muted', null, 'Up to 8 heroes in one bracket. Builds lock when it starts.'),
-            h('button.btn', { onclick: go(cb.onFriends) }, icon('friends'), 'Open a lobby'))))));
-  window.addEventListener('keydown', onKey, true);
-  parent.appendChild(wrap);
-}
 
 // --- The cup screen ------------------------------------------------------------------------------
 
@@ -92,6 +50,7 @@ export class CupScreen {
   private track = h('nav.cup-track', { 'aria-label': 'Rounds' });
   private main = h('section.cup-main.frame');
   private bracket = h('section.cup-bracket.frame');
+  private title = h('h1', null, 'Arena Cup');
   private leave = h<HTMLButtonElement>('button.btn.sm.cup-leave', { title: 'Give up this cup', onclick: () => this.cb.onLeave() }, icon('exit'), h('span', null, 'Give up'));
   private onKey = (e: KeyboardEvent) => {
     if (e.target instanceof HTMLInputElement) return;
@@ -101,7 +60,7 @@ export class CupScreen {
   constructor(private readonly cb: CupScreenCallbacks) {
     this.el = h('div.scr.cup', { role: 'dialog', 'aria-label': 'Arena Cup' },
       h('header.scr-head', null,
-        h('div.scr-title', null, h('h1', null, 'Arena Cup')),
+        h('div.scr-title', null, this.title),
         this.track,
         this.leave,
         h('button.btn.icon.close', { title: 'Menu', 'aria-label': 'Back to the menu', onclick: () => { sfx.play('back'); cb.onMenu(); } }, icon('home'))),
@@ -114,14 +73,17 @@ export class CupScreen {
     this.disposePreviews();
     const { cup } = v;
     const st = statusOf(cup);
+    const N = roundsOf(cup);
+    this.title.textContent = tournamentOfCup(cup).name;
+    this.el.setAttribute('aria-label', tournamentOfCup(cup).name);
     this.leave.hidden = st.kind !== 'play';
-    this.el.classList.toggle('decided', openRound(cup) >= ROUND_COUNT);
-    const now = st.kind === 'play' ? st.round : st.kind === 'out' ? st.round : ROUND_COUNT;
-    this.track.replaceChildren(...some(ROUNDS.flatMap((r, i) => [
+    this.el.classList.toggle('decided', openRound(cup) >= N);
+    const now = st.kind === 'play' ? st.round : st.kind === 'out' ? st.round : N;
+    this.track.replaceChildren(...some(Array.from({ length: N }, (_, i) => roundOf(cup, i)).flatMap((r, i) => [
       i ? h(`i.ct-line${i <= now ? '.done' : ''}`) : null,
-      h(`span.ct-node${i < now || st.kind === 'champion' ? '.done' : i === now ? (st.kind === 'out' ? '.lost' : '.on') : ''}${i === ROUND_COUNT - 1 ? '.final' : ''}`,
+      h(`span.ct-node${i < now || st.kind === 'champion' ? '.done' : i === now ? (st.kind === 'out' ? '.lost' : '.on') : ''}${i === N - 1 ? '.final' : ''}`,
         { title: `${r.name} · ${r.sub}` },
-        h('b', null, i === ROUND_COUNT - 1 ? icon('trophy') : st.kind === 'out' && i === now ? icon('close') : i < now || st.kind === 'champion' ? icon('check') : String(i + 1)),
+        h('b', null, i === N - 1 ? icon('trophy') : st.kind === 'out' && i === now ? icon('close') : i < now || st.kind === 'champion' ? icon('check') : String(i + 1)),
         h('small', null, r.short)),
     ])));
     this.main.replaceChildren(...some(this.panel(v)));
@@ -145,18 +107,20 @@ export class CupScreen {
       h('span', null, h('small', null, 'This cup'), h('b', null, `+${fmtInt(cup.xp)} XP`)),
       h('span', null, h('small', null, 'Gems won'), gemTag(`+${fmtInt(cup.gems)}`)));
     if (st.kind === 'play') {
-      const r = ROUNDS[st.round];
+      const r = roundOf(cup, st.round);
+      const N = roundsOf(cup);
       const youI = cup.me;
       const themI = entrantAt(cup, st.round, st.match, st.side === 0 ? 1 : 0);
       const head = [
         h('div.ribbon.cup-ribbon', null, h('span', null, r.name)),
-        h('p.cup-round', null, `Round ${st.round + 1} of ${ROUND_COUNT} · ${r.sub}`),
+        h('p.cup-round', null, `Round ${st.round + 1} of ${N} · ${r.sub}`),
       ];
       if (themI < 0 || v.busy) {
         return [...head, h('div.cup-wait', null, h('span.spinner'), h('span', null, 'The other fights are on. Your opponent is coming…')), summary];
       }
       const you = cup.entrants[youI], them = cup.entrants[themI];
-      const pay = `Win: +${cupWinXp(st.round, 0)}–${cupWinXp(st.round, 1)} XP · +${winGems(0)}–${winGems(1)} gems${st.round === ROUND_COUNT - 1 ? ` · +${CHAMPION_GEMS} champion bonus` : ''}`;
+      const lo = cupPay(cup, st.round, true, 0), hi = cupPay(cup, st.round, true, 1);
+      const pay = `Win: +${lo.xp}–${hi.xp} XP · +${lo.gems}–${hi.gems} gems${lo.bonus ? ` · +${lo.bonus} champion bonus` : ''}`;
       const tools = cup.shared
         ? h('p.cup-lock', null, icon('lock'), 'Builds are locked for this cup')
         : h('div.cup-tools', null,
@@ -170,8 +134,8 @@ export class CupScreen {
           h('button.btn.primary.big.fight.go', { onclick: () => this.cb.onFight() }, icon('swords'), h('span', null, 'Fight'))),
       ];
     }
-    const decided = openRound(cup) >= ROUND_COUNT;
-    const r = ROUNDS[st.kind === 'out' ? st.round : 0];
+    const decided = openRound(cup) >= roundsOf(cup);
+    const r = roundOf(cup, st.kind === 'out' ? st.round : 0);
     if (decided) {
       const ci = champion(cup);
       if (st.kind === 'out') summary.prepend(h('span', null, h('small', null, 'Your run'), h('b', null, `Out in ${r.short}`)));
@@ -211,13 +175,16 @@ export class CupScreen {
     applyBackdrop(art, look.backdrop);
     p.fitTo(art);
     const who = you ? 'You' : e.human ? 'Friend' : 'Challenger';
+    const name = tournamentOfCup(cup).name;
+    const last = roundsOf(cup) - 1;
     const road = pathOf(cup, ci).map(({ round, opp, res }) => {
       const o = cup.entrants[opp];
       const pct = Math.round((res?.hp ?? 0) * 100);
       const tone = pct > 50 ? 'hi' : pct > 25 ? 'mid' : 'lo';
-      return h(`div.cr-step.${tone}${round === ROUND_COUNT - 1 ? '.final' : ''}`,
-        { title: `${ROUNDS[round].name}: beat ${o.build.name} (Lv ${o.level}) ${res?.ko ? 'by K.O.' : 'on time'}, ${pct}% health left` },
-        h('div.cr-step-top', null, h('small', null, ROUNDS[round].short), h('b', null, `${pct}%`, h('em', null, res?.ko ? 'KO' : 'Time'))),
+      const rd = roundOf(cup, round);
+      return h(`div.cr-step.${tone}${round === last ? '.final' : ''}`,
+        { title: `${rd.name}: beat ${o.build.name} (Lv ${o.level}) ${res?.ko ? 'by K.O.' : 'on time'}, ${pct}% health left` },
+        h('div.cr-step-top', null, h('small', null, rd.short), h('b', null, `${pct}%`, h('em', null, res?.ko ? 'KO' : 'Time'))),
         h('div.cr-hp', null, h('i', { style: { '--w': `${pct}%` } })),
         h('span.cr-opp', null, `vs ${o.build.name}`));
     });
@@ -225,7 +192,7 @@ export class CupScreen {
       h('div.cr-hero', null,
         art,
         h('div.cr-info', null,
-          h('div.cr-kicker', null, icon('trophy'), h('span', null, you ? 'You won the Arena Cup!' : 'Arena Cup champion')),
+          h('div.cr-kicker', null, icon('trophy'), h('span', null, you ? `You won the ${name}!` : `${name} champion`)),
           h('div.cr-name', null, c.name),
           h('div.cr-sub', null, levelBadge(e.level), h('span', null, `${who} · ${SPECIES[look.species].name} · ${FORMS[c.form].name}`)),
           h('div.cf-gear.cr-gear', null, ...gearIcons(c).map((g) => h('span.sock', null, g))),
@@ -265,9 +232,10 @@ export class CupScreen {
 /** The whole bracket: a column per round, matches paired with connector lines, the trophy at the end. */
 function bracketView(cup: Cup, fresh?: Set<string>): HTMLElement {
   const st = statusOf(cup);
+  const N = roundsOf(cup);
   // Your path: every match you are in.
   const mine = new Set<string>();
-  for (let r = 0; r < ROUND_COUNT; r++) {
+  for (let r = 0; r < N; r++) {
     const m = cup.me >> (r + 1);
     if (entrantAt(cup, r, m, ((cup.me >> r) & 1) as 0 | 1) === cup.me) mine.add(mk(r, m));
   }
@@ -292,18 +260,18 @@ function bracketView(cup: Cup, fresh?: Set<string>): HTMLElement {
       row(r, m, 0), row(r, m, 1));
   };
   const cols: HTMLElement[] = [];
-  for (let r = 0; r < ROUND_COUNT; r++) {
-    const n = matchCount(r);
+  for (let r = 0; r < N; r++) {
+    const n = matchCount(r, cup.entrants.length);
     const body: HTMLElement[] = [];
     if (n === 1) body.push(h('div.bk-pair.solo', null, match(r, 0)));
     else for (let m = 0; m < n; m += 2) body.push(h('div.bk-pair', null, match(r, m), match(r, m + 1)));
-    cols.push(h(`div.bk-col${r === ROUND_COUNT - 1 ? '.last' : ''}`, null,
-      h('div.bk-head', null, ROUNDS[r].name), h('div.bk-body', null, ...body)));
+    cols.push(h(`div.bk-col${r === N - 1 ? '.last' : ''}`, null,
+      h('div.bk-head', null, roundOf(cup, r).name), h('div.bk-body', null, ...body)));
   }
-  const ci = openRound(cup) >= ROUND_COUNT ? champion(cup) : -1;
+  const ci = openRound(cup) >= N ? champion(cup) : -1;
   const won = ci >= 0 ? cup.entrants[ci] : null;
   cols.push(h('div.bk-col.trophy', null, h('div.bk-head', null, 'Champion'),
-    h('div.bk-body', null, h(`div.bk-champ${won ? '.won' : ''}${ci === cup.me ? '.me' : ''}${fresh?.has(mk(ROUND_COUNT - 1, 0)) ? '.fresh' : ''}`, null,
+    h('div.bk-body', null, h(`div.bk-champ${won ? '.won' : ''}${ci === cup.me ? '.me' : ''}${fresh?.has(mk(N - 1, 0)) ? '.fresh' : ''}`, null,
       icon('trophy'), h('b', null, won ? won.build.name : '?')))));
   return h('div.bk', null, ...cols);
 }
@@ -320,6 +288,8 @@ export interface CupLobbyView {
   error?: string;
   code: string;
   members: LobbyMember[];
+  /** The tournament's name and bracket size. */
+  tour: { name: string; size: number };
   /** Host only: friends to invite (null while loading), or why there are none to show. */
   friends?: LobbyFriend[] | null | 'signed-out' | 'error';
 }
@@ -357,7 +327,8 @@ export class CupLobbyScreen {
     for (const p of this.previews) p.dispose();
     this.previews = [];
     const host = v.role === 'host';
-    const slots = Array.from({ length: 8 }, (_, i) => {
+    const cap = Math.min(8, v.tour.size);
+    const slots = Array.from({ length: cap }, (_, i) => {
       const m = v.members[i];
       if (!m) return h('div.cl-slot.empty', null, h('span.sock', null, icon('addUser')), h('small', null, 'Open slot'));
       const c = m.build;
@@ -372,9 +343,9 @@ export class CupLobbyScreen {
     });
     const n = v.members.length;
     this.party.replaceChildren(
-      h('div.ribbon', null, h('span', null, `Party ${n}/8`)),
+      h('div.ribbon', null, h('span', null, `Party ${n}/${cap}`)),
       h('div.cl-slots', null, ...slots),
-      h('p.muted.cl-note', null, `${32 - n} challengers fill the rest of the bracket. Friends are spread out, so you meet as late as possible.`));
+      h('p.muted.cl-note', null, `${v.tour.name}: ${v.tour.size - n > 0 ? `${v.tour.size - n} challengers fill the rest of the bracket. ` : ''}Friends are spread out, so you meet as late as possible.`));
 
     // Right side: the room code, and (host) friends to invite.
     const status = (t: string) => h('div.lobby-status', null, h('span.spinner'), t);
@@ -403,7 +374,7 @@ export class CupLobbyScreen {
           const joined = inRoom.has(fr.uid);
           const st = joined ? 'joined' : fr.invite;
           const label = st === 'joined' ? 'In the party' : st === 'sending' ? 'Sending…' : st === 'open' ? 'Invited' : st === 'declined' ? 'Declined' : st === 'expired' ? 'No answer' : st === 'failed' ? "Couldn't send" : '';
-          const can = !joined && st !== 'sending' && st !== 'open' && n < 8;
+          const can = !joined && st !== 'sending' && st !== 'open' && n < cap;
           return h(`div.cl-friend${fr.online ? '.online' : ''}${joined ? '.joined' : ''}`, null,
             h('i.dot', { title: fr.online ? 'Online' : 'Offline' }),
             h('b', null, fr.name),
@@ -420,7 +391,7 @@ export class CupLobbyScreen {
       host ? h<HTMLButtonElement>('button.btn.primary.big.go.cl-start', {
         disabled: v.state !== 'open',
         onclick: () => { sfx.play('confirm'); this.cb.onStart(); },
-      }, icon('trophy'), h('span', null, n > 1 ? `Start with ${n} players` : 'Start the cup')) : null]));
+      }, icon('trophy'), h('span', null, n > 1 ? `Start with ${n} players` : `Start the ${v.tour.name}`)) : null]));
   }
 
   dispose(): void {

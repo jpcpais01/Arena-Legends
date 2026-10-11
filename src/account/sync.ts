@@ -55,6 +55,12 @@ const MERGERS: Record<string, (local: unknown, cloud: unknown) => unknown> = {
     used: union((a as { used?: unknown })?.used, (b as { used?: unknown })?.used),
     admin: (a as { admin?: unknown })?.admin === true || (b as { admin?: unknown })?.admin === true,
   }),
+  // Tournament titles (world map): the larger count of each.
+  'al.world': (a, b) => {
+    const w = (x: unknown) => ((x as { wins?: unknown })?.wins && typeof (x as { wins?: unknown }).wins === 'object' ? (x as { wins: Record<string, unknown> }).wins : {});
+    const A = w(a), B = w(b);
+    return { wins: Object.fromEntries([...new Set([...Object.keys(A), ...Object.keys(B)])].map((k) => [k, Math.max(Number(A[k]) || 0, Number(B[k]) || 0)])) };
+  },
   // Skins pulled on either side are kept; the bigger gem purse wins.
   'al.collection': (a, b) => {
     const o = (x: unknown) => (x && typeof x === 'object' ? x as Record<string, unknown> : {});

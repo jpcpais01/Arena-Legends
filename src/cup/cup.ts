@@ -8,10 +8,13 @@
 // everyone else); bot against bot is settled by a seeded roll on their levels.
 import { Rng } from '../core/rng';
 import { generateRival, parseCharacter, type PlayerCharacter } from '../character/profile';
-import { pointsAt } from '../character/progress';
+import { winGems } from '../character/collection';
+import { CHAMPION_GEMS, CHAMPION_XP, cupLossXp, cupWinXp, FINALIST_GEMS, pointsAt } from '../character/progress';
 import type { CharacterBuild } from '../sim/loadout';
 import { autoTraining, strHash } from '../sim/training';
+import { tournamentOf, type Tournament } from '../world/world';
 
+/** The biggest bracket, and how many rounds it takes. Smaller tournaments (16, 8) skip the first rounds. */
 export const CUP_SIZE = 32;
 export const ROUND_COUNT = 5;
 /** Players (you and friends) a cup takes at most: one in each eighth of the bracket. */
@@ -41,6 +44,8 @@ export interface MatchResult { w: 0 | 1; hp: number; ko: boolean }
 export interface Cup {
   v: 1;
   id: string;
+  /** Which tournament (world/world.ts); cups saved before the world map are the Arena Cup. */
+  t?: string;
   seed: number;
   /** When it started (ms). */
   at: number;
@@ -59,7 +64,30 @@ export interface Cup {
   paid?: boolean;
 }
 
-export const matchCount = (r: number) => CUP_SIZE >> (r + 1);
+export const matchCount = (r: number, size = CUP_SIZE) => size >> (r + 1);
+
+/** How many rounds a cup has: five for 32 fighters, four for 16, three for 8. */
+export const roundsOf = (cup: Cup) => Math.round(Math.log2(cup.entrants.length));
+/** A round's place among the five named rounds (an 8-fighter cup starts at the quarter-finals). */
+export const stageOf = (cup: Cup, r: number) => ROUND_COUNT - roundsOf(cup) + r;
+export const roundOf = (cup: Cup, r: number): RoundDef => ROUNDS[stageOf(cup, r)];
+export const tournamentOfCup = (cup: Cup): Tournament => tournamentOf(cup.t);
+
+export interface CupPay { xp: number; gems: number; bonus: number; bonusXp: number }
+/**
+ * What your match in round `r` pays: XP (more for a win, and for health kept),
+ * gems for a win, and the title bonus in the final; all scaled by the
+ * tournament's purse.
+ */
+export function cupPay(cup: Cup, r: number, won: boolean, hp: number): CupPay {
+  const k = tournamentOfCup(cup).pay, st = stageOf(cup, r), final = r === roundsOf(cup) - 1;
+  return {
+    xp: Math.round((won ? cupWinXp(st, hp) : cupLossXp(st)) * k),
+    gems: won ? Math.round(winGems(hp) * k) : 0,
+    bonus: final ? Math.round((won ? CHAMPION_GEMS : FINALIST_GEMS) * k) : 0,
+    bonusXp: final && won ? Math.round(CHAMPION_XP * k) : 0,
+  };
+}
 
 /** Who stands in a match's slot: the entrant index, or -1 while the match before it is unplayed. */
 export function entrantAt(cup: Cup, r: number, m: number, side: 0 | 1): number {
@@ -70,7 +98,7 @@ export function entrantAt(cup: Cup, r: number, m: number, side: 0 | 1): number {
 /** An entrant's run, round by round: who they faced and how it went, up to their last match so far. */
 export function pathOf(cup: Cup, i: number): { round: number; opp: number; res: MatchResult | null; won: boolean }[] {
   const out: { round: number; opp: number; res: MatchResult | null; won: boolean }[] = [];
-  for (let r = 0; r < ROUND_COUNT; r++) {
+  for (let r = 0; r < roundsOf(cup); r++) {
     const m = i >> (r + 1), side = ((i >> r) & 1) as 0 | 1;
     if (entrantAt(cup, r, m, side) !== i) break;
     const res = cup.results[r][m] ?? null;
@@ -92,7 +120,7 @@ export type CupStatus =
 
 /** Where this device's player stands: their next match, the round they fell in, or champion. */
 export function statusOf(cup: Cup, who = cup.me): CupStatus {
-  for (let r = 0; r < ROUND_COUNT; r++) {
+  for (let r = 0; r < roundsOf(cup); r++) {
     const m = who >> (r + 1);
     const side = ((who >> r) & 1) as 0 | 1;
     const res = cup.results[r][m];
@@ -102,13 +130,13 @@ export function statusOf(cup: Cup, who = cup.me): CupStatus {
   return { kind: 'champion' };
 }
 
-/** The first round with a match still to settle (ROUND_COUNT when the cup is decided). */
+/** The first round with a match still to settle (roundsOf(cup) when the cup is decided). */
 export function openRound(cup: Cup): number {
-  for (let r = 0; r < ROUND_COUNT; r++) if (cup.results[r].some((x) => !x)) return r;
-  return ROUND_COUNT;
+  for (let r = 0; r < roundsOf(cup); r++) if (cup.results[r].some((x) => !x)) return r;
+  return roundsOf(cup);
 }
 
-export const champion = (cup: Cup) => winnerOf(cup, ROUND_COUNT - 1, 0);
+export const champion = (cup: Cup) => winnerOf(cup, roundsOf(cup) - 1, 0);
 
 /** The battle seed of a match: the same on every device. */
 export function matchSeed(cup: Cup, r: number, m: number): number {
@@ -143,7 +171,7 @@ export type Judge = (seed: number, builds: [CharacterBuild, CharacterBuild]) => 
 export async function settleRound(cup: Cup, r: number, judge: Judge): Promise<number> {
   let n = 0;
   const jobs: Promise<void>[] = [];
-  for (let m = 0; m < matchCount(r); m++) {
+  for (let m = 0; m < matchCount(r, cup.entrants.length); m++) {
     if (cup.results[r][m]) continue;
     const a = entrantAt(cup, r, m, 0), b = entrantAt(cup, r, m, 1);
     if (a < 0 || b < 0 || a === cup.me || b === cup.me) continue;
@@ -177,45 +205,50 @@ function seedPositions(n: number): number[] {
 const EIGHTHS = [0, 4, 2, 6, 1, 5, 3, 7];
 
 /**
- * Draws a cup: the players spread over the bracket so they meet as late as
- * possible, and generated fighters around them, the strongest seeded apart.
- * Bots range from a little under the host's level to well over it, so each
- * round tends to bring a stronger opponent.
+ * Draws a cup of the tournament `tid`: the players spread over the bracket so
+ * they meet as late as possible, and generated fighters around them, the
+ * strongest seeded apart. Bots range over the tournament's levels around the
+ * host's (the Arena Cup: a little under to well over), so each round tends to
+ * bring a stronger opponent.
  */
-export function newCup(players: Entrant[], hostLevel: number, shared: boolean, seed = (Math.random() * 2 ** 32) >>> 0): Cup {
+export function newCup(players: Entrant[], hostLevel: number, shared: boolean, seed = (Math.random() * 2 ** 32) >>> 0, tid = 'cup'): Cup {
+  const tour = tournamentOf(tid);
+  const size = tour.size;
   const rng = new Rng(seed);
-  const slots: (Entrant | null)[] = new Array(CUP_SIZE).fill(null);
-  const humans = players.slice(0, MAX_HUMANS);
+  const slots: (Entrant | null)[] = new Array(size).fill(null);
+  const humans = players.slice(0, Math.min(MAX_HUMANS, size));
   const humanSlots: number[] = [];
+  const per = size / 8;
   humans.forEach((p, i) => {
-    const at = EIGHTHS[i] * 4 + rng.int(0, 3);
+    const at = EIGHTHS[i] * per + rng.int(0, per - 1);
     slots[at] = { ...p, human: true };
     humanSlots.push(at);
   });
-  const free = CUP_SIZE - humans.length;
+  const free = size - humans.length;
   const taken = new Set(humans.map((p) => p.build.name.toLowerCase()));
   const bots: Entrant[] = [];
   for (let k = 0; k < free; k++) {
-    // Strongest first: from host + 6 down to host - 2.
-    const level = Math.max(1, Math.round(hostLevel + 6 - (8 * k) / Math.max(1, free - 1)));
+    // Strongest first: from host + hi down to host + lo.
+    const level = Math.max(1, Math.round(hostLevel + tour.hi - ((tour.hi - tour.lo) * k) / Math.max(1, free - 1)));
     let b = generateRival();
     for (let i = 0; i < 6 && taken.has(b.name.toLowerCase()); i++) b = generateRival();
     taken.add(b.name.toLowerCase());
     const train = autoTraining(pointsAt(level), strHash(b.name) ^ seed);
     bots.push({ build: { ...b, level, ...(train ? { train } : {}) }, level });
   }
-  const pos = seedPositions(CUP_SIZE).filter((p) => !slots[p]);
+  const pos = seedPositions(size).filter((p) => !slots[p]);
   bots.forEach((b, i) => { slots[pos[i]] = b; });
   const entrants = slots as Entrant[];
   return {
     v: 1,
     id: (seed.toString(36) + Date.now().toString(36)).slice(0, 14),
+    ...(tour.id !== 'cup' ? { t: tour.id } : {}),
     seed,
     at: Date.now(),
     entrants,
     me: humanSlots[0] ?? 0,
     shared,
-    results: Array.from({ length: ROUND_COUNT }, (_, r) => new Array<MatchResult | null>(matchCount(r)).fill(null)),
+    results: Array.from({ length: Math.round(Math.log2(size)) }, (_, r) => new Array<MatchResult | null>(matchCount(r, size)).fill(null)),
     xp: 0,
     gems: 0,
   };
@@ -228,7 +261,11 @@ const KEY = 'al.cup';
 /** Strict copy of a cup from storage or the network; null if anything is off. */
 export function parseCup(raw: unknown): Cup | null {
   const o = raw as Partial<Cup> | null;
-  if (!o || o.v !== 1 || !Array.isArray(o.entrants) || o.entrants.length !== CUP_SIZE || !Array.isArray(o.results)) return null;
+  if (!o || o.v !== 1 || !Array.isArray(o.entrants) || ![8, 16, 32].includes(o.entrants.length) || !Array.isArray(o.results)) return null;
+  const size = o.entrants.length, rounds = Math.round(Math.log2(size));
+  // A tournament this version doesn't know (or a size that doesn't match it) is the Arena Cup's.
+  const t = typeof o.t === 'string' && tournamentOf(o.t).id === o.t && tournamentOf(o.t).size === size ? o.t : undefined;
+  if (!t && size !== CUP_SIZE) return null;
   const entrants: Entrant[] = [];
   for (const e of o.entrants as unknown[]) {
     const x = e as Partial<Entrant> | null;
@@ -239,9 +276,9 @@ export function parseCup(raw: unknown): Cup | null {
     entrants.push({ build, level, ...(x?.human ? { human: true } : {}), ...(pid ? { pid } : {}) });
   }
   const results: (MatchResult | null)[][] = [];
-  for (let r = 0; r < ROUND_COUNT; r++) {
+  for (let r = 0; r < rounds; r++) {
     const row = (o.results as unknown[])[r];
-    if (!Array.isArray(row) || row.length !== matchCount(r)) return null;
+    if (!Array.isArray(row) || row.length !== matchCount(r, size)) return null;
     results.push(row.map((x) => {
       const m = x as Partial<MatchResult> | null;
       if (!m || (m.w !== 0 && m.w !== 1)) return null;
@@ -249,9 +286,9 @@ export function parseCup(raw: unknown): Cup | null {
     }));
   }
   const me = Math.floor(Number(o.me));
-  if (!(me >= 0 && me < CUP_SIZE)) return null;
+  if (!(me >= 0 && me < size)) return null;
   return {
-    v: 1, id: String(o.id ?? ''), seed: Number(o.seed) >>> 0, at: Number(o.at) || Date.now(),
+    v: 1, id: String(o.id ?? ''), ...(t && t !== 'cup' ? { t } : {}), seed: Number(o.seed) >>> 0, at: Number(o.at) || Date.now(),
     entrants, me, shared: !!o.shared, results,
     xp: Math.max(0, Number(o.xp) || 0), gems: Math.max(0, Number(o.gems) || 0), ...(o.paid ? { paid: true } : {}),
   };

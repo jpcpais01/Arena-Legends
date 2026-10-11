@@ -4,6 +4,7 @@
 // own device: fights are deterministic, so no connection is needed after that.
 import { parseCharacter, type PlayerCharacter } from '../character/profile';
 import { MAX_HUMANS, parseCup, type Cup } from '../cup/cup';
+import { tournamentOf } from '../world/world';
 import { Channel, GuestLink, HostLink } from './link';
 import { newRoomCode, PROTOCOL, type Msg } from './protocol';
 
@@ -32,7 +33,8 @@ export class CupHost {
   private closed = false;
   private started = false;
 
-  constructor(me: LobbyMember) {
+  /** `tour`: the tournament this lobby is for (world/world.ts). */
+  constructor(me: LobbyMember, readonly tour = 'cup') {
     this.members = [me];
   }
 
@@ -82,7 +84,7 @@ export class CupHost {
     const who = member(m);
     if (!who || who.pid === this.members[0].pid) { reject('full'); return; }
     const i = this.members.findIndex((x) => x.pid === who.pid);
-    if (i < 0 && this.members.length >= MAX_HUMANS) { reject('full'); return; }
+    if (i < 0 && this.members.length >= Math.min(MAX_HUMANS, tournamentOf(this.tour).size)) { reject('full'); return; }
     // The same player again (a reload, a second tab): the newer channel replaces the old one.
     for (const [c, pid] of this.chans) if (pid === who.pid && c !== ch) { this.chans.delete(c); c.drop(); }
     if (i >= 0) this.members[i] = who; else this.members.push(who);
@@ -101,7 +103,7 @@ export class CupHost {
   }
 
   private broadcast(): void {
-    const msg: Msg = { t: 'cupRoom', members: this.members.map((x) => ({ pid: x.pid, build: x.build, level: x.level })) };
+    const msg: Msg = { t: 'cupRoom', members: this.members.map((x) => ({ pid: x.pid, build: x.build, level: x.level })), tour: this.tour };
     for (const c of this.chans.keys()) c.send(msg);
     this.onChange();
   }
@@ -131,6 +133,8 @@ export class CupGuest {
   state: 'joining' | 'in' | 'error' = 'joining';
   error: CupLobbyError | null = null;
   members: LobbyMember[] = [];
+  /** The tournament, once the host has said. */
+  tour = 'cup';
   onChange: () => void = () => {};
   onStart: (cup: Cup) => void = () => {};
   private link: GuestLink;
@@ -169,6 +173,7 @@ export class CupGuest {
     if (this.done) return;
     if (m.t === 'cupRoom') {
       this.members = (Array.isArray(m.members) ? m.members : []).map((x) => member(x)).filter((x): x is LobbyMember => !!x);
+      this.tour = tournamentOf(typeof m.tour === 'string' ? m.tour : undefined).id;
       this.state = 'in';
       this.onChange();
     } else if (m.t === 'cupPart') {

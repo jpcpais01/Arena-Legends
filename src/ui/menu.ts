@@ -29,7 +29,8 @@ export interface MenuCallbacks {
   onFriends?(): void;
   /** Leaderboard button (only when accounts are switched on). */
   onLeaderboard?(): void;
-  onCup(): void;
+  /** The world map, where the tournaments are. */
+  onWorld(): void;
 }
 
 export interface Record { w: number; l: number }
@@ -42,7 +43,7 @@ export const CARD_ART: [number, number] = [64, 64];
  * nameplate in each top corner with the fighter and their gear (a dice on the
  * rival's draws a new one), the logo between them, and along the bottom a
  * rampart: the Fight crest in the middle rising over the wall, Hero and Armory
- * on its left, Online and Cup on its right, the Shop at the right end and the
+ * on its left, Online and World on its right, the Shop at the right end and the
  * small tools (account, friends, leaderboard, sound, settings, notes) at the
  * left end. The middle of the screen stays the duel's.
  */
@@ -55,7 +56,7 @@ export class Menu {
   private chestBtn: HTMLButtonElement;
   private friendsBtn: HTMLButtonElement | null = null;
   private heroBtn: HTMLButtonElement;
-  private cupBtn: HTMLButtonElement;
+  private worldBtn: HTMLButtonElement;
   private rivalBtn: HTMLButtonElement;
   private vsLabel = h('small.fight-vs');
   private toolsBox: HTMLElement;
@@ -69,7 +70,7 @@ export class Menu {
     const tile = (cls: string, ic: Parameters<typeof icon>[0], label: string, fn: () => void, title = label) =>
       h<HTMLButtonElement>(`button.dock-tile.${cls}`, { title, onclick: fn }, h('span.dt-ic', null, icon(ic)), h('span.dt-label', null, label));
     this.heroBtn = tile('t-hero', 'crown', 'Hero', () => cb.onEditLook());
-    this.cupBtn = tile('t-cup', 'trophy', 'Cup', () => cb.onCup(), 'Arena Cup');
+    this.worldBtn = tile('t-world', 'map', 'World', () => cb.onWorld(), 'World map');
     this.rivalBtn = h<HTMLButtonElement>('button.btn.icon.sm.rival-roll', { title: 'New rival', 'aria-label': 'New rival', onclick: () => cb.onNewRival() }, icon('dice'));
     this.toolsBox = h('div.dock-tools', null,
       h('div.dock-tool-row', null,
@@ -89,7 +90,7 @@ export class Menu {
         this.toolsBox,
         h('div.dock-wing.l', null, this.heroBtn, tile('t-armory', 'shield', 'Armory', () => cb.onGear())),
         fight,
-        h('div.dock-wing.r', null, tile('t-online', 'globe', 'Online', () => cb.onOnline(), 'Online duel'), this.cupBtn),
+        h('div.dock-wing.r', null, tile('t-online', 'globe', 'Online', () => cb.onOnline(), 'Online duel'), this.worldBtn),
         h('div.dock-end', null, this.chestBtn)),
     );
   }
@@ -122,11 +123,11 @@ export class Menu {
     this.heroBtn.title = n > 0 ? `Hero (${n} stat point${n > 1 ? 's' : ''} to spend)` : 'Hero';
   }
 
-  /** The Cup button says which round a running cup is at. */
-  setCup(round: string | null): void {
-    this.cupBtn.replaceChildren(h('span.dt-ic', null, icon('trophy')), h('span.dt-label', null, round ?? 'Cup'));
-    this.cupBtn.classList.toggle('live', !!round);
-    this.cupBtn.title = round ? `Arena Cup: ${round}` : 'Arena Cup';
+  /** The World button says which round a running tournament is at. */
+  setLive(round: string | null): void {
+    this.worldBtn.replaceChildren(h('span.dt-ic', null, icon('map')), h('span.dt-label', null, round ?? 'World'));
+    this.worldBtn.classList.toggle('live', !!round);
+    this.worldBtn.title = round ? `World map (your tournament: ${round})` : 'World map';
   }
 
   set(player: PlayerCharacter, rival: PlayerCharacter, rec: Record): void {

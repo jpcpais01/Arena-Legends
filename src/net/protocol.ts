@@ -54,7 +54,8 @@ export type GuestMsg =
 export type HostMsg =
   | { t: 'state'; s: Snapshot }
   | { t: 'reject'; reason: 'version' | 'full' | 'started'; version: string }
-  | { t: 'cupRoom'; members: { pid: string; build: CharacterBuild; level: number }[] }
+  /** The party; `tour` is the tournament the host picked on the world map (absent: the Arena Cup). */
+  | { t: 'cupRoom'; members: { pid: string; build: CharacterBuild; level: number }[]; tour?: string }
   // The drawn cup, as its JSON in pieces (a JSON data channel message must stay under ~16 KB).
   | { t: 'cupPart'; id: string; i: number; n: number; data: string };
 
