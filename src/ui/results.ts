@@ -151,9 +151,8 @@ export function onlineResultsSheet(b: Battle, o: OnlineOutcome, cb: OnlineResult
   const mood = !over && o.winner === -1 ? 'draw' : won ? 'win' : 'lose';
   return h('div.sheet-wrap', null,
     h(`div.sheet.plate.results.${mood}`, { role: 'dialog', 'aria-label': 'Round results' },
-      h('div.res-banner', null, h('small.chip', null, over ? 'Match over' : `Round ${o.round}`), h('b', null, head), h('span', null, who), rewardLine(reward)),
+      h('div.res-banner', null, h('small.chip', null, over ? 'Match over' : `Round ${o.round}`), h('b', null, head), h('span', null, who), scoreLine(o.score), rewardLine(reward)),
       h('div.sheet-body.res-body', null,
-        scoreLine(o.score),
         over && o.rivalRematch && !o.waiting ? h('p.res-note', null, `${rival} wants a rematch.`) : null,
         o.desync ? h('p.res-note.muted', null, "Your devices saw this round slightly differently; the host's result counts.") : null,
         statTable(b)),
