@@ -52,11 +52,13 @@ export interface Burst {
  * - icicles: ice spikes that jut out of the ground and melt back;
  * - slash: a crescent blade arc swept across a point (super strikes), `x2` the facing;
  * - implode: a ring closing in on a point (a super gathering power);
- * - rays: speed lines bursting out of a point (a super let loose).
+ * - rays: speed lines bursting out of a point (a super let loose);
+ * - gust: wind fronts racing out to both sides of a point, broken into
+ *   dashes, with curls at their tips (the gale bell).
  */
 interface Pulse {
   kind: 'ring' | 'star' | 'groundRing' | 'crack' | 'pillar' | 'bolt' | 'cloud' | 'clock' | 'runes' | 'eye' | 'swirl' | 'coin' | 'icicles'
-    | 'slash' | 'implode' | 'rays';
+    | 'slash' | 'implode' | 'rays' | 'gust';
   x: number; y: number;
   r: number;
   t: number; max: number;
@@ -302,6 +304,8 @@ export class Fx {
         if (r >= 1) ellipseOutline(g, cx, cy, r, r * 0.8, css(k > 0.6 ? q.color2 : q.color), k < 0.3 ? 0.5 : 1);
       } else if (q.kind === 'rays') {
         drawRays(g, q, cx, cy, k);
+      } else if (q.kind === 'gust') {
+        drawGust(g, q, cx, cy, k);
       } else if (q.kind === 'pillar') {
         // Column of light (revive, meteor).
         const w = Math.max(1, Math.round(q.r * PPM * (1 - k)));
@@ -504,6 +508,46 @@ function drawEye(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, 
     g.fillStyle = css(q.color);
     g.fillRect(cx, cy - h - 3, 1, 2);
     g.fillRect(cx - 4, cy - h - 2, 1, 1); g.fillRect(cx + 4, cy - h - 2, 1, 1);
+  }
+}
+
+/**
+ * Wind fronts: three crescents per side racing out from the centre (a lead
+ * front in `color2`'s white core, two trailing ones in `color`), broken into
+ * dashes that drift as they go, each tip curling over. Thins out as it fades.
+ */
+function drawGust(g: CanvasRenderingContext2D, q: Pulse, cx: number, cy: number, k: number): void {
+  const R = q.r * PPM;
+  const ease = 1 - (1 - k) * (1 - k);
+  for (let side = -1; side <= 1; side += 2) {
+    for (let j = 0; j < 3; j++) {
+      const r = R * (0.2 + 0.85 * ease) - j * 5;
+      if (r < 3) continue;
+      // About a body tall: a wall of wind bowed outward, the tips trailing back.
+      const tall = Math.min(r * 1.1, 24 - j * 4);
+      const bow = Math.min(r * 0.6, 9);
+      const steps = Math.round(tall * 2);
+      g.fillStyle = css(j === 0 ? (k < 0.4 ? 0xffffff : q.color2) : j === 1 ? q.color2 : q.color);
+      for (let i = 0; i <= steps; i++) {
+        // Dashes: gaps that slide along the front.
+        if ((i + j * 2 + Math.floor(q.t * 30) + q.seed) % 6 === 0) continue;
+        if (k > 0.55 && (i + j) & 1) continue;
+        const u = (2 * i) / steps - 1;
+        const x = cx + side * (r - bow * u * u), y = cy + u * tall;
+        g.fillRect(Math.round(x), Math.round(y), 1, 1);
+        if (j === 0 && k < 0.5) g.fillRect(Math.round(x - side), Math.round(y), 1, 1);
+      }
+      // Curls at the tips, rolling back toward the bell.
+      if (j < 2 && k < 0.75) {
+        for (const tip of [-1, 1]) {
+          const tx = cx + side * (r - bow), ty = cy + tip * tall;
+          for (let c = 1; c < 6; c++) {
+            const b = c * 0.9;
+            g.fillRect(Math.round(tx - side * Math.sin(b) * 2.4), Math.round(ty - tip * (1 - Math.cos(b)) * 2.4), 1, 1);
+          }
+        }
+      }
+    }
   }
 }
 
