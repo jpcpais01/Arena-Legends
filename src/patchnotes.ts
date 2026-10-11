@@ -12,6 +12,20 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.81.0',
+    date: '2026-10-11',
+    title: 'The treasure vault',
+    notes: [
+      'Chests now open in a treasure vault: brick walls, an arched alcove with a glowing rune circle, pillars and banners, braziers, coin piles and light falling from a high window. The chest stands on a rune dais, hops now and then and catches a glint of light.',
+      'Open 10 brings out the grand chest, royal purple with jewels. Point at the button to see it.',
+      'The opening is redone with real light: the camera pans in and pushes closer with every tier, the braziers and runes burn in the tier\'s colour, light rushes into the chest before it blows, shockwaves bend the room, and gold coins spill and bounce across the floor.',
+      'Legendary and epic pulls hit with an anime impact frame. The single skin now flies out of the chest spinning and turns over in a burst of light.',
+      'New cards: an ornate back with a gold seal, rarity gems, a halo behind the art, turning light rays for legendary and epic, and holo foil on mythic and better. The best card of a 10-pull keeps glowing.',
+      'A Skip key during openings, new sounds (the rush of light, spilling coins, cards dealt), and a bigger boom the better the pull.',
+      'The Forge moved into a real smithy: tools on the wall, chains, a quench barrel, heat shimmer above the furnace, shockwaves on every hammer blow, and the new skin rising out of the steam.',
+    ],
+  },
+  {
     version: '0.80.0',
     date: '2026-10-11',
     title: 'A brand new hero creator',
