@@ -12,13 +12,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.69.0',
+    version: '0.70.0',
     date: '2026-10-11',
     title: 'Global leaderboard',
     notes: [
       'New global leaderboard: the podium button next to Friends on the menu shows the top 100 players, ranked by wins or by level.',
       'Tap anyone in the top 25 to see their hero, their body and fighting style, and every piece of gear and skin they have equipped. You can send them a friend request from there too.',
       'Every signed-in player is on the board automatically, and your row updates after your fights. Guests can browse it as well, and sign in to join.',
+    ],
+  },
+  {
+    version: '0.69.0',
+    date: '2026-10-11',
+    title: 'New Armory',
+    notes: [
+      'The Armory is rebuilt and reads left to right: pick a slot, see your fighter, pick an item, read its card.',
+      'Picking a slot shows the item you wear there right away, with its stats, skills and skins. No more popup to open and close.',
+      'Tapping another item tries it on your fighter and shows only the stats that would change. Tap Equip, or tap the item again, to wear it.',
+      'Skins sit in a row at the bottom of the card, one tap to change. Your fighter is bigger too.',
     ],
   },
   {

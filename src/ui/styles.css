@@ -86,7 +86,7 @@ h1, h2, h3, p { margin: 0; }
 .rar { font: 700 0.625rem/1 var(--font); text-transform: uppercase; letter-spacing: 0.1em; }
 
 /* Notched pixel corners: --c is the cut (one art pixel). */
-.notch, .btn, .opt, .itile, .skc, .ins-tab, .toggle, .seg, .chip {
+.notch, .btn, .opt, .itile, .skc, .toggle, .seg, .chip {
   --c: var(--px);
   clip-path: polygon(var(--c) 0, calc(100% - var(--c)) 0, 100% var(--c), 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, var(--c) 100%, 0 calc(100% - var(--c)), 0 var(--c));
 }
@@ -614,23 +614,8 @@ svg.flip { transform: scaleX(-1); }
 #ui.covered > .menu, #ui.covered > .version { visibility: hidden; }
 
 /* --- Armory ------------------------------------------------------------------------------------- */
-/* The fighter stands big in the stage with the six slots around them (paper doll). */
-.scr.gear { grid-template-columns: minmax(20rem, 46%) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "head head" "stage panel"; }
+/* Loadout: slot rail, fighter, items for the slot, and the picked item's card (end of file). */
 .scr-head .btn.done { min-width: 8rem; }
-.doll-stage { grid-template-columns: minmax(0, 1fr); padding-right: 0.5rem; }
-.doll-stage > .stage-box { grid-area: 1 / 1; }
-.doll { grid-area: 1 / 1; z-index: 1; align-self: center; display: grid; gap: 0.6rem; }
-.doll.l { justify-self: start; }
-.doll.r { justify-self: end; }
-.doll .slot { width: 4.6rem; }
-.stats-btn { display: none; }
-.stats-list {
-  display: grid; grid-template-columns: 1fr auto; gap: 3px 14px; width: min(17rem, 100%); margin: 0.5rem auto 0; padding: 0.35rem 0.6rem; font-size: 0.8125rem;
-  border: calc(var(--px) * 6) solid transparent; border-image: var(--frame-iron) 6 / calc(var(--px) * 6) stretch;
-  background: var(--tex-panel) 0 0 / calc(var(--px) * 8), var(--face); background-clip: padding-box; image-rendering: pixelated;
-}
-.stats-list span { color: var(--muted); }
-.stats-list b { text-align: right; color: var(--gold-hi); text-shadow: 0 var(--px) 0 var(--ink); }
 .slot {
   position: relative; display: grid; justify-items: center; gap: 4px; padding: calc(var(--px) * 2) 2px calc(var(--px) * 2);
   background: #2a2046; border: var(--px) solid var(--ink); box-shadow: inset 0 var(--px) 0 #4e3f80, inset 0 calc(var(--px) * -2) 0 #120c20;
@@ -645,8 +630,6 @@ svg.flip { transform: scaleX(-1); }
 .slot.on { background: #4a3410; box-shadow: inset 0 0 0 var(--px) var(--gold), inset 0 calc(var(--px) * -2) 0 var(--gold-lo); }
 .slot.on small { color: var(--gold-hi); }
 .forms-row { margin-bottom: 12px; }
-.slot-head { display: grid; gap: 6px; margin-bottom: 0.8rem; }
-.slot-head p { font-size: 0.8125rem; line-height: 1.3; color: var(--muted); padding-left: 0.4rem; }
 
 /* Items: inventory blocks with a socketed icon and the name; the card has the rest. */
 .items { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.6rem, 1fr)); gap: 10px; padding: calc(var(--px) * 3); }
@@ -671,16 +654,6 @@ svg.flip { transform: scaleX(-1); }
 
 @keyframes epicSweep { to { background-position: 0 0, 150% 0; } }
 /* Item inspector: covers the item list (same grid area) while the fighter stays in view trying it on. */
-.inspect-area { display: none; }
-.scr.gear.inspecting .scr-panel { visibility: hidden; }
-.scr.gear.inspecting .inspect-area { display: grid; grid-area: panel; min-height: 0; margin: 0.25rem var(--safe-r) 0.5rem 0.25rem; z-index: 2; }
-.inspect {
-  --rc: #8a83a8; min-height: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto; container-type: inline-size;
-  padding: 0.45rem 0.6rem 0.55rem; animation: ins-in 160ms steps(4);
-}
-@keyframes ins-in { from { opacity: 0; transform: translateY(calc(var(--px) * 4)); } }
-@media (prefers-reduced-motion: reduce) { .inspect { animation: none; } }
-.inspect.r-rare { --rc: var(--rare); } .inspect.r-epic { --rc: var(--epic); } .inspect.r-legendary { --rc: var(--legendary); }
 .ins-head { display: flex; align-items: center; gap: 6px; padding-bottom: 0.45rem; border-bottom: var(--px) solid var(--line); }
 .ins-sock {
   position: relative; flex: none; width: 4.4rem; height: 4.4rem; display: grid; place-items: center;
@@ -692,28 +665,14 @@ svg.flip { transform: scaleX(-1); }
 .ins-sock.sk-mythic { box-shadow: inset 0 0 0 var(--px) var(--mythic), 0 0 0 var(--px) var(--mythic); }
 .ins-sock.sk-legendary { box-shadow: inset 0 0 0 var(--px) var(--legendary), 0 0 0 var(--px) var(--legendary); }
 .ins-sock.sk-epic { border: calc(var(--px) * 2) solid transparent; background: radial-gradient(circle at 50% 60%, rgba(255, 255, 255, 0.12), transparent 70%) padding-box, #0b0814 padding-box, var(--skin-epic-sweep) 0 0 / 300% 100% border-box; animation: epicSweep 3s linear infinite; }
-.ins-arrow { flex: none; min-width: 1.9rem; min-height: 2.6rem; padding: 0; }
-.ins-arrow svg { width: 0.9rem; height: 0.9rem; }
 .ins-title { display: grid; gap: 4px; min-width: 0; flex: 1; padding-left: 4px; }
 .ins-title b { font: 700 1.25rem/1.05 var(--font-pixel); color: var(--text); text-shadow: 0 var(--px) 0 var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.inspect.on .ins-title b { color: var(--gold-hi); }
 .ins-title small { font: 700 0.625rem/1.2 var(--font); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
 .ins-title .r-common { color: #b8b0d0; } .ins-title .r-rare { color: var(--rare); } .ins-title .r-epic { color: var(--epic); } .ins-title .r-legendary { color: var(--legendary); }
 .ins-skin { display: flex; align-items: center; gap: 4px; text-transform: none !important; letter-spacing: 0.02em !important; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .ins-skin svg { width: 0.75rem; height: 0.75rem; flex: none; }
 .ins-skin.rare { color: var(--rare) !important; } .ins-skin.mythic { color: var(--mythic) !important; } .ins-skin.legendary { color: var(--legendary) !important; }
 .ins-skin.epic { color: #e8c8ff !important; }
-.ins-close { flex: none; align-self: start; }
-.ins-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0.45rem 0 0.35rem; }
-.ins-tab {
-  display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 2.1rem;
-  font: 700 0.8125rem/1 var(--font); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
-  background: #1c1530; border: var(--px) solid var(--ink); box-shadow: inset 0 calc(var(--px) * -2) 0 #120c20; cursor: pointer;
-}
-.ins-tab svg { width: 0.9rem; height: 0.9rem; }
-.ins-tab small { padding: 2px 5px; font-size: 0.625rem; color: var(--text); background: rgba(0, 0, 0, 0.45); }
-.ins-tab.on { color: var(--gold-hi); background: #4a3410; box-shadow: inset 0 0 0 var(--px) var(--gold), inset 0 calc(var(--px) * -2) 0 var(--gold-lo); }
-.ins-tab:not(.on):hover { filter: brightness(1.2); }
 .ins-body { display: grid; gap: 6px; align-content: start; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 0.3rem 2px 0.4rem; scrollbar-width: thin; scrollbar-color: var(--gold-lo) transparent; }
 .ins-sub { font: 700 0.625rem/1 var(--font); text-transform: uppercase; letter-spacing: 0.12em; color: var(--gold); margin-top: 2px; }
 .ins-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; }
@@ -737,7 +696,6 @@ svg.flip { transform: scaleX(-1); }
 .ins-ab.passive .ins-ab-head b { color: var(--cyan); }
 .ins-desc { font-size: 0.75rem; line-height: 1.35; color: var(--text); opacity: 0.8; font-style: italic; }
 /* Skins: a grid of named swatches; locked ones are dark with a lock and try on when tapped. */
-.skc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.6rem, 1fr)); gap: 5px; }
 .skc {
   --rc: #5a5370; position: relative; display: grid; justify-items: center; gap: 3px; min-width: 0; padding: 5px 3px 6px;
   background: #1c1530; border: var(--px) solid var(--ink); box-shadow: inset 0 calc(var(--px) * -2) 0 var(--rc); cursor: pointer;
@@ -770,9 +728,6 @@ svg.flip { transform: scaleX(-1); }
 .sk-pips i.on { background: var(--skin-epic); box-shadow: none; }
 .sk-pips.full i.on { background: var(--skin-epic-sweep) 0 0 / 600% 100%; animation: epicSweep 3s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .sk-pips.full i.on { animation: none; } }
-.ins-skin-info { padding: 0.4rem 0.5rem; margin-top: 2px; background: rgba(0, 0, 0, 0.35); border: var(--px) solid #3a2e5a; }
-.ins-foot { display: flex; align-items: center; gap: 8px; padding-top: 0.45rem; }
-.ins-foot .eq { justify-content: flex-start; }
 .ins-equip { flex: 1; min-height: 2.6rem; font-size: 1rem; }
 /* "Preview" over the fighter while they try on an item or a skin that isn't saved. */
 .try-tag { position: absolute; left: 50%; bottom: 0.6rem; transform: translateX(-50%); z-index: 1; display: flex; align-items: center; gap: 5px; padding: 3px 8px 4px; font: 700 0.6875rem/1 var(--font); text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold-hi); background: rgba(10, 6, 20, 0.8); border: var(--px) solid var(--gold-lo); pointer-events: none; }
@@ -1134,20 +1089,10 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
   input.name { height: 2.7rem; font-size: 1.3rem; }
   .name-plate .btn.dice { min-height: 2.7rem; min-width: 2.7rem; }
 
-  .scr.gear { grid-template-columns: minmax(15rem, 44%) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "head head" "stage panel"; }
   .scr-head .btn.done { min-width: 6.5rem; min-height: 2.4rem; }
-  .doll-stage { padding: 0.2rem 0.3rem 0.4rem var(--safe-l); }
-  .doll { gap: 0.4rem; }
-  .doll .slot { width: 3.5rem; padding: 3px 1px 4px; gap: 3px; }
   .slot .sock { width: 2.5rem; height: 2.5rem; }
   .slot canvas { width: 2.25rem; height: 2.25rem; }
   .slot small { font-size: 0.5625rem; letter-spacing: 0.04em; }
-  .stats-btn { display: inline-flex; }
-  .doll-stage .stage-tools { top: 0.3rem; right: 50%; transform: translateX(50%); }
-  .stats-list { position: absolute; top: 2.9rem; left: 50%; transform: translateX(-50%); z-index: 2; margin: 0; width: min(14rem, 80%); font-size: 0.75rem; padding: 0.2rem 0.45rem; gap: 1px 10px; }
-  .doll-stage:not(.show-stats) .stats-list { display: none; }
-  .slot-head { margin-bottom: 0.45rem; }
-  .slot-head p { font-size: 0.75rem; }
   .items { grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr)); gap: 8px; }
   .itile { padding: 6px 3px 7px; gap: 4px; }
   .itile .sock { width: 2.9rem; height: 2.9rem; }
@@ -1245,7 +1190,6 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
   .fcard-btns .btn { padding-left: 0.5rem; padding-right: 0.5rem; }
 
   .scr { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(12rem, 40%) minmax(0, 1fr) auto; grid-template-areas: "head" "stage" "panel" "nav"; }
-  .scr.gear { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(14rem, 44%) minmax(0, 1fr); grid-template-areas: "head" "stage" "panel"; }
   .scr-head { gap: 0.5rem; padding-bottom: 0.2rem; }
   .creator .scr-title { display: none; }
   .scr-title h1 { font-size: 1.35rem; }
@@ -1273,16 +1217,9 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
   .card-tile small { display: none; }
   .style-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .scr-head .btn.done { min-width: 6.5rem; }
-  .doll-stage { padding: 0.4rem var(--safe-r) 0.4rem var(--safe-l); }
-  .doll { gap: 0.45rem; }
-  .doll .slot { width: 3.8rem; padding: 4px 1px 5px; }
   .slot .sock { width: 2.75rem; height: 2.75rem; }
   .slot canvas { width: 2.5rem; height: 2.5rem; }
   .slot small { font-size: 0.5625rem; letter-spacing: 0.04em; }
-  .stats-btn { display: inline-flex; }
-  .doll-stage .stage-tools { top: 0.4rem; right: 50%; transform: translateX(50%); }
-  .stats-list { position: absolute; top: 3.3rem; left: 50%; transform: translateX(-50%); z-index: 2; margin: 0; width: min(15rem, 62%); font-size: 0.8125rem; }
-  .doll-stage:not(.show-stats) .stats-list { display: none; }
   .items { grid-template-columns: repeat(auto-fill, minmax(5.2rem, 1fr)); gap: 8px; }
   .itile { padding: 6px 3px 8px; }
   .itile .sock { width: 3rem; height: 3rem; }
@@ -1849,30 +1786,17 @@ button.lb-pick:hover { filter: brightness(1.2); }
 
 /* Item inspector on a sideways phone: a slimmer head and footer leave the body room for stats and skills. */
 @media (orientation: landscape) and (max-height: 560px) {
-  .scr.gear.inspecting .inspect-area { margin: 0 var(--safe-r) var(--safe-b) 0.1rem; }
-  .inspect { padding: 0.3rem 0.45rem 0.4rem; }
   .ins-head { padding-bottom: 0.3rem; gap: 4px; }
   .ins-sock { width: 3.2rem; height: 3.2rem; }
   .ins-sock canvas { width: 2.9rem; height: 2.9rem; }
-  .ins-arrow { min-width: 1.6rem; min-height: 2.2rem; }
   .ins-title b { font-size: 1.05rem; }
-  .ins-tabs { padding: 0.3rem 0 0.2rem; }
-  .ins-tab { min-height: 1.75rem; font-size: 0.75rem; }
   .ins-body { gap: 4px; }
   .st { padding: 3px 6px 4px; font-size: 0.6875rem; }
   .ins-ab { padding: 4px 7px 5px; font-size: 0.6875rem; }
   .ins-desc, .ins-mods { font-size: 0.6875rem; }
-  .skc-grid { grid-template-columns: repeat(auto-fill, minmax(4rem, 1fr)); gap: 4px; }
   .skc-ic { width: 2.4rem; height: 2.4rem; }
   .skc-ic canvas { width: 2.2rem; height: 2.2rem; }
-  .ins-skin-info { padding: 0.25rem 0.4rem; }
-  .ins-foot { padding-top: 0.3rem; }
   .ins-equip { min-height: 2.1rem; font-size: 0.875rem; }
-}
-/* Big screens: the inspector hugs its content instead of filling a tall empty frame. */
-@media (min-height: 561px) and (min-width: 721px) {
-  .scr.gear.inspecting .inspect-area { align-content: start; }
-  .inspect { max-height: 100%; }
 }
 .shop-got-icons .sock > .ic { width: 70%; height: 70%; filter: drop-shadow(0 var(--px) 0 var(--ink)); }
 
@@ -2240,4 +2164,149 @@ button.lb-pick:hover { filter: brightness(1.2); }
   .scr.cup-lobby { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto; grid-template-areas: "head" "party" "side" "foot"; }
   .cl-party, .cl-side { margin: 0.25rem var(--safe-r); }
   .train-rows { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* --- Armory loadout (since v0.64): slot rail · fighter · items · item card --------------------- */
+/* Read left to right: pick a slot, see the fighter, pick an item, read its card and Equip.        */
+.scr.gear.loadout {
+  grid-template-columns: auto minmax(12rem, 1fr) minmax(13rem, 19rem) minmax(18rem, 26rem);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: "head head head head" "rail stage list card";
+  column-gap: 0.5rem;
+}
+.scr-head .btn.done { min-width: 8rem; }
+.ld-rail {
+  grid-area: rail; align-self: center; display: grid; grid-template-rows: repeat(4, auto); grid-auto-flow: column; gap: 6px;
+  padding: 0 0 0.5rem var(--safe-l);
+}
+.ld-rail .slot { width: 4.4rem; }
+.ld-stage { grid-area: 2 / 1 / 3 / 3; padding: 0.25rem 0 0.6rem; }
+/* The rail stands over the stage's left edge: the fighter's canvas is mostly air there. */
+.ld-rail { z-index: 2; }
+.ld-stage .stage-box { margin-left: 3.5rem; }
+.ld-stage .stage-tools { top: 0.25rem; right: 50%; transform: translateX(50%); }
+.stats-list {
+  position: absolute; top: 2.9rem; left: 50%; transform: translateX(-50%); z-index: 2; width: min(15rem, 94%);
+  display: grid; grid-template-columns: 1fr auto; gap: 3px 14px; padding: 0.35rem 0.6rem; font-size: 0.8125rem;
+  border: calc(var(--px) * 6) solid transparent; border-image: var(--frame-iron) 6 / calc(var(--px) * 6) stretch;
+  background: var(--tex-panel) 0 0 / calc(var(--px) * 8), var(--face); background-clip: padding-box; image-rendering: pixelated;
+}
+.stats-list span { color: var(--muted); }
+.stats-list b { text-align: right; color: var(--gold-hi); text-shadow: 0 var(--px) 0 var(--ink); }
+.ld-stage:not(.show-stats) .stats-list { display: none; }
+
+/* Items for the slot: compact blocks; equipped has the gold check, the one being looked at a bright outline. */
+.ld-list { grid-area: list; min-height: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr); margin: 0.25rem 0 0.5rem; padding: 0.35rem 0.4rem 0.4rem; }
+.ld-list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; padding: 0 0.2rem 0.35rem; border-bottom: var(--px) solid var(--line); margin-bottom: 0.35rem; }
+.ld-list-head b { font: 700 1rem/1 var(--font-pixel); letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold-hi); text-shadow: 0 var(--px) 0 var(--ink); }
+.ld-list-head small { font: 600 0.6875rem/1 var(--font); color: var(--muted); white-space: nowrap; }
+.ld-list-head b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.ins-none { font-size: 0.75rem; color: var(--muted); }
+.ld-list .forms-row { margin-bottom: 0.4rem; }
+.ld-list .items {
+  grid-template-columns: repeat(auto-fill, minmax(4.6rem, 1fr)); gap: 6px; padding: 2px 2px 4px; align-content: start;
+  overflow: auto; min-height: 0; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--gold-lo) transparent;
+}
+.ld-list .itile { padding: 5px 2px 6px; gap: 4px; }
+.ld-list .itile .sock { width: 2.9rem; height: 2.9rem; }
+.ld-list .itile canvas { width: 2.6rem; height: 2.6rem; }
+.ld-list .itile b { font-size: 0.6875rem; -webkit-line-clamp: 2; }
+.itile.pick { background: #3a2d62; box-shadow: inset 0 0 0 var(--px) var(--text), inset 0 calc(var(--px) * -2) 0 var(--rc); }
+.itile.pick b { color: var(--text); }
+
+/* The picked item's card: head with Equip, the stats and skills scroll, skins along the bottom. */
+.ld-card {
+  --rc: #8a83a8; grid-area: card; min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; container-type: inline-size;
+  margin: 0.25rem var(--safe-r) 0.5rem 0; padding: 0.45rem 0.55rem 0.5rem;
+}
+.ld-card.pop { animation: ld-in 150ms steps(3); }
+@keyframes ld-in { from { opacity: 0.2; transform: translateX(calc(var(--px) * 4)); } }
+@media (prefers-reduced-motion: reduce) { .ld-card.pop { animation: none; } }
+.ld-card.r-rare { --rc: var(--rare); } .ld-card.r-epic { --rc: var(--epic); } .ld-card.r-legendary { --rc: var(--legendary); }
+.ld-card.on .ins-title b { color: var(--gold-hi); }
+.ld-act { flex: none; display: grid; gap: 4px; justify-items: stretch; align-self: center; }
+.ld-act .ins-equip { flex: none; min-width: 7rem; min-height: 2.5rem; }
+.ld-card .ins-sock { position: relative; }
+.ld-worn { position: absolute; top: -4px; right: -4px; display: grid; place-items: center; width: 1rem; height: 1rem; background: var(--gold-hi); color: var(--ink); box-shadow: 0 0 0 var(--px) var(--ink); }
+.ld-worn svg { width: 0.7rem; height: 0.7rem; }
+.ld-card .ins-title small.ld-eqd { display: flex; align-items: center; gap: 4px; color: var(--gold); }
+.ld-eqd svg { width: 0.75rem; height: 0.75rem; }
+.ld-card .ins-body { display: flex; flex-direction: column; padding-top: 0.4rem; }
+.ld-card .ins-body > * { flex: none; }
+.ld-card .ins-title b { white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.ld-card .ins-title small { white-space: normal; }
+.ld-skins { display: grid; gap: 5px; padding-top: 0.4rem; margin-top: 0.15rem; border-top: var(--px) solid var(--line); }
+.ld-skins-head { display: flex; align-items: center; gap: 5px; font: 700 0.625rem/1 var(--font); text-transform: uppercase; letter-spacing: 0.12em; color: var(--gold); }
+.ld-skins-head svg { width: 0.75rem; height: 0.75rem; }
+.ld-skins-head small { padding: 2px 5px; font-size: 0.625rem; letter-spacing: 0.04em; color: var(--text); background: rgba(0, 0, 0, 0.45); }
+.skc-row { display: flex; gap: 4px; overflow-x: auto; overscroll-behavior: contain; padding: 1px 1px 3px; scrollbar-width: thin; scrollbar-color: var(--gold-lo) transparent; }
+.skc-row .skc { flex: none; padding: 4px; }
+.skc-row .skc-ic { width: 2.6rem; height: 2.6rem; }
+.skc-row .skc-ic canvas { width: 2.35rem; height: 2.35rem; }
+.ld-skins .sk-set { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ld-skins .sk-set .sk-info { flex: 1; min-width: 10rem; }
+.ld-skins .sk-pips { vertical-align: middle; margin: 0 2px; }
+.ld-empty { display: grid; gap: 8px; align-content: center; justify-items: center; text-align: center; padding: 1rem; grid-row: 1 / -1; }
+.ld-empty b { font: 700 1.1rem/1.1 var(--font-pixel); color: var(--gold-hi); text-shadow: 0 var(--px) 0 var(--ink); }
+.ld-empty p { font-size: 0.8125rem; line-height: 1.35; color: var(--text); max-width: 20rem; }
+.ld-empty p.muted { color: var(--muted); }
+
+/* Phones held sideways (the main target): two-column rail, slimmer everything. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .scr.gear.loadout { grid-template-columns: auto minmax(6rem, 1fr) minmax(10rem, 12rem) minmax(16rem, 21rem); column-gap: 0.35rem; }
+  .ld-stage .stage-box { margin-left: 2.4rem; }
+  .ld-rail { gap: 4px; padding-bottom: 0.3rem; }
+  .ld-rail .slot { width: 3.3rem; padding: 3px 1px 4px; gap: 3px; }
+  .ld-rail .slot .sock { width: 2.35rem; height: 2.35rem; }
+  .ld-rail .slot canvas { width: 2.1rem; height: 2.1rem; }
+  .ld-rail .slot small { font-size: 0.5625rem; letter-spacing: 0.04em; }
+  .ld-stage { padding: 0 0 0.35rem; }
+  .ld-stage .stage-tools { top: 0; }
+  .stats-list { top: 2.4rem; font-size: 0.75rem; padding: 0.25rem 0.5rem; }
+  .ld-list, .ld-card { margin: 0 0 var(--safe-b); padding: 0.3rem 0.35rem 0.35rem; }
+  .ld-card { margin-right: var(--safe-r); }
+  .ld-list-head { padding-bottom: 0.25rem; margin-bottom: 0.25rem; }
+  .ld-list-head b { font-size: 0.875rem; }
+  .ld-list .items { grid-template-columns: repeat(auto-fill, minmax(3.9rem, 1fr)); gap: 4px; }
+  .ld-list .itile { padding: 4px 1px 5px; gap: 3px; }
+  .ld-list .itile .sock { width: 2.4rem; height: 2.4rem; }
+  .ld-list .itile canvas { width: 2.15rem; height: 2.15rem; }
+  .ld-list .itile b { font-size: 0.625rem; }
+  .ld-card .ins-head { padding-bottom: 0.3rem; gap: 5px; }
+  .ld-card .ins-sock { width: 2.9rem; height: 2.9rem; }
+  .ld-card .ins-sock canvas { width: 2.6rem; height: 2.6rem; }
+  .ld-card .ins-title b { font-size: 1rem; }
+  .ld-act .ins-equip { min-width: 5.6rem; min-height: 2.2rem; font-size: 0.875rem; }
+  .ld-card .ins-body { gap: 4px; padding-top: 0.3rem; }
+  .ld-card .st { padding: 3px 6px 4px; font-size: 0.6875rem; }
+  .ld-card .ins-ab { padding: 4px 7px 5px; font-size: 0.6875rem; }
+  .ld-card .ins-desc, .ld-card .ins-mods { font-size: 0.6875rem; }
+  .ld-skins { gap: 3px; padding-top: 0.3rem; }
+  .skc-row .skc { padding: 3px; }
+  .skc-row .skc-ic { width: 2.2rem; height: 2.2rem; }
+  .skc-row .skc-ic canvas { width: 2rem; height: 2rem; }
+}
+
+/* Phones held upright: fighter on top, the rail as one row, then the items and the card. */
+@media (orientation: portrait) and (max-width: 720px), (max-width: 560px) {
+  .scr.gear.loadout {
+    grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(9rem, 26%) auto minmax(6rem, 24%) minmax(0, 1fr);
+    grid-template-areas: "head" "stage" "rail" "list" "card"; row-gap: 0.35rem;
+  }
+  .ld-rail { grid-template-rows: none; grid-template-columns: repeat(8, minmax(0, 1fr)); grid-auto-flow: row; gap: 3px; padding: 0 var(--safe-r) 0 var(--safe-l); justify-self: stretch; }
+  .ld-rail .slot { width: auto; padding: 3px 1px 4px; gap: 2px; }
+  .ld-rail .slot .sock { width: 2.2rem; height: 2.2rem; }
+  .ld-rail .slot canvas { width: 2rem; height: 2rem; }
+  .ld-rail .slot small { font-size: 0.5rem; letter-spacing: 0.02em; }
+  .ld-stage { grid-area: stage; padding: 0 var(--safe-r) 0 var(--safe-l); }
+  .ld-stage .stage-box { margin-left: 0; }
+  .ld-list, .ld-card { margin: 0 var(--safe-r) 0 var(--safe-l); padding: 0.3rem 0.4rem 0.35rem; }
+  .ld-card { margin-bottom: var(--safe-b); }
+  .ld-list .items { grid-template-columns: repeat(auto-fill, minmax(4rem, 1fr)); gap: 4px; }
+}
+/* Tall screens: the card hugs its content and the skins wrap instead of scrolling sideways. */
+@media (min-height: 561px) and (min-width: 721px) {
+  .ld-card { grid-template-rows: auto auto auto; align-content: start; }
+  .ld-card .ins-body { overflow: visible; }
+  .skc-row { flex-wrap: wrap; overflow: visible; }
 }
