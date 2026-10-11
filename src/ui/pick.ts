@@ -81,8 +81,8 @@ export class PickScreen {
         }, h('span.style-ic', { style: { color: css(st.color) } }, icon(STYLE_ICON[st.id])), st.name),
       ] : [];
       const card = fighterCard(info.builds[s], this.previews[s]!, s, own ? 'You' : 'Rival', state, btns);
-      // Both corners show the style each fighter goes in with.
-      card.querySelector('.fcard-sub')?.append(` · ${st.name}`);
+      // Both corners show the style each fighter goes in with (your style button already says it).
+      if (!btns.length) card.querySelector('.fcard-sub')?.append(` · ${st.name}`);
       return card;
     });
     this.dock.replaceChildren(cards[0], this.actions, cards[1]);
