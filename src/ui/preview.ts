@@ -13,6 +13,7 @@ import { sfx } from '../audio/sfx';
 import type { EntranceId } from '../character/entrances';
 import { Entrance, wrapFrame, type EntrancePose } from '../render/entrance';
 import { Fx } from '../render/fx';
+import { SoftLights } from '../render/softLight';
 import { PPM } from '../render/sprite/animator';
 
 export interface PreviewOptions {
@@ -78,6 +79,12 @@ export class Preview {
   private shakeT = 0;
   private shakeA = 0;
   private shakeX = 0;
+  /** Entrance light (canvas stand-in for the battle's shader layer) and its impact frames. */
+  private soft: SoftLights | null = null;
+  private impactT = 0;
+  private impactCol = 0xffffff;
+  /** The weapon tip as last drawn during an entrance (canvas px). */
+  private lastTip: [number, number] | null = null;
   private readonly view = { sx: (x: number) => Math.round(this.w / 2) + x * PPM + this.shakeX, sy: (y: number) => this.h - this.ground - y * PPM };
 
   private still: boolean;
@@ -102,7 +109,7 @@ export class Preview {
     if (opts.autoplay) this.next = 2.5;
     const loop = (now: number) => {
       if (!this.alive) return;
-      const dt = this.last ? Math.min(0.1, (now - this.last) / 1000) : 0;
+      const dt = this.last ? Math.max(0, Math.min(0.1, (now - this.last) / 1000)) : 0;
       this.last = now;
       if (this.el.isConnected) this.tick(dt);
       this.raf = requestAnimationFrame(loop);
@@ -143,12 +150,29 @@ export class Preview {
     this.fx ??= new Fx();
     this.fx.clear();
     this.playing = null;
+    this.soft ??= new SoftLights();
+    this.soft.clear();
+    this.impactT = 0;
+    this.lastTip = null;
+    const soft = this.soft;
     this.ent = new Entrance(id, {
       fx: this.fx,
       shake: (a) => { this.shakeA = Math.max(this.shakeA, a); this.shakeT = 0.25 + a * 0.3; },
       flash: (c, a) => { this.flashCol = c; this.flashT = Math.max(this.flashT, a * 0.12); },
       sound: (name, k) => sfx.play(name, 0, k),
-    }, 0, this.flip ? -1 : 1, 0.15);
+      light: (l) => { soft.add(l); },
+      // The menus have no shader pass: shockwaves show as their rings of light, impact frames as a bright wash.
+      shock: () => {},
+      impact: (hi, _lo, len = 0.06) => { this.impactCol = hi; this.impactT = Math.max(this.impactT, len + 0.03); },
+      zoomBlur: () => {},
+      split: () => {},
+      vignette: () => {},
+      focus: () => {},
+      tip: () => {
+        const t = this.lastTip;
+        return t ? [(t[0] - Math.round(this.w / 2) - this.shakeX) / PPM, (this.h - this.ground - t[1]) / PPM] : null;
+      },
+    }, 0, this.flip ? -1 : 1, { delay: 0.15, room: this.h - this.ground - 64 });
     // Hold off the next random move until it's over.
     this.t = 0;
     if (this.next > 0) this.next = 4.5;
@@ -178,6 +202,7 @@ export class Preview {
     const pose = this.ent ? this.ent.update(dt) : null;
     if (this.ent && !pose) this.ent = null;
     this.fx?.update(dt);
+    this.soft?.update(dt);
     if (pose) {
       const c = this.bank.set.clips.get(pose.clip) ? pose.clip : 'idle';
       o.clip = c;
@@ -205,6 +230,7 @@ export class Preview {
     const s = this.bank.get(o);
     const [gx, gy] = this.draw(s);
     if (this.fx) this.fx.draw(this.g, this.view);
+    this.soft?.draw(this.g, this.view);
     this.drawSparks(dt, s, gx, gy);
   }
 
@@ -228,22 +254,35 @@ export class Preview {
       if (pose.clipGround) { g.save(); g.beginPath(); g.rect(0, 0, this.w, gy + 1); g.clip(); }
       if (set && pose.alpha >= 1) drawSetAura(g, set, x, y, this.clock, 'back');
       const flip = this.flip !== pose.flip;
-      for (let k = pose.ghosts; k >= 1; k--) {
-        g.globalAlpha = pose.alpha * 0.55 * (1 - k / (pose.ghosts + 1));
-        this.blit((pose.ghostCol ? this.bank.flash(this.out, pose.ghostCol) : s).img, s, x - Math.round(pose.ghostDx * k * PPM), y, flip);
+      const k: [number, number] = [pose.sx, pose.sy];
+      for (let i = pose.ghosts; i >= 1; i--) {
+        g.globalAlpha = pose.alpha * 0.55 * (1 - i / (pose.ghosts + 1));
+        this.blit((pose.ghostCol ? this.bank.flash(this.out, pose.ghostCol) : s).img, s, x - Math.round(pose.ghostDx * i * PPM), y, flip, k);
       }
       g.globalAlpha = pose.alpha;
-      this.blit(s.img, s, x, y, flip);
+      this.blit(s.img, s, x, y, flip, k);
       if (pose.tint && pose.tintA > 0) {
         g.globalAlpha = pose.alpha * Math.min(1, pose.tintA);
-        this.blit(this.bank.flash(this.out, pose.tint).img, s, x, y, flip);
+        this.blit(this.bank.flash(this.out, pose.tint).img, s, x, y, flip, k);
       }
+      this.lastTip = s.tip ? [x + (flip ? -s.tip[0] : s.tip[0]), y + s.tip[1]] : null;
       g.globalAlpha = 1;
       if (set && pose.alpha >= 1) drawSetAura(g, set, x, y, this.clock, 'front');
       if (pose.clipGround) g.restore();
     }
     ent.draw(g, v, 'over');
     fx.draw(g, v);
+    this.soft?.draw(g, v);
+    if (this.impactT > 0) {
+      // An impact frame: everything drawn flares to the light's colour for an instant.
+      g.globalCompositeOperation = 'source-atop';
+      g.globalAlpha = 0.8;
+      g.fillStyle = css(this.impactCol);
+      g.fillRect(0, 0, this.w, this.h);
+      g.globalAlpha = 1;
+      g.globalCompositeOperation = 'source-over';
+      this.impactT -= dt;
+    }
     if (this.flashT > 0) {
       // Only over what's drawn: the canvas is see-through, so a full fill would show as a box.
       g.globalCompositeOperation = 'source-atop';
@@ -256,13 +295,16 @@ export class Preview {
     }
   }
 
-  private blit(img: CanvasImageSource, s: Sprite, x: number, y: number, flip = this.flip): void {
+  /** Draws a sprite image at its feet; `k` squashes or stretches it about them. */
+  private blit(img: HTMLCanvasElement, s: Sprite, x: number, y: number, flip = this.flip, k: [number, number] = [1, 1]): void {
     const g = this.g;
+    const w = Math.round(img.width * k[0]), h = Math.round(img.height * k[1]);
+    const ox = Math.round(s.ox * k[0]), oy = Math.round(s.oy * k[1]);
     if (flip) {
       g.save(); g.translate(x + 1, 0); g.scale(-1, 1);
-      g.drawImage(img, -s.ox, y - s.oy);
+      g.drawImage(img, -ox, y - oy, w, h);
       g.restore();
-    } else g.drawImage(img, x - s.ox, y - s.oy);
+    } else g.drawImage(img, x - ox, y - oy, w, h);
   }
 
   private draw(s: Sprite): [number, number] {

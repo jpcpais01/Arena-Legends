@@ -28,7 +28,8 @@ import { makeArt, type CharacterArt } from './sprite/look';
 import type { SkinFx } from './sprite/skins';
 import { isSuper, superLook, type SuperLook } from './supers';
 import { superImpactFx, superRelease as superReleaseFx, superWindup, type SuperHost } from './superFx';
-import { GlFx } from './glfx';
+import { GlFx, type Light } from './glfx';
+import { SoftLights } from './softLight';
 import { METEOR_GLOW, meteorImpact, meteorMark, meteorStyle, meteorTrail, type ImpactCues } from './meteorFx';
 
 const STYLE_COLOR: Record<ProjectileStyle, number> = {
@@ -174,10 +175,14 @@ export class BattleView implements View {
   private cineL = 0;
   private cineX = 0;
   private cineBars = 0;
+  /** How far the cinematic camera leans from the middle of the duel toward its spot (0..1). */
+  private cineLean = 0.5;
   /** Super animation beats waiting to play (battle seconds left). */
   private laters: { t: number; fn: () => void }[] = [];
   /** Shader light layer over the pixel screen (supers). */
   readonly gl: GlFx;
+  /** Canvas light for entrances when the shader layer can't run. */
+  private soft = new SoftLights();
   private host: SuperHost;
   private shakeT = 0;
   private shakeAmp = 0;
@@ -250,6 +255,7 @@ export class BattleView implements View {
     this.cineT = this.cineBars = 0;
     this.laters.length = 0;
     this.gl.clear();
+    this.soft.clear();
     this.layout();
   }
 
@@ -264,20 +270,31 @@ export class BattleView implements View {
    * Starts both fighters' entrances (during the hold before the countdown),
    * the second a beat after the first. Returns seconds until both are done.
    */
-  playEntrances(ids: [EntranceId, EntranceId], gap = 0.55): number {
+  playEntrances(ids: [EntranceId, EntranceId]): number {
     const b = this.battle;
     if (!b) return 0;
-    const host = (id: number) => ({
+    const shader = () => this.gl.ok && !this.quiet;
+    const host = (id: FighterId) => ({
       fx: this.fx,
       shake: (a: number) => this.shake(a),
       flash: (c: number, a: number) => this.flash(c, a),
       sound: (name: Sfx, k = 1) => this.play(name, this.pan(b.fighters[id].x), k),
+      light: (l: Light) => { if (shader()) this.gl.add(l); else this.soft.add(l); },
+      shock: (s: Parameters<GlFx['shock']>[0]) => { if (shader()) this.gl.shock(s); },
+      impact: (hi: number, lo: number, len = 0.06) => { if (shader()) this.gl.impactFrame(hi, lo, len); },
+      zoomBlur: (x: number, y: number, k: number, life: number) => { if (shader()) this.gl.zoomBlur(x, y, k, life); },
+      split: (k: number, life: number) => { if (shader()) this.gl.split(k, life); },
+      vignette: (c: number, k: number, life: number) => { if (shader()) this.gl.vignette(c, k, life); },
+      focus: (x: number, seconds: number, levels = 1) => this.cinema(levels, seconds, x, 0.8),
+      tip: () => this.tipOf(b.fighters[id]) ?? null,
     });
+    // The second hero comes on as the first strikes their pose, so the camera can show each one.
+    const gap = clamp(entranceLength(ids[0]) - 0.6, 0.55, 1.6);
     let end = 0;
     this.fighters.forEach((v, i) => {
       const f = b.fighters[i];
       const delay = i * gap;
-      v.ent = new Entrance(ids[i], host(i), f.x, f.facing, delay);
+      v.ent = new Entrance(ids[i], host(f.id), f.x, f.facing, { delay, stage: true });
       v.pose = v.ent.update(0);
       end = Math.max(end, delay + entranceLength(ids[i]));
     });
@@ -330,8 +347,9 @@ export class BattleView implements View {
   }
 
   /** A super's cinematic: the camera leans in on `x` (in every mode) and the letterbox bars close in. */
-  private cinema(levels: number, seconds: number, x: number): void {
+  private cinema(levels: number, seconds: number, x: number, lean = 0.5): void {
     if (this.quiet) return;
+    this.cineLean = lean;
     this.cineL = Math.max(levels, this.cineT > 0 ? this.cineL : 0);
     this.cineT = Math.max(this.cineT, seconds);
     this.cineX = x;
@@ -396,12 +414,14 @@ export class BattleView implements View {
       }
     }
     this.alpha = this.acc / DT;
-    const vdt = this.paused ? 0 : dt * this.speed * this.slow;
+    // Before the fight (entrances, countdown) effects run on real time whatever the battle speed.
+    const vdt = this.paused ? 0 : dt * (this.hold ? 1 : this.speed * this.slow);
     for (let i = this.laters.length - 1; i >= 0 && vdt > 0; i--) {
       const l = this.laters[i];
       if ((l.t -= vdt) <= 0) { this.laters.splice(i, 1); l.fn(); }
     }
     this.fx.update(vdt);
+    this.soft.update(vdt, dt);
     this.arena.update(vdt);
     this.updateCamera(dt);
     for (const v of this.fighters) {
@@ -434,7 +454,9 @@ export class BattleView implements View {
     const W = sc.w * s, H = sc.h * s;
     const tight = Math.max(s + 1, Math.min(Math.round(H / 220), Math.floor(W / 260)));
     const mode = this.camMode;
-    let lo = s, hi = s, tx = mid, ty = Math.max(this.ly(a), this.ly(c));
+    // A hero lifted by their entrance (on a pillar, coming down from the sky) lifts the view too.
+    const lift = (i: number) => { const p = this.fighters[i]?.pose; return p && p.alpha > 0 ? Math.max(0, p.dy) : 0; };
+    let lo = s, hi = s, tx = mid, ty = Math.max(this.ly(a) + lift(0), this.ly(c) + lift(1));
     if (mode === 'action') hi = Math.max(s + 1, tight - 1);
     else if (mode === 'close') hi = tight;
     else if (mode === 'follow') lo = hi = tight;
@@ -462,7 +484,7 @@ export class BattleView implements View {
     if (cine) {
       this.cineT -= dt;
       zl = Math.max(zl, Math.min(L + this.cineL, tight + 1));
-      tx = mid + (this.cineX - mid) * 0.5;
+      tx = mid + (this.cineX - mid) * this.cineLean;
     }
     this.cineBars += ((cine ? 1 : 0) - this.cineBars) * Math.min(1, dt * (cine ? 10 : 4));
     if (this.cineBars < 0.01) this.cineBars = 0;
@@ -538,6 +560,7 @@ export class BattleView implements View {
     const night = this.arena!.night();
     if (night > 0.01) this.nightGlow(g, night);
     this.fx.draw(g, this);
+    this.soft.draw(g, this);
     if (this.flashT > 0) {
       g.globalAlpha = Math.min(0.5, this.flashT * 4);
       g.fillStyle = css(this.flashCol);
@@ -599,16 +622,17 @@ export class BattleView implements View {
       g.clip();
     }
     if (pose.flip) flip = !flip;
+    const put = (spr: Sprite, x: number) => (pose.sx !== 1 || pose.sy !== 1 ? blitScaled(g, spr, s, x, py, flip, pose.sx, pose.sy) : blit(g, spr, x, py, flip));
     // Afterimages, oldest (faintest) first.
     for (let k = pose.ghosts; k >= 1; k--) {
       g.globalAlpha = pose.alpha * 0.55 * (1 - k / (pose.ghosts + 1));
-      blit(g, pose.ghostCol ? v.bank.flash(o, pose.ghostCol) : s, px - Math.round(pose.ghostDx * k * PPM), py, flip);
+      put(pose.ghostCol ? v.bank.flash(o, pose.ghostCol) : s, px - Math.round(pose.ghostDx * k * PPM));
     }
     g.globalAlpha = pose.alpha;
-    blit(g, s, px, py, flip);
+    put(s, px);
     if (pose.tint && pose.tintA > 0) {
       g.globalAlpha = pose.alpha * Math.min(1, pose.tintA);
-      blit(g, v.bank.flash(o, pose.tint), px, py, flip);
+      put(v.bank.flash(o, pose.tint), px);
     }
     g.globalAlpha = 1;
     if (ground) g.restore();
@@ -2222,6 +2246,19 @@ function blitImg(g: CanvasRenderingContext2D, s: Sprite, img: HTMLCanvasElement,
   g.translate(x + 1, 0);
   g.scale(-1, 1);
   g.drawImage(img, -s.ox, y - s.oy);
+  g.restore();
+}
+
+/** A sprite squashed or stretched about its feet (`base` gives the anchor). */
+function blitScaled(g: CanvasRenderingContext2D, spr: Sprite, base: Sprite, x: number, y: number, flip: boolean, kx: number, ky: number): void {
+  const img = spr.img;
+  const w = Math.round(img.width * kx), h = Math.round(img.height * ky);
+  const ox = Math.round(base.ox * kx), oy = Math.round(base.oy * ky);
+  if (!flip) { g.drawImage(img, x - ox, y - oy, w, h); return; }
+  g.save();
+  g.translate(x + 1, 0);
+  g.scale(-1, 1);
+  g.drawImage(img, -ox, y - oy, w, h);
   g.restore();
 }
 

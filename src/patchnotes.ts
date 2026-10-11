@@ -12,6 +12,22 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.84.0',
+    date: '2026-10-11',
+    title: 'Grand entrances',
+    notes: [
+      'Every entrance has been reworked with much bigger moments. In battle the camera now leans in on each hero as they arrive, with letterbox bars, and lets go as they strike their pose.',
+      'Entrances now use the same light as the super attacks: glows, beams of light, shockwaves that bend the picture, light rays, lens flares and, for the biggest moments, a split-second impact frame. Landings squash and spring back.',
+      'Skyfall: a ring marks the landing spot and the hero streaks down into a crater of dust and rock. Smoke Bomb: a lit bomb rolls in and goes off in a billowing cloud that parts around a dark shape. Shadow Rise: the pool reaches up with tendrils of shadow before the hero rises.',
+      'Thunderclap: storm clouds gather and flicker before the bolt, and electricity crawls over the hero afterwards. Inferno: embers spiral in, the sand glows, the fire column roars higher and leaves a ring of flame. Glacier: frost creeps over the ground and the hero stands in a block of ice that cracks before it shatters.',
+      'Meteor Strike: the sky reddens, a turning rock trails a long blaze and the impact leaves a molten crater. Divine Descent: the clouds part, light motes fall down the beam, feathers drift and a halo rides over the hero.',
+      'Whirlwind carries leaves and stones and ends in a gust. Human Cannonball fires with a muzzle flash and the hero skids in striking sparks. Bat Swarm gathers into a dark knot with red eyes glinting inside.',
+      'Jackpot: three reels spin and lock on 7-7-7 before the coins pour. Blade Dance: three passes in a blur, a calm breath, then three arcs of light split the air. Earthshaker: cracks spread and glow before the pillar bursts up.',
+      'Rift Walker: the air cracks before the rift tears open, and it pulls light in before it implodes. Starborn: shooting stars cross the night and the constellation brightens before it flares. Phoenix Rebirth: a firebird dives into the sand before the wings spread.',
+      'Every entrance ends with the weapon raised and a glint on it. Mythic entrances add a glow around the hero and legendary ones add rays of light behind them.',
+    ],
+  },
+  {
     version: '0.83.0',
     date: '2026-10-11',
     title: 'The moonlit grove',

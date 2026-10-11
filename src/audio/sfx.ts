@@ -12,7 +12,7 @@ export type Sfx =
   | 'revealRare' | 'revealMythic' | 'revealLegendary' | 'revealEpic'
   // Pre-fight entrances
   | 'entStep' | 'entSlam' | 'entPoof' | 'entRise' | 'entChoir' | 'entFall' | 'entCheer' | 'entIgnite'
-  | 'entWind' | 'entCannon' | 'entBats' | 'entCoins' | 'entRumble' | 'entPortal' | 'entStars' | 'entPhoenix'
+  | 'entWind' | 'entCannon' | 'entBats' | 'entCoins' | 'entRumble' | 'entPortal' | 'entStars' | 'entPhoenix' | 'entReel'
   // Big pulls and the forge
   | 'omen' | 'slam' | 'forge' | 'meld' | 'clang' | 'fire' | 'steam' | 'gather' | 'coins' | 'deal' | 'hiss'
   // Super attacks: the callout stingers, the power gathering, the blade ring on release
@@ -488,6 +488,13 @@ class AudioEngine {
         this.tone('sawtooth', 900, 2200, t, 0.35, 0.09 * k, pan);
         this.tone('square', 1300, 2900, t + 0.05, 0.3, 0.04 * k, pan);
         this.burst(t, 0.8, 0.4 * k, 'lowpass', 900, 2600, 0.7, pan);
+        break;
+      case 'entReel':
+        // A slot reel clunking to a stop, and a bright ding.
+        this.burst(t, 0.05, 0.3 * k, 'bandpass', 1800, 900, 2, pan);
+        this.tone('square', 220, 160, t, 0.06, 0.08 * k, pan);
+        this.tone('triangle', 1568, 1568, t + 0.03, 0.25, 0.07 * k, pan);
+        this.tone('sine', 2349, 2349, t + 0.03, 0.2, 0.04 * k, pan);
         break;
       case 'entIgnite':
         this.burst(t, 0.8, 0.55 * k, 'lowpass', 600, 2400, 0.7, pan);
