@@ -2,7 +2,7 @@ import { sfx } from '../audio/sfx';
 import type { PlayerCharacter } from '../character/profile';
 import { SPECIES } from '../character/appearance';
 import { owns } from '../character/collection';
-import { RARITY_INFO, setPieces, SKIN_SET_BY_ID, skinOn, skinsFor, type SkinDef, type SkinSetId } from '../character/skins';
+import { RARITY_INFO, RARITY_NAME, setPieces, SKIN_SET_BY_ID, skinOn, skinsFor, type SkinDef, type SkinSetId } from '../character/skins';
 import { iconCanvas } from '../render/icons';
 import { gearIdsFor, gearOf, SLOT_NAMES } from '../sim/gear';
 import { FORMS } from '../sim/forms';
@@ -181,7 +181,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
     }
     const got = all.filter((sk) => owns(sk.id)).length;
     if (!cur) return h('p.sk-info', null, h('b', null, 'Default look'), ` · ${got}/${all.length} unlocked. Looks only.`);
-    if (!cur.set) return h('p.sk-info', null, h(`b.${cur.rarity}`, null, cur.name), ` · ${cur.rarity}. ${RARITY_INFO[cur.rarity]}`);
+    if (!cur.set) return h('p.sk-info', null, h(`b.${cur.rarity}`, null, cur.name), ` · ${RARITY_NAME[cur.rarity]}. ${RARITY_INFO[cur.rarity]}`);
     const set = SKIN_SET_BY_ID.get(cur.set)!;
     const worn = setWorn(set.id), n = setPieces(set.id).length;
     const have = setPieces(set.id).filter((p) => owns(p.id)).length;
@@ -293,7 +293,7 @@ export function gearSheet(start: PlayerCharacter, cb: GearCallbacks, opts: { for
       const locked = !!sk && !owns(sk.id);
       const trying = !!sk && peek?.id === sk.id;
       return h(`button.skc.${sk ? sk.rarity : 'plain'}${sel ? '.on' : ''}${locked ? '.locked' : ''}${trying ? '.try' : ''}`, {
-        title: sk ? `${sk.name} (${sk.rarity}${sk.set ? `, ${SKIN_SET_BY_ID.get(sk.set)!.name} set` : ''})${locked ? ', locked: tap to try it on' : ''}` : 'Default: the plain item',
+        title: sk ? `${sk.name} (${RARITY_NAME[sk.rarity]}${sk.set ? `, ${SKIN_SET_BY_ID.get(sk.set)!.name} set` : ''})${locked ? ', locked: tap to try it on' : ''}` : 'Default: the plain item',
         'aria-label': sk ? `${sk.name}${locked ? ' (locked)' : ''}` : 'Default', 'aria-pressed': String(sel),
         onclick: () => wear(id, sk),
       }, h('span.skc-ic', null, ic, locked ? icon('lock', 'sk-lock') : null));

@@ -2,7 +2,7 @@ import { sfx } from '../audio/sfx';
 import { buySkins, gems, onCollection, owns } from '../character/collection';
 import type { PlayerCharacter } from '../character/profile';
 import { dailyPicks, featuredSet, msToRotation, setOffer, shopDay, SKIN_PRICE, type SetOffer } from '../character/shop';
-import { SKIN_SETS, type SkinDef, type SkinSetId } from '../character/skins';
+import { RARITY_NAME, SKIN_SETS, type SkinDef, type SkinSetId } from '../character/skins';
 import { iconCanvas } from '../render/icons';
 import { gearOf, SLOT_NAMES } from '../sim/gear';
 import { DEFAULT_BUILDS, withGear } from '../sim/loadout';
@@ -28,7 +28,7 @@ export interface ShopCallbacks {
   player(): PlayerCharacter | null;
 }
 
-const TIER: Record<SkinDef['rarity'], string> = { rare: 'Rare', mythic: 'Mythic', legendary: 'Legendary', epic: 'Epic' };
+const TIER = RARITY_NAME;
 
 function skinIcon(s: SkinDef, px = 48): HTMLCanvasElement {
   const c = iconCanvas(s.gear, px, s.id);
@@ -240,7 +240,7 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
             : using ? h('span.owned-tag', null, icon('check'), 'In use')
               : h('button.btn.sm', { onclick: (ev: MouseEvent) => { ev.stopPropagation(); cb.onEntrance(id); sfx.play('equip'); render(); } }, icon('boot'), 'Use'));
       })),
-      h('div.shelf-head', null, h('div.ribbon', null, h('span', null, 'Epic sets')), h('small', null, 'Pay only for the pieces you miss')),
+      h('div.shelf-head', null, h('div.ribbon', null, h('span', null, 'Mythic sets')), h('small', null, 'Pay only for the pieces you miss')),
       h('div.shelf-sets', null, ...sets.map((o) => {
         const have = o.pieces.length - o.missing.length;
         return h(`div.offer-set${o.missing.length ? '' : '.mine'}`, null,
