@@ -32,7 +32,8 @@ export interface SkinDef {
 
 export type SkinSetId = 'sunborn' | 'hellforged' | 'foxfire' | 'wildwood' | 'abyssal' | 'clockwork' | 'bloodmoon' | 'starweaver' | 'frostbound' | 'stormcaller' | 'voidborn'
   | 'jadedragon' | 'seraph' | 'lichborne' | 'quetzal' | 'prismheart'
-  | 'corsair' | 'oni' | 'beastlord' | 'djinn' | 'plague' | 'sugarrush' | 'hallow' | 'olympian' | 'lionheart' | 'mothqueen';
+  | 'corsair' | 'oni' | 'beastlord' | 'djinn' | 'plague' | 'sugarrush' | 'hallow' | 'olympian' | 'lionheart' | 'mothqueen'
+  | 'skybell';
 
 export interface SkinSet {
   id: SkinSetId;
@@ -68,6 +69,7 @@ export const SKIN_SETS: readonly SkinSet[] = [
   { id: 'olympian', name: 'Olympian', blurb: 'White marble and bronze of the gods of Olympus, laurel and lightning, a crimson cloak in the wind.' },
   { id: 'lionheart', name: 'Lionheart', blurb: 'A paladin king\'s white steel and gold, lion crests and royal blue, sunlight blazing at every edge.' },
   { id: 'mothqueen', name: 'Moth Queen\'s Court', blurb: 'Fae royalty of the moonlit wood: luna-moth wings, silver dust and soft glowing mushrooms.' },
+  { id: 'skybell', name: 'Skybell Sanctum', blurb: 'Saffron robes and sea-green bronze of the monks who keep the bells on the windswept peaks, prayer flags snapping in a gale that never dies.' },
 ];
 export const SKIN_SET_BY_ID: ReadonlyMap<SkinSetId, SkinSet> = new Map(SKIN_SETS.map((s) => [s.id, s]));
 
@@ -445,6 +447,13 @@ export const SKINS: readonly SkinDef[] = [
   E('mothqueen', 'mage_robe', 'mothqueen', 'Moth Queen\'s Gown'),
   E('mothqueen', 'runed_leggings', 'mothqueen', 'Silkspun Leggings'),
   E('mothqueen', 'zephyr_boots', 'mothqueen', 'Dewdrop Slippers'),
+  E('skybell', 'longbow', 'skybell', 'Windsong Bow'),
+  E('skybell', 'wind_chakram', 'skybell', 'Prayer Wheel Chakram'),
+  E('skybell', 'gale_bell', 'skybell', 'Bell of the Four Winds'),
+  E('skybell', 'hawkeye_hood', 'skybell', 'Pilgrim\'s Windhat'),
+  E('skybell', 'mage_robe', 'skybell', 'Robes of the Windward Peak'),
+  E('skybell', 'windrunner_leggings', 'skybell', 'Cloudstep Trousers'),
+  E('skybell', 'zephyr_boots', 'skybell', 'Cloudwalker Sandals'),
 ];
 
 export const SKIN_BY_ID: ReadonlyMap<string, SkinDef> = new Map(SKINS.map((s) => [s.id, s]));

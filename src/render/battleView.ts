@@ -929,7 +929,7 @@ export class BattleView implements View {
     }
     const state: BellState = it ? 'toll' : ready ? 'ready' : 'spent';
     const cx = px - f.facing * 12, cy = Math.round(py - v.shPx - 12 + Math.sin(this.time * 2.4 + f.id) * 1.5 - lift);
-    this.put(g, bellSprite(state, tilt, v.art.specialSkinId), cx, cy, false);
+    this.put(g, bellSprite(state, tilt, v.art.specialSkinId, Math.floor(this.time * 6 + f.id)), cx, cy, false);
     this.itemSparks(v, cx, cy + 6);
     // Ready: now and then a wisp of wind curls off the rim.
     if (ready && dt > 0 && Math.random() < dt * 2.5) {

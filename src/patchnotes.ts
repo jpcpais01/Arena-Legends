@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.75.0',
+    date: '2026-10-11',
+    title: 'New epic set: Skybell Sanctum',
+    notes: [
+      'New epic set, Skybell Sanctum: the monks who keep the bells on the windswept peaks. Saffron robes under a maroon shawl, sea-green temple bronze, a wide straw hat, and jade wind runes that glow at night.',
+      'It comes with the Windsong Bow, the Prayer Wheel Chakram, the Pilgrim\'s Windhat, the Robes of the Windward Peak, Cloudstep Trousers and Cloudwalker Sandals.',
+      'And the Gale Bell gets its first skin, the Bell of the Four Winds: a temple bell with a jade rune band and a swinging tassel. Its gale blows golden, and rings of sound fan out when it tolls.',
+      'Wear the whole set for its aura: a whirlwind at your feet, prayer flags circling on the wind and marigold petals carried up around you.',
+    ],
+  },
+  {
     version: '0.74.0',
     date: '2026-10-11',
     title: 'New special item: the Gale Bell',
