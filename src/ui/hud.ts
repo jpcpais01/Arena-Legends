@@ -111,7 +111,7 @@ export class Hud {
   private bubbles = true;
 
   /** Super attack names on screen: one per side, item ultimates in the middle. */
-  private supers: Record<'left' | 'right' | 'mid', HTMLElement | null> = { left: null, right: null, mid: null };
+  private supers: Record<'left' | 'right' | 'ileft' | 'iright', HTMLElement | null> = { left: null, right: null, ileft: null, iright: null };
   private superOf: (HTMLElement | null)[] = [null, null];
   /** Cinematic letterbox bars that close in while a super plays. */
   private cineBars = [h('i.cine-bar.t'), h('i.cine-bar.b')];
@@ -130,7 +130,8 @@ export class Hud {
    */
   private superCallout(f: number, look: SuperLook, side: 'left' | 'right'): void {
     if (this.el.hidden) return;
-    const slot = look.ult ? 'mid' : side;
+    if (look.ult) return this.itemCallout(f, look, side);
+    const slot = side;
     this.supers[slot]?.remove();
     // Word per line, letter by letter: each one slams in a beat after the last.
     const sp = Math.sqrt(this.speedV);
@@ -138,13 +139,37 @@ export class Hud {
     const words = (look.name.toUpperCase() + '!').split(/\s+/).map((w) =>
       h('span.sc-word', null, ...[...w].map((c) => h('b.sc-ch', { style: { '--i': String(i++) } }, h('s', null, c), h('u', null, c)))));
     const el = h('div.super', {
-      class: `${slot}${look.ult ? ' ult' : ''}`,
-      style: { '--hi': hex(look.hi), '--lo': hex(look.lo), '--dur': `${(look.ult ? 1.9 : 1.35) / sp}s`, '--st': `${Math.round((look.ult ? 34 : 24) / sp)}ms` },
+      class: slot,
+      style: { '--hi': hex(look.hi), '--lo': hex(look.lo), '--dur': `${1.35 / sp}s`, '--st': `${Math.round(24 / sp)}ms` },
     },
       h('i.sc-plate'),
-      look.ult ? h('i.sc-rays') : null,
-      h('span.sc-tag', null, look.ult ? 'ULTIMATE' : 'SUPER'),
+      h('span.sc-tag', null, 'SUPER'),
       h('span.sc-text', null, ...words),
+    );
+    el.addEventListener('animationend', (e) => {
+      if (e.target !== el) return;
+      el.remove();
+      if (this.supers[slot] === el) this.supers[slot] = null;
+    });
+    this.supers[slot] = el;
+    this.superOf[f] = el;
+    this.el.append(el);
+  }
+
+  /**
+   * A special item's move: a small badge with the item's icon slides in on
+   * its user's side. Deliberately plain next to a weapon super's slam, so the
+   * two never read alike.
+   */
+  private itemCallout(f: number, look: SuperLook, side: 'left' | 'right'): void {
+    const fighter = this.battle?.fighters[f];
+    const id = fighter?.gearIds.find((g) => gearOf(g).slot === 'special');
+    const slot = side === 'left' ? 'ileft' : 'iright';
+    this.supers[slot]?.remove();
+    const icon = id ? iconCanvas(id, 40, skinOn(fighter!.skins, id)?.id) : null;
+    const el = h('div.itemcall', { class: side, style: { '--hi': hex(look.hi), '--lo': hex(look.lo), '--dur': `${1.5 / Math.sqrt(this.speedV)}s` } },
+      icon ? h('span.ic-sock', null, icon) : null,
+      h('span.ic-txt', null, h('small', null, id ? gearOf(id).name : 'Special item'), h('b', null, look.name)),
     );
     el.addEventListener('animationend', (e) => {
       if (e.target !== el) return;
@@ -218,7 +243,7 @@ export class Hud {
     this.banner = h('div.banner', { hidden: true });
     this.el.replaceChildren(...this.cineBars, top, ...bubbles, ctrl, this.banner);
     this.cineQ = -1;
-    this.supers = { left: null, right: null, mid: null };
+    this.supers = { left: null, right: null, ileft: null, iright: null };
     this.superOf = [null, null];
     this.setSpeed(speed);
     this.setCamera(this.camName);

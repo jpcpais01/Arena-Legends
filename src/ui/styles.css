@@ -70,6 +70,7 @@ html, body {
 }
 #app { position: fixed; inset: 0; }
 canvas.screen { position: absolute; left: 0; top: 0; display: block; }
+canvas.glfx { position: absolute; left: 0; top: 0; display: block; pointer-events: none; }
 #ui { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
 #ui > * { pointer-events: auto; }
 #ui > .pass { pointer-events: none; }
@@ -989,6 +990,22 @@ input.code-input { width: 8.5ch; text-align: center; letter-spacing: 0.25em; tex
 .super.gone { animation: sc-gone 0.22s ease-in forwards; }
 .super.gone * { animation-play-state: paused; }
 .hud.paused .super, .hud.paused .super * { animation-play-state: paused; }
+/* Special item moves: a small badge with the item's icon slides in on its user's side. Calm on purpose,
+   so it never reads like a weapon super's slam. */
+.itemcall { position: absolute; top: 31%; display: flex; align-items: center; gap: 8px; padding: 5px 14px 5px 5px; pointer-events: none; z-index: 2;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--lo) 55%, #120c1a), #120c1ae0); border: 2px solid var(--ink); border-radius: 6px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hi) 60%, transparent), 0 3px 0 var(--ink); animation: ic-life var(--dur, 1.5s) ease-out forwards; }
+.itemcall.left { left: calc(var(--safe-l) + 2vw); --from: -24px; }
+.itemcall.right { right: calc(var(--safe-r) + 2vw); flex-direction: row-reverse; padding: 5px 5px 5px 14px; text-align: right; --from: 24px;
+  background: linear-gradient(270deg, color-mix(in srgb, var(--lo) 55%, #120c1a), #120c1ae0); }
+.ic-sock { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 4px; background: #0b0814; box-shadow: inset 0 0 0 1px var(--hi); }
+.ic-sock canvas { width: 36px; height: 36px; image-rendering: pixelated; }
+.ic-txt { display: grid; gap: 2px; line-height: 1; }
+.ic-txt small { font: 600 0.62rem/1 var(--font); letter-spacing: 0.08em; text-transform: uppercase; color: color-mix(in srgb, var(--hi) 70%, #fff); opacity: 0.9; }
+.ic-txt b { font: 700 1.05rem/1 var(--font); color: #fff; text-shadow: 0 2px 0 var(--ink); }
+.hud.paused .itemcall { animation-play-state: paused; }
+.itemcall.gone { animation: sc-gone 0.22s ease-in forwards; }
+@keyframes ic-life { 0% { opacity: 0; transform: translateX(var(--from)); } 12% { opacity: 1; transform: none; } 85% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-6px); } }
 /* Letterbox bars: the screen goes widescreen for a super. */
 .cine-bar { position: absolute; left: 0; right: 0; height: min(9vh, 52px); background: #05040a; opacity: 0.88; transform: scaleY(0); pointer-events: none; z-index: 0; }
 .cine-bar.t { top: 0; transform-origin: top; }
