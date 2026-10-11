@@ -12,6 +12,42 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.95.0',
+    date: '2026-10-11',
+    title: 'New Mythic set: The People\'s Champion',
+    notes: [
+      'The Rock has come back to the arena: a new Mythic set, The People\'s Champion.',
+      'Seven pieces: The Rock\'s Taped Fists (spiked knuckles, black tape and a gold Brahma bull), The People\'s Mic (war horn: he raises it and cuts a promo to power up), What The Rock Is Cooking (meteor sigil), The People\'s Eyebrow (gladiator helm: a polished bald dome, a goatee and the eyebrow raised), Brahma Bull Physique (leather jerkin: no shirt, all muscle, the bull tattoo on his shoulder), People\'s Champ Trunks (charger cuisses, black trunks and knee pads) and Rock Bottom Boots (savate boots).',
+      'What The Rock Is Cooking: a pot simmers on a red-hot stone at his shoulder. With a full energy bar it rises over his head, boils over, rocks back and he throws the whole pot of soup. It comes down on the enemy in a scalding splash: broth and carrots flying, a wave of soup and a big cloud of steam. Can you smell it?',
+      'Wear all seven for the most electrifying aura in the arena: a gold ring with sparks racing round it, camera flashes popping all around, and his entrance pyro going off every few seconds.',
+      'At night the bull\'s ruby eyes, the mic\'s live light, the shine on his head and the red-hot stone glow.',
+    ],
+  },
+  {
+    version: '0.94.0',
+    date: '2026-10-11',
+    title: 'New Mythic set: The Champ Is Here',
+    notes: [
+      'A new Mythic set: The Champ Is Here, John Cena\'s ring gear in Cenation lime, black and denim.',
+      'Seven pieces: Never Give Up Wristbands (spirit wraps: taped fists and lime sweatbands), The Time Is Now Trumpet (war horn), The Spinner Title (phoenix feather: the spinner belt floats at your shoulder, its disc turning), the Cenation Cap, the Never Give Up Tee with dog tags, Cena\'s Jorts (leather leggings) and Cenation High-Tops (leather boots).',
+      'With the wristbands, Spirit Palm becomes the "You can\'t see me" hand, waving as it flies. With the Spinner Title, coming back from the dead pops NEVER GIVE UP!',
+      'Wear all seven for its aura: a lime ring at your feet, trumpet notes rising off your shoulders, and every few seconds the hand waves in front of your face and you fade out of sight. You can\'t see him.',
+      'At night the spinner\'s diamonds, the logos on the cap, wristbands and heels, the dog tags and the trumpet catch the light.',
+    ],
+  },
+  {
+    version: '0.93.0',
+    date: '2026-10-11',
+    title: 'New Mythic set: The Undertaker',
+    notes: [
+      'The Deadman rises: a new Mythic set, The Undertaker, in black leather and purple.',
+      'Seven pieces: Deadman\'s Grips (spirit wraps, black fingerless gloves whose spirit palm becomes a great ghost hand closing for a chokeslam), Rest in Peace (tower shield, a cracked granite tombstone), The Urn (wisp lantern), The Phenom\'s Hat (a wide-brimmed hat with long black hair and eyes rolled back to white), Deadman\'s Duster (a long leather coat lined in purple), Graveyard Leathers and Tombstone Boots.',
+      'The Urn raises the dead: it floats at your shoulder, and when it charges its lid rattles open, a ghost climbs out and then flies at the enemy, wailing.',
+      'Wear all seven for its aura: graveyard fog at your feet, hands of the dead clawing up out of the ground, ghosts rising around you, and every few seconds purple lightning strikes behind you.',
+      'At night the white eyes, the urn\'s seam, the tombstone\'s crack and a few amethysts glow purple.',
+    ],
+  },
+  {
     version: '0.92.0',
     date: '2026-10-11',
     title: 'New Mythic set: Reign of the Ruler',

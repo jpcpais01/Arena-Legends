@@ -413,7 +413,7 @@ const ART: Record<ProjectileStyle | 'phantom' | 'sigil', ProjArt> = {
  * Sprite ids: the stock ones, plus two only skins draw: `lantern` (the
  * familiar) and `core` (a special item floating at the shoulder).
  */
-export type ProjArtId = keyof typeof ART | 'lantern' | 'core';
+export type ProjArtId = keyof typeof ART | 'lantern' | 'lanternCharge' | 'core';
 
 /** Battle sprites a usable item throws: the item tumbling end over end, or (caltrops) its scattered handful. */
 const USABLE_SHOTS: Partial<Record<ProjArtId, UsableId>> = { frostflask: 'frost_bomb', flask: 'fire_bomb', caltrops: 'caltrops' };
@@ -440,7 +440,7 @@ function usableShot(id: ProjArtId, skin: string): ProjArt | undefined {
 
 /** The art for a sprite: the skin's reshaped one if it has it, else the stock one. */
 const artFor = (id: ProjArtId, skin?: string | null): ProjArt | undefined =>
-  (skin ? SKIN_ART[skin]?.proj?.[id] ?? usableShot(id, skin) : undefined) ?? (id === 'lantern' || id === 'core' ? undefined : ART[id]);
+  (skin ? SKIN_ART[skin]?.proj?.[id] ?? usableShot(id, skin) : undefined) ?? (id === 'lantern' || id === 'lanternCharge' || id === 'core' ? undefined : ART[id]);
 
 /** Whether a sprite is a usable item thrown in its skin (its materials are the item's, not swapped by name). */
 export const isUsableShot = (id: ProjArtId, skin?: string | null) => !!skin && !SKIN_ART[skin]?.proj?.[id] && !!usableShot(id, skin);
