@@ -282,7 +282,9 @@ export class BattleView implements View {
 
   private layout(): void {
     const { w, h } = this.screen;
-    this.gy = h > w ? Math.round(h * 0.6) : h - Math.max(44, Math.round(h * 0.17));
+    // The ground sits 10% of the screen higher than the original framing (João, v0.69.1).
+    const lift = Math.round(h * 0.1);
+    this.gy = (h > w ? Math.round(h * 0.6) : h - Math.max(44, Math.round(h * 0.17))) - lift;
     const travel = Math.max(0, (ARENA_HALF_WIDTH + 1.8) * PPM - w / 2) + 12;
     this.arena = new ArenaView(this.theme, w, h, this.gy, travel);
   }

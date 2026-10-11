@@ -47,6 +47,7 @@ import { setPieces, type SkinDef } from './character/skins';
 import { accountStatus, accountsEnabled, consumeResume, me, onAccount, poke, restoreAccount, setReloadGate, social } from './account/account';
 import { accountSheet } from './ui/account';
 import { friendsSheet } from './ui/friends';
+import { leaderboardSheet } from './ui/leaderboard';
 import { FIGHT_STYLE_IDS } from './sim/styles';
 import { invitePopup, type InvitePopup } from './ui/invite';
 import { addXp, CHAMPION_GEMS, CHAMPION_XP, cupLossXp, cupWinXp, FINALIST_GEMS, heroLevel, pointsAt, quickXp } from './character/progress';
@@ -182,6 +183,7 @@ const menu = new Menu({
   },
   onAccount: accountsEnabled ? () => openAccount() : undefined,
   onFriends: accountsEnabled ? () => openFriends() : undefined,
+  onLeaderboard: accountsEnabled ? () => openLeaderboard() : undefined,
   onCup: () => openCup(),
 });
 
@@ -194,6 +196,13 @@ function openFriends(): void {
     onIncoming: (n) => { requestsAt = Date.now(); menu.setFriendRequests(n); },
     onInvite: (f) => inviteFriend(f.uid, f.name),
   });
+  ui.append(sheet.el);
+}
+
+function openLeaderboard(): void {
+  closeSheet();
+  sfx.play('ui');
+  sheet = leaderboardSheet({ onClose: () => closeSheet(), onAccount: () => openAccount() });
   ui.append(sheet.el);
 }
 

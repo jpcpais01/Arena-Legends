@@ -12,12 +12,49 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
-    version: '0.68.1',
+    version: '0.70.2',
     date: '2026-10-11',
     title: 'Easy install',
     notes: [
       'Arena Legends has a website now, with screenshots, what the game is about, and buttons to play or install it on a computer, Android or iPhone.',
       'Its Install button opens the game with an install box: one tap installs the app, or it shows the steps for your device when your browser can\'t do it in one tap.',
+    ],
+  },
+  {
+    version: '0.70.1',
+    date: '2026-10-11',
+    title: 'Home screen framed a little higher',
+    notes: [
+      'The fight playing behind the home screen now sits a bit higher too, matching the battles.',
+    ],
+  },
+  {
+    version: '0.70.0',
+    date: '2026-10-11',
+    title: 'Global leaderboard',
+    notes: [
+      'New global leaderboard: the podium button next to Friends on the menu shows the top 100 players, ranked by wins or by level.',
+      'Tap anyone in the top 25 to see their hero, their body and fighting style, and every piece of gear and skin they have equipped. You can send them a friend request from there too.',
+      'Every signed-in player is on the board automatically, and your row updates after your fights. Guests can browse it as well, and sign in to join.',
+    ],
+  },
+  {
+    version: '0.69.1',
+    date: '2026-10-11',
+    title: 'Battles framed a little higher',
+    notes: [
+      'During battles the arena now sits a bit higher on screen (about 10%), so the camera no longer feels like it is looking down from too high. This works with every camera mode and every arena.',
+    ],
+  },
+  {
+    version: '0.69.0',
+    date: '2026-10-11',
+    title: 'New Armory',
+    notes: [
+      'The Armory is rebuilt and reads left to right: pick a slot, see your fighter, pick an item, read its card.',
+      'Picking a slot shows the item you wear there right away, with its stats, skills and skins. No more popup to open and close.',
+      'Tapping another item tries it on your fighter and shows only the stats that would change. Tap Equip, or tap the item again, to wear it.',
+      'Skins sit in a row at the bottom of the card, one tap to change. Your fighter is bigger too.',
     ],
   },
   {
