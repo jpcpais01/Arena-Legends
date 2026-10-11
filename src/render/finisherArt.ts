@@ -84,7 +84,9 @@ export function drawScorch(g: CanvasRenderingContext2D, cx: number, gy: number, 
   g.globalAlpha = 1;
 }
 
-const PETAL = ['#ffd0e4', '#ffb0d0', '#ff90b8', '#fff0f6', '#f070a0'];
+const PETAL = ['#ffa8cc', '#ff84b4', '#ffc8de', '#f0609a', '#ffe0ee'];
+/** The shaded edge under each petal, so they read against a bright sky. */
+const PETAL_EDGE = '#b8346a';
 /**
  * A gust of cherry petals sweeping across the view (`dir` the way it blows):
  * curling streams of wind with a thick swarm of petals riding them, densest
@@ -97,6 +99,15 @@ export function drawPetalGust(g: CanvasRenderingContext2D, cx: number, R: number
   const front = -R + k * (2 * R + tail);
   const X = (x: number) => Math.round(cx + dir * x);
   const fade = k > 1 ? 1 - (k - 1) / 0.4 : 1;
+  // The body of the gust: a faint pink haze where the swarm is thickest.
+  const hx0 = X(front - tail * 0.7), hx1 = X(front);
+  const band = g.createLinearGradient(hx0, 0, hx1, 0);
+  band.addColorStop(0, 'rgba(255,170,205,0)');
+  band.addColorStop(0.8, `rgba(255,170,205,${(0.22 * fade).toFixed(3)})`);
+  band.addColorStop(1, 'rgba(255,170,205,0)');
+  g.fillStyle = band;
+  g.globalAlpha = 1;
+  g.fillRect(Math.min(hx0, hx1), Math.round(y0 - 26 * scale), Math.abs(hx1 - hx0), Math.round(52 * scale));
   // Streams of wind, each a wavy line that curls over at its head.
   for (let i = 0; i < 5; i++) {
     const yb = y0 + (i - 2) * 11 * scale + Math.sin(i * 2.1) * 6 * scale;
@@ -120,7 +131,7 @@ export function drawPetalGust(g: CanvasRenderingContext2D, cx: number, R: number
     }
   }
   // The swarm: petals bunched at the front, strung out behind, each tumbling on its own swirl.
-  const n = Math.round(150 * scale + 40);
+  const n = Math.round(230 * scale + 50);
   for (let i = 0; i < n; i++) {
     const lag = (rnd(i) ** 1.8) * tail;
     const x = front - lag;
@@ -132,6 +143,8 @@ export function drawPetalGust(g: CanvasRenderingContext2D, cx: number, R: number
     const flat = (Math.floor(sw * 1.5) & 1) === 0;
     g.globalAlpha = fade * (lag < tail * 0.75 ? 1 : 1 - (lag - tail * 0.75) / (tail * 0.25));
     const big = i % 7 === 0 && lag < tail * 0.3;
+    g.fillStyle = PETAL_EDGE;
+    g.fillRect(px, py + 1, big ? 3 : 2, 1);
     g.fillStyle = PETAL[i % PETAL.length];
     if (big) {
       g.fillRect(px - 1, py, 3, flat ? 2 : 1);
@@ -253,77 +266,102 @@ export interface DragonPt { x: number; y: number; z: number }
 /**
  * The spirit dragon: a glowing serpent body from tail to head (`pts`, head
  * last), drawn only where its depth matches the layer, so it coils behind
- * and in front of the winner. Scales run down its back, a pale belly under
- * it, a crest of fins, and a horned head with whiskers trailing; `open`
+ * and in front of the winner. An ink outline keeps it reading against any
+ * sky; scales shimmer down its back over a pale belly, fins rise along the
+ * crest, and the horned head leads with whiskers streaming back. `open`
  * drops the jaw (the roar).
  */
 export function drawDragon(g: CanvasRenderingContext2D, pts: DragonPt[], front: boolean, alpha: number, open: number, hi: number, lo: number, scale: number, t: number): void {
   if (alpha <= 0 || pts.length < 3) return;
-  const body = css(mix(hi, lo, 0.35)), dark = css(lo), light = css(mix(hi, 0xffffff, 0.45)), white = '#ffffff';
+  const ink = css(mix(lo, 0x000000, 0.55)), body = css(mix(hi, lo, 0.3)), dark = css(mix(hi, lo, 0.65)), light = css(mix(hi, 0xffffff, 0.5)), white = '#ffffff';
   const n = pts.length;
-  for (let i = 0; i < n; i++) {
-    const p = pts[i];
-    if ((p.z >= 0) !== front) continue;
+  const radius = (i: number) => {
     const u = i / (n - 1);
-    const r = Math.max(1, Math.round((1.2 + 4.2 * Math.sin(Math.min(1, u * 1.15) * Math.PI * 0.5)) * scale));
+    return Math.max(1, Math.round((1.3 + 4.4 * Math.sin(Math.min(1, u * 1.2) * Math.PI * 0.5)) * scale));
+  };
+  const normal = (i: number): [number, number] => {
     const q = pts[Math.min(n - 1, i + 1)], o = pts[Math.max(0, i - 1)];
     const nx = -(q.y - o.y), ny = q.x - o.x, nl = Math.hypot(nx, ny) || 1;
-    // Shimmer as it moves: every few scales flicker brighter.
-    const lit = (i + Math.floor(t * 18)) % 6 === 0;
-    g.globalAlpha = alpha * (front ? 0.95 : 0.7);
-    blob(g, p.x, p.y, r, r, lit ? light : body);
-    g.fillStyle = dark;
-    g.fillRect(Math.round(p.x + (nx / nl) * r), Math.round(p.y + (ny / nl) * r), 1, 1);
-    // Belly plates on the underside, the crest along the back.
+    // The back faces up on screen.
+    return ny > 0 ? [-nx / nl, -ny / nl] : [nx / nl, ny / nl];
+  };
+  const mine = (i: number) => (pts[i].z >= 0) === front;
+  g.globalAlpha = alpha * (front ? 1 : 0.8);
+  // Ink outline first, then fins on the crest, then the body over both.
+  for (let i = 0; i < n; i++) if (mine(i)) blob(g, pts[i].x, pts[i].y, radius(i) + 1, radius(i) + 1, ink);
+  for (let i = 3; i < n - 3; i += 3) {
+    if (!mine(i)) continue;
+    const [nx, ny] = normal(i), r = radius(i), f = (2.5 + Math.sin(t * 12 + i) * 0.8) * scale;
     g.fillStyle = light;
-    g.fillRect(Math.round(p.x - (nx / nl) * (r - 1)), Math.round(p.y - (ny / nl) * (r - 1)), 1, 1);
-    if (i % 4 === 0 && u > 0.1 && u < 0.92) {
-      g.fillStyle = white;
-      g.fillRect(Math.round(p.x + (nx / nl) * (r + 1)), Math.round(p.y + (ny / nl) * (r + 1)), 1, 2);
-    }
+    line(g, pts[i].x + nx * r, pts[i].y + ny * r, pts[i].x + nx * (r + f) - ny * f * 0.6, pts[i].y + ny * (r + f) + nx * f * 0.6);
   }
-  const h = pts[n - 1], b = pts[n - 3];
-  if ((h.z >= 0) !== front) { g.globalAlpha = 1; return; }
+  for (let i = 0; i < n; i++) {
+    if (!mine(i)) continue;
+    const p = pts[i], r = radius(i), [nx, ny] = normal(i);
+    // Shimmer as it moves: scales flicker brighter, rippling down the body.
+    const lit = (i + Math.floor(t * 20)) % 5 === 0;
+    blob(g, p.x, p.y, r, r, lit ? light : body);
+    // Back in shade, belly pale.
+    g.fillStyle = dark;
+    g.fillRect(Math.round(p.x + nx * (r - 1)), Math.round(p.y + ny * (r - 1)), Math.max(1, Math.round(r * 0.5)), 1);
+    g.fillStyle = light;
+    g.fillRect(Math.round(p.x - nx * (r - 1)), Math.round(p.y - ny * (r - 1)), Math.max(1, Math.round(r * 0.6)), 1);
+  }
+  const h = pts[n - 1], b = pts[n - 4];
+  if (!mine(n - 1)) { g.globalAlpha = 1; return; }
   // The head, pointing along the last stretch of body.
   const dx = h.x - b.x, dy = h.y - b.y, dl = Math.hypot(dx, dy) || 1;
-  const ux = dx / dl, uy = dy / dl, px = -uy, py = ux;
-  const up = py < 0 ? 1 : -1; // which side of the head is "up" on screen
+  const ux = dx / dl, uy = dy / dl;
+  let px = -uy, py = ux;
+  if (py > 0) { px = -px; py = -py; } // "up" on the head is up on screen
   const S = scale;
-  const at = (f: number, s: number): [number, number] => [h.x + ux * f * S + px * up * s * S, h.y + uy * f * S + py * up * s * S];
-  g.globalAlpha = alpha;
-  // Horns sweeping back.
+  const at = (f: number, s: number): [number, number] => [h.x + ux * f * S + px * s * S, h.y + uy * f * S + py * s * S];
+  const jaw = open * 2.6;
+  const part = (f: number, s: number, rx: number, ry: number, col: string, out = true) => {
+    const [x, y] = at(f, s);
+    if (out) blob(g, x, y, Math.round(rx * S) + 1, Math.round(ry * S) + 1, ink);
+    blob(g, x, y, Math.round(rx * S), Math.round(ry * S), col);
+  };
+  // Horns sweeping back, and the mane.
+  g.fillStyle = ink;
+  for (const [f, s, L] of [[-1, 3.5, 9], [0.5, 2.5, 7]] as const) {
+    const [x0, y0] = at(f, s), [x1, y1] = at(f - L, s + L * 0.5);
+    line(g, x0, y0 + 1, x1, y1 + 1, 2);
+  }
   g.fillStyle = light;
-  for (const [f, s, L] of [[-2, 4, 8], [-1, 3, 6]] as const) {
-    const [x0, y0] = at(f, s), [x1, y1] = at(f - L, s + L * 0.55);
-    line(g, x0, y0, x1, y1);
+  for (const [f, s, L] of [[-1, 3.5, 9], [0.5, 2.5, 7]] as const) {
+    const [x0, y0] = at(f, s), [x1, y1] = at(f - L, s + L * 0.5);
+    line(g, x0, y0, x1, y1, Math.max(1, Math.round(S)));
   }
-  // Skull and snout; the jaw drops open below for the roar.
-  let [x, y] = at(0, 0);
-  blob(g, x, y, Math.round(5 * S), Math.round(4 * S), body);
-  [x, y] = at(5, 0.5);
-  blob(g, x, y, Math.round(4 * S), Math.round(3 * S), body);
-  [x, y] = at(8, 0.5);
-  blob(g, x, y, Math.round(2.5 * S), Math.round(2.2 * S), light);
-  const jaw = open * 3;
-  [x, y] = at(5, -2.5 - jaw);
-  blob(g, x, y, Math.round(4 * S), Math.max(1, Math.round(1.6 * S)), dark);
+  // Lower jaw (it drops for the roar), then skull and long snout over it.
+  part(4.5, -2.6 - jaw, 4.5, 1.5, dark);
   if (open > 0.3) {
-    // Fangs and a glowing throat.
-    [x, y] = at(6, -1 - jaw * 0.5);
-    blob(g, x, y, Math.round(2 * S), Math.max(1, Math.round(jaw * 0.6 * S)), white);
+    // A glowing throat and fangs.
+    part(4, -1.4 - jaw * 0.5, 3.5, Math.max(1, jaw * 0.55), white, false);
+    g.fillStyle = white;
+    for (const f of [6.5, 8.5]) { const [x, y] = at(f, -1); g.fillRect(Math.round(x), Math.round(y), 1, 2); }
   }
-  // The eye: a bright slit, the brightest pixel on screen.
-  [x, y] = at(1, 1.5);
+  part(0, 0.3, 5, 4, body);
+  part(6, 0.6, 5, 2.6, body);
+  part(10, 0.7, 2.2, 2, light);
+  // Brow ridge and the eye: a bright slit, the brightest thing on screen.
+  const [ex, ey] = at(1.8, 1.8);
+  g.fillStyle = ink;
+  g.fillRect(Math.round(ex) - 2, Math.round(ey) - 1, 5, 1);
   g.fillStyle = white;
-  g.fillRect(Math.round(x) - 1, Math.round(y), 3, 1);
-  g.fillStyle = css(hi);
-  g.fillRect(Math.round(x), Math.round(y), 1, 1);
-  // Whiskers trailing back in a wave.
+  g.fillRect(Math.round(ex) - 1, Math.round(ey), 3, 1);
+  g.fillStyle = css(mix(hi, 0xffff80, 0.5));
+  g.fillRect(Math.round(ex), Math.round(ey), 1, 1);
+  // Nostril.
+  const [nx0, ny0] = at(10.5, 1.4);
+  g.fillStyle = ink;
+  g.fillRect(Math.round(nx0), Math.round(ny0), 1, 1);
+  // Whiskers streaming back in a wave.
   g.fillStyle = light;
   for (const s of [1, -1]) {
-    for (let j = 0; j < 14; j++) {
-      const [wx, wy] = at(7 - j * 1.4, s * (1.5 + j * 0.3) + Math.sin(t * 10 + j * 0.6) * j * 0.18);
-      g.globalAlpha = alpha * (1 - j / 14);
+    for (let j = 0; j < 18; j++) {
+      const [wx, wy] = at(9 - j * 1.5, s * 1.2 - 1 + Math.sin(t * 9 + j * 0.55) * j * 0.22 - j * 0.15);
+      g.globalAlpha = alpha * (1 - j / 18);
       g.fillRect(Math.round(wx), Math.round(wy), 1, 1);
     }
   }

@@ -219,7 +219,7 @@ export class BattleView implements View {
   private finIds: [FinisherId, FinisherId] = ['clean', 'clean'];
   private fin: Finisher | null = null;
   private finAfter = -1;
-  /** World height of the top of the view (finishers keep their skies in sight). */
+  /** World height of the top of the open view, under the HUD (finishers keep their skies in sight). */
   private viewTop = 6;
   /** The winner's victory pose extras. */
   private poseFx: PoseFx | null = null;
@@ -455,7 +455,8 @@ export class BattleView implements View {
     if (this.finAfter >= 0) this.finAfter += fdt;
     const fin = this.fin;
     if (!this.paused && !this.hold) {
-      this.acc += fin ? fdt * fin.pace : dt * this.speed * this.slow;
+      // The killing blow's hit-stop passes on a steady beat, whatever pace the finisher sets.
+      this.acc += fin ? fdt * (b.hitstop > 0 ? Math.max(fin.pace, 1.5) : fin.pace) : dt * this.speed * this.slow;
       let steps = 0;
       while (this.acc >= DT && steps < 12) {
         b.step();
@@ -562,7 +563,7 @@ export class BattleView implements View {
     const vh = sc.h / this.zoom;
     const cy = this.gy - (this.gy / sc.h - 0.5) * vh - Math.min(this.viewY, 2.5) * PPM * 0.5 * (1 - 1 / this.zoom);
     sc.setView(this.zoom, sc.w / 2 + (this.viewX - this.camX) * PPM, cy);
-    this.viewTop = (this.gy - (cy - vh / 2)) / PPM;
+    this.viewTop = (this.gy - (cy - vh * 0.26)) / PPM;
     if (this.shakeT > 0) {
       this.shakeT -= dt;
       const a = this.shakeAmp * PPM * 0.12 * Math.max(0, this.shakeT * 3);

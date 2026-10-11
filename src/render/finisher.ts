@@ -275,7 +275,7 @@ const DEFS: Record<FinisherId, Def> = {
   frost: {
     len: 2.0,
     step(e, t) {
-      const FREEZE = 0.14, BREAK = 1.05;
+      const FREEZE = 0.3, BREAK = 1.15;
       const [bx, by] = e.body;
       if (e.at(0)) {
         e.ko(0xbff0ff, 0.6);
@@ -283,7 +283,7 @@ const DEFS: Record<FinisherId, Def> = {
         e.focus(e.F[0], BREAK + 0.6, 2);
         e.vignette(0x0a2a40, 0.55, 1.9);
       }
-      e.pace = t < FREEZE ? 0.35 : t < BREAK ? 0 : 0.5;
+      e.pace = t < FREEZE ? 0.8 : t < BREAK ? 0 : 0.5;
       if (e.at(FREEZE)) {
         e.mark.ix = bx; e.mark.iy = by;
         e.sound('freeze');
@@ -320,9 +320,9 @@ const DEFS: Record<FinisherId, Def> = {
     },
     draw(e, g, v, layer, t) {
       if (layer !== 'over') return;
-      if (t >= 0.14 && t < 1.05) {
+      if (t >= 0.3 && t < 1.15) {
         const [x, y] = sxy(v, [e.mark.ix, e.mark.iy]);
-        drawIce(g, x, y, (t - 0.14) / 0.22, clamp01((t - 0.63) / 0.4), e.scale);
+        drawIce(g, x, y, (t - 0.3) / 0.22, clamp01((t - 0.73) / 0.4), e.scale);
       }
       for (const b of e.bits) {
         const [x, y] = sxy(v, [b.x, b.y]);
@@ -342,8 +342,8 @@ const DEFS: Record<FinisherId, Def> = {
         e.vignette(0x0a1428, 0.7, 2);
         e.sound('entRumble', 0.7);
       }
-      const hit = e.strike('hit', 0.5, 0.95);
-      e.pace = t < 0.06 ? 0 : hit < 0 ? 0.4 : t < hit + 0.14 ? 0 : 0.6;
+      const hit = e.strike('hit', 0.5, 1.0);
+      e.pace = t < 0.06 ? 0 : hit < 0 ? 0.7 : t < hit + 0.14 ? 0 : 0.6;
       if (t > 0.18 && (hit < 0 || t < hit + 0.45)) e.win('victory', 0, 'shout');
       for (const k of [0.28, 0.46]) if (e.at(k)) { e.fx.bolt(e.F[0] - 1.4, e.sky(0.6), e.F[0] + 1.1, e.sky(0.4), 0x7ac8ff, 0.08); e.flash(0xc8e8ff, 0.25); e.sound('lightning', 0.25); }
       if (hit < 0) {
@@ -399,7 +399,7 @@ const DEFS: Record<FinisherId, Def> = {
       if (e.at(0.15)) e.light({ kind: 'glow', x: e.F[0], y: 1.2, r0: 1.1, r1: 1.5, hi: 0xffe0f0, lo: 0xc04070, life: 1.5, power: 0.55, fin: 0.15, real: true, follow: () => [gustX(e), 1.2] });
       e.pace = t < 0.08 ? 0 : t < GO ? 0.08 : 0.7;
       if (t > 0.3) { const p = e.win('fin.lower', 0, t > 0.5 && t < GO + 0.2 ? 'blink' : 'calm'); p.flip = false; }
-      if (e.at(0.2)) e.glow(e.body[0], e.body[1], 0.6, 1.4, 0xffe0f0, 0xc04070, GO, 0.45, { fin: 0.3 });
+      if (e.at(0.2)) e.glow(e.body[0], e.body[1], 0.6, 1.4, 0xffe0f0, 0xc04070, GO, 0.22, { fin: 0.3 });
       if (t < GO) e.fall('#ffd0e4', 0.25 * clamp01(t / 0.4));
       if (e.at(GO)) {
         e.sound('whoosh', 1.2);
@@ -430,8 +430,8 @@ const DEFS: Record<FinisherId, Def> = {
         e.focus(e.F[0], 2.2, 2);
         e.sound('entIgnite', 0.5);
       }
-      const go = e.strike('erupt', 0.45, 0.9);
-      e.pace = t < 0.06 ? 0 : go < 0 ? 0.35 : t < go + 0.12 ? 0 : t < go + 1 ? 0.4 : 1;
+      const go = e.strike('erupt', 0.45, 0.95);
+      e.pace = t < 0.06 ? 0 : go < 0 ? 0.75 : t < go + 0.12 ? 0 : t < go + 1 ? 0.4 : 1;
       const x = e.mark.x ?? e.F[0];
       if (go < 0) {
         if (e.every('ember', 0.04)) e.fx.burst({ x: e.F[0], y: 0.05, count: 2, jitter: 1, jitterY: 0, dir: UP, spread: 0.3, speed: [0.5, 1.5], life: [0.3, 0.6], color: 0xffd060, color2: 0xd83a1a, kind: 'ember' });
@@ -596,13 +596,13 @@ const DEFS: Record<FinisherId, Def> = {
         // Aimed at where the fallen is, give or take.
         const tx = e.F[0] + (big ? 0 : (rnd(i + 1) - 0.5) * 1.6), ty = big ? e.body[1] * 0.5 : Math.max(0, e.F[1] + rnd(i + 4) * 0.8);
         const sx = tx - e.dir * (1.5 + rnd(i) * 1.5), sy = Math.max(ty + 2, e.sky(-0.6, 6.4) + rnd(i + 2) * 0.6);
-        e.bits.push({ x: sx, y: sy, vx: (tx - sx) / FALL, vy: (ty - sy) / FALL, a: 0, va: 0, t: 0, life: FALL, s: big ? 2 : 1, hit: false });
+        e.bits.push({ x: sx, y: sy, vx: (tx - sx) / FALL, vy: (ty - sy) / FALL, a: 0, va: 0, t: 0, life: FALL, s: big ? 3 : 1.5, hit: false });
         e.light({ kind: 'glow', x: sx, y: sy, r0: 0.25, r1: 0.4, hi: WHITE, lo: 0x8ab0ff, life: FALL, power: 0.8, fin: 0, follow: () => { const b = e.bits.find((q) => q.life === FALL && q.x === sx && q.t < FALL); return b ? [b.x, b.y] : null; } });
       }
       for (const b of e.bits) {
         if (b.hit !== false || b.t < b.life - 0.02) continue;
         b.hit = true;
-        const big = b.s > 1;
+        const big = b.s > 2;
         e.sound(big ? 'castBig' : 'shing', big ? 1 : 0.25);
         e.light({ kind: 'star', x: b.x, y: b.y, r0: big ? 0.8 : 0.3, r1: big ? 1.8 : 0.7, w: 0.04, hi: WHITE, lo: 0x8ab0ff, life: big ? 0.45 : 0.25, power: 1.1, fin: 0 });
         e.fx.burst({ x: b.x, y: b.y, count: big ? (e.stage ? 36 : 14) : (e.stage ? 10 : 4), speed: big ? [2, 6] : [1, 3], life: [0.3, 0.7], color: WHITE, color2: 0x8ab0ff, kind: 'twinkle' });
@@ -655,6 +655,8 @@ const DEFS: Record<FinisherId, Def> = {
       const head = dragonAt(e, t, 1);
       if (head && t < HIT && e.every('mote', 0.04)) e.fx.burst({ x: head[0], y: head[1], count: 1, jitter: 0.15, speed: [0.2, 0.6], life: [0.4, 0.8], color: WHITE, color2: e.hi, kind: 'twinkle' });
       if (e.at(0.2)) e.glow(e.W[0], 1.2, 0.8, 1.6, mix(e.hi, WHITE, 0.4), e.lo, HIT, 0.5, { fin: 0.3 });
+      // Its head carries its own light.
+      if (e.at(0.15)) e.glow(e.W[0], 0, 0.9, 1.3, mix(e.hi, WHITE, 0.5), e.lo, HIT - 0.1, 0.7, { fin: 0.2, real: true, follow: () => { const p = dragonAt(e, e.time, 1); return p ? [p[0], p[1]] : null; } });
       if (e.at(DRAGON.lunge[0] - 0.12)) e.sound('roar', 1.1);
       if (e.at(HIT)) {
         const [bx, by] = e.body;

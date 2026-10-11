@@ -43,7 +43,7 @@ const STEPS: StepDef[] = [
   { label: 'Name', icon: 'edit', title: 'Name your legend', sub: 'The crowd will chant it.' },
   { label: 'Scene', icon: 'star', title: 'Set your scene', sub: 'The backdrop behind your portrait, wherever you show up.' },
   { label: 'Entrance', icon: 'boot', title: 'Make an entrance', sub: 'How you step into the arena before every fight. More in the Shop.' },
-  { label: 'Finale', icon: 'trophy', title: 'Finish in style', sub: 'Your knockout finisher and the pose you strike when you win. More in the Shop.' },
+  { label: 'Finale', icon: 'impact', title: 'Finish in style', sub: 'Your knockout finisher and the pose you strike when you win. More in the Shop.' },
 ];
 /** Only when editing a hero: spend the points levels give. */
 const STATS_STEP: StepDef = { label: 'Stats', icon: 'trophy', title: 'Train your stats', sub: 'Every level gives stat points. Spend them on your base stats; take them back any time.' };
@@ -688,7 +688,7 @@ export function creatorSheet(start: PlayerCharacter, cb: CreatorCallbacks): { el
         play: (id) => preview.playPose(id as PoseId),
       },
     };
-    const cats = h('div.hc-cats', { role: 'tablist' });
+    const cats = h('div.hc-cats.finale-cats', { role: 'tablist' });
     const grid = h('div.hc-grid.entrances.finales');
     const detail = h('div.hc-info-wrap');
     const tiles = new Map<string, HTMLElement>();

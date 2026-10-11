@@ -163,7 +163,7 @@ export class Preview {
   playFinisher(id: FinisherId, pose: PoseId): void {
     if (this.still) return;
     const [hi, lo] = skinColours(this.bank.art.mainSkin) ?? [];
-    this.show = new FinaleShow(this.bank, this.stage(), this.flip ? -1 : 1, { finisher: id, pose, hi, lo, top: (this.h - this.ground) / PPM });
+    this.show = new FinaleShow(this.bank, this.stage(), this.flip ? -1 : 1, { finisher: id, pose, hi, lo, top: (this.h - this.ground) / PPM, room: this.w / 2 / PPM });
     this.ent = null;
     this.t = 0;
     if (this.next > 0) this.next = 6;

@@ -20,8 +20,9 @@ const blank = (): EntrancePose => ({
   ghosts: 0, ghostDx: 0, ghostCol: null, sx: 1, sy: 1,
 });
 
-/** The shadow double's colour. */
-const SHADE = '#1e1630';
+/** The shadow double: a dusky body with a pale rim, so it reads on a dark stage too. */
+const SHADE = '#3a2c58';
+const RIM = '#b8a8e8';
 /** Frames per second the strike plays at. */
 const FPS = 14;
 /** How long the pose shows once it has settled in (seconds). */
@@ -37,6 +38,8 @@ export interface FinaleShowOptions {
   lo?: number;
   /** World height of the canvas top. */
   top?: number;
+  /** Half the canvas width (world metres): how far the double can be thrown. */
+  room?: number;
 }
 
 export class FinaleShow {
@@ -61,8 +64,9 @@ export class FinaleShow {
     this.poseLen = poseIntro(set.clips.get(this.poseClip)!) + HOLD;
     this.poseFx = new PoseFx(opts.pose, host, 0.6);
     if (opts.finisher) {
-      this.heroX = -0.5 * facing;
-      this.dummy = { x: this.heroX + 0.95 * facing, y: 0, vx: 0, vy: 0, koT: -1, alpha: 0 };
+      const room = opts.room ?? 1.5;
+      this.heroX = -Math.min(0.5, room * 0.45) * facing;
+      this.dummy = { x: this.heroX + Math.min(0.95, room * 0.85) * facing, y: 0, vx: 0, vy: 0, koT: -1, alpha: 0 };
       const clip = [...set.clips.keys()].find((k) => !SKIP.test(k)) ?? 'idle';
       const c = set.clips.get(clip)!;
       this.strike = { clip, hit: c.draw.length + c.w.length, n: clipLength(c) };
@@ -112,7 +116,9 @@ export class FinaleShow {
   }
 
   private knockOut(d: Dummy): void {
-    d.vx = 1.4 * this.facing;
+    // Thrown about as far as the canvas has room for (it is in the air ~0.47 s).
+    const room = this.opts.room ?? 1.5;
+    d.vx = Math.max(0.3, Math.min(1.4, (room - 0.4 - Math.abs(d.x)) / 0.47)) * this.facing;
     d.vy = 5.2;
     d.koT = 0;
     this.fin = new Finisher(this.opts.finisher!, this.host, () => [this.heroX, 0], () => [d.x, d.y], { stage: false, hi: this.opts.hi, lo: this.opts.lo, top: () => this.opts.top ?? 2.6 });
@@ -149,7 +155,10 @@ export class FinaleShow {
     g.fillStyle = '#000';
     g.fillRect(x - 9, gy - 1, 18, 3);
     const s = this.bank.get(o);
-    g.globalAlpha = 0.9 * d.alpha;
+    g.globalAlpha = 0.55 * d.alpha;
+    const rim = this.bank.flash(o, RIM);
+    for (const [ox, oy] of RIM_AT) blit(g, rim, s, x + ox, y + oy, flip);
+    g.globalAlpha = 0.92 * d.alpha;
     blit(g, this.bank.flash(o, SHADE), s, x, y, flip);
     const w = this.fin?.frame.fall;
     if (w?.tint && w.tintA > 0) {
@@ -159,6 +168,8 @@ export class FinaleShow {
     g.globalAlpha = 1;
   }
 }
+
+const RIM_AT: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 /** Clips that are not a plain swing. */
 const SKIP = /^(idle|run|back|stop|stopB|land|hurt|stun|air|ko|victory|roll|leap|evade|blink)$|^(sec|use|pose|fin)\./;

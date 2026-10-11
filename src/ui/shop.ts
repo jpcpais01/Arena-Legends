@@ -203,7 +203,7 @@ export function shopScreen(cb: ShopCallbacks): { el: HTMLElement; dispose(): voi
       use: (id) => cb.onFinisher(id as FinisherId), play: (id) => previews[0]?.playFinisher(id as FinisherId, poseOf(cb.player()?.look, true)),
     },
     {
-      key: 'pose', title: 'Victory poses', item: 'Victory pose', ids: POSE_IDS, def: (id) => POSES[id as PoseId], owns: (id) => ownsPose(id as PoseId),
+      key: 'pose', title: 'Victory poses', item: 'Pose', ids: POSE_IDS, def: (id) => POSES[id as PoseId], owns: (id) => ownsPose(id as PoseId),
       buy: (id) => buyPose(id as PoseId), glyph: (id) => POSE_ICON[id as PoseId], using: (id) => poseOf(cb.player()?.look, true) === id,
       use: (id) => cb.onPose(id as PoseId), play: (id) => previews[0]?.playPose(id as PoseId),
     },
