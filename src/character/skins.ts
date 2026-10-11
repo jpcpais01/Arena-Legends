@@ -457,6 +457,10 @@ export const SKINS: readonly SkinDef[] = [
   E('skybell', 'mage_robe', 'skybell', 'Robes of the Windward Peak'),
   E('skybell', 'windrunner_leggings', 'skybell', 'Cloudstep Trousers'),
   E('skybell', 'zephyr_boots', 'skybell', 'Cloudwalker Sandals'),
+  // Meteor sigil (v0.85.0): three legendary meteors, each with its own fall and impact
+  S('meteor_sigil', 'legendary', 'tidefall', 'Tidefall Sigil'),
+  S('meteor_sigil', 'legendary', 'bloomfall', 'Bloomfall Sigil'),
+  S('meteor_sigil', 'legendary', 'singularity', 'Singularity Sigil'),
 ];
 
 export const SKIN_BY_ID: ReadonlyMap<string, SkinDef> = new Map(SKINS.map((s) => [s.id, s]));
