@@ -4,6 +4,8 @@ extends Control
 ## nameplates, the Armory, the creator. Idles, plays one of its moves when
 ## tapped (and now and then with `autoplay`), and shows what the battle shows
 ## around them: the set aura, companions riding along and legendary sparkles.
+## The creator and shop also play entrances, finishers and victory poses on
+## it (with soft canvas light), and lean the camera in on the face (`zoom`).
 ##
 ## `art_w` x `art_h` is the stage in art pixels; it is drawn at the largest
 ## whole scale that fits the control (or `fixed_scale`), centred, with the feet
@@ -38,6 +40,24 @@ var _spark_t := 0.0
 var _comp_spot = null
 var _out := {"clip": "idle", "frame": 0, "face": null, "secOut": false, "useOut": false, "jitter": 0, "hop": 0, "key": "idle.0."}
 
+## An entrance, or a finisher / victory pose (FinaleShow), playing on the stage.
+var _ent = null
+var _show = null
+var _efx = null
+var _soft = null
+var _flash_t := 0.0
+var _flash_col := 0xffffff
+var _shake_t := 0.0
+var _shake_a := 0.0
+var _shake_x := 0
+var _impact_t := 0.0
+var _impact_col := 0xffffff
+var _last_tip = null
+var _view := {}
+## Face zoom: 0 the whole stage, 1 leaning in on the head (eased over 320 ms).
+var _zoom := 0.0
+var _zoom_to := 0.0
+
 var _root: RID
 var _layers: Array[RID] = []
 var _g: Canvas2D.Gpu
@@ -55,6 +75,8 @@ func _init(build = null, w := 100, h := 90, opts := {}) -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS if not still else Control.MOUSE_FILTER_IGNORE
 	clip_contents = true
 	if autoplay: _next = 2.5
+	_view = {"sx": func(x: float) -> float: return roundf(art_w / 2.0) + x * SpriteAnimator.PPM + _shake_x,
+		"sy": func(y: float) -> float: return art_h - ground - y * SpriteAnimator.PPM}
 	if build != null: set_build(build)
 
 
@@ -104,6 +126,80 @@ func showcase(clip = null) -> void:
 	_t = 0.0
 
 
+## Plays a pre-fight entrance on the spot (creator and shop previews), with its sounds.
+func play_entrance(id: String) -> void:
+	if still or bank == null: return
+	_ent = RenderEntrance.Entrance.new(id, _stage(), 0, -1 if flip else 1, {"delay": 0.15, "room": art_h - ground - 64})
+	_show = null
+	# Hold off the next random move until it's over.
+	_t = 0.0
+	if _next > 0.0: _next = 4.5
+
+
+## Acts out a KO finisher on a shadow double of the hero, then the victory pose `pose`.
+func play_finisher(id: String, pose: String) -> void:
+	if still or bank == null: return
+	var cols = RenderSupers.skin_colours(bank.art.get("mainSkin"))
+	var opts := {"finisher": id, "pose": pose, "top": (art_h - ground) / SpriteAnimator.PPM, "room": art_w / 2.0 / SpriteAnimator.PPM}
+	if cols != null:
+		opts["hi"] = cols[0]
+		opts["lo"] = cols[1]
+	_show = RenderFinaleShow.FinaleShow.new(bank, _stage(), -1 if flip else 1, opts)
+	_ent = null
+	_t = 0.0
+	if _next > 0.0: _next = 6.0
+
+
+## Strikes a victory pose (with its little extras).
+func play_pose(id: String) -> void:
+	if still or bank == null: return
+	_show = RenderFinaleShow.FinaleShow.new(bank, _stage(), -1 if flip else 1, {"pose": id})
+	_ent = null
+	_t = 0.0
+	if _next > 0.0: _next = 5.0
+
+
+## Leans the camera in on the face (styling it in the creator), or back out.
+func zoom(on: bool) -> void:
+	_zoom_to = 1.0 if on else 0.0
+
+
+## Clears the stage for an entrance or finale and gives it the preview's effects to play through.
+func _stage() -> Dictionary:
+	if _efx == null: _efx = RenderFx.Fx.new()
+	_efx.clear()
+	_playing = null
+	if _soft == null: _soft = RenderSoftLight.SoftLights.new()
+	_soft.clear()
+	_impact_t = 0.0
+	_flash_t = 0.0
+	_last_tip = null
+	var noop := func(_a = null, _b = null, _c = null, _d = null): pass
+	return {
+		"fx": _efx,
+		"shake": func(a: float):
+			_shake_a = maxf(_shake_a, a)
+			_shake_t = 0.25 + a * 0.3,
+		"flash": func(c, a: float):
+			_flash_col = c
+			_flash_t = maxf(_flash_t, a * 0.12),
+		"sound": func(name: String, k = null): Sfx.sfx.play(name, 0, k if k != null else 1),
+		"light": func(l): _soft.add(l),
+		# No shader pass here: shockwaves show as their rings of light, impact frames as a bright wash.
+		"shock": noop,
+		"impact": func(hi, _lo = null, len_ = 0.06):
+			_impact_col = hi
+			_impact_t = maxf(_impact_t, float(len_) + 0.03),
+		"zoomBlur": noop,
+		"split": noop,
+		"vignette": noop,
+		"focus": noop,
+		"tip": func():
+			if _last_tip == null: return null
+			return [(_last_tip[0] - roundf(art_w / 2.0) - _shake_x) / SpriteAnimator.PPM, (art_h - ground - _last_tip[1]) / SpriteAnimator.PPM],
+	}
+
+
 func _gui_input(e: InputEvent) -> void:
 	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and not still:
 		showcase()
@@ -118,7 +214,30 @@ func _process(dt: float) -> void:
 	if bank == null or _g == null or not is_visible_in_tree(): return
 	_t += dt
 	_clock += dt
+	if _zoom != _zoom_to:
+		_zoom = move_toward(_zoom, _zoom_to, dt / 0.32)
+		_drawn = ""
 	var o := _out
+	if _shake_t > 0.0:
+		_shake_t -= dt
+		_shake_x = roundi((randf() - 0.5) * _shake_a * 6.0 * minf(1.0, _shake_t * 3.0)) if _shake_t > 0.0 else 0
+	var pose = _ent.update(dt) if _ent != null else null
+	if _ent != null and pose == null: _ent = null
+	if _show != null:
+		if _show.update(dt): pose = _show.hero
+		else: _show = null
+	if _efx != null: _efx.update(dt)
+	if _soft != null: _soft.update(dt, dt)
+	if pose != null:
+		var cl: String = pose["clip"] if bank.set_["clips"].has(pose["clip"]) else "idle"
+		o["clip"] = cl
+		o["frame"] = int(RenderEntrance.wrap_frame(pose["frame"], SpriteAnims.clip_length(bank.set_["clips"][cl])))
+		o["face"] = pose.get("face")
+		o["key"] = "%s.%d.%s" % [cl, o["frame"], o["face"] if o["face"] != null else ""]
+		_drawn = ""
+		_draw_entrance(dt, pose)
+		return
+	o["face"] = null
 	if still:
 		o["clip"] = "idle"
 		o["frame"] = 0
@@ -141,7 +260,7 @@ func _process(dt: float) -> void:
 	o["key"] = "%s.%d." % [o["clip"], o["frame"]]
 	# A still portrait, or an idle frame with nothing moving around it, draws once.
 	var art = bank.art
-	var busy: bool = art.get("set") != null or _special != null or not _sparks.is_empty() or _has_spark_fx(art)
+	var busy: bool = art.get("set") != null or _special != null or not _sparks.is_empty() or _has_spark_fx(art) or _fx_busy()
 	var key: String = o["key"] + str(size) + str(flip)
 	if key == _drawn and not busy: return
 	_drawn = key
@@ -155,6 +274,11 @@ func _has_spark_fx(art) -> bool:
 	return _special == "ember_core" or _special == "frost_core"
 
 
+## Effects still playing out after an entrance (sparks, light).
+func _fx_busy() -> bool:
+	return _efx != null and (_efx.ps.size() > 0 or _efx.pulses.size() > 0 or _efx.pops.size() > 0 or _soft.ls.size() > 0)
+
+
 ## The whole scale the stage is drawn at, and where its top-left sits in the control.
 func _place() -> Array:
 	var k := fixed_scale if fixed_scale > 0 else UI.fit_scale(Vector2(art_w, art_h), size)
@@ -162,10 +286,21 @@ func _place() -> Array:
 	return [k, off]
 
 
-func _frame(dt: float) -> void:
+## Stage transform: the whole-pixel scale, leaning in on the head while zoomed
+## (the web's translateY(18%) scale(2) about 50% 26%, eased).
+func _place_root() -> void:
 	var pl := _place()
-	var k: int = pl[0]
-	RenderingServer.canvas_item_set_transform(_root, Transform2D(Vector2(k, 0), Vector2(0, k), pl[1]))
+	var k: float = pl[0]
+	var off: Vector2 = pl[1]
+	var e := 1.0 - pow(1.0 - _zoom, 3.0)
+	var z := 1.0 + e
+	var o := off + Vector2(art_w * k * 0.5, art_h * k * 0.26)
+	var at := o + Vector2(0, art_h * k * 0.18 * e) + (off - o) * z
+	RenderingServer.canvas_item_set_transform(_root, Transform2D(Vector2(k * z, 0), Vector2(0, k * z), at.round() if e == 0.0 or e == 1.0 else at))
+
+
+func _frame(dt: float) -> void:
+	_place_root()
 	var g := _g
 	g.begin()
 	var s: Dictionary = bank.get_(_out)
@@ -190,7 +325,89 @@ func _frame(dt: float) -> void:
 		g.draw_image(img, gx - s["ox"], gy - s["oy"])
 	if set_ != null: RenderSetAura.draw_set_aura(g, set_, gx, gy, _clock, "front", facing)
 	_comp_spot = RenderCompanions.draw_companions(g, art, _special, gx, gy, _clock, facing, "front")
+	if _efx != null:
+		_efx.draw(g, _view)
+		_soft.draw(g, _view)
 	if not still: _draw_sparks(dt, s, gx, gy)
+
+
+## One frame of an entrance: the effects around the fighter, who may be faded, washed or half in the ground.
+func _draw_entrance(dt: float, pose: Dictionary) -> void:
+	_place_root()
+	var g := _g
+	g.begin()
+	var v := _view
+	var ent = _show if _show != null else _ent
+	var gx := roundi(art_w / 2.0) + _shake_x
+	var gy := art_h - ground
+	if pedestal: _pedestal(g, gx, gy)
+	_efx.draw_under(g, v)
+	ent.draw(g, v, "under")
+	var x := roundf(v["sx"].call(pose["dx"]))
+	var y := roundf(v["sy"].call(pose["dy"]))
+	var shadow: float = pose["shadow"]
+	if shadow > 0.05:
+		g.fill_style = Color(0, 0, 0, 0.3 * shadow)
+		var r := roundi(11 * (0.4 + 0.6 * shadow))
+		g.fill_rect(x - r, gy - 1, r * 2, 3)
+	var alpha: float = pose["alpha"]
+	var s = null
+	var pflip: bool = flip != bool(pose["flip"])
+	if alpha > 0.0:
+		s = bank.get_(_out)
+		var set_ = bank.art.get("set")
+		var facing := -1 if pflip else 1
+		if pose["clipGround"]:
+			g.save()
+			g.begin_path()
+			g.rect(0, 0, art_w, gy + 1)
+			g.clip()
+		if set_ != null and alpha >= 1.0: RenderSetAura.draw_set_aura(g, set_, x, y, _clock, "back", facing)
+		var k := Vector2(pose["sx"], pose["sy"])
+		var ghosts := int(pose["ghosts"])
+		for i in range(ghosts, 0, -1):
+			g.global_alpha = alpha * 0.55 * (1.0 - float(i) / (ghosts + 1))
+			var gs = bank.flash(_out, pose["ghostCol"]) if pose["ghostCol"] != null else s
+			_blit(g, gs, s, x - roundf(float(pose["ghostDx"]) * i * SpriteAnimator.PPM), y, pflip, k)
+		g.global_alpha = alpha
+		_blit(g, s, s, x, y, pflip, k)
+		if pose["tint"] != null and float(pose["tintA"]) > 0.0:
+			g.global_alpha = alpha * minf(1.0, pose["tintA"])
+			_blit(g, bank.flash(_out, pose["tint"]), s, x, y, pflip, k)
+		var tip = s.get("tip")
+		_last_tip = [x + (-tip[0] if pflip else tip[0]), y + tip[1]] if tip != null else null
+		g.global_alpha = 1.0
+		if set_ != null and alpha >= 1.0: RenderSetAura.draw_set_aura(g, set_, x, y, _clock, "front", facing)
+		if pose["clipGround"]: g.restore()
+	ent.draw(g, v, "over")
+	_efx.draw(g, v)
+	_soft.draw(g, v)
+	# Impact frames and flashes wash the hero (the web washes everything drawn; the
+	# effects here are mostly light already).
+	if s != null and (_impact_t > 0.0 or _flash_t > 0.0):
+		var col: int = _impact_col if _impact_t > 0.0 else _flash_col
+		g.global_alpha = 0.8 if _impact_t > 0.0 else minf(0.5, _flash_t * 4.0)
+		_blit(g, bank.flash(_out, Color.hex((col << 8) | 0xff)), s, x, y, pflip, Vector2(pose["sx"], pose["sy"]))
+		g.global_alpha = 1.0
+	_impact_t -= dt
+	_flash_t -= dt
+
+
+## Draws a sprite image at its feet; `k` squashes or stretches it about them.
+func _blit(g: Canvas2D.Gpu, img: Dictionary, s: Dictionary, x: float, y: float, fl: bool, k := Vector2.ONE) -> void:
+	var reg: Canvas2D.Region = img["img"]
+	var w := roundf(reg.width * k.x)
+	var h := roundf(reg.height * k.y)
+	var ox := roundf(float(s["ox"]) * k.x)
+	var oy := roundf(float(s["oy"]) * k.y)
+	if fl:
+		g.save()
+		g.translate(x + 1, 0)
+		g.scale(-1, 1)
+		g.draw_image(reg, -ox, y - oy, w, h)
+		g.restore()
+	else:
+		g.draw_image(reg, x - ox, y - oy, w, h)
 
 
 ## Legendary skins twinkle where they're worn (weapon tips, head, body, feet), like in battle.
@@ -199,14 +416,14 @@ func _draw_sparks(dt: float, s: Dictionary, gx: int, gy: int) -> void:
 	var fl := func(p) -> Vector2: return Vector2(gx + (-p[0] if flip else p[0]), gy + p[1])
 	var top: float = gy - float(s["oy"])
 	var spots := [
-		[_fx(art, "mainSkin"), fl.call(s["tip"]) if s.get("tip") != null else null, 4],
-		[_fx(art, "secSkin"), fl.call(s["secTip"]) if s.get("secTip") != null else null, 4],
-		[_fx(art, "headSkin"), Vector2(gx, top + 4), 8],
-		[_fx(art, "chestSkin"), Vector2(gx, gy - 30), 14],
-		[_fx(art, "bootsSkin"), Vector2(gx, gy - 1), 12],
-		[_fx(art, "useSkin"), fl.call([4, -26]), 4],
+		[_skin_fx(art, "mainSkin"), fl.call(s["tip"]) if s.get("tip") != null else null, 4],
+		[_skin_fx(art, "secSkin"), fl.call(s["secTip"]) if s.get("secTip") != null else null, 4],
+		[_skin_fx(art, "headSkin"), Vector2(gx, top + 4), 8],
+		[_skin_fx(art, "chestSkin"), Vector2(gx, gy - 30), 14],
+		[_skin_fx(art, "bootsSkin"), Vector2(gx, gy - 1), 12],
+		[_skin_fx(art, "useSkin"), fl.call([4, -26]), 4],
 		[RenderSetAura.SET_FX.get(art.get("set")) if art.get("set") != null else null, Vector2(gx, gy - 1), 30],
-		[_fx(art, "specialSkin"), Vector2(_comp_spot[0], _comp_spot[1]) if _comp_spot != null else null, 5],
+		[_skin_fx(art, "specialSkin"), Vector2(_comp_spot[0], _comp_spot[1]) if _comp_spot != null else null, 5],
 		[EMBER if _special == "ember_core" else FROST if _special == "frost_core" else null, Vector2(gx, gy - 28), 18],
 	]
 	_spark_t -= dt
@@ -243,7 +460,7 @@ func _draw_sparks(dt: float, s: Dictionary, gx: int, gy: int) -> void:
 		i -= 1
 
 
-func _fx(art, k: String):
+func _skin_fx(art, k: String):
 	var s = art.get(k)
 	return s.get("fx") if s != null else null
 

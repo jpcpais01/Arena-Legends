@@ -48,13 +48,16 @@ export const CONFIG: Config = {
     'render/icons',
     'render/backdrops',
     'ui/icons',
+    'render/finaleShow',
+    'ui/heroLines',
+    'ui/entranceUi',
+    'ui/finaleUi',
   ],
   manual: {
     'render/pixel/raster': { cls: 'PixelRaster' },
     'render/pixel/sdf': { cls: 'PixelSdf' },
     'render/sprite/bank': { cls: 'SpriteBankLib' },
     'render/glfx': { cls: 'GlFxLib' },
-    'render/softLight': { cls: 'SoftLightLib' },
     'audio/sfx': { cls: 'Sfx' },
   },
   skip: {
@@ -73,7 +76,7 @@ export const CONFIG: Config = {
     'render/arenaArt': ['buildArena'],
     // Their frames bake straight to GPU sprites (Forge.bake_one).
     'render/projArt': ['projSprite', 'bottleSprite'],
-    'render/specialArt': ['sprite', 'skinFrame'],
+    'render/specialArt': ['sprite', 'skinFrame', 'totemTop'],
     // Icons bake on the GPU in batches (GearIcons); crop only notes the square.
     'render/icons': ['crop', 'iconCanvas'],
     // Painted into an Image (Backdrops in src/ui).

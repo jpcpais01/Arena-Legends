@@ -242,7 +242,7 @@ class BattleView:
 		self.cine_bars = 0
 		self.cine_lean = 0.5
 		self.laters = []
-		self.soft = SoftLightLib.SoftLights.new()
+		self.soft = RenderSoftLight.SoftLights.new()
 		self.shake_t = 0
 		self.shake_amp = 0
 		self.flash_t = 0
@@ -400,8 +400,8 @@ class BattleView:
 		if (((self.fin != null) or (self.fin_after >= 0)) or (not b.over)) or (b.winner != w["id"]):
 			return false
 		var _d0 = (RenderSupers.skin_colours(self.fighters[w["id"]]["art"]["mainSkin"]) if RenderSupers.skin_colours(self.fighters[w["id"]]["art"]["mainSkin"]) != null else [])
-		var hi = _d0[0]
-		var lo = _d0[1]
+		var hi = TS.at(_d0, 0)
+		var lo = TS.at(_d0, 1)
 		# It sets the pace from here: no super's slow motion or punch-in carries over.
 		self.slow = 1
 		self.slow_t = 0

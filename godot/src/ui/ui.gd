@@ -191,8 +191,8 @@ static func hgrad(ci: RID, r: Rect2, stops: Array) -> void:
 
 
 ## A soft elliptical glow (radial gradient to clear) as a fan of triangles.
-static func glow(ci: RID, center: Vector2, radius: Vector2, col: Color, falloff := 1.0) -> void:
-	var seg := 28
+static func glow(ci: RID, center: Vector2, radius: Vector2, col: Color, falloff := 1.0, upper := false) -> void:
+	var seg := 14 if upper else 28
 	var rings := 6
 	for k in rings:
 		var t0 := float(k) / rings
@@ -203,7 +203,8 @@ static func glow(ci: RID, center: Vector2, radius: Vector2, col: Color, falloff 
 		var cols := PackedColorArray()
 		var idx := PackedInt32Array()
 		for i in seg + 1:
-			var an := TAU * i / seg
+			# `upper`: only the half above the centre (a glow rising from an edge).
+			var an := (PI + PI * i / seg) if upper else TAU * i / seg
 			var d := Vector2(cos(an) * radius.x, sin(an) * radius.y)
 			pts.append(center + d * t0)
 			cols.append(Color(col, a0))
@@ -368,6 +369,24 @@ class Paint extends Control:
 		painter.call(self, size)
 
 
+## A custom-drawn area that reports taps (not drags) in its own coordinates.
+class Pad extends Paint:
+	signal tapped(pos: Vector2)
+	var _at = null
+
+	func _init(f: Callable) -> void:
+		super(f)
+		mouse_filter = Control.MOUSE_FILTER_STOP
+
+	func _gui_input(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
+			if e.pressed: _at = e.position
+			elif _at != null:
+				if (e.position - _at).length() < UI.c(10): tapped.emit(e.position)
+				_at = null
+			accept_event()
+
+
 # --- Glyphs (ui/icons.ts) ---------------------------------------------------------------
 
 static var _glyphs := {}
@@ -394,7 +413,8 @@ static func draw_glyph(ci: CanvasItem, name: String, pos: Vector2, s: float, col
 	var q := maxf(1.0, roundf(s / 9.0))
 	var sz := Vector2(9, 9) * q
 	pos = pos.round()
-	var r := Rect2(pos + Vector2(sz.x, 0), Vector2(-sz.x, sz.y)) if flip else Rect2(pos, sz)
+	# A negative width mirrors the texture in place (Godot keeps the position).
+	var r := Rect2(pos, Vector2(-sz.x, sz.y)) if flip else Rect2(pos, sz)
 	if shadow.a > 0: ci.draw_texture_rect(t, Rect2(r.position + Vector2(0, px), r.size), false, shadow)
 	ci.draw_texture_rect(t, r, false, col)
 
@@ -459,6 +479,15 @@ static func backdrop(i) -> Texture2D:
 	t = ImageTexture.create_from_image(img)
 	_backdrops[k] = t
 	return t
+
+
+## Draws a backdrop covering `r` (whole scale, anchored at the bottom like the web's .backdrop).
+static func draw_backdrop(ci: CanvasItem, i, r: Rect2, modulate := Color.WHITE) -> void:
+	var bt := backdrop(i)
+	var k := ceilf(maxf(r.size.x / RenderBackdrops.BW, r.size.y / RenderBackdrops.BH))
+	var sw := r.size.x / k
+	var sh := r.size.y / k
+	ci.draw_texture_rect_region(bt, r, Rect2((RenderBackdrops.BW - sw) / 2.0, RenderBackdrops.BH - sh, sw, sh), modulate)
 
 
 # --- Small helpers ---------------------------------------------------------------------------

@@ -54,6 +54,7 @@ func _ready() -> void:
 	home.new_rival.connect(func():
 		_set_rival(CharacterProfile.generate_rival(player["name"]))
 		_refresh_menu())
+	home.hero.connect(func(): open_creator(_free_points() > 0))
 	home.sound.connect(func():
 		sound_on = not sound_on
 		Store.set_item("al.sound", JSON.stringify(sound_on))
@@ -61,7 +62,7 @@ func _ready() -> void:
 	home.settings.connect(open_settings)
 	home.notes.connect(open_notes)
 	home.armory.connect(open_armory)
-	for sig in [home.hero, home.online, home.world, home.shop]:
+	for sig in [home.online, home.world, home.shop]:
 		sig.connect(func(): _soon())
 	controls = FightControls.new()
 	controls.visible = false
@@ -82,7 +83,12 @@ func _ready() -> void:
 	add_child(_title)
 	_title.start.connect(func():
 		_title = null
-		to_menu())
+		if player != null:
+			to_menu()
+			return
+		# A first start: the hero creator, then the home screen.
+		state = "menu"
+		open_creator())
 	battle.demo()
 	get_viewport().size_changed.connect(func(): UI.setup(get_viewport_rect().size))
 
@@ -97,15 +103,9 @@ func _saved(key: String, fallback):
 
 
 func _load() -> void:
+	# Null until the first hero is made (the title opens the creator).
 	player = CharacterProfile.load_character()
-	if player == null:
-		# Until the hero creator lands, a first start gets a hero of their own.
-		var h = CharacterProfile.generate_rival()
-		h["style"] = "balanced"
-		h.erase("level")
-		CharacterProfile.save_character(h)
-		player = CharacterProfile.load_character()
-	CharacterCollection.load_collection(player.get("skins"))
+	CharacterCollection.load_collection(player.get("skins") if player != null else null)
 	var r = _saved("al.record", {})
 	if r is Dictionary: record = {"w": int(r.get("w", 0)), "l": int(r.get("l", 0))}
 	var sp := int(_saved("al.speed", 1))
@@ -123,7 +123,7 @@ func _load() -> void:
 	arena_pick = str(_saved("al.arena", "random"))
 	if arena_pick != "random" and not RenderArenaArt.THEMES.any(func(t): return t["id"] == arena_pick): arena_pick = "random"
 	rival = _load_rival()
-	if rival == null: rival = CharacterProfile.generate_rival(player["name"])
+	if rival == null: rival = CharacterProfile.generate_rival(player["name"] if player != null else null)
 	_set_rival(rival)
 	_sync_level()
 
@@ -155,6 +155,7 @@ func rival_now():
 
 ## Keeps the saved hero's level in step with its XP.
 func _sync_level() -> void:
+	if player == null: return
 	var lv := int(CharacterProgress.hero_level())
 	if int(player.get("level", 1)) == lv: return
 	if lv > 1: player["level"] = lv
@@ -163,6 +164,7 @@ func _sync_level() -> void:
 
 
 func _free_points() -> int:
+	if player == null: return 0
 	return maxi(0, int(CharacterProgress.points_at(CharacterProgress.hero_level()) - SimTraining.spent_points(player.get("train"))))
 
 
@@ -296,6 +298,21 @@ func _apply_settings(s: Dictionary) -> void:
 
 
 # --- Full screens ------------------------------------------------------------------------------
+
+## The hero creator: a new hero (first start, no way out but making one) or editing
+## yours, on the Stats step when `stats`.
+func open_creator(stats := false) -> void:
+	_close_sheet()
+	var first: bool = player == null
+	var cr := Creator.new(CharacterProfile.new_character() if first else player, not first, stats)
+	cr.done.connect(func(c):
+		player = c
+		CharacterProfile.save_character(c)
+		_sync_level()
+		_close_screen())
+	cr.closed.connect(_close_screen)
+	_open_screen(cr)
+
 
 func open_armory() -> void:
 	_close_sheet()

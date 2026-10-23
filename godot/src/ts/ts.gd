@@ -9,6 +9,12 @@ const _U32 := 0xffffffff
 const BLANK := &"__ts_blank__"
 
 
+## A JS regex literal: {"test": Callable(String) -> bool}. Flags: only "i".
+static func regex(body: String, flags := "") -> Dictionary:
+	var re := RegEx.create_from_string(("(?i)" if flags.contains("i") else "") + body)
+	return {"test": func(s) -> bool: return re.search(str(s)) != null}
+
+
 static func random() -> float:
 	return randf()
 
