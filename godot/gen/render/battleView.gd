@@ -1601,17 +1601,15 @@ class BattleView:
 			var x: float = p["px"] + ((p["x"] - p["px"]) * self.alpha)
 			var y: float = p["py"] + ((p["y"] - p["py"]) * self.alpha)
 			var rope: bool = p["style"] == "grapnel"
-			var _q1 = TS.at(self.fighters, p["owner"])
-			var _q2 = TS.at(self.fighters, p["owner"])
-			RenderBattleView.draw_chain(g, hx, hy, TS.round(self.sx(x)), TS.round(self.sy(y)), 4, (((null if _q1 == null else (null if _q1["art"]["secSkin"] == null else _q1["art"]["secSkin"].get("chain"))) if (null if _q1 == null else (null if _q1["art"]["secSkin"] == null else _q1["art"]["secSkin"].get("chain"))) != null else RenderBattleView.ROPE) if rope else (null if _q2 == null else (null if _q2["art"]["mainSkin"] == null else _q2["art"]["mainSkin"].get("chain")))))
+			RenderBattleView.draw_chain(g, hx, hy, TS.round(self.sx(x)), TS.round(self.sy(y)), 4, (((null if TS.at(self.fighters, p["owner"]) == null else (null if TS.at(self.fighters, p["owner"])["art"]["secSkin"] == null else TS.at(self.fighters, p["owner"])["art"]["secSkin"].get("chain"))) if (null if TS.at(self.fighters, p["owner"]) == null else (null if TS.at(self.fighters, p["owner"])["art"]["secSkin"] == null else TS.at(self.fighters, p["owner"])["art"]["secSkin"].get("chain"))) != null else RenderBattleView.ROPE) if rope else (null if TS.at(self.fighters, p["owner"]) == null else (null if TS.at(self.fighters, p["owner"])["art"]["mainSkin"] == null else TS.at(self.fighters, p["owner"])["art"]["mainSkin"].get("chain")))))
 		for f in b.fighters:
 			var v = self.fighters[f["id"]]
 			if (f["pullT"] > 0) and (v["reelTo"] != (-1)):
 				# Reeling in on the grappling line: taut from the hand to the hooked enemy.
 				var t = b.fighters[v["reelTo"]]
-				var _d3 = self.hand_at(f["id"])
-				var hx_2 = _d3[0]
-				var hy_2 = _d3[1]
+				var _d1 = self.hand_at(f["id"])
+				var hx_2 = _d1[0]
+				var hy_2 = _d1[1]
 				RenderBattleView.draw_chain(g, hx_2, hy_2, TS.round(self.sx(self.lx(t))), TS.round(self.sy(self.ly(t) + 1.1)), 0, ((null if v["art"]["secSkin"] == null else v["art"]["secSkin"].get("chain")) if (null if v["art"]["secSkin"] == null else v["art"]["secSkin"].get("chain")) != null else RenderBattleView.ROPE))
 			elif f["pullT"] <= 0:
 				v["reelTo"] = -1
@@ -1620,11 +1618,11 @@ class BattleView:
 				if f["pullT"] <= 0:
 					v["pulledBy"] = -1
 				continue
-			var _d4 = self.hand_at(by)
-			var hx_3 = _d4[0]
-			var hy_3 = _d4[1]
-			var _q5 = TS.at(self.fighters, by)
-			RenderBattleView.draw_chain(g, hx_3, hy_3, TS.round(self.sx(self.lx(f))), TS.round(self.sy(self.ly(f) + 1.1)), 0, (null if _q5 == null else (null if _q5["art"]["mainSkin"] == null else _q5["art"]["mainSkin"].get("chain"))))
+			var _d2 = self.hand_at(by)
+			var hx_3 = _d2[0]
+			var hy_3 = _d2[1]
+			var _q3 = TS.at(self.fighters, by)
+			RenderBattleView.draw_chain(g, hx_3, hy_3, TS.round(self.sx(self.lx(f))), TS.round(self.sy(self.ly(f) + 1.1)), 0, (null if _q3 == null else (null if _q3["art"]["mainSkin"] == null else _q3["art"]["mainSkin"].get("chain"))))
 
 	## Legendary skins shed sparkles from where they are worn: weapon tips
 	## (faster mid-move), the head, around the body, and at the feet (more
@@ -2122,33 +2120,32 @@ class BattleView:
 					self.play("firebomb", self.pan(e["x"]))
 					self.shake(0.35)
 					break
-				var _q3 = TS.at(self.fighters, e["f"])
-				var col_2: float = (0x9fe8ff if e["style"] == "nova" else ((PixelColor.mix(met[0], met[1], 0.5) if (null if _q3 == null else (null if _q3["art"]["specialSkin"] == null else _q3["art"]["specialSkin"].get("glow"))) != null else 0xff6a1a) if met != null else (0xe8f4ff if e["style"] == "whirl" else 0xd8a060)))
+				var col_2: float = (0x9fe8ff if e["style"] == "nova" else ((PixelColor.mix(met[0], met[1], 0.5) if (null if TS.at(self.fighters, e["f"]) == null else (null if TS.at(self.fighters, e["f"])["art"]["specialSkin"] == null else TS.at(self.fighters, e["f"])["art"]["specialSkin"].get("glow"))) != null else 0xff6a1a) if met != null else (0xe8f4ff if e["style"] == "whirl" else 0xd8a060)))
 				if e["style"] != "meteor":
 					fx.pulse("groundRing", e["x"], 0, e["radius"] * 1.2, col_2, 0.5)
 				if (e["style"] != "nova") and (e["style"] != "meteor"):
 					fx.pulse("crack", e["x"], 0, e["radius"] * 0.8, PixelColor.mix(col_2, 0x2a1a20, 0.4), 1.6)
 				if e["style"] == "meteor":
 					var pan_2: float = self.pan(e["x"])
-					var _fn4 = func(name: String, k = null):
+					var _fn3 = func(name: String, k = null):
 						if k == null: k = 1
 						self.play(name, pan_2, k)
-					var _fn5 = func(l):
+					var _fn4 = func(l):
 						if self.quiet:
 							return
 						if self.gl.get_ok():
 							self.gl.add(l)
 						else:
 							self.soft.add(l)
-					var _fn6 = func(sh):
+					var _fn5 = func(sh):
 						if self.gl.get_ok() and (not self.quiet):
 							self.gl.shock(sh)
-					var _fn7 = func(hi: float, lo: float, len_):
+					var _fn6 = func(hi: float, lo: float, len_):
 						if self.gl.get_ok() and (not self.quiet):
 							self.gl.impact_frame(hi, lo, len_)
-					var cues = {"play": _fn4, "shake": (func(a_2: float): self.shake(a_2)), "flash": (func(c_3: float, a_3: float): self.flash(c_3, a_3)), "light": _fn5, "shock": _fn6, "impact": _fn7}
-					var _q8 = TS.at(self.fighters, e["f"])
-					RenderMeteorFx.meteor_impact(fx, cues, RenderMeteorFx.meteor_style((null if _q8 == null else _q8["art"]["specialSkinId"])), e["x"], e["radius"] + 0.4, met[0], met[1], self.meteor_dir[e["f"]])
+					var cues = {"play": _fn3, "shake": (func(a_2: float): self.shake(a_2)), "flash": (func(c_3: float, a_3: float): self.flash(c_3, a_3)), "light": _fn4, "shock": _fn5, "impact": _fn6}
+					var _q7 = TS.at(self.fighters, e["f"])
+					RenderMeteorFx.meteor_impact(fx, cues, RenderMeteorFx.meteor_style((null if _q7 == null else _q7["art"]["specialSkinId"])), e["x"], e["radius"] + 0.4, met[0], met[1], self.meteor_dir[e["f"]])
 					if self.arena != null:
 						self.arena.cheer(1)
 					self.punch_in(1, 0.6, e["x"])
@@ -2207,10 +2204,10 @@ class BattleView:
 			elif _sw0 == "zone":
 				if e["kind"] == "totem":
 					# Planted with a thunderclap: a bolt from the sky onto the crystal.
+					var _q8 = TS.at(self.fighters, e["f"])
+					var sk_2 = (null if _q8 == null else (null if _q8["art"]["specialSkin"] == null else _q8["art"]["specialSkin"].get("glow")))
 					var _q9 = TS.at(self.fighters, e["f"])
-					var sk_2 = (null if _q9 == null else (null if _q9["art"]["specialSkin"] == null else _q9["art"]["specialSkin"].get("glow")))
-					var _q10 = TS.at(self.fighters, e["f"])
-					var top: float = RenderSpecialArt.totem_top((null if _q10 == null else _q10["art"]["specialSkinId"])) / float(SpriteAnimator.PPM)
+					var top: float = RenderSpecialArt.totem_top((null if _q9 == null else _q9["art"]["specialSkinId"])) / float(SpriteAnimator.PPM)
 					var mid_2: float = (PixelColor.mix(sk_2[0], sk_2[1], 0.45) if sk_2 != null else 0x7ad8ff)
 					var light: float = (PixelColor.mix(sk_2[0], sk_2[1], 0.15) if sk_2 != null else 0xd8f8ff)
 					fx.bolt(e["x"] + ((randf() - 0.5) * 0.6), 7, e["x"], top, mid_2, 0.24)
@@ -2232,11 +2229,11 @@ class BattleView:
 				# The totem strikes: a bolt from its crystal to the enemy's chest.
 				var tgt = b.other(b.fighters[e["f"]])
 				var ty: float = tgt["y"] + 1.1
-				var _q11 = TS.at(self.fighters, e["f"])
-				var sk_3 = (null if _q11 == null else (null if _q11["art"]["specialSkin"] == null else _q11["art"]["specialSkin"].get("glow")))
+				var _q10 = TS.at(self.fighters, e["f"])
+				var sk_3 = (null if _q10 == null else (null if _q10["art"]["specialSkin"] == null else _q10["art"]["specialSkin"].get("glow")))
 				var mid_3: float = (PixelColor.mix(sk_3[0], sk_3[1], 0.45) if sk_3 != null else 0x7ad8ff)
-				var _q12 = TS.at(self.fighters, e["f"])
-				fx.bolt(e["from"], (RenderSpecialArt.totem_top((null if _q12 == null else _q12["art"]["specialSkinId"])) - 2) / float(SpriteAnimator.PPM), e["to"], ty, mid_3, 0.2)
+				var _q11 = TS.at(self.fighters, e["f"])
+				fx.bolt(e["from"], (RenderSpecialArt.totem_top((null if _q11 == null else _q11["art"]["specialSkinId"])) - 2) / float(SpriteAnimator.PPM), e["to"], ty, mid_3, 0.2)
 				fx.pulse("star", e["to"], ty, 0.4, (PixelColor.mix(sk_3[0], sk_3[1], 0.15) if sk_3 != null else 0xd8f8ff), 0.12)
 				fx.burst({"x": e["to"], "y": ty, "count": 10, "speed": [2, 5], "life": [0.15, 0.3], "color": 0xffffff, "color2": mid_3, "drag": 2, "kind": "streak"})
 				for z in b.zones:
@@ -2248,10 +2245,10 @@ class BattleView:
 				# Trickster: both flash, a coin flips over each spot, a quick swirl where each one was.
 				var f_15 = b.fighters[e["f"]]
 				var o = b.other(f_15)
-				for _e13 in [[f_15["id"], e["to"], e["from"]], [o["id"], e["from"], e["to"]]]:
-					var id = _e13[0]
-					var at = _e13[1]
-					var was = _e13[2]
+				for _e12 in [[f_15["id"], e["to"], e["from"]], [o["id"], e["from"], e["to"]]]:
+					var id = _e12[0]
+					var at = _e12[1]
+					var was = _e12[2]
 					var v_4 = self.fighters[id]
 					v_4["flash"] = 0.1
 					if v_4["lastS"] != null:

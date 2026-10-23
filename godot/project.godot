@@ -5,11 +5,12 @@ config_version=5
 
 config/name="Arena Legends"
 config/description="1v1 auto battler in pixel art"
-config/version="0.100.0"
+config/version="0.101.0"
 run/main_scene="res://src/boot/boot.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="res://icon.png"
 run/low_processor_mode=false
+config/quit_on_go_back=false
 
 [display]
 

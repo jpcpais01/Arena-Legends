@@ -314,6 +314,15 @@ export class Converter {
     return !!d && !d.getSourceFile().fileName.includes('/src/');
   }
 
+  /** `o.k` or `o[k]` where `o` is a string-keyed record without a declared `k`. */
+  readsRecordKey(e: ts.Expression): boolean {
+    const n = unwrap(e);
+    if (!ts.isPropertyAccessExpression(n) && !ts.isElementAccessExpression(n)) return false;
+    const ot = this.checker.getTypeAtLocation(n.expression);
+    if (!ot.getStringIndexType()) return false;
+    return !ts.isPropertyAccessExpression(n) || !ot.getProperty(n.name.text);
+  }
+
   /** GDScript type hint for a TS type (empty when untyped). */
   hint(t: ts.Type): string {
     if (t.flags & ts.TypeFlags.Any || t.flags & ts.TypeFlags.Unknown) return '';
@@ -836,7 +845,8 @@ export class Converter {
       const sym = this.checker.getSymbolAtLocation(d.name);
       const boxed = sym && this.boxed.has(sym);
       const t = this.typeOf(d);
-      const h = boxed || this.scope.builder ? '' : this.hint(t);
+      // A read of a record's key (`mark.x`) can be missing even when TS types it as a number.
+      const h = boxed || this.scope.builder || (d.initializer && this.readsRecordKey(d.initializer)) ? '' : this.hint(t);
       if (h === 'float' && sym) this.floats.add(sym);
       if (!d.initializer) {
         out.push(`${ind}var ${name}${h ? ': ' + h : ''}${boxed ? ' = [null]' : ''}`);
@@ -1478,7 +1488,9 @@ export class Converter {
     const l = this.deepestLink(e);
     if (!l || l === e) return null;
     let o = this.expr(l.expression);
-    if (!/^[\w.]+$/.test(o)) {
+    // Hoisted to a temporary, unless the chain only runs conditionally (`x && a?.b()`):
+    // a hoisted read would run (and fail) when the guard is false, so read it twice.
+    if (!/^[\w.]+$/.test(o) && !this.conditional(e)) {
       const t = this.scope.tmp('q');
       this.scope.pre.push(`var ${t} = ${o}`);
       o = t;
@@ -1489,6 +1501,16 @@ export class Converter {
     this.noOpt.delete(l);
     this.subst.delete(l.expression);
     return `(null if ${o} == null else ${inner})`;
+  }
+
+  /** `e` is evaluated only on some paths of its statement (right of && || ??, a branch of ?:). */
+  private conditional(e: ts.Node): boolean {
+    for (let n: ts.Node = e; n.parent && !ts.isStatement(n.parent) && !ts.isFunctionLike(n.parent); n = n.parent) {
+      const p = n.parent;
+      if (ts.isBinaryExpression(p) && p.right === n && [ts.SyntaxKind.AmpersandAmpersandToken, ts.SyntaxKind.BarBarToken, ts.SyntaxKind.QuestionQuestionToken].includes(p.operatorToken.kind)) return true;
+      if (ts.isConditionalExpression(p) && p.condition !== n) return true;
+    }
+    return false;
   }
 
   expr(e: ts.Expression): string {
@@ -2090,6 +2112,14 @@ export class Converter {
       const pa = callee as ts.PropertyAccessExpression;
       const o = this.expr(pa.expression);
       return `(null if ${o} == null else ${this.callExpr(e, true)})`;
+    }
+    // /re/.test(s): a RegEx compiled once (TS.re_test caches by pattern).
+    if (ts.isPropertyAccessExpression(callee) && callee.name.text === 'test' && ts.isRegularExpressionLiteral(unwrap(callee.expression)) && args.length === 1) {
+      const lit = (unwrap(callee.expression) as ts.RegularExpressionLiteral).text;
+      const body = lit.slice(1, lit.lastIndexOf('/'));
+      const flags = lit.slice(lit.lastIndexOf('/') + 1);
+      if (!/^i?$/.test(flags)) this.problem(e, `regex flags ${flags}`);
+      return `TS.re_test(${JSON.stringify((flags ? '(?i)' : '') + body)}, ${this.expr(args[0])})`;
     }
     if (ts.isPropertyAccessExpression(callee)) {
       const special = this.builtinCall(e, callee);

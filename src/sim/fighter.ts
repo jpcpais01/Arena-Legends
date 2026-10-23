@@ -153,7 +153,8 @@ export function createFighter(id: FighterId, cfg: FighterConfig): Fighter {
     mirrorCd: 0,
     ironWillCd: 0,
     echoQueue: [],
-    hist: [], histI: 0, histT: 0, rewindUsed: false,
+    // Hourglass ring buffer: x and hp for each of battle.ts's 12 history slots, sized up front.
+    hist: new Array<number>(24).fill(0), histI: 0, histT: 0, rewindUsed: false,
     wardCd: 3, dreadCd: 0, foresightCd: 0,
     pullT: 0, pullTo: 0, chargeT: 0, garbT: 0, mendAcc: 0, combo: 0, comboT: 99,
     cloudCd: 3.5, grudge: 0, springT: 0, snatchCd: 0,
