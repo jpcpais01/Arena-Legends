@@ -12,6 +12,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.99.0',
+    date: '2026-10-23',
+    title: 'Eight new items and the Stormcrow set',
+    notes: [
+      'Bloodletter (main): a toothed falchion whose cuts open bleeding wounds. They bleed whenever they move on their own feet, so a wounded enemy has to stand and fight. Rend tears three wounds at once.',
+      'Grappling Hook (secondary): hook the enemy from range and reel yourself straight in, knocking them off balance. Nobody keeps you at arm\'s length.',
+      'Storm Cloud (special): a sulky little cloud that rides at your shoulder. Every 5s it marks the ground under the enemy, and a second later lightning strikes the mark. Move or get stunned.',
+      'Maelstrom Flask (usable, 2 per fight): bursts into a whirlpool that drags the enemy toward its centre for a few seconds.',
+      'Magpie Mask (head): your hits steal the enemy\'s best buff (rage, haste, iron skin, regen, momentum). If there\'s nothing to steal, you pocket some of their energy.',
+      'Grudge Mail (chest): stores part of the damage you take as a grudge, and your next heavy hit that lands unleashes all of it.',
+      'Springheel Leggings (legs): knocked into a wall, you spring off it instead of slamming into it, and your next hit lands 40% harder.',
+      'Mirage Boots (boots): dodge a real attack and a mirage of you strikes back, and you get a burst of haste.',
+      'The AI knows how to use all of them, and how to play against them.',
+      'New Mythic set, Stormcrow: raven feathers, silver talons, a beaked mask with storm-lit eyes, and a murder of crows circling in your storm cloud.',
+      '17 new skins: one for each new item, a Crimson Tithe Bloodletter, a Kraken Grip hook, a Whirlpool Conch flask, and the first skins for the fist weapons, including Dragon Fists, Wolf Fangs and Lotus Wraps.',
+    ],
+  },
+  {
     version: '0.98.0',
     date: '2026-10-11',
     title: 'The World map',

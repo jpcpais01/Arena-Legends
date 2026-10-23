@@ -7,6 +7,7 @@ import {
   bolas, chainSickle, graveStaff, halberd, ironCestus, javelin, rapier, soulScythe, stormRod, towerShield, tricksterTalisman,
 } from './weapons2';
 import { boxingGloves, spikedKnuckles, spiritWraps } from './fists';
+import { bloodletter, grapnel } from './weapons3';
 
 export type { MainFamily, SecFamily, WeaponArt, WeaponDrawOpts } from './weaponKit';
 
@@ -320,13 +321,13 @@ export const MAIN_FAMILY: Record<MainWeaponId, MainFamily> = {
   longsword: 'sword', katana: 'sword', mace: 'sword', dagger: 'sword', ember_wand: 'wand',
   warhammer: 'heavy', greataxe: 'heavy', spear: 'polearm', arcane_staff: 'staff', longbow: 'bow',
   chain_sickle: 'sword', soul_scythe: 'heavy', rapier: 'sword', storm_rod: 'wand', halberd: 'heavy', grave_staff: 'staff',
-  boxing_gloves: 'fist', spiked_knuckles: 'fist', spirit_wraps: 'fist',
+  boxing_gloves: 'fist', spiked_knuckles: 'fist', spirit_wraps: 'fist', bloodletter: 'sword',
 };
 
 export const SEC_FAMILY: Record<SecondaryId, SecFamily> = {
   kite_shield: 'shield', parrying_dagger: 'parry', buckler: 'buckler', throwing_knives: 'knife',
   hand_crossbow: 'crossbow', wind_chakram: 'chakram', frost_wand: 'wand', war_horn: 'horn',
-  bolas: 'knife', trickster_talisman: 'wand', tower_shield: 'shield', javelin: 'knife', iron_cestus: 'fist',
+  bolas: 'knife', trickster_talisman: 'wand', tower_shield: 'shield', javelin: 'knife', iron_cestus: 'fist', grapnel: 'knife',
 };
 
 const BUILDERS: Partial<Record<GearId, () => WeaponArt>> = {
@@ -337,6 +338,7 @@ const BUILDERS: Partial<Record<GearId, () => WeaponArt>> = {
   chain_sickle: chainSickle, soul_scythe: soulScythe, rapier, storm_rod: stormRod, halberd, grave_staff: graveStaff,
   boxing_gloves: boxingGloves, spiked_knuckles: spikedKnuckles, spirit_wraps: spiritWraps,
   bolas, trickster_talisman: tricksterTalisman, tower_shield: towerShield, javelin, iron_cestus: ironCestus,
+  bloodletter, grapnel,
 };
 
 const cache = new Map<string, WeaponArt>();

@@ -25,7 +25,7 @@ const STATUS: Record<StatusId, [string, string]> = {
   stun: ['STUN', '#ffe070'], rage: ['RAGE', '#ff5a4a'], haste: ['HASTE', '#7af0c8'], mark: ['MARK', '#d07aff'],
   ironskin: ['IRON', '#c8d0e0'], vulnerable: ['VULN', '#ff9ab0'],
   silence: ['MUTE', '#b8a0ff'], root: ['ROOT', '#c8a060'], hidden: ['SMOKE', '#b8b8c8'], fear: ['FEAR', '#e070a0'],
-  regen: ['REGEN', '#7ae07a'], momentum: ['MOMENTUM', '#ffc040'],
+  regen: ['REGEN', '#7ae07a'], momentum: ['MOMENTUM', '#ffc040'], bleed: ['BLEED', '#ff4a5a'],
 };
 
 /** Key stats shown small under each side's bars: health is already in the bar. */

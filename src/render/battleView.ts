@@ -18,7 +18,7 @@ import { drawText } from './font';
 import { ellipseOutline, Fx, type View } from './fx';
 import { css, mix } from './pixel/color';
 import {
-  bellSprite, boneRootSprite, caltropsPatch, charmSprite, clearPatches, hawkSprite, hourglassSprite, silenceSprite, skullSprite,
+  bellSprite, boneRootSprite, caltropsPatch, charmSprite, cloudSprite, clearPatches, hawkSprite, hourglassSprite, silenceSprite, skullSprite,
   totemSprite, totemTop, wardSprite, whelpSprite, type HawkPose, type PatchLook,
   type BellState,
 } from './specialArt';
@@ -43,6 +43,7 @@ const STYLE_COLOR: Record<ProjectileStyle, number> = {
   flask: 0xff8a2a,
   hook: 0xc8d0d8, bolas: 0xc89a5a, javelin: 0xd8c8a0, spark: 0x9fe0ff, soul: 0x9affc8, bonespike: 0xe8e0c8,
   frostflask: 0x9fe8ff, caltrops: 0x9aa0a8, hawk: 0xc8925a, breath: 0xff8a3a, palm: 0x6af0dc,
+  grapnel: 0xc8b088, vortexflask: 0x5af0e8,
 };
 
 /** Kiai pitch per body form: bigger bodies shout lower. */
@@ -94,6 +95,12 @@ interface FighterView {
   puffT: number;
   /** Who dragged this fighter with a chain (while pullT runs). */
   pulledBy: FighterId | -1;
+  /** Grappling hook: who this fighter is reeling itself in to (while pullT runs). */
+  reelTo: FighterId | -1;
+  /** Storm cloud: where it floats (screen px), drifting between the shoulder and the mark. */
+  cloud: [number, number] | null;
+  /** Bleeding: next drop. */
+  dripT: number;
   /** Super attacks: next power-gathering spark, and when the last signature impact played (combos play it lighter). */
   chargeT: number;
   sigT: number;
@@ -259,7 +266,7 @@ export class BattleView implements View {
         art, anim, bank: new SpriteBank(art, anim.set), out: anim.update(f, f.x, 0, false, false, false),
         flash: 0, drink: 0, drinkCol: '#ffffff', ghosts: [], ghostT: 0, emberT: 0, sparkT: { main: 0, sec: 0, head: 0, body: 0, feet: 0, set: 0, use: 0, item: 0 }, headY: 2,
         ...bodyMarks(art), lastS: null, lastX: 0, lastY: 0, lastFlip: false,
-        hawkFrom: null, hawkAway: 0, landT: 0, breathT: 0, wardT: 0, puffT: 0, pulledBy: -1, chargeT: 0, sigT: -9, ent: null, pose: null,
+        hawkFrom: null, hawkAway: 0, landT: 0, breathT: 0, wardT: 0, puffT: 0, pulledBy: -1, reelTo: -1, cloud: null, dripT: 0, chargeT: 0, sigT: -9, ent: null, pose: null,
       };
     });
     this.finIds = [finisherOf(b.fighters[0].look), finisherOf(b.fighters[1].look)];
@@ -917,6 +924,8 @@ export class BattleView implements View {
     if (f.has.has('hourglass')) this.drawHourglass(g, f, v, px, py);
     if (f.has.has('gale_bell')) this.drawBell(g, f, v, px, py, dt);
     if (f.has.has('thunder_totem')) this.drawCharm(g, f, v, px, py, dt);
+    if (f.has.has('storm_cloud')) this.drawCloud(g, f, v, px, py, dt);
+    if (dt > 0 && f.statuses.some((st) => st.id === 'bleed')) this.drip(f, v, x, y, dt);
     const fam = f.familiar;
     if (!fam) return;
     if (fam.kind === 'hawk') { this.drawHawk(g, f, v, px, py, dt); return; }
@@ -1046,6 +1055,44 @@ export class BattleView implements View {
       const c = this.glow(f.id, 0xf0ffff, 0x4ac0ff);
       this.fx.burst({ x: this.wx(cx), y: this.wy(cy - 3), count: 1, jitter: 0.08, speed: [0.5, 1.5], life: [0.1, 0.25], color: c[0], color2: c[1], kind: 'streak' });
     }
+  }
+
+  /**
+   * Thunderhead: a little storm cloud riding over the back shoulder. When it
+   * marks the enemy it drifts over to hang above them, flickering, until the
+   * bolt comes down; then it drifts home.
+   */
+  private drawCloud(g: CanvasRenderingContext2D, f: Fighter, v: FighterView, px: number, py: number, dt: number): void {
+    const b = this.battle!;
+    const mark = b.zones.find((z) => z.owner === f.id && z.kind === 'strike');
+    const tx = mark ? this.sx(mark.x) : px - f.facing * 10;
+    const ty = mark ? this.sy(3.2) : py - v.topPx - 4 + Math.sin(this.time * 2 + f.id) * 1.5;
+    const c = (v.cloud ??= [tx, ty]);
+    const k = Math.min(1, dt * (mark ? 9 : 4));
+    c[0] += (tx - c[0]) * k;
+    c[1] += (ty - c[1]) * k;
+    const cx = Math.round(c[0]), cy = Math.round(c[1]);
+    const skin = v.art.specialSkinId;
+    const s = cloudSprite(!!mark, skin, Math.floor(this.time * (mark ? 14 : 5) + f.id));
+    this.put(g, s, cx, cy, f.facing < 0);
+    if (mark) this.glowList.push({ s, x: cx, y: cy, flip: f.facing < 0 });
+    this.itemSparks(v, cx, cy - 4);
+    // A few drops of rain under it while it hangs over the mark.
+    if (mark && dt > 0 && Math.random() < dt * 14) {
+      const col = this.glow(f.id, 0xd8f0ff, 0x6a8ac8);
+      this.fx.burst({ x: this.wx(cx + (Math.random() - 0.5) * 12), y: this.wy(cy + 1), count: 1, dir: -Math.PI / 2, spread: 0.1, speed: [3, 4], life: [0.15, 0.3], color: col[0], color2: col[1], kind: 'streak' });
+    }
+  }
+
+  /** Bleeding: drops of blood fall off the wound, faster while the fighter moves. */
+  private drip(f: Fighter, v: FighterView, x: number, y: number, dt: number): void {
+    if ((v.dripT -= dt) > 0) return;
+    const moving = Math.abs(f.x - f.px) > 0.002 || f.y > 0.05;
+    v.dripT = moving ? 0.07 : 0.35;
+    this.fx.burst({
+      x: x + (Math.random() - 0.5) * 0.3, y: y + 0.7 + Math.random() * 0.7, count: 1, dir: Math.PI / 2, spread: 0.8,
+      speed: [0.3, 1.2], life: [0.4, 0.7], color: 0xe8283a, color2: 0x7a0a14, gravity: 9, kind: 'drop',
+    });
   }
 
   /** Sands of Time: a small hourglass at the back shoulder, sand trickling (spent once it has turned). */
@@ -1196,6 +1243,8 @@ export class BattleView implements View {
   private drawZoneGround(g: CanvasRenderingContext2D, z: Zone): void {
     const cx = Math.round(this.sx(z.x)), cy = Math.round(this.sy(0));
     const a = this.zoneAlpha(z);
+    if (z.kind === 'vortex') { this.drawVortex(g, z, cx, cy, a); return; }
+    if (z.kind === 'strike') { this.drawMark(g, z, cx, cy); return; }
     if (z.kind === 'caltrops') {
       const p = caltropsPatch(z.id, Math.round(z.radius * PPM), this.patchLook(z.owner));
       g.globalAlpha = a;
@@ -1221,6 +1270,51 @@ export class BattleView implements View {
       g.fillStyle = mid;
       g.fillRect(sx - Math.sign(Math.sin(t)), sy, 1, 1);
     }
+    g.globalAlpha = 1;
+  }
+
+  /** Maelstrom: a whirlpool on the ground, its arms spiralling in to the eye. */
+  private drawVortex(g: CanvasRenderingContext2D, z: Zone, cx: number, cy: number, a: number): void {
+    const rx = z.radius * PPM, ry = Math.min(rx * 0.22, 9);
+    const sk = this.fighters[z.owner]?.art.useSkin?.glow;
+    const hi = css(sk?.[0] ?? 0xc8fff8), mid = css(sk ? mix(sk[0], sk[1], 0.5) : 0x3ac8c8), deep = css(sk?.[1] ?? 0x1a6a8a);
+    g.globalAlpha = a * 0.22;
+    g.fillStyle = deep;
+    g.beginPath();
+    g.ellipse(cx, cy + 1, rx, ry, 0, 0, Math.PI * 2);
+    g.fill();
+    g.globalAlpha = a * 0.6;
+    ellipseOutline(g, cx, cy + 1, rx, ry, mid, 1);
+    // Three arms of foam spiralling inward, turning.
+    const spin = this.time * 3.2;
+    for (let arm = 0; arm < 3; arm++) {
+      for (let i = 0; i < 14; i++) {
+        const u = i / 14, ang = spin + (arm * Math.PI * 2) / 3 + u * 3.4;
+        const rr = 1 - u * 0.92;
+        g.globalAlpha = a * (0.3 + 0.6 * u);
+        g.fillStyle = u > 0.7 ? hi : mid;
+        g.fillRect(Math.round(cx + Math.cos(ang) * rx * rr), Math.round(cy + 1 + Math.sin(ang) * ry * rr), 1, 1);
+      }
+    }
+    g.globalAlpha = 1;
+    if (this.lastDt > 0 && Math.random() < this.lastDt * 10 * a) {
+      const ang = Math.random() * Math.PI * 2;
+      const c = sk ?? [0xc8fff8, 0x3ac8c8];
+      this.fx.burst({ x: z.x + Math.cos(ang) * z.radius, y: 0.1, count: 1, dir: ang > Math.PI ? 0 : Math.PI, spread: 0.3, speed: [1, 2], life: [0.2, 0.4], color: c[0], color2: c[1], kind: 'streak' });
+    }
+  }
+
+  /** The storm cloud's mark: a ring on the ground that tightens and brightens until the bolt drops. */
+  private drawMark(g: CanvasRenderingContext2D, z: Zone, cx: number, cy: number): void {
+    const k = clamp(1 - z.life / z.span, 0, 1);
+    const sk = this.fighters[z.owner]?.art.specialSkin?.glow;
+    const col = css(sk?.[0] ?? 0xd8f4ff), mid = css(sk ? mix(sk[0], sk[1], 0.5) : 0x7ab8ff);
+    const rx = z.radius * PPM * (1.25 - 0.25 * k), ry = Math.min(rx * 0.22, 8);
+    const blink = Math.floor(this.time * (8 + k * 16)) & 1;
+    g.globalAlpha = 0.35 + 0.5 * k;
+    ellipseOutline(g, cx, cy + 1, rx, ry, blink ? col : mid, 1);
+    g.globalAlpha = 0.2 + 0.4 * k;
+    ellipseOutline(g, cx, cy + 1, rx * (1 - k) + 2, Math.max(1, ry * (1 - k)), col, 1);
     g.globalAlpha = 1;
   }
 
@@ -1313,13 +1407,20 @@ export class BattleView implements View {
   private drawChains(g: CanvasRenderingContext2D): void {
     const b = this.battle!;
     for (const p of b.projectiles) {
-      if (!p.alive || p.style !== 'hook') continue;
+      if (!p.alive || (p.style !== 'hook' && p.style !== 'grapnel')) continue;
       const [hx, hy] = this.handAt(p.owner);
       const x = p.px + (p.x - p.px) * this.alpha, y = p.py + (p.y - p.py) * this.alpha;
-      drawChain(g, hx, hy, Math.round(this.sx(x)), Math.round(this.sy(y)), 4, this.fighters[p.owner]?.art.mainSkin?.chain);
+      const rope = p.style === 'grapnel';
+      drawChain(g, hx, hy, Math.round(this.sx(x)), Math.round(this.sy(y)), 4, rope ? this.fighters[p.owner]?.art.secSkin?.chain ?? ROPE : this.fighters[p.owner]?.art.mainSkin?.chain);
     }
     for (const f of b.fighters) {
       const v = this.fighters[f.id];
+      if (f.pullT > 0 && v.reelTo !== -1) {
+        // Reeling in on the grappling line: taut from the hand to the hooked enemy.
+        const t = b.fighters[v.reelTo];
+        const [hx, hy] = this.handAt(f.id);
+        drawChain(g, hx, hy, Math.round(this.sx(this.lx(t))), Math.round(this.sy(this.ly(t) + 1.1)), 0, v.art.secSkin?.chain ?? ROPE);
+      } else if (f.pullT <= 0) v.reelTo = -1;
       const by = v.pulledBy;
       if (f.pullT <= 0 || by === -1) { if (f.pullT <= 0) v.pulledBy = -1; continue; }
       const [hx, hy] = this.handAt(by);
@@ -1957,6 +2058,57 @@ export class BattleView implements View {
         this.play('cast', this.pan(f.x), 0.35);
         break;
       }
+      case 'reel': {
+        const f = b.fighters[e.f], t = b.fighters[e.target];
+        this.fighters[e.f].reelTo = e.target;
+        fx.burst({ x: t.x, y: t.y + 1.1, count: 8, speed: [1, 3], life: [0.15, 0.3], color: 0xffffff, color2: 0xc8b088, drag: 2, kind: 'streak' });
+        fx.burst({ x: f.x, y: 0.1, count: 4, jitter: 0.2, dir: Math.PI / 2, spread: 1, speed: [0.5, 1.5], life: [0.3, 0.5], color: 0xc8b8a0, color2: 0x8a7a70, kind: 'smoke', size: 3 });
+        this.play('rattle', this.pan(t.x), 0.6);
+        this.play('whoosh', this.pan(f.x), 0.6);
+        this.shake(0.15);
+        break;
+      }
+      case 'bolt': {
+        // The cloud's bolt: forks from the cloud to the mark.
+        const v = this.fighters[e.f];
+        const c = this.glow(e.f, 0xf0ffff, 0x7ab8ff);
+        const top = v.cloud ? this.wy(v.cloud[1]) : 3.2;
+        let px = e.x, py = top;
+        while (py > 0.15) {
+          const nx = e.x + (Math.random() - 0.5) * 0.5, ny = Math.max(0, py - 0.45);
+          fx.bolt(px, py, nx, ny, c[1], 0.16, c[0]);
+          px = nx; py = ny;
+        }
+        fx.pulse('groundRing', e.x, 0, 1.4, c[1], 0.3);
+        fx.burst({ x: e.x, y: 0.2, count: e.hit ? 18 : 10, speed: [2, 6], life: [0.15, 0.3], color: c[0], color2: c[1], kind: 'streak' });
+        this.play('lightning', this.pan(e.x), e.hit ? 0.8 : 0.5);
+        this.flash(mix(c[0], c[1], 0.3), e.hit ? 0.5 : 0.3);
+        if (e.hit) this.shake(0.3);
+        break;
+      }
+      case 'mirage': {
+        // The dodge leaves a shimmering afterimage behind, and it strikes back.
+        const f = b.fighters[e.f], v = this.fighters[e.f];
+        if (v.lastS) {
+          v.ghosts.push({ x: Math.round(this.sx(e.x)), y: v.lastY, s: v.lastS, flip: v.lastFlip, t: 0, col: '#d8c8ff', life: 0.45, a: 0.7 });
+          v.ghosts.push({ x: Math.round(this.sx(e.x)), y: v.lastY, s: v.lastS, flip: v.lastFlip, t: -0.08, vx: f.facing * 30, col: '#a080ff', life: 0.4, a: 0.5 });
+        }
+        fx.burst({ x: e.x, y: 1.1, count: 12, jitter: 0.3, jitterY: 0.8, speed: [0.5, 2], life: [0.3, 0.6], color: 0xf0e8ff, color2: 0x8a6ae0, drag: 2, kind: 'twinkle' });
+        fx.pop('MIRAGE', e.x, v.headY + 0.3, { color: '#e0d0ff', shade: '#6a4ac8' }, 0.8);
+        this.play('whoosh', this.pan(e.x), 0.7);
+        break;
+      }
+      case 'snatch': {
+        // Pickpocket: a glint flies from the enemy to the thief.
+        const f = b.fighters[e.f], from = b.fighters[e.from];
+        const word = e.status ? `STOLE ${e.status.toUpperCase()}` : 'PICKPOCKET';
+        fx.pop(word, f.x, this.fighters[e.f].headY + 0.5, { color: '#ffe08a', shade: '#8a5a10' }, 0.9);
+        fx.pulse('coin', from.x, from.y + 1.6, 0.5, 0xfff0b0, 0.4);
+        const dir = Math.atan2(0, f.x - from.x);
+        fx.burst({ x: from.x, y: from.y + 1.3, count: 8, jitter: 0.15, dir, spread: 0.3, speed: [2, 4], life: [0.2, 0.4], color: 0xfff4c0, color2: 0xc89a28, drag: 2, kind: 'twinkle' });
+        this.play('flip', this.pan(f.x), 0.6);
+        break;
+      }
       case 'callout': {
         const f = b.fighters[e.f];
         fx.pop(e.text.toUpperCase(), f.x, this.fighters[e.f].headY + 0.45, { color: e.color }, 0.9);
@@ -2542,6 +2694,8 @@ function blit(g: CanvasRenderingContext2D, s: Sprite, x: number, y: number, flip
 /** Chain link colours: lit, mid, dark joints, and the shadow under a turned link. */
 type ChainColors = readonly [string, string, string, string];
 const CHAIN: ChainColors = ['#d8dee8', '#8a92a0', '#3a3a48', '#5a6270'];
+/** The grappling hook's line: braided hemp. */
+const ROPE: ChainColors = ['#ecd8a8', '#b89a68', '#5a4428', '#7a6040'];
 
 /**
  * A chain of alternating light and dark links between two screen points,

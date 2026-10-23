@@ -93,6 +93,14 @@ export interface Fighter {
   /** Basic attack string: swings landed in a row, and seconds since the last one. */
   combo: number;
   comboT: number;
+  /** Storm Cloud: seconds until it marks the enemy's spot again. */
+  cloudCd: number;
+  /** Grudge Mail: damage stored for the next heavy hit. */
+  grudge: number;
+  /** Springheel Leggings: seconds left for the hard hit after springing off a wall. */
+  springT: number;
+  /** Magpie Mask: seconds until it can snatch again. */
+  snatchCd: number;
 
   /** Seconds since last taking damage. */
   sinceHurt: number;
@@ -148,6 +156,7 @@ export function createFighter(id: FighterId, cfg: FighterConfig): Fighter {
     hist: [], histI: 0, histT: 0, rewindUsed: false,
     wardCd: 3, dreadCd: 0, foresightCd: 0,
     pullT: 0, pullTo: 0, chargeT: 0, garbT: 0, mendAcc: 0, combo: 0, comboT: 99,
+    cloudCd: 3.5, grudge: 0, springT: 0, snatchCd: 0,
     sinceHurt: 99,
     sinceHit: 99,
     totals: {

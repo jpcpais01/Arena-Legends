@@ -1,8 +1,9 @@
 import { Rng } from '../core/rng';
+import { CLOUD, CLOUD_BOLT } from './abilities';
 import { clamp, dsin, smoothstep } from '../core/math';
 import { Brain, type FighterBrain } from './ai/brain';
 import {
-  ARENA_HALF_WIDTH, BASE_ENERGY_REGEN, BODY_GAP, DT, ENERGY_ON_DEAL, ENERGY_ON_TAKE, MAX_ENERGY,
+  ARENA_HALF_WIDTH, BASE_ENERGY_REGEN, BLEED_PER_M, BODY_GAP, DT, ENERGY_ON_DEAL, ENERGY_ON_TAKE, MAX_ENERGY,
   MATCH_TIME, OVERTIME_DAMAGE, ROUND_TIME, START_GAP, WALL_SPLAT_SPEED,
 } from './constants';
 import {
@@ -10,7 +11,7 @@ import {
 } from './fighter';
 import type { FightStyleId } from './styles';
 import type {
-  AbilityDef, ActionState, BattleEvent, BladeLock, DamageType, Familiar, FighterId, Projectile, StatusApply, StatusId, Zone, ZoneKind,
+  AbilityDef, ActionState, BattleEvent, BladeLock, DamageType, Familiar, FighterId, Projectile, StatusApply, StatusId, StatusInstance, Zone, ZoneKind,
 } from './types';
 
 /** The wisp lantern's spirit bolt (familiar shots carry ability index -1). */
@@ -44,7 +45,11 @@ const FAMILIAR_RANGE = 9;
 /** Gravity on lobbed flasks (m/s²): a lazy, readable arc. */
 const LOB_GRAVITY = 16;
 /** Statuses a cleanse (or a rewind) washes off. */
-const HARMFUL: StatusId[] = ['burn', 'poison', 'chill', 'mark', 'vulnerable', 'silence', 'root', 'fear'];
+const HARMFUL: StatusId[] = ['burn', 'poison', 'chill', 'mark', 'vulnerable', 'silence', 'root', 'fear', 'bleed'];
+/** Buffs a Magpie Mask can snatch, best first when they last as long. */
+const STEALABLE: StatusId[] = ['ironskin', 'rage', 'haste', 'regen', 'momentum'];
+/** Maelstrom Flask whirlpool: radius, seconds, pull toward its heart (m/s). */
+export const VORTEX = { radius: 2.2, life: 3.5, pull: 2.8 };
 /** Crowd control: interrupts what the target was doing. */
 const CC: StatusId[] = ['stun', 'frozen', 'fear'];
 /** Sands of Time: the past it remembers (seconds per sample, samples). */
@@ -64,6 +69,13 @@ const BIND_REST = 6;
 const BREAK_POWER = 1.3;
 /** How hard each fighting style leans into a bind. */
 const BIND_STYLE: Record<FightStyleId, number> = { balanced: 1, relentless: 1.12, tactician: 1, skirmisher: 0.92, guardian: 1.06 };
+/** Mirage Boots: the afterimage left by a dodge strikes back. */
+const MIRAGE_STRIKE: AbilityDef = {
+  id: 'mirage_strike', name: 'Mirage', slot: 'evade', kind: 'melee',
+  range: 2.6, cost: 0, cooldown: 0, windup: 0, active: 0, recovery: 0,
+  power: 1.3, damageType: 'physical', stagger: 0.4, knockback: 3,
+  anim: 'evade', desc: 'The mirage strikes back.',
+};
 const SAVATE_KICK: AbilityDef = {
   id: 'savate_kick', name: 'Push Kick', slot: 'evade', kind: 'melee',
   range: 1.9, cost: 0, cooldown: 0, windup: 0, active: 0, recovery: 0,
@@ -243,6 +255,8 @@ export class Battle {
     if (f.dreadCd > 0) f.dreadCd -= DT;
     if (f.foresightCd > 0) f.foresightCd -= DT;
     if (f.garbT > 0) f.garbT -= DT;
+    if (f.springT > 0) f.springT -= DT;
+    if (f.snatchCd > 0) f.snatchCd -= DT;
     f.sinceHurt += DT;
     f.sinceHit += DT;
     f.comboT += DT;
@@ -292,6 +306,21 @@ export class Battle {
           if (f.statuses !== list) return;
         }
       }
+      if (dots && s.id === 'bleed' && f.alive) {
+        // The wound tears as the bleeder moves (see `wound`); what it bled is counted twice a second.
+        s.tickT += DT;
+        if ((s.tickT >= 0.5 || s.remaining <= 0) && s.acc >= 1) {
+          const src = this.fighters[s.source];
+          const dealt = this.applyDamage(src, f, s.acc, 'true');
+          if (dealt > 0) {
+            this.emit({ type: 'hit', attacker: src.id, target: f.id, amount: dealt, crit: false, dtype: 'true',
+              blocked: false, heavy: false, ability: 'bleed', x: f.x, y: f.y + 1.1, killing: !f.alive, dot: true });
+          }
+          s.acc = 0;
+          s.tickT = 0;
+          if (f.statuses !== list) return;
+        } else if (s.tickT >= 0.5) s.tickT = 0;
+      }
       if (dots && s.id === 'regen' && f.alive) {
         s.acc += f.stats.maxHp * 0.02 * DT;
         s.tickT += DT;
@@ -328,6 +357,15 @@ export class Battle {
       f.hist[i * 2 + 1] = f.hp;
       f.histI++;
     }
+    if (has.has('storm_cloud') && !this.over && (f.cloudCd -= DT) <= 0) {
+      // The cloud hangs over the enemy and marks the ground at their feet; the bolt follows a second later.
+      const e = this.other(f);
+      if (!e.alive || getStatus(e, 'hidden')) f.cloudCd = 0.5;
+      else {
+        f.cloudCd = CLOUD.every;
+        this.spawnZone(f, 'strike', clamp(e.x, -ARENA_HALF_WIDTH + 0.4, ARENA_HALF_WIDTH - 0.4));
+      }
+    }
     if (has.has('charger_cuisses')) {
       const e = this.other(f);
       const toward = Math.sign(e.x - f.x);
@@ -358,7 +396,7 @@ export class Battle {
       }
       if (target.action && !target.action.feint) target.action = null;
     }
-    const maxStacks: Partial<Record<StatusId, number>> = { burn: 3, poison: 4, chill: 5, momentum: 5 };
+    const maxStacks: Partial<Record<StatusId, number>> = { burn: 3, poison: 4, chill: 5, momentum: 5, bleed: 5 };
     const existing = getStatus(target, apply.status);
     const add = apply.stacks ?? 1;
     if (existing) {
@@ -497,7 +535,11 @@ export class Battle {
     a.total += DT;
 
     if (a.phase === 'windup') {
-      if (ab.lunge && !a.feint && a.t > a.draw) f.x += a.dir * (ab.lunge * 0.25) / Math.max(DT, a.windup - a.draw) * DT;
+      if (ab.lunge && !a.feint && a.t > a.draw) {
+        const step = (ab.lunge * 0.25) / Math.max(DT, a.windup - a.draw) * DT;
+        f.x += a.dir * step;
+        this.wound(f, step);
+      }
       const leapAttack = ab.airborne && ab.kind !== 'dash';
       if (leapAttack) {
         const p = a.t / a.windup;
@@ -515,7 +557,11 @@ export class Battle {
     }
 
     if (a.phase === 'active') {
-      if (ab.lunge) f.x += a.dir * (ab.lunge * 0.75) / Math.max(a.active, DT) * DT;
+      if (ab.lunge) {
+        const step = (ab.lunge * 0.75) / Math.max(a.active, DT) * DT;
+        f.x += a.dir * step;
+        this.wound(f, step);
+      }
 
       if (ab.kind === 'melee') {
         const hits = ab.hits ?? 1;
@@ -537,6 +583,7 @@ export class Battle {
         const speed = ab.dash!.distance / a.active;
         const before = Math.sign(e.x - f.x);
         f.x += a.dir * speed * DT;
+        this.wound(f, speed * DT);
         // Leaping evades arc over the ground.
         if (ab.airborne) f.y = dsin(Math.min(1, a.t / a.active) * Math.PI) * 1.3;
         if (a.through && ab.dash!.strike && !a.connected) {
@@ -617,6 +664,7 @@ export class Battle {
         }
         f.x = f.px = dest;
         f.vx = 0;
+        this.wound(f, Math.abs(dest - from));
         f.invuln = Math.max(f.invuln, ab.iframes ?? 0.2);
         if (ab.buff) for (const b of ab.buff) this.applyStatus(f, f, b);
         this.emit({ type: 'blink', f: f.id, from, to: dest });
@@ -914,6 +962,7 @@ export class Battle {
         if (dx < p.radius + 0.45 && vertical) {
           if (target.invuln > 0) {
             // Phases through; keep flying.
+            this.dodged(target, owner);
           } else if (target.has.has('mirror_mail') && target.mirrorCd <= 0 && !p.ground) {
             target.mirrorCd = 6;
             this.reflectProjectile(p, target);
@@ -1107,9 +1156,12 @@ export class Battle {
 
   private spawnZone(f: Fighter, kind: ZoneKind, x: number, ab?: AbilityDef): void {
     const t = ab?.totem;
+    const id = this.nextZoneId++, owner = f.id;
     const z: Zone = kind === 'totem' && t
-      ? { id: this.nextZoneId++, kind, owner: f.id, x, radius: t.radius, life: t.life, span: t.life, tick: 0.5, every: t.every, power: f.stats.power * ab.power }
-      : { id: this.nextZoneId++, kind, owner: f.id, x, radius: CALTROPS.radius, life: CALTROPS.life, span: CALTROPS.life, tick: 0, every: CALTROPS.every, power: f.stats.power * CALTROPS.power };
+      ? { id, kind, owner, x, radius: t.radius, life: t.life, span: t.life, tick: 0.5, every: t.every, power: f.stats.power * ab.power }
+      : kind === 'vortex' ? { id, kind, owner, x, radius: VORTEX.radius, life: VORTEX.life, span: VORTEX.life, tick: 0, every: 0, power: 0 }
+      : kind === 'strike' ? { id, kind, owner, x, radius: CLOUD.radius, life: CLOUD.delay, span: CLOUD.delay, tick: 99, every: 0, power: 0 }
+      : { id, kind, owner, x, radius: CALTROPS.radius, life: CALTROPS.life, span: CALTROPS.life, tick: 0, every: CALTROPS.every, power: f.stats.power * CALTROPS.power };
     // One of each kind per owner: a new one replaces the old.
     for (let i = this.zones.length - 1; i >= 0; i--) if (this.zones[i].owner === f.id && this.zones[i].kind === kind) this.zones.splice(i, 1);
     this.zones.push(z);
@@ -1120,10 +1172,29 @@ export class Battle {
     for (let i = this.zones.length - 1; i >= 0; i--) {
       const z = this.zones[i];
       z.life -= DT;
-      if (z.life <= 0) { this.zones.splice(i, 1); continue; }
-      if ((z.tick -= DT) > 0) continue;
       const owner = this.fighters[z.owner];
       const e = this.other(owner);
+      if (z.kind === 'strike') {
+        // The storm cloud's bolt comes down on its mark (a dodge's i-frames slip it).
+        if (z.life > 0) continue;
+        this.zones.splice(i, 1);
+        const hit = !this.over && owner.alive && e.alive && Math.abs(e.x - z.x) <= z.radius + 0.3 && e.y < 2.4 && e.invuln <= 0;
+        this.emit({ type: 'bolt', f: owner.id, x: z.x, hit });
+        if (hit) this.abilityHit(owner, e, CLOUD_BOLT, { aoe: true });
+        else if (e.invuln > 0 && Math.abs(e.x - z.x) <= z.radius + 0.3) this.dodged(e, owner);
+        continue;
+      }
+      if (z.life <= 0) { this.zones.splice(i, 1); continue; }
+      if (z.kind === 'vortex') {
+        // The whirlpool drags them toward its heart; feet off the ground or mid-dodge, it can't.
+        if (!e.alive || e.invuln > 0 || e.y > 0.6 || e.pullT > 0) continue;
+        const dx = z.x - e.x;
+        if (Math.abs(dx) > z.radius || Math.abs(dx) < 0.05) continue;
+        const pull = VORTEX.pull * e.stats.knockbackTaken * (getStatus(e, 'ironskin') ? 0.5 : 1) * (0.6 + 0.4 * Math.abs(dx) / z.radius);
+        e.x += Math.sign(dx) * Math.min(Math.abs(dx), pull * DT);
+        continue;
+      }
+      if ((z.tick -= DT) > 0) continue;
       const inside = e.alive && Math.abs(e.x - z.x) <= z.radius && e.invuln <= 0;
       if (z.kind === 'totem') {
         if (!inside || e.y > 2.4 || getStatus(e, 'hidden')) { z.tick = 0.1; continue; }
@@ -1216,7 +1287,7 @@ export class Battle {
     if (!tgt.alive) return false;
     if (tgt.invuln > 0) {
       if (tgt.action && tgt.abilities[tgt.action.ability].slot === 'evade') {
-        this.emit({ type: 'thought', f: tgt.id, text: 'Clean dodge.' });
+        if (!this.dodged(tgt, att)) this.emit({ type: 'thought', f: tgt.id, text: 'Clean dodge.' });
       }
       return false;
     }
@@ -1252,6 +1323,11 @@ export class Battle {
       att.chargeT = 0;
       this.emit({ type: 'callout', f: att.id, text: 'Charge!', color: '#ffb060' });
     }
+    // Springheel Leggings: off the wall and straight back in.
+    if (body && att.springT > 0) {
+      raw *= 1.4;
+      att.springT = 0;
+    }
     let crit = false;
     const sureCrit = att.garbT > 0 && ab.slot !== 'item' && ab.slot !== 'evade';
     if (ab.damageType !== 'true' && (sureCrit || this.rng.chance(att.stats.critChance))) {
@@ -1263,6 +1339,11 @@ export class Battle {
     if (blocked) {
       const g = tgt.abilities[tgt.action!.ability];
       raw *= 1 - (g.guard?.reduction ?? 0.5);
+    } else if (heavy && att.grudge >= 1 && att.has.has('grudge_mail')) {
+      // Grudge Mail: every blow it remembered comes back at once.
+      raw += att.grudge;
+      att.grudge = 0;
+      this.emit({ type: 'callout', f: att.id, text: 'Vengeance!', color: '#ff6a5a' });
     }
 
     const dealt = this.applyDamage(att, tgt, raw, ab.damageType);
@@ -1337,6 +1418,7 @@ export class Battle {
         if (!tgt.action) tgt.stagger = Math.max(tgt.stagger, tgt.pullT + 0.2);
         this.emit({ type: 'pull', f: att.id, target: tgt.id });
       }
+      if (ab.reel && att.alive) this.reel(att, tgt, ironskin);
       // Dread Helm: a heavy blow that lands puts the fear in them.
       if (heavy && att.has.has('dread_helm') && att.dreadCd <= 0 && ab.slot !== 'item') {
         att.dreadCd = 7;
@@ -1367,6 +1449,7 @@ export class Battle {
       if (att.has.has('echo_stone') && dealt > 0 && this.rng.chance(0.35)) {
         att.echoQueue.push({ delay: 0.35, amount: dealt * 0.6, dtype: ab.damageType });
       }
+      if (att.has.has('magpie_mask') && att.snatchCd <= 0 && dealt > 0) this.snatch(att, tgt);
     }
     return !blocked;
   }
@@ -1380,6 +1463,7 @@ export class Battle {
     dmg *= tgt.stats.damageTakenMult;
     dmg = Math.round(dmg);
     if (dmg <= 0) return 0;
+    if (tgt.has.has('grudge_mail') && att !== tgt) tgt.grudge = Math.min(tgt.stats.maxHp * 0.15, tgt.grudge + dmg * 0.3);
 
     tgt.sinceHurt = 0;
     att.sinceHit = 0;
@@ -1435,6 +1519,69 @@ export class Battle {
       this.emit({ type: 'ko', f: tgt.id });
     }
     return dmg;
+  }
+
+  /**
+   * Mirage Boots: a real attack passed through the dodge. The afterimage left
+   * where the fighter stood strikes back at a close attacker, and the dodge
+   * gives haste. Once per evade. Returns whether a mirage appeared.
+   */
+  private dodged(f: Fighter, att: Fighter): boolean {
+    const a = f.action;
+    if (!a || a.connected || !f.has.has('mirage_boots') || f.abilities[a.ability].slot !== 'evade' || this.over) return false;
+    a.connected = true;
+    this.emit({ type: 'mirage', f: f.id, x: a.startX });
+    this.applyStatus(f, f, { status: 'haste', duration: 1.5 });
+    if (att.alive && Math.abs(att.x - a.startX) <= MIRAGE_STRIKE.range && att.y < 2.2 && att.invuln <= 0) {
+      this.abilityHit(f, att, MIRAGE_STRIKE, { isCounter: true });
+    }
+    return true;
+  }
+
+  /** Grappling hook: the line bites and reels the thrower in to strike range; the target reels from the knee. */
+  private reel(att: Fighter, tgt: Fighter, ironskin: boolean): void {
+    const side = Math.sign(att.x - tgt.x) || -tgt.facing;
+    att.pullTo = clamp(tgt.x + side * 1.15, -ARENA_HALF_WIDTH, ARENA_HALF_WIDTH);
+    att.pullT = Math.min(0.4, Math.abs(att.x - att.pullTo) / 18);
+    att.vx = 0;
+    this.emit({ type: 'reel', f: att.id, target: tgt.id });
+    if (ironskin) return;
+    if (tgt.action && !tgt.abilities[tgt.action.ability].hyperArmor) tgt.action = null;
+    if (!tgt.action) tgt.stagger = Math.max(tgt.stagger, att.pullT + 0.35);
+  }
+
+  /** Magpie Mask: takes the enemy's best buff for the time it has left, or a pocketful of energy. */
+  private snatch(att: Fighter, tgt: Fighter): void {
+    att.snatchCd = 3.5;
+    let best: StatusInstance | null = null;
+    for (const s of tgt.statuses) {
+      if (!STEALABLE.includes(s.id)) continue;
+      if (!best || s.remaining * s.stacks > best.remaining * best.stacks) best = s;
+    }
+    if (best) {
+      tgt.statuses.splice(tgt.statuses.indexOf(best), 1);
+      const mine = getStatus(att, best.id);
+      if (mine) {
+        mine.remaining = Math.max(mine.remaining, best.remaining);
+        mine.stacks = Math.max(mine.stacks, best.stacks);
+      } else att.statuses.push({ ...best, source: att.id, acc: 0, tickT: 0 });
+      refreshStats(tgt);
+      refreshStats(att);
+      this.emit({ type: 'snatch', f: att.id, from: tgt.id, status: best.id });
+      this.emit({ type: 'status', f: att.id, status: best.id, stacks: best.stacks });
+      return;
+    }
+    const took = Math.min(tgt.energy, 6);
+    if (took <= 0) return;
+    tgt.energy -= took;
+    att.energy = Math.min(MAX_ENERGY, att.energy + took);
+    this.emit({ type: 'snatch', f: att.id, from: tgt.id, status: null });
+  }
+
+  /** A bleeding fighter moved `metres` on their own: the wound tears a little more. */
+  private wound(f: Fighter, metres: number): void {
+    const s = getStatus(f, 'bleed');
+    if (s) s.acc += metres * s.sourcePower * BLEED_PER_M * s.stacks;
   }
 
   /** Sands of Time: back to where (and how healthy) the fighter was a few seconds ago. */
@@ -1494,6 +1641,7 @@ export class Battle {
       const accel = 28;
       const dv = target - f.vx;
       f.vx += clamp(dv, -accel * DT, accel * DT);
+      if (f.move !== 0) this.wound(f, Math.min(Math.abs(f.vx), f.stats.moveSpeed) * DT);
     } else if (!locked) {
       // Rooted: feet stay put.
       f.vx -= f.vx * Math.min(1, 14 * DT);
@@ -1519,6 +1667,15 @@ export class Battle {
     if (f.x < -lim || f.x > lim) {
       const impact = Math.abs(f.vx);
       f.x = clamp(f.x, -lim, lim);
+      if (impact > WALL_SPLAT_SPEED && f.alive && !this.over && f.has.has('springheel_leggings')) {
+        // Springheel: feet to the wall and straight back off it.
+        f.vx = -Math.sign(f.x) * Math.min(9, impact * 0.7);
+        f.vy = Math.max(f.vy, 3.5);
+        f.stagger = Math.min(f.stagger, 0.12);
+        f.springT = 2;
+        this.emit({ type: 'callout', f: f.id, text: 'Rebound!', color: '#7ef0b0' });
+        return;
+      }
       if (impact > WALL_SPLAT_SPEED && f.alive && !this.over) {
         const e = this.other(f);
         const dmg = this.applyDamage(e, f, f.stats.maxHp * 0.04 + impact * 4, 'true');

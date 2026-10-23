@@ -1,6 +1,8 @@
 import { clamp, dsin, lerp } from '../../core/math';
 import type { Battle } from '../battle';
-import { ARENA_HALF_WIDTH, DT, MATCH_TIME } from '../constants';
+import { CLOUD_BOLT } from '../abilities';
+import type { StatusId, Zone } from '../types';
+import { ARENA_HALF_WIDTH, BLEED_PER_M, DT, MATCH_TIME } from '../constants';
 import { actionDef, getStatus, isDisabled, stacksOf, type Fighter } from '../fighter';
 import {
   analyzeKit, analyzeMatchup, ccValue, dpsAt, estDamage, fastestAnswer, hasControl, liveReach, nextSwing, readyDefenses, STATUS_FX,
@@ -99,6 +101,8 @@ const MAX_ABILITY_OPTIONS = 4;
 const PRIOR_WEIGHT = 0.25;
 /** Value of each second the enemy can't act (fraction of HP). */
 const LOCK_VALUE = 0.05;
+/** Buffs a Magpie Mask snatches (mirrors battle.ts). */
+const STEALABLE_BUFFS: StatusId[] = ['ironskin', 'rage', 'haste', 'regen', 'momentum'];
 
 /** HP plus shield plus a pending revive, minus damage-over-time still to come. */
 function effectiveHp(f: Fighter): number {
@@ -290,6 +294,8 @@ export class Brain implements FighterBrain {
     return this.mirror;
   }
   private mirror: Brain | null = null;
+  /** The battle being thought about right now (a look-ahead copy for imagined brains). */
+  private now!: Battle;
 
   private thought(b: Battle, text: string, force = false): void {
     if (this.thoughtCd > 0 && !force) return;
@@ -298,6 +304,7 @@ export class Brain implements FighterBrain {
   }
 
   think(b: Battle): void {
+    this.now = b;
     const f = this.f;
     const e = b.other(f);
     if (!this.ready) this.init(b, e);
@@ -343,7 +350,8 @@ export class Brain implements FighterBrain {
       e, dist, threat, open,
       myHp: f.hp / f.stats.maxHp,
       enHp: e.hp / e.stats.maxHp,
-      cornered: this.backToWall(f, 1.6) && dist < 3.2,
+      // Springheel Leggings: a wall is a springboard, not a trap.
+      cornered: this.backToWall(f, 1.6) && dist < 3.2 && !f.has.has('springheel_leggings'),
       enemyReach: liveReach(e, this.ek, 0.4),
       burst: Math.max(this.m.myClose, this.m.myFar) * 1.4,
     });
@@ -393,6 +401,15 @@ export class Brain implements FighterBrain {
       consider({
         tti, danger: estDamage(b.fighters[p.owner], ab, f), blockable: !ab.unblockable,
         projectile: true, heavy: !!ab.heavy, melee: false, reach: 0, recovery: 0,
+      });
+    }
+
+    // A storm cloud's mark under my feet: the bolt comes straight down when it runs out.
+    const mark = this.markOn(b, f);
+    if (mark) {
+      consider({
+        tti: Math.max(0.01, mark.life), danger: estDamage(e, CLOUD_BOLT, f) + 0.03, blockable: false,
+        projectile: true, heavy: true, melee: false, reach: 0, recovery: 0,
       });
     }
 
@@ -467,6 +484,14 @@ export class Brain implements FighterBrain {
       }
     }
     return best;
+  }
+
+  /** The enemy's storm cloud mark under `who`, if one is about to strike them. */
+  private markOn(b: Battle, who: Fighter): Zone | null {
+    for (const z of b.zones) {
+      if (z.kind === 'strike' && z.owner !== who.id && Math.abs(who.x - z.x) <= z.radius + 0.35) return z;
+    }
+    return null;
   }
 
   /**
@@ -750,7 +775,8 @@ export class Brain implements FighterBrain {
   private shouldLookAhead(b: Battle, c: Ctx): boolean {
     const e = c.e;
     const near = c.dist < Math.max(this.kit.meleeReach, this.ek.meleeReach, 2) + 2.2;
-    const shots = b.projectiles.length;
+    // Zones on the ground (a whirlpool, a storm mark) count as shots in play.
+    const shots = b.projectiles.length + b.zones.length;
     const key = actionKey(e);
     if (!near && shots === 0 && !(e.action && this.perceived(b))) return false;
     const changed = (key !== this.lookedAtKey && this.perceived(b)) || shots !== this.lookedAtShots;
@@ -793,6 +819,7 @@ export class Brain implements FighterBrain {
       const risky = o.choice.kind === 'ability' && (this.kit.info[o.choice.idx].ultimate || this.kit.info[o.choice.idx].ab.windup >= 0.45);
       let total = 0;
       const samples = risky ? 2 : 1;
+      const mark = this.markOn(b, f);
       for (let k = 0; k < samples; k++) {
         const sim = b.fork(k === 0 ? seed : (seed ^ 0x9e3779b9) >>> 0, (copy) => {
           const me = Brain.imagine(this, copy.fighters[f.id], o.choice, copy.time);
@@ -801,7 +828,9 @@ export class Brain implements FighterBrain {
           me.seenKey = this.seenKey; me.seenAt = this.seenAt;
           return f.id === 0 ? [me, them] : [them, me];
         });
-        for (let t = 0, n = this.horizonFor(o.choice, c.dist); t < n && !sim.over; t++) sim.step();
+        // A storm mark under me: look far enough ahead to see the bolt land.
+        const n = Math.max(this.horizonFor(o.choice, c.dist), mark ? Math.ceil((mark.life + 0.1) / DT) : 0);
+        for (let t = 0; t < n && !sim.over; t++) sim.step();
         total += this.evaluate(sim, start);
       }
       const score = total / samples + o.prior * PRIOR_WEIGHT;
@@ -852,9 +881,10 @@ export class Brain implements FighterBrain {
     v -= defenseSpent(f, this.kit) - defenseSpent(e, this.ek);
     // Position: nobody wants their back to the wall.
     const dist = Math.abs(e.x - f.x);
+    // (Springheel Leggings bounce off it, so they don't mind.)
     if (dist < 3.5) {
-      if (Math.abs(f.x) > ARENA_HALF_WIDTH - 1.2 && Math.sign(f.x) !== Math.sign(e.x - f.x)) v -= 0.012;
-      if (Math.abs(e.x) > ARENA_HALF_WIDTH - 1.2 && Math.sign(e.x) !== Math.sign(f.x - e.x)) v += 0.012;
+      if (Math.abs(f.x) > ARENA_HALF_WIDTH - 1.2 && Math.sign(f.x) !== Math.sign(e.x - f.x) && !f.has.has('springheel_leggings')) v -= 0.012;
+      if (Math.abs(e.x) > ARENA_HALF_WIDTH - 1.2 && Math.sign(e.x) !== Math.sign(f.x - e.x) && !e.has.has('springheel_leggings')) v += 0.012;
     }
     // Spacing preference for the current plan.
     const want = this.plan === 'kite' && this.m.zone > 0 ? this.m.zone : this.plan === 'recover' ? 6
@@ -922,10 +952,16 @@ export class Brain implements FighterBrain {
           val = t.danger * (0.75 + p.caution * 0.4) + 0.02 + (!t.blockable ? 0.03 : 0);
           why = info.defense === 'blink' ? `${ab.name} out of it.` : c.cornered ? `Cornered — ${ab.name} through!` : `${ab.name} past the attack.`;
           if (t.heavy && !t.blockable) why = `Can't block that — ${ab.name}!`;
+          // Mirage Boots: a dodge timed on a real attack leaves a mirage that strikes back.
+          if (ab.slot === 'evade' && f.has.has('mirage_boots')) {
+            val += 0.02 + (t.melee && c.dist < 2.6 ? 0.03 : 0);
+            if (t.melee) why = 'Mirage Step — the afterimage strikes back!';
+          }
         }
       }
       // Prefer the cheaper answer when the damage is small.
       if (t.danger < 0.03) val *= 0.4;
+      val -= this.bleedCost(ab);
       val *= this.defendBias * this.style.defense;
       return { val, why };
     }
@@ -951,6 +987,9 @@ export class Brain implements FighterBrain {
         val = 0.035 + p.caution * 0.03;
         why = 'Too close — blinks away.';
       }
+      // Mirage Boots are worth more saved for a real attack.
+      if (ab.slot === 'evade' && f.has.has('mirage_boots')) val *= 0.6;
+      val -= this.bleedCost(ab);
     }
     return val > 0 ? { val, why } : null;
   }
@@ -981,6 +1020,14 @@ export class Brain implements FighterBrain {
       if (v > val) { val = v; why = 'Switcheroo: their swing hits nothing!'; }
     }
     return val > 0 ? { val: val * (0.8 + this.p.cunning * 0.4), why } : null;
+  }
+
+  /** HP fraction a dash or blink would tear out of my open wounds (bleeding). */
+  private bleedCost(ab: AbilityInfo['ab']): number {
+    const f = this.f;
+    const s = getStatus(f, 'bleed');
+    if (!s || !ab.dash) return 0;
+    return (s.sourcePower * BLEED_PER_M * s.stacks * ab.dash.distance) / f.stats.maxHp;
   }
 
   /** Value of washing off what's on me now (stoneskin elixir). */
@@ -1052,6 +1099,9 @@ export class Brain implements FighterBrain {
     }
     // Limited uses: don't spend them outside the fight.
     if (ab.uses && !inFight && !ab.heal) val *= 0.5;
+    // A Magpie Mask in reach would only snatch it.
+    if (ab.buff && c.e.has.has('magpie_mask') && c.e.snatchCd < 2 && c.dist < c.enemyReach + 1
+      && ab.buff.some((s) => STEALABLE_BUFFS.includes(s.status))) val *= 0.55;
     if (val <= 0) return null;
     const lock = (ab.windup + ab.active) / f.stats.attackSpeed;
     if (c.threat && c.threat.tti < lock + 0.1) val *= 0.15;
@@ -1181,13 +1231,34 @@ export class Brain implements FighterBrain {
     if (getStatus(f, 'hidden')) { val += pHit * dmg * 0.5; why = why || `Ambush — ${ab.name}!`; }
     // A pull only helps a fighter who wants them close.
     if (ab.pull && this.kit.ranged && this.m.zone > 0) val -= 0.02;
+    // Reeling in is for closing the gap: worth most against someone keeping away.
+    if (ab.reel) {
+      if (this.kit.ranged && this.m.zone > 0) val -= 0.04;
+      else if (dist > this.m.engage + 1.5 && plan !== 'kite' && plan !== 'recover' && plan !== 'breathe') {
+        val += 0.02 + (this.ek.ranged ? 0.02 : 0);
+        why = why || 'Hooks them and reels in!';
+      } else if (dist < this.m.engage + 1) val *= 0.5;
+    }
+    // A storm mark of mine under them: anything that holds them there keeps them under the bolt.
+    if (hasControl(ab) && this.markOn(b, e) && (ab.stun || ab.reel || ab.projectile?.zone === 'vortex' || ab.applies?.some((s) => s.status === 'root' || s.status === 'chill'))) {
+      val += 0.02 * pHit;
+      why = why || 'Pins them under the storm!';
+    }
+    // Magpie Mask: hit them while they're buffed and the buff is mine.
+    if (f.has.has('magpie_mask') && f.snatchCd <= windup && e.statuses.some((s) => STEALABLE_BUFFS.includes(s.id) && s.remaining > windup + 0.5)) {
+      val += 0.025 * pHit;
+      why = why || `${ab.name} — snatches their buff!`;
+    }
+    // Grudge Mail: a heavy blow with a full grudge behind it.
+    if (ab.heavy && f.has.has('grudge_mail') && f.grudge > f.stats.maxHp * 0.06) why = why || `${ab.name} — unleashes the grudge!`;
 
     // Finishing blow.
     const phoenix = e.has.has('phoenix_feather') && !e.phoenixUsed;
     if (dmg * pHit > c.enHp * 0.95 && !phoenix) { val += 0.08; why = `${ab.name} to finish!`; }
 
     // Situational bonuses.
-    if (ab.knockback && ab.knockback >= 4 && Math.abs(e.x) > ARENA_HALF_WIDTH - 2.5 && Math.sign(e.x) === Math.sign(e.x - f.x)) {
+    if (ab.knockback && ab.knockback >= 4 && Math.abs(e.x) > ARENA_HALF_WIDTH - 2.5 && Math.sign(e.x) === Math.sign(e.x - f.x)
+      && !e.has.has('springheel_leggings')) {
       val += 0.03 * pHit;
       why = why || `${ab.name} drives them into the wall!`;
     }
@@ -1315,9 +1386,21 @@ export class Brain implements FighterBrain {
     let move = 0;
     if (err > 0.25) move = toward;
     else if (err < -0.25) move = -toward;
+    // Bleeding: every step tears the wound, so small adjustments aren't worth it.
+    const bleed = stacksOf(f, 'bleed');
+    if (bleed >= 2 && Math.abs(err) < 0.6 + bleed * 0.3 && this.plan !== 'recover') move = 0;
 
     // Don't back into the wall: hold ground instead.
     if (move === -toward && Math.abs(f.x - toward * 0.8) > ARENA_HALF_WIDTH - 0.4) move = 0;
+
+    // A storm mark under my feet: get off it, by the shorter way out.
+    const mark = this.markOn(this.now, f);
+    if (mark) {
+      const right = mark.x + mark.radius + 0.4 - f.x, left = f.x - (mark.x - mark.radius - 0.4);
+      const canR = f.x + right < ARENA_HALF_WIDTH - 0.2, canL = f.x - left > -ARENA_HALF_WIDTH + 0.2;
+      const out = canR && (!canL || right <= left) ? 1 : -1;
+      if (move !== out) move = out;
+    }
     return move;
   }
 
@@ -1424,7 +1507,7 @@ export class Brain implements FighterBrain {
     const pressed = this.backToWall(f, 1.6) || f.hp / f.stats.maxHp < 0.35 || this.plan === 'recover' || this.plan === 'breathe';
     // Thrown into the wall behind them: a splat on top.
     const away = Math.sign(e.x - f.x) || f.facing;
-    const wall = ARENA_HALF_WIDTH - Math.abs(e.x) < 3 && Math.sign(e.x) === away;
+    const wall = ARENA_HALF_WIDTH - Math.abs(e.x) < 3 && Math.sign(e.x) === away && !e.has.has('springheel_leggings');
     const patience = (shooter ? 0.5 : 1.4) + this.p.cunning * 0.6 - (pressed ? 0.6 : 0);
     let why = '';
     if (swinging) why = 'The bell tolls — knocked out of the swing!';

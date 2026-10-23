@@ -731,3 +731,52 @@ export function caltropsPatch(seed: number, halfW: number, look?: PatchLook | nu
 export function clearPatches(): void {
   patches.clear();
 }
+
+// -----------------------------------------------------------------------------
+// Storm cloud (anchor = the middle of its underside)
+// -----------------------------------------------------------------------------
+
+const CLOUD_PAL: Pal = {
+  d: 0x343a58, k: 0x4e5878, c: 0x7c88ac, C: 0xaab6d4, W: 0xd8e0f0, s: [0x7ad8ff, 0.6], S: [0xf0ffff, 0.9],
+};
+
+const CLOUD_MAP: Recolor = {
+  d: ['cloudDark', 0], k: ['cloudDark', 2], c: ['cloud', 2], C: ['cloud', 3], W: ['cloud', 4], s: ['storm', 2], S: ['stormHot', 3],
+};
+
+const CLOUD_ROWS = [
+  '.....CWW..........',
+  '...cCWWWC..CW.....',
+  '..cCCCCWCccCWC....',
+  '.ccCCCCCCCCCCCcc..',
+  'kcccCcccccCccccck.',
+  'kkcccckcccckcccckk',
+  '.dkkkkdkkkkkdkkkd.',
+  '..dd.ddddd..ddd...',
+];
+
+/**
+ * Thunderhead: a small dark cloud. At rest a glint of lightning wanders in its
+ * belly; charged (over the mark), its underside flickers with forks.
+ */
+export function cloudFrame(charged: boolean, skin?: string | null, tick = 0): PixFrame {
+  const art = reshaped('cloud', skin);
+  if (art) return skinFrame(art, pairFrame(art, charged, tick));
+  const k = ((tick % 4) + 4) % 4;
+  const rows = CLOUD_ROWS.map((r) => r.split(''));
+  const spark = [[5, 4], [9, 5], [12, 4], [7, 5]][k];
+  rows[spark[1]][spark[0]] = charged ? 'S' : 's';
+  if (charged) {
+    // Forks licking out of the underside.
+    const forks = [[[4, 6], [3, 7]], [[10, 6], [11, 7]], [[7, 6], [7, 7]], [[13, 6], [14, 7]]][k];
+    for (const [x, y] of forks) rows[y][x] = y === 6 ? 'S' : 's';
+    rows[4][(spark[0] + 4) % 16 + 1] = 's';
+  }
+  return pixFrame(rows.map((r) => r.join('')), recolor(CLOUD_PAL, CLOUD_MAP, skin), 9, 8);
+}
+
+export function cloudSprite(charged: boolean, skin?: string | null, tick = 0): Sprite {
+  const art = reshaped('cloud', skin);
+  const f = art ? pairFrame(art, charged, tick) : (charged ? 4 : 0) + (((tick % 4) + 4) % 4);
+  return sprite(`cloud.${f}.${skin ?? ''}`, () => cloudFrame(charged, skin, tick));
+}

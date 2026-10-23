@@ -1,14 +1,14 @@
 import type { GearId } from '../sim/types';
 import { css, mix } from './pixel/color';
 import { projSprite, skinDraws } from './projArt';
-import { bellSprite, charmSprite, hawkSprite, hourglassSprite, wardSprite, whelpSprite, type HawkPose } from './specialArt';
+import { bellSprite, charmSprite, cloudSprite, hawkSprite, hourglassSprite, wardSprite, whelpSprite, type HawkPose } from './specialArt';
 import type { Sprite } from './sprite/bank';
 import type { CharacterArt } from './sprite/look';
 
 /**
  * The special items that ride along with a fighter, at rest: the ward stone's
  * orbit, the hourglass, the gale bell and the totem charm at the back shoulder, the hawk on
- * its perch, the whelp over the head, the wisp lantern and an epic core.
+ * its perch, the storm cloud and the whelp over the head, the wisp lantern and an epic core.
  * Battle animates their attacks itself; previews (Armory, creator) draw these
  * idle versions with `drawCompanions`, in the same spots battle uses.
  */
@@ -71,6 +71,11 @@ export function drawCompanions(
     const x = gx - facing * 12, y = Math.round(gy - m.shPx - 6 + Math.sin(t * 2.6) * 1.5);
     put(g, charmSprite(skin), x, y, flip);
     return [x, y];
+  }
+  if (special === 'storm_cloud') {
+    const x = gx - facing * 10, y = Math.round(gy - m.topPx - 4 + Math.sin(t * 2) * 1.5);
+    put(g, cloudSprite(false, skin, Math.floor(t * 5)), x, y, flip);
+    return [x, y - 4];
   }
   if (special === 'hunter_hawk') {
     // On the perch: looks about every few seconds, rouses its wings now and then.

@@ -77,6 +77,9 @@ const SM = {
   bronzeDark: material({ base: 0x7a4a22, step: 0.13 }),
   galeRune: material({ base: 0x5ad8c0, glow: true }),
   gust: material({ base: 0xd8fff4, glow: true }),
+  // Storm cloud.
+  cloud: material({ base: 0x8a96b8, step: 0.13 }),
+  cloudDark: material({ base: 0x4a5272, step: 0.13 }),
 };
 
 const SM_NAME = new Map<Material, string>(Object.entries(SM).map(([k, m]) => [m, k]));
@@ -249,6 +252,16 @@ function special(id: SpecialId, r: Raster, c: number, skin?: string | null): voi
       // The lip and the clapper peeking out.
       r.fill(tw.rect(0, -7.6, 9.6, 1.3, 0.6), h(SM.bronzeDark), { group: 5, bevel: 1 });
       r.fill(tw.circ(-1.4, -10, 1.7), h(SM.bronzeDark), { group: 4, bevel: 1 });
+      break;
+    }
+    case 'storm_cloud': {
+      // A brooding thunderhead, rain streaks under it and a bolt forking down.
+      r.fill(union(t.circ(-7, 0, 4.6), t.circ(7, 0.4, 4.4), t.cap(-8, -2.4, 8, -2.4, 3.2)), h(SM.cloudDark), { group: 1, bevel: 2 });
+      r.fill(union(t.circ(-3, 4, 6), t.circ(3.6, 4.6, 5.4), t.circ(-8.4, 1.6, 3.8), t.circ(9, 2, 3.6)), h(SM.cloud), { group: 2, bevel: 3 });
+      r.fill(t.circ(-1.2, 6.4, 2.6), h(SM.cloud), { group: 3, bevel: 1.6, toneBias: 1 });
+      for (const x of [-7, -3.4, 6.6]) r.line(t.x(x, -6.4), t.y(x, -6.4), t.x(x - 1.2, -10), t.y(x - 1.2, -10), h(SM.storm), 2, 4);
+      r.fill(t.poly([2, -4, -1.6, -9.6, 1.4, -9.4, -1, -14.4, 5, -7.6, 2.2, -7.8, 4.6, -4]), h(SM.storm), { group: 5 });
+      r.fill(t.poly([2.6, -4.6, 0.4, -8.6, 2.4, -8.6, 0.6, -12.2, 3.4, -8]), h(SM.stormHot), { group: 5 });
       break;
     }
     case 'dragon_whelp': {

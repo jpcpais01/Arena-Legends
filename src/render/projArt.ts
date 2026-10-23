@@ -191,6 +191,30 @@ const ART: Record<ProjectileStyle | 'phantom' | 'sigil', ProjArt> = {
       a.draw(r, new Xf(t.ox, t.oy, -f * (Math.PI / 3)), (k) => h(a.mats[k]), { group: 1, frame: f });
     },
   },
+  // Maelstrom flask: the swirling flask tumbling end over end along the lob.
+  vortexflask: {
+    frames: 6, outline: true,
+    draw(r, t, f, h) {
+      const a = usableArt('maelstrom_flask');
+      a.draw(r, new Xf(t.ox, t.oy, -f * (Math.PI / 3)), (k) => h(a.mats[k]), { group: 1, frame: f });
+    },
+  },
+  // Grappling hook: three iron prongs flying point first, the rope trailing (drawn back to the hand).
+  grapnel: {
+    frames: 2, outline: true,
+    draw(r, t, f, h) {
+      for (let i = 0; i < 4; i++) r.dot(t.x(-8 + i * 1.1, 0), t.y(-8 + i * 1.1, 0), h(M.binding), (i + f) % 2 ? 1 : 3, 1);
+      r.fill(t.circ(-3.6, 0, 1.1), h(M.iron), { group: 1, bevel: 1 });
+      r.fill(t.cap(-3, 0, 2.4, 0, 0.85), h(M.iron), { group: 2, bevel: 1 });
+      const spread = f ? 0.15 : 0;
+      r.fill(union(
+        t.cap(2.2, 0, 6.4, 0, 0.8, 0.6),
+        t.cap(2.2, 0, 4.8, -2.8 - spread, 0.75, 0.55), t.cap(4.8, -2.8 - spread, 3.4, -4.6 - spread, 0.55, 0.4),
+        t.cap(2.2, 0, 4.8, 2.8 + spread, 0.75, 0.55), t.cap(4.8, 2.8 + spread, 3.4, 4.6 + spread, 0.55, 0.4),
+      ), h(M.iron), { group: 3, bevel: 1.2 });
+      r.fill(union(t.poly([6.2, -0.7, 8, 0, 6.2, 0.7]), t.poly([3.8, -4.2, 2.4, -5.4, 3.2, -3.8]), t.poly([3.8, 4.2, 2.4, 5.4, 3.2, 3.8])), h(M.steel), { group: 3, bevel: 0.8 });
+    },
+  },
   // Caltrops: a handful of four-pointed iron spikes tumbling apart.
   caltrops: {
     frames: 4, outline: true,
@@ -416,7 +440,7 @@ const ART: Record<ProjectileStyle | 'phantom' | 'sigil', ProjArt> = {
 export type ProjArtId = keyof typeof ART | 'lantern' | 'lanternCharge' | 'core';
 
 /** Battle sprites a usable item throws: the item tumbling end over end, or (caltrops) its scattered handful. */
-const USABLE_SHOTS: Partial<Record<ProjArtId, UsableId>> = { frostflask: 'frost_bomb', flask: 'fire_bomb', caltrops: 'caltrops' };
+const USABLE_SHOTS: Partial<Record<ProjArtId, UsableId>> = { frostflask: 'frost_bomb', flask: 'fire_bomb', caltrops: 'caltrops', vortexflask: 'maelstrom_flask' };
 
 const usableShots = new Map<string, ProjArt>();
 

@@ -550,6 +550,30 @@ const MAIN: Catalog['main'] = {
       },
     ],
   },
+  bloodletter: {
+    id: 'bloodletter', slot: 'main', name: 'Bloodletter', rarity: 'epic', color: 0xc8283a,
+    desc: 'One-handed. A toothed falchion: every cut opens a wound that bleeds whenever they move on their own feet (walking, dashing, dodging). Rend tears three at once. Bleeding, they must stand and fight.',
+    weapon: { hands: 1, ranged: false, preferredRange: 1.7 },
+    tags: ['melee', 'physical', 'dot', 'control'],
+    abilities: [
+      {
+        id: 'serrated_cut', name: 'Serrated Cut', slot: 'basic', kind: 'melee',
+        range: 1.9, cost: 0, cooldown: 0.14,
+        windup: 0.2, active: 0.09, recovery: 0.28,
+        power: 0.95, damageType: 'physical', stagger: 0.2, knockback: 0.9, lunge: 0.3,
+        applies: [{ status: 'bleed', duration: 4 }],
+        anim: 'slash', desc: 'Toothed cut that opens a bleeding wound.',
+      },
+      {
+        id: 'rend', name: 'Rend', slot: 'skill', kind: 'melee',
+        range: 2.1, cost: 15, cooldown: 7,
+        windup: 0.4, active: 0.12, recovery: 0.42,
+        power: 1.9, damageType: 'physical', heavy: true, stagger: 0.42, knockback: 2, lunge: 0.7,
+        applies: [{ status: 'bleed', duration: 5, stacks: 3 }],
+        anim: 'overhead', desc: 'A dragging, tearing cut: three bleeding wounds at once.',
+      },
+    ],
+  },
 };
 
 // -----------------------------------------------------------------------------
@@ -730,6 +754,19 @@ const SECONDARY: Catalog['secondary'] = {
       anim: 'bash', desc: 'Uppercut that launches the enemy into the air.',
     }],
   },
+  grapnel: {
+    id: 'grapnel', slot: 'secondary', name: 'Grappling Hook', rarity: 'rare', color: 0x9a8a6a,
+    desc: 'A three-pronged hook on a line: it bites into the enemy and reels you straight in, your knee leading. Nobody keeps you at arm\'s length.',
+    tags: ['physical', 'mobility', 'control'],
+    abilities: [{
+      id: 'grapple', name: 'Grapple', slot: 'secondary', kind: 'projectile',
+      range: 8.5, cost: 10, cooldown: 6,
+      windup: 0.22, active: 0.06, recovery: 0.3,
+      power: 0.7, damageType: 'physical', stagger: 0.5, reel: true,
+      projectile: { speed: 22, radius: 0.3, style: 'grapnel' },
+      anim: 'throw', desc: 'Hooks the enemy and reels you in to strike range; they reel from the knee.',
+    }],
+  },
 };
 
 // -----------------------------------------------------------------------------
@@ -855,6 +892,13 @@ const SPECIAL: Catalog['special'] = {
       anim: 'item', desc: 'The bell tolls a gale that hurls the enemy away.',
     }],
   },
+  storm_cloud: {
+    id: 'storm_cloud', slot: 'special', name: 'Storm Cloud', rarity: 'epic', color: 0x8a9ac0,
+    desc: '+4 resist. A sulking little cloud rides at your shoulder. Every 5s it drifts over the enemy and marks the ground at their feet, and a second later lightning strikes the mark: heavy damage and a stun. Stand still and get struck.',
+    passive: 'Thunderhead',
+    add: { resist: 4 },
+    tags: ['magic', 'control'],
+  },
 };
 
 // -----------------------------------------------------------------------------
@@ -959,6 +1003,19 @@ const USABLE: Catalog['usable'] = {
     tags: ['sustain'],
     abilities: [{ ...DRINK, id: 'troll_tonic', name: 'Troll Tonic', cooldown: 10, uses: 2, buff: [{ status: 'regen', duration: 8 }], desc: 'Regenerate 16% of max HP over 8s. Two per battle.' }],
   },
+  maelstrom_flask: {
+    id: 'maelstrom_flask', slot: 'usable', name: 'Maelstrom Flask', rarity: 'epic', color: 0x3ac8c8,
+    desc: 'Two per battle. Lob a flask of the deep sea: it bursts into a whirlpool for 3.5s that drags the enemy toward its heart. Hold a runner in place, or pull them into your reach.',
+    tags: ['magic', 'control', 'ranged'],
+    abilities: [{
+      id: 'maelstrom_flask', name: 'Maelstrom Flask', slot: 'usable', kind: 'projectile',
+      range: 8, cost: 0, cooldown: 8, uses: 2,
+      windup: 0.3, active: 0.06, recovery: 0.3,
+      power: 0.7, damageType: 'magic', stagger: 0.2,
+      projectile: { speed: 11, radius: 0.3, style: 'vortexflask', lob: 1.4, zone: 'vortex' },
+      anim: 'toss', desc: 'A whirlpool that drags the enemy to its heart for 3.5s. Two per battle.',
+    }],
+  },
 };
 
 // -----------------------------------------------------------------------------
@@ -1032,6 +1089,13 @@ const HEAD: Catalog['head'] = {
     passive: 'Momentum',
     add: { armor: 6 },
     tags: ['burst'],
+  },
+  magpie_mask: {
+    id: 'magpie_mask', slot: 'head', name: 'Magpie Mask', rarity: 'epic', color: 0x3a4a6a,
+    desc: '+8 armor, +6% crit. A thief\'s mask: once every 3.5s, a hit snatches the enemy\'s best buff (rage, haste, iron skin, regen, momentum) and it\'s yours for the time left. Nothing to steal? It pockets 6 energy.',
+    passive: 'Pickpocket',
+    add: { armor: 8, critChance: 0.06 },
+    tags: ['burst', 'control'],
   },
 };
 
@@ -1130,6 +1194,13 @@ const CHEST: Catalog['chest'] = {
     add: { armor: 18, resist: 22, tenacity: 0.15 },
     tags: ['tank', 'magic'],
   },
+  grudge_mail: {
+    id: 'grudge_mail', slot: 'chest', name: 'Grudge Mail', rarity: 'legendary', color: 0x8a3a3a,
+    desc: '+22 armor, +0.03 poise. It remembers every blow: 30% of the damage you take is stored as a grudge (up to 15% of max HP). Your next heavy hit that lands unleashes all of it.',
+    passive: 'Grudge',
+    add: { armor: 22, poise: 0.03 },
+    tags: ['tank', 'burst'],
+  },
 };
 
 // -----------------------------------------------------------------------------
@@ -1200,6 +1271,13 @@ const LEGS: Catalog['legs'] = {
     desc: '+16 armor, +3 power, +0.03 poise. A heavy plated skirt for those who stand and trade.',
     add: { armor: 16, power: 3, poise: 0.03 },
     tags: ['tank'],
+  },
+  springheel_leggings: {
+    id: 'springheel_leggings', slot: 'legs', name: 'Springheel Leggings', rarity: 'rare', color: 0x5ac08a,
+    desc: '+8 armor, +5% move speed. Walls can\'t hold you: knocked into one, you spring off it instead of slamming into it, and your next hit within 2s lands 40% harder. No corner is a trap.',
+    passive: 'Rebound',
+    add: { armor: 8 }, mul: { moveSpeed: 1.05 },
+    tags: ['mobility', 'burst'],
   },
 };
 
@@ -1288,6 +1366,14 @@ const BOOTS: Catalog['boots'] = {
     mul: { moveSpeed: 1.04, attackSpeed: 1.04 },
     tags: ['control'],
     evade: { ...EVADE, id: 'savate_kick', name: 'Savate Kick', cooldown: 3.8, desc: 'Push kick, then a backstep.' },
+  },
+  mirage_boots: {
+    id: 'mirage_boots', slot: 'boots', name: 'Mirage Boots', rarity: 'legendary', color: 0xb8a0ff,
+    desc: '+8% move speed. Dodge a real attack and you leave a mirage behind: it strikes back at a close attacker at once, and you get haste for 1.5s. Timing is everything.',
+    passive: 'Mirage',
+    mul: { moveSpeed: 1.08 },
+    tags: ['mobility', 'parry'],
+    evade: { ...EVADE, id: 'mirage_step', name: 'Mirage Step', cooldown: 3.8, desc: 'Backstep; dodging a real attack leaves a mirage that strikes back.' },
   },
 };
 
