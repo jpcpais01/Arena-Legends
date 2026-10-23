@@ -175,6 +175,12 @@ func _layout() -> void:
 	if on_resize.is_valid(): on_resize.call()
 
 
+## Holds the picture: the layers stop rendering and keep their last frame.
+func hold(on: bool) -> void:
+	for v in [_final, _sky, _world, _atop]:
+		v.render_target_update_mode = SubViewport.UPDATE_DISABLED if on else SubViewport.UPDATE_ALWAYS
+
+
 func set_view(zoom, cx, cy) -> void:
 	_zoom = maxf(1.0, float(zoom))
 	_cx = float(cx)

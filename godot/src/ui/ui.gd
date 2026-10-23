@@ -37,6 +37,11 @@ const GREEN := Color("#62d47a")
 const PURPLE := Color("#b47eff")
 ## Player-facing tier colours by internal rarity id (internal "epic" is shown as Mythic).
 const RARITY := {"common": Color("#c8c0d8"), "rare": Color("#5aa8ff"), "mythic": Color("#c27aff"), "legendary": Color("#ffb040"), "epic": Color("#7ff0e0")}
+## Gear rarity colours (items, not skins): the tile edge and the name in the card.
+const GEAR_RC := {"common": Color("#6a6385"), "rare": Color("#5aa8ff"), "epic": Color("#c27aff"), "legendary": Color("#ffb040")}
+const GEAR_TEXT := {"common": Color("#b8b0d0"), "rare": Color("#5aa8ff"), "epic": Color("#c27aff"), "legendary": Color("#ffb040")}
+## The Mythic sets' gradient (CSS --skin-epic-sweep), first and last stop the same so it loops.
+const SWEEP := [Color("#ffd860"), Color("#ff7ac8"), Color("#7ad8ff"), Color("#7ff0e0"), Color("#ffd860")]
 
 
 ## Sizes the units for a screen (call on start and on every resize).
@@ -454,3 +459,65 @@ static func backdrop(i) -> Texture2D:
 	t = ImageTexture.create_from_image(img)
 	_backdrops[k] = t
 	return t
+
+
+# --- Small helpers ---------------------------------------------------------------------------
+
+## A colour along the Mythic gradient, `u` in 0..1 (wraps).
+static func sweep_at(u: float) -> Color:
+	var t := fposmod(u, 1.0) * (SWEEP.size() - 1)
+	var i := mini(int(t), SWEEP.size() - 2)
+	return (SWEEP[i] as Color).lerp(SWEEP[i + 1], t - i)
+
+
+## A horizontal band of the Mythic gradient over `r`, scrolled by `phase` (0..1 a loop):
+## the web's 300%-wide gradient sliding along (epicSweep).
+static func sweep_band(ci: RID, r: Rect2, phase: float) -> void:
+	var n := 12
+	for i in n:
+		var a := float(i) / n
+		var b := float(i + 1) / n
+		hgrad(ci, Rect2(r.position.x + r.size.x * a, r.position.y, r.size.x * (b - a), r.size.y), [[0.0, sweep_at(a / 3.0 + phase)], [1.0, sweep_at(b / 3.0 + phase)]])
+
+
+## A number as JavaScript prints it (7 -> "7", 6.5 -> "6.5").
+static func num(v: float) -> String:
+	if is_equal_approx(v, roundf(v)): return str(int(roundf(v)))
+	return String.num(v, 4).rstrip("0").rstrip(".")
+
+
+static var _gray: Material
+
+## A canvas material that draws anything modulated with LOCKED in grey, darkened (the
+## web's grayscale(1) brightness(0.45) on locked skins); everything else as usual.
+static func gray_material() -> Material:
+	if _gray != null: return _gray
+	var sh := Shader.new()
+	sh.code = """shader_type canvas_item;
+varying vec4 v_col;
+void vertex() { v_col = COLOR; }
+void fragment() {
+	vec4 t = texture(TEXTURE, UV);
+	if (v_col.r > 0.99 && v_col.g < 0.01 && v_col.b > 0.99 && v_col.a > 0.99) {
+		COLOR = vec4(vec3(dot(t.rgb, vec3(0.299, 0.587, 0.114)) * 0.45), t.a);
+	} else {
+		COLOR = t * v_col;
+	}
+}
+"""
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	_gray = m
+	return m
+
+
+## Modulate colour that `gray_material` turns into the locked look.
+const LOCKED := Color(1, 0, 1, 1)
+
+
+## The pixel check mark (CSS clip-path polygon) filling `r`.
+static func check_mark(ci: CanvasItem, r: Rect2, col: Color) -> void:
+	var pts := PackedVector2Array()
+	for q in [[0, 0.5], [0.25, 0.3], [0.42, 0.52], [0.78, 0.08], [1, 0.28], [0.42, 0.92]]:
+		pts.append(r.position + r.size * Vector2(q[0], q[1]))
+	ci.draw_colored_polygon(pts, col)

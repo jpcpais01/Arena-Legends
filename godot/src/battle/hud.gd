@@ -24,7 +24,7 @@ const STATUS := {
 
 static var _text_font: FontFile
 static var _bold_font: FontFile
-static var _pixel_font: FontFile
+static var _pixel_font: Font
 
 var _battle
 ## Per side: trailing ghost of the health bar, the last health (for the jolt), jolt time left.
@@ -54,7 +54,7 @@ func _init() -> void:
 	if _text_font == null:
 		_text_font = load("res://assets/fonts/rubik-600.woff2")
 		_bold_font = load("res://assets/fonts/rubik-700.woff2")
-		_pixel_font = load("res://assets/fonts/pixelify-700.woff2")
+		_pixel_font = UI.font("p700")
 
 
 ## Waiting for the arena to paint: a dark screen and a line after a moment (a quick load shows nothing).

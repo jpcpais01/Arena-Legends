@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.102.0',
+    date: '2026-10-23',
+    title: 'Android: the Armory',
+    notes: [
+      'The Armory is in the Android version, laid out like the web one: the slot rail, your hero on the pedestal, every item for the slot, and the picked item\'s card with its stat changes, skills and skins.',
+      'Tap an item to try it on (a second tap or Equip wears it), tap a locked skin to see it on your hero, and use Stats, Undo/Redo, No skins and Equip set like on the web.',
+      'Loadouts work too: save up to five builds, rename them and load one with a tap. They use the same save as the web game.',
+      'The arena behind full screens now pauses completely, so the Armory costs almost nothing to keep open. Numbers in the pixel font now use the clearer digits, like the web.',
+    ],
+  },
+  {
     version: '0.101.0',
     date: '2026-10-23',
     title: 'Android: the title, home screen and your own hero',

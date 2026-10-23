@@ -31,8 +31,12 @@ release `android-v<version>` on every push to main.
     landscape CSS. `ui.gd` is the kit: the rem/px scale (`UI.r`, `UI.c`,
     `UI.px` device pixels per art pixel), palette, fonts (Rubik; Pixelify Sans
     with Rubik digits via `pixel-*.woff2`), pixel frames, bevels, glyphs,
-    logo and portrait backdrops. `px_button.gd` is the web's `.btn`;
-    `sheet.gd` the modal sheet the settings, notes and results build on;
+    logo and portrait backdrops. The pixel fonts carry no digits, so Rubik's
+    show instead (the web's 'AL Digits'). `px_button.gd` is the web's `.btn`;
+    `rich.gd` lays out mixed-style wrapped text for custom-drawn pieces;
+    `sheet.gd` the modal sheet the settings, notes, results, loadouts and
+    confirm popups build on; `armory.gd` the Armory (a full screen over the
+    arena, which `BattleScene.freeze` stops rendering while it's covered);
     `scroll_view.gd` a custom-drawn scroller; `fighter_preview.gd` a hero in a
     little stage (a `Canvas2D.Gpu` inside a Control); `gear_icons.gd` bakes
     item icons on the GPU, batched per frame.
@@ -65,7 +69,7 @@ function or `Class.method` in the config and write it in a patch to replace it
     # Screenshots of a running battle (needs a GPU or xvfb + lavapipe)
     xvfb-run $G --path godot --rendering-driver vulkan --rendering-method mobile \
       --resolution 1600x720 -s res://test/battle_shot.gd -- OUT SEED ARENA 6 12
-    # Screenshots of the menus: title, home, settings, notes, a fight, results
+    # Screenshots of the menus: title, home, settings, notes, Armory, loadouts, a fight, results
     xvfb-run $G --path godot --rendering-driver vulkan --rendering-method mobile \
       --resolution 1600x720 -s res://test/ui_shot.gd -- OUT
 

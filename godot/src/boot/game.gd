@@ -12,6 +12,8 @@ var home: HomeMenu
 var controls: FightControls
 var _title: TitleScreen
 var _sheet: Sheet
+## A full screen over the frozen arena (the Armory).
+var _screen: Control
 var _toast: Toast
 
 var player
@@ -58,7 +60,8 @@ func _ready() -> void:
 		home.set_sound(sound_on))
 	home.settings.connect(open_settings)
 	home.notes.connect(open_notes)
-	for sig in [home.hero, home.armory, home.online, home.world, home.shop]:
+	home.armory.connect(open_armory)
+	for sig in [home.hero, home.online, home.world, home.shop]:
 		sig.connect(func(): _soon())
 	controls = FightControls.new()
 	controls.visible = false
@@ -292,6 +295,40 @@ func _apply_settings(s: Dictionary) -> void:
 		if not battle.in_fight(): battle.demo()
 
 
+# --- Full screens ------------------------------------------------------------------------------
+
+func open_armory() -> void:
+	_close_sheet()
+	var a := Armory.new(player)
+	a.changed.connect(func(c):
+		player = c
+		CharacterProfile.save_character(c))
+	a.closed.connect(_close_screen)
+	a.shop.connect(_soon)
+	_open_screen(a)
+
+
+## A full screen covers the arena (frozen on its last frame) and the home screen.
+func _open_screen(s: Control) -> void:
+	_close_screen()
+	_screen = s
+	home.visible = false
+	battle.freeze(true)
+	add_child(s)
+	move_child(_toast, -1)
+
+
+func _close_screen() -> void:
+	if _screen == null: return
+	_screen.queue_free()
+	_screen = null
+	battle.freeze(false)
+	if state == "menu":
+		_refresh_menu()
+		home.visible = true
+		home.enter()
+
+
 func open_notes() -> void:
 	Store.set_item("al.notesSeen", JSON.stringify(str(Patchnotes.PATCH_NOTES[0]["version"])))
 	home.set_notes_unseen(false)
@@ -305,7 +342,10 @@ func _soon() -> void:
 ## Back (Android) closes a sheet, leaves a fight, or quits from the home screen.
 func _notification(what: int) -> void:
 	if what != NOTIFICATION_WM_GO_BACK_REQUEST: return
-	if _sheet != null and is_instance_valid(_sheet):
+	if _screen != null:
+		if _screen.has_method("back"): _screen.back()
+		else: _close_screen()
+	elif _sheet != null and is_instance_valid(_sheet):
 		if _sheet.dismissable: _close_sheet()
 		elif state == "results": to_menu()
 	elif state == "fight": to_menu()
