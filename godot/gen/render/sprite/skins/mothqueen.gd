@@ -564,15 +564,15 @@ static func dewdrop_slippers() -> Variant:
 	return TS.merge([{"mats": {"zephyr": {"base": VELVET[3], "ramp": [VELVET[1], VELVET[2], VELVET[3], 0x6a58a0, 0xb8b0e0], "shiny": true, "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3), 0.4), -1, 0)))}, "zephyrTrim": {"base": SILVER[2], "ramp": SILVER, "shiny": true}, "b.ribbon": {"base": SILVER[3], "ramp": SILVER}, "b.dew": {"base": MOONSTONE[3], "ramp": MOONSTONE, "glow": true, "tex": milk}, "b.wing": {"base": LUNA[2], "ramp": LUNA}, "b.edge": {"base": EDGE[2], "ramp": EDGE}, "b.spot": {"base": SPOT[2], "ramp": SPOT, "shiny": true}}, "boots": {"wing": null, "height": 0.42, "bulk": 0.18, "over": _fn0}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func mothqueen_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func mothqueen_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	var RX: float = 15
 	var RY: float = 3.8
 	# A faint teal glow on the ground where the ring grows.
-	g["globalAlpha"] = 0.35
-	g["fillStyle"] = AC["moss"]
+	g.global_alpha = 0.35
+	g.fill_style = AC["moss"]
 	var _fn0 = func(g_2, px: float, py: float, i: float):
 		if fmod(i, 2) == 0:
-			g_2["fillRect"].call(px, py, 1, 1)
+			g_2.fill_rect(px, py, 1, 1)
 	RenderAuraKit.ring(g, x, y, RX - 1, RY - 0.4, 30, layer, _fn0)
 	# The fairy ring: soft-glowing mushrooms, each breathing on its own beat.
 	for k in range(SHROOMS.size()):
@@ -585,18 +585,18 @@ static func mothqueen_aura(g, x: float, y: float, t: float, layer: String) -> vo
 		var px_2: float = TS.round(x + (cos(a) * RX))
 		var py_2: float = TS.round(y + (s * RY))
 		var v: float = 0.5 + (0.5 * sin((t * 1.7) + (k * 1.9)))
-		g["globalAlpha"] = 1
-		g["fillStyle"] = AC["stem"]
-		g["fillRect"].call(px_2, (py_2 - 1) - big, 1, 1 + big)
-		g["globalAlpha"] = 0.75 + (0.25 * v)
-		g["fillStyle"] = AC["cap"]
-		g["fillRect"].call(px_2 - 1, (py_2 - 2) - big, 3, 1)
+		g.global_alpha = 1
+		g.fill_style = AC["stem"]
+		g.fill_rect(px_2, (py_2 - 1) - big, 1, 1 + big)
+		g.global_alpha = 0.75 + (0.25 * v)
+		g.fill_style = AC["cap"]
+		g.fill_rect(px_2 - 1, (py_2 - 2) - big, 3, 1)
 		if big:
-			g["fillStyle"] = (AC["capHot"] if v > 0.6 else AC["capHi"])
-			g["fillRect"].call(px_2 - 1, py_2 - 4, 3, 1)
-			g["fillStyle"] = AC["cap"]
-			g["fillRect"].call(px_2 - 2, py_2 - 3, 5, 1)
-			g["globalAlpha"] = 1
+			g.fill_style = (AC["capHot"] if v > 0.6 else AC["capHi"])
+			g.fill_rect(px_2 - 1, py_2 - 4, 3, 1)
+			g.fill_style = AC["cap"]
+			g.fill_rect(px_2 - 2, py_2 - 3, 5, 1)
+			g.global_alpha = 1
 	# Spores and silver dust rising from the ring, fading as they climb.
 	for k_2 in range(6):
 		var a_2: float = (k_2 * 1.05) + 0.3
@@ -606,9 +606,9 @@ static func mothqueen_aura(g, x: float, y: float, t: float, layer: String) -> vo
 		var u: float = fmod((t * 0.22) + (k_2 * 0.37), 1)
 		var px_3: float = TS.round((x + (cos(a_2) * RX)) + (sin((t * 1.3) + k_2) * 1.5))
 		var py_3: float = TS.round(((y + (s_2 * RY)) - 3) - (u * 22))
-		g["globalAlpha"] = min(1, (1 - u) * 2.2, u * 6)
-		g["fillStyle"] = (AC["dust"] if k_2 % 2 else AC["capHi"])
-		g["fillRect"].call(px_3, py_3, 1, 1)
+		g.global_alpha = min(1, (1 - u) * 2.2, u * 6)
+		g.fill_style = (AC["dust"] if k_2 % 2 else AC["capHi"])
+		g.fill_rect(px_3, py_3, 1, 1)
 	# Two little luna moths fluttering round the queen.
 	for k_3 in range(2):
 		var a_3: float = (t * (-0.75 if k_3 else 0.6)) + (k_3 * PI)
@@ -618,17 +618,17 @@ static func mothqueen_aura(g, x: float, y: float, t: float, layer: String) -> vo
 		var px_4: float = TS.round(x + (cos(a_3) * (12 + (k_3 * 3))))
 		var py_4: float = TS.round((((y - 14) - (k_3 * 9)) + (s_3 * 3)) + (sin((t * 2.3) + (k_3 * 2)) * 2))
 		var open: bool = fmod(floor((t * 9) + (k_3 * 3)), 3) != 0
-		g["globalAlpha"] = 1
-		g["fillStyle"] = AC["body"]
-		g["fillRect"].call(px_4, py_4, 1, 2)
-		g["fillStyle"] = AC["wing"]
+		g.global_alpha = 1
+		g.fill_style = AC["body"]
+		g.fill_rect(px_4, py_4, 1, 2)
+		g.fill_style = AC["wing"]
 		if open:
-			g["fillRect"].call(px_4 - 2, py_4 - 1, 2, 2)
-			g["fillRect"].call(px_4 + 1, py_4 - 1, 2, 2)
+			g.fill_rect(px_4 - 2, py_4 - 1, 2, 2)
+			g.fill_rect(px_4 + 1, py_4 - 1, 2, 2)
 		else:
-			g["fillRect"].call(px_4 - 1, py_4 - 2, 1, 2)
-			g["fillRect"].call(px_4 + 1, py_4 - 2, 1, 2)
-		g["fillStyle"] = AC["tail"]
-		g["fillRect"].call(px_4 - 1, py_4 + 2, 1, 1)
-		g["fillRect"].call(px_4 + 1, py_4 + 2, 1, 1)
-	g["globalAlpha"] = 1
+			g.fill_rect(px_4 - 1, py_4 - 2, 1, 2)
+			g.fill_rect(px_4 + 1, py_4 - 2, 1, 2)
+		g.fill_style = AC["tail"]
+		g.fill_rect(px_4 - 1, py_4 + 2, 1, 1)
+		g.fill_rect(px_4 + 1, py_4 + 2, 1, 1)
+	g.global_alpha = 1

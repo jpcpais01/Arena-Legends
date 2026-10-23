@@ -587,25 +587,25 @@ static func cx(px: float, d: float, dx: float, w = null) -> float:
 static func earth_dot(g, px: float, py: float, i: float) -> void:
 	if fmod(i, 7) == 3:
 		return
-	g["fillStyle"] = (A["earth"] if fmod(i, 3) else A["earthDk"])
-	g["fillRect"].call(px, py, 2, 1)
+	g.fill_style = (A["earth"] if fmod(i, 3) else A["earthDk"])
+	g.fill_rect(px, py, 2, 1)
 
 ##  A paw print: the pad, and three toes over it.
 static func paw_print(g, px: float, py: float, _a3 = null) -> void:
-	g["fillRect"].call(px, py, 2, 1)
-	g["fillRect"].call(px - 1, py - 2, 1, 1)
-	g["fillRect"].call(px + 1, py - 2, 1, 1)
-	g["fillRect"].call(px + 3, py - 2, 1, 1)
+	g.fill_rect(px, py, 2, 1)
+	g.fill_rect(px - 1, py - 2, 1, 1)
+	g.fill_rect(px + 1, py - 2, 1, 1)
+	g.fill_rect(px + 3, py - 2, 1, 1)
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func beastlord_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func beastlord_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	# Trodden earth: a ring of packed dirt, and the prints of the great cat that prowls it, in ochre.
 	var RX: float = 15
 	var RY: float = 3.8
-	g["globalAlpha"] = 0.6
+	g.global_alpha = 0.6
 	RenderAuraKit.ring(g, x, y, RX, RY, 28, layer, earth_dot)
-	g["globalAlpha"] = 0.8
-	g["fillStyle"] = A["paint"]
+	g.global_alpha = 0.8
+	g.fill_style = A["paint"]
 	RenderAuraKit.ring(g, x, y, RX + 3, RY + 1, 5, layer, paw_print)
 	# The stamp: cracks split out from the feet, the fire in them flaring and dying, dust thrown up at the wave front.
 	var u: float = (fmod(t, STAMP)) / float(STAMP)
@@ -620,16 +620,16 @@ static func beastlord_aura(g, x: float, y: float, t: float, layer: String) -> vo
 		var r0: float = 5
 		for j in range(0, ceili(len_), 2):
 			var d: float = r0 + j
-			var px: float = TS.round((x + (c * d)) + (1 if (j >> 1) % 2 else 0))
+			var px: float = TS.round((x + (c * d)) + (1 if (((((j) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> 1) % 2 else 0))
 			var py: float = TS.round(y + ((s * d) * 0.26))
 			var lit: bool = (((wave * 12) > j) and (u < 0.55))
-			g["globalAlpha"] = 1
-			g["fillStyle"] = A["crack"]
-			g["fillRect"].call(px, py, 2, 1)
+			g.global_alpha = 1
+			g.fill_style = A["crack"]
+			g.fill_rect(px, py, 2, 1)
 			if lit:
-				g["globalAlpha"] = 1 - (u * 1.6)
-				g["fillStyle"] = (A["hot"] if j < 3 else A["ember"])
-				g["fillRect"].call(px, py, 1, 1)
+				g.global_alpha = 1 - (u * 1.6)
+				g.fill_style = (A["hot"] if j < 3 else A["ember"])
+				g.fill_rect(px, py, 1, 1)
 	if u < 0.45:
 		var rr: float = 6 + (wave * 12)
 		for k_2 in range(8):
@@ -638,9 +638,9 @@ static func beastlord_aura(g, x: float, y: float, t: float, layer: String) -> vo
 			if (s_2 < 0) != (layer == "back"):
 				continue
 			var hop: float = sin(minf(1, u * 2.4) * PI) * (2 + (k_2 % 3))
-			g["globalAlpha"] = 0.8 * (1 - (u * 2))
-			g["fillStyle"] = (A["dust"] if k_2 % 2 else A["earth"])
-			g["fillRect"].call(TS.round(x + (cos(a_2) * rr)), TS.round((y + ((s_2 * rr) * 0.26)) - hop), 1, 1)
+			g.global_alpha = 0.8 * (1 - (u * 2))
+			g.fill_style = (A["dust"] if k_2 % 2 else A["earth"])
+			g.fill_rect(TS.round(x + (cos(a_2) * rr)), TS.round((y + ((s_2 * rr) * 0.26)) - hop), 1, 1)
 	# The sabertooth's spirit prowling round the fighter: ember-gold and striped, sabers bared, legs striding.
 	var a_3: float = t * 0.8
 	var s_3: float = sin(a_3)
@@ -650,31 +650,31 @@ static func beastlord_aura(g, x: float, y: float, t: float, layer: String) -> vo
 		# Along the near half it walks toward screen right, along the far half toward the left.
 		var d_2: float = (1 if s_3 > 0 else -1)
 		var step: float = fmod(floor(t * 7), 2)
-		g["globalAlpha"] = (0.35 if s_3 < 0 else 0.55)
+		g.global_alpha = (0.35 if s_3 < 0 else 0.55)
 		# Legs, striding.
-		g["fillStyle"] = A["catDk"]
-		g["fillRect"].call(cx(px_2, d_2, (-4) + step), py_2 - 3, 1, 3)
-		g["fillRect"].call(cx(px_2, d_2, (-2) - step), py_2 - 3, 1, 3)
-		g["fillRect"].call(cx(px_2, d_2, 3 + step), py_2 - 3, 1, 3)
-		g["fillRect"].call(cx(px_2, d_2, 5 - step), py_2 - 3, 1, 3)
+		g.fill_style = A["catDk"]
+		g.fill_rect(cx(px_2, d_2, (-4) + step), py_2 - 3, 1, 3)
+		g.fill_rect(cx(px_2, d_2, (-2) - step), py_2 - 3, 1, 3)
+		g.fill_rect(cx(px_2, d_2, 3 + step), py_2 - 3, 1, 3)
+		g.fill_rect(cx(px_2, d_2, 5 - step), py_2 - 3, 1, 3)
 		# Short tail, then the body, a pale belly line and dark stripes.
-		g["fillRect"].call(cx(px_2, d_2, -7), (py_2 - 7) + step, 1, 2)
-		g["fillRect"].call(cx(px_2, d_2, -6), py_2 - 6, 1, 1)
-		g["fillStyle"] = A["cat"]
-		g["fillRect"].call(cx(px_2, d_2, -5, 11), py_2 - 7, 11, 4)
-		g["fillStyle"] = A["catHi"]
-		g["fillRect"].call(cx(px_2, d_2, -4, 9), py_2 - 7, 9, 1)
-		g["fillStyle"] = A["catDk"]
-		g["fillRect"].call(cx(px_2, d_2, -3), py_2 - 6, 1, 2)
-		g["fillRect"].call(cx(px_2, d_2, 0), py_2 - 6, 1, 2)
-		g["fillRect"].call(cx(px_2, d_2, 3), py_2 - 6, 1, 2)
+		g.fill_rect(cx(px_2, d_2, -7), (py_2 - 7) + step, 1, 2)
+		g.fill_rect(cx(px_2, d_2, -6), py_2 - 6, 1, 1)
+		g.fill_style = A["cat"]
+		g.fill_rect(cx(px_2, d_2, -5, 11), py_2 - 7, 11, 4)
+		g.fill_style = A["catHi"]
+		g.fill_rect(cx(px_2, d_2, -4, 9), py_2 - 7, 9, 1)
+		g.fill_style = A["catDk"]
+		g.fill_rect(cx(px_2, d_2, -3), py_2 - 6, 1, 2)
+		g.fill_rect(cx(px_2, d_2, 0), py_2 - 6, 1, 2)
+		g.fill_rect(cx(px_2, d_2, 3), py_2 - 6, 1, 2)
 		# Head: brow, glowing eye and a long saber.
-		g["fillStyle"] = A["cat"]
-		g["fillRect"].call(cx(px_2, d_2, 5, 4), py_2 - 9, 4, 4)
-		g["fillStyle"] = A["catHi"]
-		g["fillRect"].call(cx(px_2, d_2, 5, 3), py_2 - 9, 3, 1)
-		g["fillStyle"] = A["hot"]
-		g["fillRect"].call(cx(px_2, d_2, 7), py_2 - 8, 1, 1)
-		g["fillStyle"] = A["fang"]
-		g["fillRect"].call(cx(px_2, d_2, 8), py_2 - 5, 1, 3)
-	g["globalAlpha"] = 1
+		g.fill_style = A["cat"]
+		g.fill_rect(cx(px_2, d_2, 5, 4), py_2 - 9, 4, 4)
+		g.fill_style = A["catHi"]
+		g.fill_rect(cx(px_2, d_2, 5, 3), py_2 - 9, 3, 1)
+		g.fill_style = A["hot"]
+		g.fill_rect(cx(px_2, d_2, 7), py_2 - 8, 1, 1)
+		g.fill_style = A["fang"]
+		g.fill_rect(cx(px_2, d_2, 8), py_2 - 5, 1, 3)
+	g.global_alpha = 1

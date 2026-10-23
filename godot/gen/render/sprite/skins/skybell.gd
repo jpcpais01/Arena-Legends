@@ -95,7 +95,7 @@ static func _init_bellproj():
 	var _fn0 = func(r, t, f: float, h):
 		var state: String = (TS.at(BELL_STATES, floor(f / 20.0)) if TS.at(BELL_STATES, floor(f / 20.0)) != null else "ready")
 		var tilt: float = (fmod(floor(f / 4.0), 5)) - 2
-		var ph: float = TS.i32(int(f) & 3)
+		var ph: float = (int(f) & 3)
 		var ang: float = tilt * 0.1
 		var B = SpriteXform.Xf.new(t.ox, t.oy, ang)
 		# The tassel hangs back against the swing, and flicks about as it tolls.
@@ -581,15 +581,15 @@ static func wind_dot(g, px: float, py: float, i: float) -> void:
 	var k: float = fmod((i + auraStep), 10)
 	if k > 4:
 		return
-	g["fillStyle"] = (AC["wind"] if k == 0 else AC["windDeep"])
-	g["fillRect"].call(px, py, 1, 1)
+	g.fill_style = (AC["wind"] if k == 0 else AC["windDeep"])
+	g.fill_rect(px, py, 1, 1)
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func skybell_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func skybell_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	var back: bool = layer == "back"
 	# A whirlwind ring at the feet, its dashes racing round.
 	auraStep = fmod(floor(t * 14), 10)
-	g["globalAlpha"] = 0.65
+	g.global_alpha = 0.65
 	RenderAuraKit.ring(g, x, y, 14, 3.6, 40, layer, wind_dot)
 	# A string of prayer flags circling the shins on the wind, its flags rippling.
 	var turn: float = t * 0.7
@@ -597,7 +597,7 @@ static func skybell_aura(g, x: float, y: float, t: float, layer: String) -> void
 	var RX: float = 16
 	var RY: float = 4.2
 	var cy: float = y - 7
-	g["globalAlpha"] = (0.7 if back else 0.95)
+	g.global_alpha = (0.7 if back else 0.95)
 	for k in range(ceili(n)):
 		var a: float = turn + (((k / n) * PI) * 2)
 		var s: float = sin(a)
@@ -607,14 +607,14 @@ static func skybell_aura(g, x: float, y: float, t: float, layer: String) -> void
 		var px: float = TS.round(x + (cos(a) * RX))
 		var py: float = TS.round((cy + (s * RY)) + bob)
 		# The cord sagging to the next flag.
-		g["fillStyle"] = AC["cord"]
+		g.fill_style = AC["cord"]
 		for j in range(1, 4):
 			var b: float = a + ((j / 4.0) * ((PI * 2) / n))
-			g["fillRect"].call(TS.round(x + (cos(b) * RX)), TS.round(((cy + (sin(b) * RY)) + bob) + (1 if j == 2 else 0.5)), 1, 1)
+			g.fill_rect(TS.round(x + (cos(b) * RX)), TS.round(((cy + (sin(b) * RY)) + bob) + (1 if j == 2 else 0.5)), 1, 1)
 		# The far side of the circle in shadow.
-		g["fillStyle"] = (AC["flagsDim"] if back else AC["flags"])[k % 5]
+		g.fill_style = (AC["flagsDim"] if back else AC["flags"])[k % 5]
 		var fl: float = (1 if sin((t * 9) + (k * 2.1)) > 0 else 0)
-		g["fillRect"].call(px - 1, py, 2, 2 + fl)
+		g.fill_rect(px - 1, py, 2, 2 + fl)
 	# Marigold petals spiralling up round the fighter on the wind.
 	for k_2 in range(6):
 		var u: float = fmod((t * 0.28) + (k_2 / 6.0), 1)
@@ -625,9 +625,9 @@ static func skybell_aura(g, x: float, y: float, t: float, layer: String) -> void
 		var rr: float = 10 + (u * 6)
 		var px_2: float = TS.round(x + (cos(a_2) * rr))
 		var py_2: float = TS.round(((y - 3) - (u * 34)) + (s_2 * 3))
-		g["globalAlpha"] = min(1, (1 - u) * 3, u * 8)
-		g["fillStyle"] = (AC["petal"] if k_2 % 2 else AC["petal2"])
-		g["fillRect"].call(px_2, py_2, 1, 1)
+		g.global_alpha = min(1, (1 - u) * 3, u * 8)
+		g.fill_style = (AC["petal"] if k_2 % 2 else AC["petal2"])
+		g.fill_rect(px_2, py_2, 1, 1)
 		if sin((t * 7) + k_2) > 0.2:
-			g["fillRect"].call(px_2 + (1 if cos(a_2) > 0 else -1), py_2, 1, 1)
-	g["globalAlpha"] = 1
+			g.fill_rect(px_2 + (1 if cos(a_2) > 0 else -1), py_2, 1, 1)
+	g.global_alpha = 1

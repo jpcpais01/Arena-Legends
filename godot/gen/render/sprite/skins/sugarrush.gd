@@ -473,7 +473,7 @@ static func marshmallow_boots() -> Variant:
 	return TS.merge([{"mats": {"zephyr": {"base": CREAM[2], "ramp": CREAM}, "zephyrTrim": candy(PINK), "k.srMallow": ramp(CREAM), "k.srMallowP": ramp([0xa05878, 0xe08ab0, 0xffbcd8, 0xffe0ee, 0xfff6fa]), "k.srGraham": ramp(COOKIE, (func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.4)), TX.floor(TX.mul(y, 1.4))), 0.16), -1, 0)))), "k.srFloss": ramp([0xa05890, 0xe08ac8, 0xffb8e4, 0xffdcf2, WHITE]), "k.srFlossB": ramp(SKY), "k.srHeart": gem(HOT_PINK)}, "boots": {"wing": null, "height": 0.62, "bulk": 0.55, "over": _fn0}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func sugarrush_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func sugarrush_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	var back: bool = layer == "back"
 	var RX: float = 15
 	var RY: float = 3.6
@@ -486,11 +486,11 @@ static func sugarrush_aura(g, x: float, y: float, t: float, layer: String) -> vo
 			continue
 		var px: float = TS.round(x + (cos(a) * RX))
 		var py: float = TS.round(y + (s * RY))
-		g["globalAlpha"] = (0.6 if back else 0.8)
-		g["fillStyle"] = (AC["white"] if (i == run) or (i == fmod((run + 15), 30)) else (AC["frost"] if (i % 3) == 0 else AC["pink"]))
-		g["fillRect"].call(px, py, 1, 1)
+		g.global_alpha = (0.6 if back else 0.8)
+		g.fill_style = (AC["white"] if (i == run) or (i == fmod((run + 15), 30)) else (AC["frost"] if (i % 3) == 0 else AC["pink"]))
+		g.fill_rect(px, py, 1, 1)
 	# Rainbow sprinkles scattered round it, drifting slowly round, each lying its own way.
-	g["globalAlpha"] = 0.95
+	g.global_alpha = 0.95
 	var spin: float = t * 0.35
 	for i_2 in range(ceili(SPR_N)):
 		var a_2: float = ((((i_2 / float(SPR_N)) * PI) * 2) + spin) + (PixelTex.hash_(i_2, 3) * 0.2)
@@ -498,9 +498,9 @@ static func sugarrush_aura(g, x: float, y: float, t: float, layer: String) -> vo
 		if (s_2 < 0) != back:
 			continue
 		var rr: float = (1 + ((PixelTex.hash_(i_2, 7) - 0.5) * 0.36)) + (0.14 if i_2 % 2 else -0.12)
-		g["fillStyle"] = AC["sprinkle"][i_2 % 6]
+		g.fill_style = AC["sprinkle"][i_2 % 6]
 		var flat: bool = fmod((i_2 + floor((t * 2) + (PixelTex.hash_(i_2, 9) * 4))), 3) != 0
-		g["fillRect"].call(TS.round(x + ((cos(a_2) * RX) * rr)), TS.round(y + ((s_2 * RY) * rr)), (2 if flat else 1), (1 if flat else 2))
+		g.fill_rect(TS.round(x + ((cos(a_2) * RX) * rr)), TS.round(y + ((s_2 * RY) * rr)), (2 if flat else 1), (1 if flat else 2))
 	# Soda fizz: bubbles rising round the fighter, wobbling, each popping into a burst of sprinkles at the top.
 	for k in range(6):
 		var a_3: float = ((k * 2.4) + 0.5) + (t * 0.3)
@@ -513,30 +513,30 @@ static func sugarrush_aura(g, x: float, y: float, t: float, layer: String) -> vo
 		var px_2: float = TS.round((x + (cos(a_3) * ((RX - 1) - ((k % 2) * 4)))) + (sin((t * 5) + k) * 0.8))
 		var py_2: float = TS.round((y + (s_3 * RY)) - (u * top))
 		if u < 0.86:
-			g["globalAlpha"] = minf(1, u * 6)
-			g["fillStyle"] = AC["bubble"]
+			g.global_alpha = minf(1, u * 6)
+			g.fill_style = AC["bubble"]
 			if ((k % 3) == 0) and (u > 0.35):
 				# A bigger bubble: a hollow ring of four pixels with a white glint.
-				g["fillRect"].call(px_2 - 1, py_2, 1, 1)
-				g["fillRect"].call(px_2 + 1, py_2, 1, 1)
-				g["fillRect"].call(px_2, py_2 - 1, 1, 1)
-				g["fillRect"].call(px_2, py_2 + 1, 1, 1)
-				g["fillStyle"] = AC["bubbleHi"]
-				g["fillRect"].call(px_2, py_2 - 1, 1, 1)
+				g.fill_rect(px_2 - 1, py_2, 1, 1)
+				g.fill_rect(px_2 + 1, py_2, 1, 1)
+				g.fill_rect(px_2, py_2 - 1, 1, 1)
+				g.fill_rect(px_2, py_2 + 1, 1, 1)
+				g.fill_style = AC["bubbleHi"]
+				g.fill_rect(px_2, py_2 - 1, 1, 1)
 			else:
-				g["fillRect"].call(px_2, py_2, 1, 1)
+				g.fill_rect(px_2, py_2, 1, 1)
 		else:
 			# Pop: four sprinkles flying out from where the bubble was.
 			var d: float = 1 + TS.round((u - 0.86) * 20)
-			g["globalAlpha"] = 1 - ((u - 0.86) * 5)
-			g["fillStyle"] = AC["sprinkle"][k % 6]
-			g["fillRect"].call(px_2 - d, py_2, 1, 1)
-			g["fillStyle"] = AC["sprinkle"][(k + 2) % 6]
-			g["fillRect"].call(px_2 + d, py_2, 1, 1)
-			g["fillStyle"] = AC["sprinkle"][(k + 4) % 6]
-			g["fillRect"].call(px_2, py_2 - d, 1, 1)
-			g["fillStyle"] = AC["white"]
-			g["fillRect"].call(px_2, py_2, 1, 1)
+			g.global_alpha = 1 - ((u - 0.86) * 5)
+			g.fill_style = AC["sprinkle"][k % 6]
+			g.fill_rect(px_2 - d, py_2, 1, 1)
+			g.fill_style = AC["sprinkle"][(k + 2) % 6]
+			g.fill_rect(px_2 + d, py_2, 1, 1)
+			g.fill_style = AC["sprinkle"][(k + 4) % 6]
+			g.fill_rect(px_2, py_2 - d, 1, 1)
+			g.fill_style = AC["white"]
+			g.fill_rect(px_2, py_2, 1, 1)
 	# Wrapped sweets orbiting at different heights, bobbing, their wrapper twists flicking as they turn.
 	for k_2 in range(SWEETS.size()):
 		var _d0 = SWEETS[k_2]
@@ -553,19 +553,19 @@ static func sugarrush_aura(g, x: float, y: float, t: float, layer: String) -> vo
 		var _d1 = AC["sweet"][k_2]
 		var lit = _d1[0]
 		var dk = _d1[1]
-		g["globalAlpha"] = (0.75 if back else 1)
-		g["fillStyle"] = dk
-		g["fillRect"].call(px_3 - 1, py_3, 3, 2)
-		g["fillStyle"] = lit
-		g["fillRect"].call(px_3 - 1, py_3 - 1, 3, 2)
-		g["fillStyle"] = AC["white"]
-		g["fillRect"].call(px_3 - 1, py_3 - 1, 1, 1)
+		g.global_alpha = (0.75 if back else 1)
+		g.fill_style = dk
+		g.fill_rect(px_3 - 1, py_3, 3, 2)
+		g.fill_style = lit
+		g.fill_rect(px_3 - 1, py_3 - 1, 3, 2)
+		g.fill_style = AC["white"]
+		g.fill_rect(px_3 - 1, py_3 - 1, 1, 1)
 		var flick: float = fmod(floor((t * 6) + k_2), 2)
-		g["fillStyle"] = AC["cream"]
-		g["fillRect"].call(px_3 - 2, (py_3 - 1) + flick, 1, 2 - flick)
-		g["fillRect"].call(px_3 - 3, ((py_3 - 1) - flick) + 1, 1, 1)
-		g["fillRect"].call(px_3 + 2, py_3 - flick, 1, 2 - flick)
-		g["fillRect"].call(px_3 + 3, (py_3 - 1) + flick, 1, 1)
+		g.fill_style = AC["cream"]
+		g.fill_rect(px_3 - 2, (py_3 - 1) + flick, 1, 2 - flick)
+		g.fill_rect(px_3 - 3, ((py_3 - 1) - flick) + 1, 1, 1)
+		g.fill_rect(px_3 + 2, py_3 - flick, 1, 2 - flick)
+		g.fill_rect(px_3 + 3, (py_3 - 1) + flick, 1, 1)
 	# Now and then a wrapped sweet hops up off the ring and bursts in a ring of sprinkles.
 	var cyc: float = 1.3
 	var n: float = floor(t / cyc)
@@ -578,27 +578,27 @@ static func sugarrush_aura(g, x: float, y: float, t: float, layer: String) -> vo
 		if u_2 < 0.55:
 			var v: float = u_2 / 0.55
 			var py_4: float = TS.round(by0 - (sin((v * PI) * 0.5) * 16))
-			g["globalAlpha"] = 1
+			g.global_alpha = 1
 			# The sweet: a round candy with twisted wrapper ends either side.
-			g["fillStyle"] = (AC["pink"] if fmod(n, 2) else AC["mint"])
-			g["fillRect"].call(bx - 1, py_4 - 1, 3, 2)
-			g["fillStyle"] = AC["white"]
-			g["fillRect"].call(bx - 1, py_4 - 1, 1, 1)
-			g["fillStyle"] = AC["cream"]
-			g["fillRect"].call(bx - 3, py_4 - 2, 1, 1)
-			g["fillRect"].call(bx - 2, py_4 - 1, 1, 1)
-			g["fillRect"].call(bx + 2, py_4 - 1, 1, 1)
-			g["fillRect"].call(bx + 3, py_4, 1, 1)
+			g.fill_style = (AC["pink"] if fmod(n, 2) else AC["mint"])
+			g.fill_rect(bx - 1, py_4 - 1, 3, 2)
+			g.fill_style = AC["white"]
+			g.fill_rect(bx - 1, py_4 - 1, 1, 1)
+			g.fill_style = AC["cream"]
+			g.fill_rect(bx - 3, py_4 - 2, 1, 1)
+			g.fill_rect(bx - 2, py_4 - 1, 1, 1)
+			g.fill_rect(bx + 2, py_4 - 1, 1, 1)
+			g.fill_rect(bx + 3, py_4, 1, 1)
 		elif u_2 < 0.85:
 			var v_2: float = (u_2 - 0.55) / 0.3
 			var py_5: float = TS.round(by0 - 16)
 			var d_2: float = 1 + TS.round(v_2 * 5)
-			g["globalAlpha"] = 1 - (v_2 * 0.7)
+			g.global_alpha = 1 - (v_2 * 0.7)
 			for k_3 in range(8):
 				var b: float = (((k_3 / 8.0) * PI) * 2) + n
-				g["fillStyle"] = AC["sprinkle"][fmod((k_3 + n), 6)]
-				g["fillRect"].call(TS.round(bx + (cos(b) * d_2)), TS.round((py_5 + ((sin(b) * d_2) * 0.8)) + (v_2 * 2)), 1, 1)
+				g.fill_style = AC["sprinkle"][fmod((k_3 + n), 6)]
+				g.fill_rect(TS.round(bx + (cos(b) * d_2)), TS.round((py_5 + ((sin(b) * d_2) * 0.8)) + (v_2 * 2)), 1, 1)
 			if v_2 < 0.4:
-				g["fillStyle"] = AC["white"]
-				g["fillRect"].call(bx, py_5, 1, 1)
-	g["globalAlpha"] = 1
+				g.fill_style = AC["white"]
+				g.fill_rect(bx, py_5, 1, 1)
+	g.global_alpha = 1

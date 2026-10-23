@@ -335,7 +335,7 @@ static func thousand_eyes() -> Variant:
 			var _fn3 = func(_p2, i: float, _a2 = null):
 				var x_3 = _p2[0]
 				var y_3 = _p2[1]
-				var look = look_at(ph, (i * 3) + (int(i) >> 1))
+				var look = look_at(ph, (i * 3) + (((((int(i)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> 1))
 				if look == null:
 					r.line(H.x(x_3 - 0.9, y_3), H.y(x_3 - 0.9, y_3), H.x(x_3 + 0.9, y_3), H.y(x_3 + 0.9, y_3), m.call("h.eye"), 0, g)
 					return
@@ -458,34 +458,34 @@ static func chitin_cuisses() -> Variant:
 	return TS.merge([{"mats": {"legLeather": chitin(segments(2.6, 1.3)), "legLeatherDark": SkinsKit.plain(0x120c1c), "l.shell": shell(), "l.flesh": flesh(), "l.tip": void_light(), "l.white": sclera(), "l.iris": iris(), "l.vein": void_light(), "l.pupil": SkinsKit.plain(0x0a0610)}, "legs": {"mat": "legLeather", "trim": "legLeatherDark", "knee": "l.shell", "tasset": null, "rune": null, "wraps": null, "bulk": 0.2, "over": _fn3}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func voidborn_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func voidborn_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	if layer == "back":
 		# A rift of void open under the feet, a seam of light flickering across it.
-		g["globalAlpha"] = 0.6
-		g["fillStyle"] = C["rift"]
-		g["fillRect"].call(x - 8, y - 2, 17, 1)
-		g["fillRect"].call(x - 12, y - 1, 25, 3)
-		g["fillRect"].call(x - 8, y + 2, 17, 1)
-		g["globalAlpha"] = 0.5 + (0.4 * absf(sin(t * 2.6)))
-		g["fillStyle"] = C["violet"]
-		g["fillRect"].call(x - 9, y, 4, 1)
-		g["fillRect"].call(x - 5, y - 1, 3, 1)
-		g["fillRect"].call(x - 2, y, 5, 1)
-		g["fillRect"].call(x + 3, y + 1, 3, 1)
-		g["fillRect"].call(x + 6, y, 3, 1)
-		g["globalAlpha"] = 1
+		g.global_alpha = 0.6
+		g.fill_style = C["rift"]
+		g.fill_rect(x - 8, y - 2, 17, 1)
+		g.fill_rect(x - 12, y - 1, 25, 3)
+		g.fill_rect(x - 8, y + 2, 17, 1)
+		g.global_alpha = 0.5 + (0.4 * absf(sin(t * 2.6)))
+		g.fill_style = C["violet"]
+		g.fill_rect(x - 9, y, 4, 1)
+		g.fill_rect(x - 5, y - 1, 3, 1)
+		g.fill_rect(x - 2, y, 5, 1)
+		g.fill_rect(x + 3, y + 1, 3, 1)
+		g.fill_rect(x + 6, y, 3, 1)
+		g.global_alpha = 1
 	# Ripples of dark light spreading out of the rift and fading.
 	var k = [0]
 	while k[0] < 2:
 		var u: float = fmod((t * 0.45) + (k[0] * 0.5), 1)
-		g["globalAlpha"] = 0.85 * (1 - u)
-		g["fillStyle"] = (C["violet"] if u < 0.35 else C["deep"])
+		g.global_alpha = 0.85 * (1 - u)
+		g.fill_style = (C["violet"] if u < 0.35 else C["deep"])
 		var _fn0 = func(g_2, px: float, py: float, i: float):
 			if fmod((i + k[0]), 3):
-				g_2["fillRect"].call(px, py, 1, 1)
+				g_2.fill_rect(px, py, 1, 1)
 		RenderAuraKit.ring(g, x, y, 10 + (u * 9), 2.4 + (u * 2.2), 24, layer, _fn0)
 		k[0] += 1
-	g["globalAlpha"] = 1
+	g.global_alpha = 1
 	# Tendrils rising out of the ground and sinking back, swaying, their tips lit.
 	for k_2 in range(5):
 		var a: float = (k_2 * 1.26) + 0.4
@@ -498,12 +498,12 @@ static func voidborn_aura(g, x: float, y: float, t: float, layer: String) -> voi
 		var px_2: float = TS.round(x + (cos(a) * 14))
 		var py_2: float = TS.round(y + (s * 3.4))
 		var lean: float = (1 if sin((t * 3) + k_2) > 0 else -1)
-		g["fillStyle"] = C["flesh"]
-		g["fillRect"].call(px_2, (py_2 - h) + 1, 1, h)
+		g.fill_style = C["flesh"]
+		g.fill_rect(px_2, (py_2 - h) + 1, 1, h)
 		if h > 2:
-			g["fillRect"].call(px_2 + lean, py_2 - h, 1, 1)
-		g["fillStyle"] = C["pale"]
-		g["fillRect"].call(px_2 + (lean if h > 2 else 0), (py_2 - h) - (1 if h > 2 else 0), 1, 1)
+			g.fill_rect(px_2 + lean, py_2 - h, 1, 1)
+		g.fill_style = C["pale"]
+		g.fill_rect(px_2 + (lean if h > 2 else 0), (py_2 - h) - (1 if h > 2 else 0), 1, 1)
 	# Two eyes opening in the ground, looking about, then closing again.
 	for k_3 in range(2):
 		var a_2: float = (-1.1 if k_3 else 2.3)
@@ -516,18 +516,18 @@ static func voidborn_aura(g, x: float, y: float, t: float, layer: String) -> voi
 		if o < (-0.2):
 			continue
 		if o < 0.25:
-			g["fillStyle"] = C["lid"]
-			g["fillRect"].call(px_3 - 2, py_3, 5, 1)
+			g.fill_style = C["lid"]
+			g.fill_rect(px_3 - 2, py_3, 5, 1)
 			continue
 		var look: float = TS.round(sin((t * 0.8) + (k_3 * 1.7)) * 1.4)
-		g["fillStyle"] = C["white"]
-		g["fillRect"].call(px_3 - 2, py_3, 5, 1)
+		g.fill_style = C["white"]
+		g.fill_rect(px_3 - 2, py_3, 5, 1)
 		if o > 0.6:
-			g["fillRect"].call(px_3 - 1, py_3 - 1, 3, 3)
-		g["fillStyle"] = C["iris"]
-		g["fillRect"].call(px_3 + look, py_3 - (1 if o > 0.6 else 0), 1, (3 if o > 0.6 else 1))
-		g["fillStyle"] = C["pupil"]
-		g["fillRect"].call(px_3 + look, py_3, 1, 1)
+			g.fill_rect(px_3 - 1, py_3 - 1, 3, 3)
+		g.fill_style = C["iris"]
+		g.fill_rect(px_3 + look, py_3 - (1 if o > 0.6 else 0), 1, (3 if o > 0.6 else 1))
+		g.fill_style = C["pupil"]
+		g.fill_rect(px_3 + look, py_3, 1, 1)
 
 ## Builder-mode twin of veins (called from surface textures).
 static func veins__tx(scale = null, w = null, _a2 = null):

@@ -234,7 +234,6 @@ class Raster extends RefCounted:
 	## Closes the frame: queues it on the forge job and returns where it will land.
 	## (ox, oy) is the sprite origin in raster space.
 	func compose(ox: float, oy: float, outline := true, night := false):
-		if job == null:
-			push_error("PixelRaster.Raster.compose(): no forge job attached")
-			return {}
+		# No job: baked on its own right away (see Forge.bake_one).
+		if job == null: return Forge.bake_one(self, ox, oy, outline, night)
 		return job.capture(self, ox, oy, outline, night)

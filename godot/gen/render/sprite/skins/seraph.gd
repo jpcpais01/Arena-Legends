@@ -358,20 +358,20 @@ static func heavenstriders() -> Variant:
 	return TS.merge([{"mats": {"zephyr": {"base": PEARL[2], "ramp": PEARL, "shiny": true, "step": 0.15, "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3.2), 0.45), -1, 0)))}, "zephyrTrim": {"base": GOLD[2], "ramp": GOLD, "shiny": true}, "k.gold": {"base": GOLD[2], "ramp": GOLD, "shiny": true, "tex": sheen(6, 1.5, 1)}, "k.wing": {"base": FEATHER[2], "ramp": FEATHER, "shiny": true, "tex": barbs}, "k.gem": {"base": SAPPHIRE[2], "ramp": SAPPHIRE, "glow": true, "tex": breathe}}, "boots": {"wing": null, "height": 0.7, "over": _fn2}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func seraph_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func seraph_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	var RX: float = 13
 	var RY: float = 3.2
 	if layer == "back":
 		# A pale gold ring of light on the ground, breathing, a white glint running round it.
 		var run: float = fmod(floor(t * 8), 28)
-		g["globalAlpha"] = 0.6 + (0.2 * sin(t * 2))
+		g.global_alpha = 0.6 + (0.2 * sin(t * 2))
 		var _fn0 = func(g_2, px: float, py: float, i: float):
-			g_2["fillStyle"] = (AC["white"] if i == run else AC["gold"])
-			g_2["fillRect"].call(px, py, 1, 1)
+			g_2.fill_style = (AC["white"] if i == run else AC["gold"])
+			g_2.fill_rect(px, py, 1, 1)
 		RenderAuraKit.ring(g, x, y, RX, RY, 28, "back", _fn0)
 		var _fn1 = func(g_3, px_2: float, py_2: float, i_2: float):
-			g_3["fillStyle"] = (AC["white"] if i_2 == run else AC["gold"])
-			g_3["fillRect"].call(px_2, py_2, 1, 1)
+			g_3.fill_style = (AC["white"] if i_2 == run else AC["gold"])
+			g_3.fill_rect(px_2, py_2, 1, 1)
 		RenderAuraKit.ring(g, x, y, RX, RY, 28, "front", _fn1)
 		# Short rays of light rising off the ring all the way round (behind the fighter), each swelling and fading on its own beat.
 		for k in range(12):
@@ -383,12 +383,12 @@ static func seraph_aura(g, x: float, y: float, t: float, layer: String) -> void:
 			var h: float = 2 + TS.round(v * 5)
 			var px_3: float = TS.round(x + (cos(a) * RX))
 			var py_3: float = TS.round(y + (s * RY))
-			g["globalAlpha"] = 0.45 + (0.45 * v)
-			g["fillStyle"] = AC["light"]
-			g["fillRect"].call(px_3, py_3 - h, 1, h)
-			g["globalAlpha"] = 0.5 + (0.5 * v)
-			g["fillStyle"] = AC["white"]
-			g["fillRect"].call(px_3, (py_3 - h) - 1, 1, 1)
+			g.global_alpha = 0.45 + (0.45 * v)
+			g.fill_style = AC["light"]
+			g.fill_rect(px_3, py_3 - h, 1, h)
+			g.global_alpha = 0.5 + (0.5 * v)
+			g.fill_style = AC["white"]
+			g.fill_rect(px_3, (py_3 - h) - 1, 1, 1)
 	# White feathers drifting slowly down and rocking, some behind the fighter, some in front.
 	for k_2 in range(4):
 		if ((k_2 % 2) == 0) != (layer == "back"):
@@ -398,14 +398,14 @@ static func seraph_aura(g, x: float, y: float, t: float, layer: String) -> void:
 		var side: float = ([-1, 1, -1, 1])[k_2]
 		var px_4: float = TS.round((x + (side * (9 + (k_2 * 1.6)))) + (rock * 3))
 		var py_4: float = TS.round((y - 42) + (u * 40))
-		g["globalAlpha"] = min(1, (1 - u) * 5, u * 8)
+		g.global_alpha = min(1, (1 - u) * 5, u * 8)
 		# A three-pixel vane with a shaded quill end, tilting as it rocks.
 		var tilt: float = (1 if rock > 0.35 else (-1 if rock < (-0.35) else 0))
-		g["fillStyle"] = AC["feather"]
-		g["fillRect"].call(px_4 - 1, py_4, 3, 1)
-		g["fillRect"].call(px_4 + (1 if tilt >= 0 else -1), py_4 - 1, 1, 1)
-		g["fillStyle"] = AC["white"]
-		g["fillRect"].call(px_4, py_4 - 1, 1, 1)
-		g["fillStyle"] = AC["shade"]
-		g["fillRect"].call(px_4 + (-2 if tilt >= 0 else 2), py_4 + (1 if tilt else 0), 1, 1)
-	g["globalAlpha"] = 1
+		g.fill_style = AC["feather"]
+		g.fill_rect(px_4 - 1, py_4, 3, 1)
+		g.fill_rect(px_4 + (1 if tilt >= 0 else -1), py_4 - 1, 1, 1)
+		g.fill_style = AC["white"]
+		g.fill_rect(px_4, py_4 - 1, 1, 1)
+		g.fill_style = AC["shade"]
+		g.fill_rect(px_4 + (-2 if tilt >= 0 else 2), py_4 + (1 if tilt else 0), 1, 1)
+	g.global_alpha = 1

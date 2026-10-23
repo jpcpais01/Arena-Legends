@@ -665,25 +665,25 @@ static func hallow_treads() -> Variant:
 
 ##  A small jack-o'-lantern sitting on the ground at (px, py), its face flickering.
 static func ground_jack(g, px: float, py: float, t: float, k: float) -> void:
-	g["fillStyle"] = A["rindDk"]
-	g["fillRect"].call(px - 3, py - 3, 7, 3)
-	g["fillStyle"] = A["rind"]
-	g["fillRect"].call(px - 2, py - 4, 5, 4)
-	g["fillRect"].call(px - 3, py - 2, 7, 1)
-	g["fillStyle"] = A["rindHi"]
-	g["fillRect"].call(px - 1, py - 4, 1, 1)
-	g["fillStyle"] = A["stem"]
-	g["fillRect"].call(px, py - 5, 1, 1)
+	g.fill_style = A["rindDk"]
+	g.fill_rect(px - 3, py - 3, 7, 3)
+	g.fill_style = A["rind"]
+	g.fill_rect(px - 2, py - 4, 5, 4)
+	g.fill_rect(px - 3, py - 2, 7, 1)
+	g.fill_style = A["rindHi"]
+	g.fill_rect(px - 1, py - 4, 1, 1)
+	g.fill_style = A["stem"]
+	g.fill_rect(px, py - 5, 1, 1)
 	var f: float = (0.75 + (sin((t * 9) + (k * 2.1)) * 0.15)) + (sin((t * 23) + k) * 0.1)
-	g["globalAlpha"] = f
-	g["fillStyle"] = A["fire"]
-	g["fillRect"].call(px - 2, py - 3, 1, 1)
-	g["fillRect"].call(px + 2, py - 3, 1, 1)
-	g["fillRect"].call(px - 1, py - 1, 3, 1)
-	g["globalAlpha"] = 1
+	g.global_alpha = f
+	g.fill_style = A["fire"]
+	g.fill_rect(px - 2, py - 3, 1, 1)
+	g.fill_rect(px + 2, py - 3, 1, 1)
+	g.fill_rect(px - 1, py - 1, 3, 1)
+	g.global_alpha = 1
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func hallow_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func hallow_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	# Fallen leaves swirling round the feet on the wind, tumbling as they go.
 	var step: float = floor(t * 6)
 	for i in range(12):
@@ -695,9 +695,9 @@ static func hallow_aura(g, x: float, y: float, t: float, layer: String) -> void:
 		var px: float = TS.round(x + (cos(a) * rad))
 		var py: float = TS.round(y + (s * 3.6)) - (i % 2)
 		var flat: float = fmod((step + i), 3)
-		g["fillStyle"] = A["leaf"][i % 5]
-		g["fillRect"].call(px, py, 1, 1)
-		g["fillRect"].call(px + (1 if flat == 0 else 0), py + (-1 if flat == 1 else 0), 1, 1)
+		g.fill_style = A["leaf"][i % 5]
+		g.fill_rect(px, py, 1, 1)
+		g.fill_rect(px + (1 if flat == 0 else 0), py + (-1 if flat == 1 else 0), 1, 1)
 	# Two jack-o'-lanterns sitting on the ground, one behind and one in front.
 	if layer == "back":
 		ground_jack(g, x - 15, y - 3, t, 0)
@@ -712,15 +712,15 @@ static func hallow_aura(g, x: float, y: float, t: float, layer: String) -> void:
 			continue
 		var px_2: float = TS.round(x + (cos(a_2) * (15 - (u * 4))))
 		var py_2: float = TS.round(((y - 14) - (u * 30)) + (s_2 * 3))
-		g["globalAlpha"] = (u / 0.1 if u < 0.1 else ((1 - u) / 0.15 if u > 0.85 else 1))
+		g.global_alpha = (u / 0.1 if u < 0.1 else ((1 - u) / 0.15 if u > 0.85 else 1))
 		var up: bool = fmod(floor((t * 10) + (k * 3)), 2) == 0
-		g["fillStyle"] = A["bat"]
-		g["fillRect"].call(px_2, py_2, 1, 2)
-		g["fillRect"].call(px_2 - 2, (py_2 - 1 if up else py_2 + 1), 2, 1)
-		g["fillRect"].call(px_2 + 1, (py_2 - 1 if up else py_2 + 1), 2, 1)
-		g["fillRect"].call(px_2 - 1, py_2, 1, 1)
-		g["fillRect"].call(px_2 + 1, py_2, 1, 1)
-		g["fillStyle"] = A["batHi"]
-		g["fillRect"].call(px_2 - 3, (py_2 - 2 if up else py_2 + 1), 1, 1)
-		g["fillRect"].call(px_2 + 3, (py_2 - 2 if up else py_2 + 1), 1, 1)
-	g["globalAlpha"] = 1
+		g.fill_style = A["bat"]
+		g.fill_rect(px_2, py_2, 1, 2)
+		g.fill_rect(px_2 - 2, (py_2 - 1 if up else py_2 + 1), 2, 1)
+		g.fill_rect(px_2 + 1, (py_2 - 1 if up else py_2 + 1), 2, 1)
+		g.fill_rect(px_2 - 1, py_2, 1, 1)
+		g.fill_rect(px_2 + 1, py_2, 1, 1)
+		g.fill_style = A["batHi"]
+		g.fill_rect(px_2 - 3, (py_2 - 2 if up else py_2 + 1), 1, 1)
+		g.fill_rect(px_2 + 3, (py_2 - 2 if up else py_2 + 1), 1, 1)
+	g.global_alpha = 1

@@ -48,9 +48,9 @@ static func _init_specs():
 			var a: float = 1.2 - ((i + 1) * (PI / 3.0))
 			var from: float = a + (PI / 3.0)
 			var p = ({"hFx": 0.62, "hFy": -0.1, "elF": 1, "wAng": a, "hNx": 0.25, "hNy": -0.5, "lean": 0.08} if bow else {"hNx": 0.55, "hNy": -0.15, "elN": 1, "wAng": a, "hFx": 0.2, "hFy": -0.6, "lean": 0.08})
-			spin.append([F(TS.merge([p, {"hipY": (-0.06) - (0.02 * (TS.i32(i & 1)))}]), ("fierce" if i < 10 else "shout"), (null if bow else TS.merge([({"oneHand": true} if k["two"] else {})]))), (0.045 if i < 10 else 0.06)])
+			spin.append([F(TS.merge([p, {"hipY": (-0.06) - (0.02 * (i & 1))}]), ("fierce" if i < 10 else "shout"), (null if bow else TS.merge([({"oneHand": true} if k["two"] else {})]))), (0.045 if i < 10 else 0.06)])
 			# Every other frame smears, so the spin reads as a whirl rather than a fan.
-			if (not bow) and TS.i32(i & 1):
+			if (not bow) and (i & 1):
 				spin[i][0]["smear"] = {"from": from + (PI / 3.0), "to": a}
 		var rest
 		if bow:

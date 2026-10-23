@@ -488,33 +488,33 @@ static func physician_boots() -> Variant:
 	return TS.merge([{"mats": {"boot": wax(), "bootDark": brown(null), "kb.strap": {"base": BROWN[1], "ramp": BROWN}, "kb.brass": brass(), "kb.smoke": miasma(), "kb.vent": sick(pulse)}, "boots": {"height": 0.86, "bulk": 0.36, "trim": null, "over": _fn0}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func plague_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func plague_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	if layer == "back":
 		# A sickly glow pooling on the ground, breathing.
-		g["globalAlpha"] = 0.1 + (sin(t * 1.3) * 0.03)
-		g["fillStyle"] = AC["haze"]
-		g["fillRect"].call(x - 10, y - 2, 21, 1)
-		g["fillRect"].call(x - 15, y - 1, 31, 3)
-		g["fillRect"].call(x - 10, y + 2, 21, 1)
+		g.global_alpha = 0.1 + (sin(t * 1.3) * 0.03)
+		g.fill_style = AC["haze"]
+		g.fill_rect(x - 10, y - 2, 21, 1)
+		g.fill_rect(x - 15, y - 1, 31, 3)
+		g.fill_rect(x - 10, y + 2, 21, 1)
 	# Miasma creeping along the ground in low banks that drift and swell.
 	var _fn0 = func(g_2, px: float, py: float, i: float):
 		var v: float = sin((t * 1.1) + (i * 1.3))
 		var dx: float = TS.round(sin((t * 0.6) + (i * 0.9)) * 2)
-		g_2["globalAlpha"] = 0.36 + (v * 0.12)
-		g_2["fillStyle"] = (AC["fog"] if fmod(i, 3) else AC["fogDk"])
+		g_2.global_alpha = 0.36 + (v * 0.12)
+		g_2.fill_style = (AC["fog"] if fmod(i, 3) else AC["fogDk"])
 		var w: float = 4 + ((fmod(i, 3)) * 2)
-		g_2["fillRect"].call((px - (int(w) >> 1)) + dx, py - 1, w, 2)
+		g_2.fill_rect((px - (((((int(w)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> 1)) + dx, py - 1, w, 2)
 		if v > 0.35:
-			g_2["globalAlpha"] = 0.2
-			g_2["fillStyle"] = AC["fogHi"]
-			g_2["fillRect"].call((px - (int(w) >> 2)) + dx, py - 2, (int(w) >> 1), 1)
+			g_2.global_alpha = 0.2
+			g_2.fill_style = AC["fogHi"]
+			g_2.fill_rect((px - (((((int(w)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> 2)) + dx, py - 2, (((((int(w)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> 1), 1)
 		# Now and then a tendril of it curls up and thins away.
 		var c: float = fmod((t * 0.4) + (i * 0.29), 1)
 		if (fmod(i, 4) == 1) and (c < 0.5):
 			var hh: float = TS.round(c * 10)
-			g_2["globalAlpha"] = 0.32 * (1 - (c * 2))
-			g_2["fillStyle"] = AC["fogHi"]
-			g_2["fillRect"].call((px + dx) + TS.round(sin(c * 9) * 1.2), (py - 2) - hh, 1, 2)
+			g_2.global_alpha = 0.32 * (1 - (c * 2))
+			g_2.fill_style = AC["fogHi"]
+			g_2.fill_rect((px + dx) + TS.round(sin(c * 9) * 1.2), (py - 2) - hh, 1, 2)
 	RenderAuraKit.ring(g, x, y, 16, 3.8, 18, layer, _fn0)
 	# Bubbles welling up out of the fog and popping.
 	for k in range(4):
@@ -527,19 +527,19 @@ static func plague_aura(g, x: float, y: float, t: float, layer: String) -> void:
 		var u: float = fmod((t * 0.55) + (k * 0.37), 1)
 		if u < 0.8:
 			var h: float = TS.round((u / 0.8) * 6)
-			g["globalAlpha"] = 0.85
-			g["fillStyle"] = AC["bub"]
-			g["fillRect"].call(px_2, (py_2 - h) - 1, 1, 2)
-			g["fillStyle"] = AC["bubHi"]
-			g["fillRect"].call(px_2, (py_2 - h) - 1, 1, 1)
+			g.global_alpha = 0.85
+			g.fill_style = AC["bub"]
+			g.fill_rect(px_2, (py_2 - h) - 1, 1, 2)
+			g.fill_style = AC["bubHi"]
+			g.fill_rect(px_2, (py_2 - h) - 1, 1, 1)
 		else:
-			g["globalAlpha"] = (1 - u) * 4
-			g["fillStyle"] = AC["bub"]
-			g["fillRect"].call(px_2 - 1, py_2 - 7, 1, 1)
-			g["fillRect"].call(px_2 + 1, py_2 - 7, 1, 1)
-			g["fillRect"].call(px_2, py_2 - 8, 1, 1)
-			g["fillRect"].call(px_2, py_2 - 6, 1, 1)
-	g["globalAlpha"] = 1
+			g.global_alpha = (1 - u) * 4
+			g.fill_style = AC["bub"]
+			g.fill_rect(px_2 - 1, py_2 - 7, 1, 1)
+			g.fill_rect(px_2 + 1, py_2 - 7, 1, 1)
+			g.fill_rect(px_2, py_2 - 8, 1, 1)
+			g.fill_rect(px_2, py_2 - 6, 1, 1)
+	g.global_alpha = 1
 	# Two rats scurrying round through the fog, tails trailing, eyes catching the light.
 	for k_2 in range(2):
 		var dir: float = (-1 if k_2 else 1)
@@ -552,25 +552,25 @@ static func plague_aura(g, x: float, y: float, t: float, layer: String) -> void:
 		var f: float = (1 if ((-sin(a_2)) * dir) > 0 else -1)
 		var step: float = fmod(floor((t * 12) + k_2), 2)
 		# Hunched body, a pointed head low in front, an ear, paws scrabbling.
-		g["fillStyle"] = AC["rat"]
-		g["fillRect"].call(px_3 - 2, py_3 - 2, 4, 2)
-		g["fillRect"].call(px_3 - 1, py_3 - 3, 2, 1)
-		g["fillRect"].call((px_3 + (2 * f)) + (0 if f < 0 else 0), py_3 - 1, 1, 1)
-		g["fillRect"].call(px_3 + (3 * f), py_3 - 1, 1, 1)
-		g["fillStyle"] = AC["ratHi"]
-		g["fillRect"].call(px_3 - 1, py_3 - 3, 2, 1)
-		g["fillRect"].call(px_3 + f, py_3 - 3, 1, 1)
-		g["fillStyle"] = AC["eye"]
-		g["fillRect"].call(px_3 + (2 * f), py_3 - 2, 1, 1)
-		g["fillStyle"] = AC["rat"]
-		g["fillRect"].call((px_3 - 2) + (step * 3), py_3, 1, 1)
-		g["fillRect"].call((px_3 + 1) - (step * 3), py_3, 1, 1)
+		g.fill_style = AC["rat"]
+		g.fill_rect(px_3 - 2, py_3 - 2, 4, 2)
+		g.fill_rect(px_3 - 1, py_3 - 3, 2, 1)
+		g.fill_rect((px_3 + (2 * f)) + (0 if f < 0 else 0), py_3 - 1, 1, 1)
+		g.fill_rect(px_3 + (3 * f), py_3 - 1, 1, 1)
+		g.fill_style = AC["ratHi"]
+		g.fill_rect(px_3 - 1, py_3 - 3, 2, 1)
+		g.fill_rect(px_3 + f, py_3 - 3, 1, 1)
+		g.fill_style = AC["eye"]
+		g.fill_rect(px_3 + (2 * f), py_3 - 2, 1, 1)
+		g.fill_style = AC["rat"]
+		g.fill_rect((px_3 - 2) + (step * 3), py_3, 1, 1)
+		g.fill_rect((px_3 + 1) - (step * 3), py_3, 1, 1)
 		# The naked tail, whipping.
-		g["fillStyle"] = AC["tail"]
+		g.fill_style = AC["tail"]
 		var bx: float = (px_3 - 3 if f > 0 else px_3 + 2)
-		g["fillRect"].call(bx, py_3 - 1, 1, 1)
-		g["fillRect"].call(bx - f, py_3 - step, 1, 1)
-		g["fillRect"].call(bx - (2 * f), (py_3 - 1) + step, 1, 1)
+		g.fill_rect(bx, py_3 - 1, 1, 1)
+		g.fill_rect(bx - f, py_3 - step, 1, 1)
+		g.fill_rect(bx - (2 * f), (py_3 - 1) + step, 1, 1)
 	# Flies buzzing over the miasma.
 	for k_3 in range(2):
 		var c_2: float = cos((t * 3.1) + (k_3 * 2))
@@ -578,10 +578,10 @@ static func plague_aura(g, x: float, y: float, t: float, layer: String) -> void:
 			continue
 		var px_4: float = TS.round((x + (sin((t * 6.3) + (k_3 * 3)) * 8)) + (sin((t * 2.2) + k_3) * 5))
 		var py_4: float = TS.round(((y - 7) - (k_3 * 6)) + (sin((t * 10.7) + k_3) * 2))
-		g["fillStyle"] = AC["fly"]
-		g["fillRect"].call(px_4, py_4, 1, 1)
+		g.fill_style = AC["fly"]
+		g.fill_rect(px_4, py_4, 1, 1)
 		if fmod(floor((t * 20) + k_3), 2):
-			g["globalAlpha"] = 0.5
-			g["fillStyle"] = AC["wing"]
-			g["fillRect"].call(px_4, py_4 - 1, 1, 1)
-			g["globalAlpha"] = 1
+			g.global_alpha = 0.5
+			g.fill_style = AC["wing"]
+			g.fill_rect(px_4, py_4 - 1, 1, 1)
+			g.global_alpha = 1

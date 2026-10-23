@@ -196,7 +196,7 @@ static func upright(t) -> Variant:
 ## its eyes lit with the storm. `f` 0..3 rests (the lightning crawls), 4..7 strikes.
 static func thunderbird_pole(r, t, m, f: float) -> void:
 	var hot: bool = f >= 4
-	var ph: float = TS.i32(int(f) & 3)
+	var ph: float = (int(f) & 3)
 	var cedar: float = m.call("k.cedar")
 	var ink: float = m.call("k.ink")
 	var red: float = m.call("k.red")
@@ -254,7 +254,7 @@ static func thunderbird_pole(r, t, m, f: float) -> void:
 	px(r, t, 0.6, 24.4, ink, 1, 10)
 	# Striking: arcs crackle between the horn tips.
 	if hot:
-		var k: float = (1 if TS.i32(int(ph) & 1) else -1)
+		var k: float = (1 if (int(ph) & 1) else -1)
 		r.line(t.x(-4.2, 34.4), t.y(-4.2, 34.4), t.x(-2.2, 36 + (k * 0.6)), t.y(-2.2, 36 + (k * 0.6)), storm_hot, 3, 11)
 		r.line(t.x(-2.2, 36 + (k * 0.6)), t.y(-2.2, 36 + (k * 0.6)), t.x(-0.8, 35.2 - (k * 0.6)), t.y(-0.8, 35.2 - (k * 0.6)), storm, 3, 11)
 		r.line(t.x(0.8, 35.2 + (k * 0.6)), t.y(0.8, 35.2 + (k * 0.6)), t.x(2.2, 36 - (k * 0.6)), t.y(2.2, 36 - (k * 0.6)), storm, 3, 11)
@@ -334,13 +334,13 @@ static func orrery(r, t, m, f: float) -> void:
 	for _e5 in [[-1.6, 3.6], [1.4, 3.2], [-1.6, -4], [1.2, -3.6]]:
 		var x_4 = _e5[0]
 		var y_4 = _e5[1]
-		px(r, t, x_4, y_4, (star if (int(f) >> 1) % 2 else star_hot), 3, 5)
+		px(r, t, x_4, y_4, (star if (((((int(f)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> 1) % 2 else star_hot), 3, 5)
 	px(r, t, -2, 4, m.call("k.glass"), 4, 5)
 	# Brass caps, the little sun on top.
 	r.fill(t.rect(0, 5.6, 4.2, 0.9, 0.4), brass, {"group": 6, "bevel": 1})
 	r.fill(t.rect(0, -5.6, 4.2, 0.9, 0.4), brass, {"group": 6, "bevel": 1})
 	r.fill(t.circ(0, 7.8, 1.3), m.call("k.sun"), {"group": 7})
-	var rays = ([[0, 10], [2, 7.8], [-2, 7.8]] if TS.i32(int(f) & 1) else [[1.5, 9.3], [-1.5, 9.3], [0, 10.2]])
+	var rays = ([[0, 10], [2, 7.8], [-2, 7.8]] if (int(f) & 1) else [[1.5, 9.3], [-1.5, 9.3], [0, 10.2]])
 	for _e6 in rays:
 		var x_5 = _e6[0]
 		var y_5 = _e6[1]
@@ -355,7 +355,7 @@ static func aegis_rune(r, t, m, f: float) -> void:
 	var gold: float = m.call("k.gold")
 	var _fn1 = func(back: bool):
 		for k in range(3):
-			var a: float = (((TS.i32(int(f) & 3)) / 4.0) * ((PI * 2) / 3.0)) + (((k * PI) * 2) / 3.0)
+			var a: float = (((int(f) & 3) / 4.0) * ((PI * 2) / 3.0)) + (((k * PI) * 2) / 3.0)
 			if (sin(a) > 0) != back:
 				continue
 			var x: float = cos(a) * 7.6

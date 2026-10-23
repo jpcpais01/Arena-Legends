@@ -51,7 +51,7 @@ static func _init_sigilproj():
 		var lit: bool = f >= 4
 		var m = (func(k: String): return h.call(SG.get(k)))
 		# Sunrays turning round the rim: long and short in turn, a sixteenth of a turn per frame.
-		var turn: float = (TS.i32(int(f) & 3)) * (PI / 16.0)
+		var turn: float = (int(f) & 3) * (PI / 16.0)
 		for k_2 in range(8):
 			var a: float = turn + ((k_2 * PI) / 4.0)
 			var long: bool = (k_2 % 2) == 0
@@ -454,23 +454,23 @@ static func lionheart_sabatons() -> Variant:
 	return TS.merge([{"mats": {"greave": S["steel"].call(), "greaveDark": S["gold"].call(null), "k.gold": K["gold"], "k.sun": K["sun"], "k.steel": K["steel"], "k.ink": K["ink"]}, "boots": {"wing": null, "height": 0.95, "over": _fn1}}, FX])
 
 static func blue_dot(g, px: float, py: float, _a3 = null) -> void:
-	g["fillStyle"] = AC["blue"]
-	g["fillRect"].call(px, py, 1, 1)
+	g.fill_style = AC["blue"]
+	g.fill_rect(px, py, 1, 1)
 
 static func gold_dot(g, px: float, py: float, i: float) -> void:
-	g["fillStyle"] = (AC["white"] if (i == auraRun) or (i == fmod((auraRun + 18), 36)) else (AC["sun"] if fmod((i + auraBeat), 9) == 0 else AC["gold"]))
-	g["fillRect"].call(px, py, 1, 1)
+	g.fill_style = (AC["white"] if (i == auraRun) or (i == fmod((auraRun + 18), 36)) else (AC["sun"] if fmod((i + auraBeat), 9) == 0 else AC["gold"]))
+	g.fill_rect(px, py, 1, 1)
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func lionheart_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func lionheart_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	var RX: float = 13
 	var RY: float = 3.4
 	# A royal blue ring inside a gold one: a sun disc laid on the ground, two white glints running round the gold.
 	auraRun = fmod(floor(t * 9), 36)
 	auraBeat = floor(t * 3)
-	g["globalAlpha"] = 0.6
+	g.global_alpha = 0.6
 	RenderAuraKit.ring(g, x, y, RX - 2.6, RY - 1, 26, layer, blue_dot)
-	g["globalAlpha"] = 0.75 + (0.2 * sin(t * 2.2))
+	g.global_alpha = 0.75 + (0.2 * sin(t * 2.2))
 	RenderAuraKit.ring(g, x, y, RX, RY, 36, layer, gold_dot)
 	# Sunrays on the ground, turning slowly: dashes running outward from the ring, long and short in turn,
 	# each swelling and fading on its own beat.
@@ -486,9 +486,9 @@ static func lionheart_aura(g, x: float, y: float, t: float, layer: String) -> vo
 		var n: float = (4 if long else 3)
 		for j in range(ceili(n)):
 			var u: float = 1.14 + (j * 0.11)
-			g["globalAlpha"] = (0.45 + (0.5 * v)) * (1 - (j / (n + 0.5)))
-			g["fillStyle"] = (AC["white"] if j == 0 else (AC["sun"] if long else AC["gold"]))
-			g["fillRect"].call(TS.round(x + ((c * RX) * u)), TS.round(y + ((s * RY) * u)), 1, 1)
+			g.global_alpha = (0.45 + (0.5 * v)) * (1 - (j / (n + 0.5)))
+			g.fill_style = (AC["white"] if j == 0 else (AC["sun"] if long else AC["gold"]))
+			g.fill_rect(TS.round(x + ((c * RX) * u)), TS.round(y + ((s * RY) * u)), 1, 1)
 	# Motes of sunlight rising and flaring, some behind the fighter, some in front.
 	for k_2 in range(6):
 		if ((k_2 % 2) == 0) != (layer == "back"):
@@ -498,15 +498,15 @@ static func lionheart_aura(g, x: float, y: float, t: float, layer: String) -> vo
 		var px: float = TS.round((x + (side * (5 + ((k_2 * 5) % 9)))) + (sin((t * 1.6) + k_2) * 1.5))
 		var py: float = TS.round((y - 2) - (u_2 * 30))
 		var a_2: float = min(1, (1 - u_2) * 3, u_2 * 10)
-		g["globalAlpha"] = a_2
-		g["fillStyle"] = AC["sun"]
-		g["fillRect"].call(px, py, 1, 1)
+		g.global_alpha = a_2
+		g.fill_style = AC["sun"]
+		g.fill_rect(px, py, 1, 1)
 		# Every so often a mote flares into a small cross of light.
 		if sin((t * 4) + (k_2 * 2.3)) > 0.6:
-			g["globalAlpha"] = a_2 * 0.65
-			g["fillStyle"] = AC["gold"]
-			g["fillRect"].call(px - 1, py, 1, 1)
-			g["fillRect"].call(px + 1, py, 1, 1)
-			g["fillRect"].call(px, py - 1, 1, 1)
-			g["fillRect"].call(px, py + 1, 1, 1)
-	g["globalAlpha"] = 1
+			g.global_alpha = a_2 * 0.65
+			g.fill_style = AC["gold"]
+			g.fill_rect(px - 1, py, 1, 1)
+			g.fill_rect(px + 1, py, 1, 1)
+			g.fill_rect(px, py - 1, 1, 1)
+			g.fill_rect(px, py + 1, 1, 1)
+	g.global_alpha = 1

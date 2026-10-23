@@ -323,7 +323,7 @@ static func sands_glass(r, t, f: float, m) -> void:
 		var x = _p0[0]
 		var y = _p0[1]
 		var rr = _p0[2]
-		r.fill(t.circ(x + (w.call(i_2) * 0.35), y + (w.call(i_2 + 2) * 0.25), rr * (1 + (0.15 if fmod((int(ph) >> 1) + i_2, 4) == 0 else 0))), m.call("k.smoke"), {"group": 20 + (fmod(i_2, 2)), "bevel": 1, "softLight": true})
+		r.fill(t.circ(x + (w.call(i_2) * 0.35), y + (w.call(i_2 + 2) * 0.25), rr * (1 + (0.15 if fmod((((((int(ph)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> 1) + i_2, 4) == 0 else 0))), m.call("k.smoke"), {"group": 20 + (fmod(i_2, 2)), "bevel": 1, "softLight": true})
 	TS.for_each(HOOK, _fn1)
 	var k: float = fmod(ph, HOOK.size())
 	r.dot(t.x(HOOK[k][0], HOOK[k][1]), t.y(HOOK[k][0], HOOK[k][1]), m.call("k.fire"), 3, 20 + (fmod(k, 2)))
@@ -482,7 +482,7 @@ static func curled_slippers() -> Variant:
 	return TS.merge([{"mats": {"wb.boot": cloth(TURQ, lozenge), "wb.trim": gold(filigree), "dj.b.gold": gold(), "dj.b.gem": gem(), "dj.b.sole": saff(), "dj.b.sand": sand()}, "boots": {"mat": "wb.boot", "height": 0.32, "bulk": 0.15, "trim": "wb.trim", "wing": null, "knee": null, "over": _fn0}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func djinn_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func djinn_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	# Drifted sand ringing the feet, its dashes sliding round with the wind, a gold glint and a turquoise one.
 	var RX: float = 16
 	var RY: float = 3.8
@@ -492,11 +492,11 @@ static func djinn_aura(g, x: float, y: float, t: float, layer: String) -> void:
 		var k: float = fmod((i + step), 6)
 		if k == 5:
 			return
-		g_2["fillStyle"] = (C["sandHi"] if k == 0 else (C["sandDk"] if k == 3 else C["sand"]))
-		g_2["fillRect"].call(px, py, 1, 1)
+		g_2.fill_style = (C["sandHi"] if k == 0 else (C["sandDk"] if k == 3 else C["sand"]))
+		g_2.fill_rect(px, py, 1, 1)
 		if fmod(i, 19) == fmod(step, 19):
-			g_2["fillStyle"] = (C["gold"] if fmod(i, 2) else C["turq"])
-			g_2["fillRect"].call(px, py, 1, 1)
+			g_2.fill_style = (C["gold"] if fmod(i, 2) else C["turq"])
+			g_2.fill_rect(px, py, 1, 1)
 	RenderAuraKit.ring(g, x, y, RX, RY, N, layer, _fn0)
 	# A dust devil: grains of sand whirling up round the fighter, the funnel widening as it climbs.
 	# Each grain leaves a short streak behind it along its path.
@@ -510,11 +510,11 @@ static func djinn_aura(g, x: float, y: float, t: float, layer: String) -> void:
 		var px_2: float = TS.round(x + (cos(a) * rad))
 		var py_2: float = TS.round(((y + (s * (2.6 + (u * 2)))) - 2) - (u * 26))
 		var dir: float = (1 if s < 0 else -1)
-		g["globalAlpha"] = ((1 - u) / 0.35 if u > 0.65 else (u / 0.08 if u < 0.08 else 1))
-		g["fillStyle"] = C["sand"]
-		g["fillRect"].call((px_2 + 1 if dir > 0 else px_2 - 2), py_2, 2, 1)
-		g["fillStyle"] = (C["sandLt"] if (k_2 % 4) == 0 else C["sandHi"])
-		g["fillRect"].call(px_2, py_2, 1, 1)
+		g.global_alpha = ((1 - u) / 0.35 if u > 0.65 else (u / 0.08 if u < 0.08 else 1))
+		g.fill_style = C["sand"]
+		g.fill_rect((px_2 + 1 if dir > 0 else px_2 - 2), py_2, 2, 1)
+		g.fill_style = (C["sandLt"] if (k_2 % 4) == 0 else C["sandHi"])
+		g.fill_rect(px_2, py_2, 1, 1)
 	# Two wisps of djinn smoke rising off the ring on either side, a blue flame in each.
 	for k_3 in range(2):
 		var a_2: float = ((t * 0.7) + (k_3 * PI)) + 0.6
@@ -528,14 +528,14 @@ static func djinn_aura(g, x: float, y: float, t: float, layer: String) -> void:
 			var v: float = j / 7.0
 			var px_3: float = TS.round((bx + ((sin(((t * 3) - (j * 0.9)) + (k_3 * 2)) * 1.6) * v)) + (v * 2))
 			var py_3: float = TS.round((by - 2) - (j * 2))
-			g["globalAlpha"] = 0.95 * (1 - v)
-			g["fillStyle"] = (C["fire"] if j < 2 else (C["smokeHi"] if j < 5 else C["smoke"]))
-			g["fillRect"].call(px_3, py_3, 1, 2)
-		g["globalAlpha"] = 1
+			g.global_alpha = 0.95 * (1 - v)
+			g.fill_style = (C["fire"] if j < 2 else (C["smokeHi"] if j < 5 else C["smoke"]))
+			g.fill_rect(px_3, py_3, 1, 2)
+		g.global_alpha = 1
 		# The flame at the wisp's root.
 		var fl: float = fmod(floor((t * 8) + (k_3 * 3)), 3)
-		g["fillStyle"] = C["fire"]
-		g["fillRect"].call(TS.round(bx), (TS.round(by) - 1) - fl, 1, 1 + fl)
-		g["fillStyle"] = C["hot"]
-		g["fillRect"].call(TS.round(bx), TS.round(by) - 1, 1, 1)
-	g["globalAlpha"] = 1
+		g.fill_style = C["fire"]
+		g.fill_rect(TS.round(bx), (TS.round(by) - 1) - fl, 1, 1 + fl)
+		g.fill_style = C["hot"]
+		g.fill_rect(TS.round(bx), TS.round(by) - 1, 1, 1)
+	g.global_alpha = 1

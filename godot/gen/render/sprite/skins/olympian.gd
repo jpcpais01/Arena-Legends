@@ -233,7 +233,7 @@ static func px(r, t, x: float, y: float, m: float, tone: float, g = null) -> voi
 ## ripples), 4..7 strikes (the bolt flares, lightning runs down the flutes).
 static func pillar(r, t, m, f: float) -> void:
 	var hot: bool = f >= 4
-	var ph: float = TS.i32(int(f) & 3)
+	var ph: float = (int(f) & 3)
 	var marble_m: float = m.call("z.marble")
 	var stone: float = m.call("z.stone")
 	var brz: float = m.call("z.bronze")
@@ -253,7 +253,7 @@ static func pillar(r, t, m, f: float) -> void:
 	# Striking: lightning runs down two flutes into the plinth.
 	if hot:
 		var x: float = (1.2 if fmod(ph, 2) else -1)
-		var j: float = (0.9 if TS.i32(int(ph) & 2) else -0.9)
+		var j: float = (0.9 if (int(ph) & 2) else -0.9)
 		zigzag(r, t, [x, 18.4, x + j, 16.2, x - j, 13.4, x + (j * 0.6), 11.6, x - j, 8.6, x + j, 6.4, x, 5], bolt_hot, 3, 6)
 	else:
 		px(r, t, (-1.6 if fmod(ph, 2) else 1.4), 6 + (ph * 3), m.call("z.vein"), 3, 6)
@@ -286,7 +286,7 @@ static func pillar(r, t, m, f: float) -> void:
 	px(r, B, 1.2, 12, (bolt_hot if hot else bolt_m), 3, 11)
 	if hot:
 		# Arcs crackle from the bolt to the wreath and spark off the tips.
-		var k_3: float = (1 if TS.i32(int(ph) & 1) else -1)
+		var k_3: float = (1 if (int(ph) & 1) else -1)
 		zigzag(r, t, [1.6, wy + 6, 3.4, (wy + 5) + (k_3 * 0.6), 4.6, wy + 6.6, 6, wy + 5], bolt_hot, 3, 11)
 		zigzag(r, t, [-1.2, wy + 1, -3.2, (wy + 1.6) - (k_3 * 0.6), -4.4, wy + 0.4, -6, wy + 1.4], bolt_m, 3, 11)
 		px(r, t, 2.2 + k_3, wy + 9.6, bolt_hot, 3, 11)
@@ -504,19 +504,19 @@ static func sandals() -> Variant:
 	return TS.merge([{"mats": {"b.ol.sole": {"base": LEATHER[2], "ramp": LEATHER}, "b.ol.strap": gold(), "b.ol.cuff": gold(sheen(5, 1.25, 1)), "b.ol.wing": {"base": FEATHER[2], "ramp": [0x8a92b4, 0xc4cce2, 0xeceff8, 0xffffff, 0xffffff], "shiny": true}, "b.ol.gem": bolt(breathe)}, "boots": {"mat": "skin", "height": 0.78, "bulk": 0, "trim": null, "wing": null, "knee": null, "over": _fn2}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func olympian_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func olympian_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	var RX: float = 14
 	var RY: float = 3.6
 	# A ring of white marble on the ground, a gold key pattern stepping round it (every third stone gold).
 	var step: float = floor(t * 3)
 	var _fn0 = func(g_2, px: float, py: float, i: float):
 		var k: float = fmod((i + step), 6)
-		g_2["globalAlpha"] = 0.75
-		g_2["fillStyle"] = (AC["gold"] if k < 2 else AC["marble"])
-		g_2["fillRect"].call(px, py, 1, 1)
+		g_2.global_alpha = 0.75
+		g_2.fill_style = (AC["gold"] if k < 2 else AC["marble"])
+		g_2.fill_rect(px, py, 1, 1)
 		if k == 0:
-			g_2["fillStyle"] = AC["goldDk"]
-			g_2["fillRect"].call(px, py + 1, 1, 1)
+			g_2.fill_style = AC["goldDk"]
+			g_2.fill_rect(px, py + 1, 1, 1)
 	RenderAuraKit.ring(g, x, y, RX, RY, 30, layer, _fn0)
 	# Every so often Zeus strikes: a bolt falls onto the ring and flashes there.
 	var period: float = 1.7
@@ -531,31 +531,31 @@ static func olympian_aura(g, x: float, y: float, t: float, layer: String) -> voi
 			var by: float = TS.round(y + (s * RY))
 			var H: float = 30
 			var fade: float = 1 - (u / 0.28)
-			g["globalAlpha"] = 0.5 + (0.5 * fade)
+			g.global_alpha = 0.5 + (0.5 * fade)
 			var cx: float = bx + (2 * JOG[fmod(n, 10)])
 			var cy: float = by - H
-			g["fillStyle"] = AC["bolt"]
+			g.fill_style = AC["bolt"]
 			for j in range(10):
 				var d: float = JOG[fmod((n + j), 10)]
-				g["fillRect"].call(cx, cy, 1, 3)
-				g["globalAlpha"] = (0.5 + (0.5 * fade)) * 0.45
-				g["fillRect"].call((cx - d if cx - d else cx + 1), cy + 1, 1, 2)
-				g["globalAlpha"] = 0.5 + (0.5 * fade)
+				g.fill_rect(cx, cy, 1, 3)
+				g.global_alpha = (0.5 + (0.5 * fade)) * 0.45
+				g.fill_rect((cx - d if cx - d else cx + 1), cy + 1, 1, 2)
+				g.global_alpha = 0.5 + (0.5 * fade)
 				cx += d
 				cy += 3
 				if j == 4:
-					g["fillStyle"] = AC["boltHi"]
-					g["fillRect"].call(cx + (d * 2), cy, 1, 2)
-					g["fillStyle"] = AC["bolt"]
-			g["fillStyle"] = AC["white"]
-			g["fillRect"].call(bx - 1, by - 1, 3, 1)
-			g["fillRect"].call(bx, by - 2, 1, 3)
-			g["globalAlpha"] = fade
-			g["fillStyle"] = AC["boltHi"]
-			g["fillRect"].call(bx - 3, by, 1, 1)
-			g["fillRect"].call(bx + 3, by, 1, 1)
-			g["fillRect"].call(bx - 2, by - 3, 1, 1)
-			g["fillRect"].call(bx + 2, by - 3, 1, 1)
+					g.fill_style = AC["boltHi"]
+					g.fill_rect(cx + (d * 2), cy, 1, 2)
+					g.fill_style = AC["bolt"]
+			g.fill_style = AC["white"]
+			g.fill_rect(bx - 1, by - 1, 3, 1)
+			g.fill_rect(bx, by - 2, 1, 3)
+			g.global_alpha = fade
+			g.fill_style = AC["boltHi"]
+			g.fill_rect(bx - 3, by, 1, 1)
+			g.fill_rect(bx + 3, by, 1, 1)
+			g.fill_rect(bx - 2, by - 3, 1, 1)
+			g.fill_rect(bx + 2, by - 3, 1, 1)
 	# Gold laurel leaves blown past on the wind, tumbling, some behind the fighter, some in front.
 	for k_2 in range(4):
 		if ((k_2 % 2) == 0) != (layer == "back"):
@@ -563,15 +563,15 @@ static func olympian_aura(g, x: float, y: float, t: float, layer: String) -> voi
 		var v: float = fmod((t * 0.22) + (k_2 * 0.29), 1)
 		var px_2: float = TS.round((x + 20) - (v * 40))
 		var py_2: float = TS.round(((y - 6) - (k_2 * 7)) + (sin((t * 2.4) + (k_2 * 2)) * 3))
-		g["globalAlpha"] = min(1, (1 - v) * 5, v * 6) * 0.95
+		g.global_alpha = min(1, (1 - v) * 5, v * 6) * 0.95
 		var flip: float = fmod(floor((t * 5) + k_2), 2)
-		g["fillStyle"] = AC["leaf"]
-		g["fillRect"].call(px_2 - 1, py_2 + flip, 2, 1)
-		g["fillRect"].call(px_2 + 1, (py_2 + 1) - flip, 1, 1)
-		g["fillStyle"] = AC["gold"]
-		g["fillRect"].call(px_2, py_2 + flip, 1, 1)
-		g["fillStyle"] = AC["leafDk"]
-		g["fillRect"].call(px_2 - 2, py_2 + (1 if flip else 0), 1, 1)
+		g.fill_style = AC["leaf"]
+		g.fill_rect(px_2 - 1, py_2 + flip, 2, 1)
+		g.fill_rect(px_2 + 1, (py_2 + 1) - flip, 1, 1)
+		g.fill_style = AC["gold"]
+		g.fill_rect(px_2, py_2 + flip, 1, 1)
+		g.fill_style = AC["leafDk"]
+		g.fill_rect(px_2 - 2, py_2 + (1 if flip else 0), 1, 1)
 	# Blue sparks crawling up off the ring now and then (behind only), like static before the strike.
 	if layer == "back":
 		for k_3 in range(3):
@@ -579,7 +579,7 @@ static func olympian_aura(g, x: float, y: float, t: float, layer: String) -> voi
 			var a_2: float = (k_3 * 2.1) + (floor((t * 0.9) + (k_3 * 0.33)) * 1.3)
 			var sx: float = TS.round(x + ((cos(a_2) * RX) * 0.9))
 			var sy: float = TS.round((y + (sin(a_2) * RY)) - (w * 10))
-			g["globalAlpha"] = (1 - w) * 0.9
-			g["fillStyle"] = (AC["boltHi"] if w < 0.3 else AC["bolt"])
-			g["fillRect"].call(sx, sy, 1, 1)
-	g["globalAlpha"] = 1
+			g.global_alpha = (1 - w) * 0.9
+			g.fill_style = (AC["boltHi"] if w < 0.3 else AC["bolt"])
+			g.fill_rect(sx, sy, 1, 1)
+	g.global_alpha = 1

@@ -19,6 +19,31 @@ static var _raster_pipe: RID
 static var _compose_pipe: RID
 
 
+## Jobs baked for one sprite at a time (projectiles, bottles, skinned specials): their
+## callers cache the sprites for the whole game, so the atlases stay.
+static var _kept: Array[Job] = []
+
+
+## Bakes the frame drawn so far on a raster with no job, right away: a sprite
+## dictionary (img/glow as Canvas2D.Region, ox, oy, w, h, sparks).
+static func bake_one(r: PixelRaster.Raster, ox: float, oy: float, outline: bool, night: bool) -> Dictionary:
+	var job := Job.new()
+	job.registry = r.registry
+	r.job = job
+	var f := job.capture(r, ox, oy, outline, night)
+	r.job = null
+	job.bake()
+	_kept.append(job)
+	if f.empty(): return {"img": Canvas2D.Region.new(job.color, Rect2()), "glow": null, "ox": 0, "oy": 0, "w": 0, "h": 0, "sparks": null}
+	var glowing := false
+	for m in job.registry.mats:
+		if m["glow"] or float(m.get("shine", 0.0)) > 0.0 or float(m.get("gleam", 0.0)) > 0.0:
+			glowing = true
+			break
+	return {"img": Canvas2D.Region.new(job.color, Rect2(f.region)), "glow": Canvas2D.Region.new(job.glow, Rect2(f.region)) if night and glowing else null,
+		"ox": f.ox, "oy": f.oy, "w": f.w, "h": f.h, "sparks": Array(f.sparks) if f.sparks.size() else null}
+
+
 static func _setup() -> bool:
 	if _rd != null: return true
 	_rd = RenderingServer.get_rendering_device()
@@ -196,6 +221,9 @@ class Job extends RefCounted:
 		var sp := rd.buffer_get_data(b_sparks).to_int32_array()
 		for r in [set_a, set_b, b_ops, b_frames, b_mats, b_tex, b_state, b_bounds, b_sparks]:
 			rd.free_rid(r)
+		# Frames point back at the job: drop the list (and the op stream) so the job can be freed.
+		frames = []
+		ops = PackedFloat32Array()
 		color = Texture2DRD.new()
 		color.texture_rd_rid = _color_rid
 		glow = Texture2DRD.new()
@@ -273,6 +301,9 @@ class Job extends RefCounted:
 	func frame_image(f: Frame, night := false) -> Image:
 		if f.empty(): return Image.create_empty(1, 1, false, Image.FORMAT_RGBA8)
 		return image(night).get_region(f.region)
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_PREDELETE: release()
 
 	func release() -> void:
 		if Forge._rd == null: return

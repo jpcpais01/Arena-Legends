@@ -1,7 +1,10 @@
 import ts from 'typescript';
 import path from 'node:path';
+import fs from 'node:fs';
 import { CONFIG } from './config';
 import { ident, pascal } from './names';
+
+const HOST_TYPES = new Set(['CanvasRenderingContext2D', 'HTMLCanvasElement', 'CanvasGradient', 'ImageData', 'OffscreenCanvas', 'CanvasImageSource']);
 
 /**
  * TypeScript → GDScript converter for the web game's art library and sim.
@@ -64,6 +67,8 @@ export class Converter {
   readonly twinNeeded = new Set<ts.Node>();
   /** `let` variables captured by a closure and reassigned: boxed in a one-element array. */
   readonly boxed = new Set<ts.Symbol>();
+  /** Boxed lambdas that call themselves: the box is declared before the lambda is made. */
+  readonly selfRec = new Set<ts.Symbol>();
   /** Module functions used as values: the most arguments a caller of the value may pass. */
   readonly valueArity = new Map<ts.Node, number>();
   /** Classes instantiated with Object.create(X.prototype) somewhere. */
@@ -151,6 +156,17 @@ export class Converter {
           // Captured and written from a closure, or written after a closure captured it.
           if (declFn && useFn !== declFn) this.boxed.add(sym);
           else if (declFn && this.capturedByClosure(sym, decl, declFn)) this.boxed.add(sym);
+        }
+      }
+      // A local lambda that calls itself: boxed, so the closure can see the variable it is stored in.
+      if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && enclosingFunction(n)) {
+        const init = unwrap(n.initializer);
+        if (ts.isArrowFunction(init) || ts.isFunctionExpression(init)) {
+          const self = this.checker.getSymbolAtLocation(n.name);
+          let rec = false;
+          const scan = (k: ts.Node) => { if (rec) return; if (ts.isIdentifier(k) && this.checker.getSymbolAtLocation(k) === self) rec = true; else ts.forEachChild(k, scan); };
+          scan(init.body);
+          if (rec && self) { this.boxed.add(self); this.selfRec.add(self); }
         }
       }
       // A module function referenced as a value.
@@ -287,7 +303,15 @@ export class Converter {
     const s = nn.getSymbol();
     if (!s) return false;
     if (this.classTypeOf(s)) return true;
+    if (this.isHostType(s)) return true;
     return !!(s.flags & ts.SymbolFlags.Class);
+  }
+
+  /** Browser canvas types, implemented by the Canvas2D runtime (member access, snake_case). */
+  isHostType(s: ts.Symbol): boolean {
+    if (!HOST_TYPES.has(s.name)) return false;
+    const d = s.declarations?.[0];
+    return !!d && !d.getSourceFile().fileName.includes('/src/');
   }
 
   /** GDScript type hint for a TS type (empty when untyped). */
@@ -472,7 +496,10 @@ export class Converter {
         }
       } else if (ts.isMethodDeclaration(m) && m.body) {
         const st = !!m.modifiers?.some((x) => x.kind === ts.SyntaxKind.StaticKeyword);
-        methods.push(...doc, ...this.funcDecl(m, ident(propName(m.name)), I, st, false, name), '');
+        const key = `${name}.${propName(m.name)}`;
+        if (CONFIG.skip[this.mod]?.includes(key)) continue;
+        const renamed = CONFIG.rename?.[this.mod]?.[key];
+        methods.push(...doc, ...this.funcDecl(m, renamed ?? ident(propName(m.name)), I, st, false, name), '');
       } else if (ts.isGetAccessorDeclaration(m) && m.body) {
         methods.push(...doc, ...this.funcDecl(m, 'get_' + ident(propName(m.name)), I, false, false, name), '');
       } else if (ts.isSetAccessorDeclaration(m) && m.body) {
@@ -518,6 +545,12 @@ export class Converter {
       out.push('');
     }
     out.push(...methods);
+    // Hand-written members (godot/src/patches/<module>.<Class>.gd), indented into the class.
+    const patch = path.join(this.srcRoot, '../godot/src/patches', `${this.mod}.${name}.gd`);
+    if (fs.existsSync(patch)) {
+      out.push(`${I}# --- hand-written (godot/src/patches/${this.mod}.${name}.gd) ---`, '');
+      for (const l of fs.readFileSync(patch, 'utf8').replace(/\s+$/, '').split('\n')) out.push(l ? I + l : '');
+    }
     if (out.length === 1) out.push(`${I}pass`);
     while (out[out.length - 1] === '') out.pop();
     return out;
@@ -566,7 +599,7 @@ export class Converter {
         optionalSeen = true;
         out.push(`${name} = null`);
       } else {
-        const h = this.scope.builder ? "" : this.hint(t);
+        const h = this.scope.builder || (sym && this.boxed.has(sym)) ? "" : this.hint(t);
         if (h === 'float' && sym) this.floats.add(sym);
         out.push(`${name}${h ? ': ' + h : ''}`);
       }
@@ -698,6 +731,17 @@ export class Converter {
       return b;
     }
     if (ts.isForStatement(s)) return this.forStmt(s, ind);
+    // Loops with nothing to run before `continue` (an outer for(;;)'s increment must not leak in).
+    if (ts.isForOfStatement(s) || ts.isForInStatement(s) || ts.isWhileStatement(s) || ts.isDoStatement(s)) {
+      this.loopIncr.push([]);
+      try { return this.plainLoop(s, ind); } finally { this.loopIncr.pop(); }
+    }
+    if (k === ts.SyntaxKind.BreakStatement) return [`${ind}break`];
+    if (k === ts.SyntaxKind.ContinueStatement) return [...this.continueIncr(ind), `${ind}continue`];
+    return this.stmt2(s, ind);
+  }
+
+  private plainLoop(s: ts.ForOfStatement | ts.ForInStatement | ts.WhileStatement | ts.DoStatement, ind: string): Lines {
     if (ts.isForOfStatement(s)) return this.forOf(s, ind);
     if (ts.isForInStatement(s)) {
       const v = this.loopVar(s.initializer);
@@ -706,7 +750,7 @@ export class Converter {
     if (ts.isWhileStatement(s)) {
       return [`${ind}while ${this.cond(s.expression)}:`, ...this.body(s.statement, ind + TAB)];
     }
-    if (ts.isDoStatement(s)) {
+    {
       const b = this.body(s.statement, ind + TAB);
       const sc = this.scope;
       const saved = sc.pre; sc.pre = [];
@@ -715,8 +759,10 @@ export class Converter {
       sc.pre = saved;
       return [`${ind}while true:`, ...b, ...pre, `${ind}${TAB}if not (${c}): break`];
     }
-    if (k === ts.SyntaxKind.BreakStatement) return [`${ind}break`];
-    if (k === ts.SyntaxKind.ContinueStatement) return [...this.continueIncr(ind), `${ind}continue`];
+  }
+
+  private stmt2(s: ts.Statement, ind: string): Lines {
+    const k = s.kind;
     if (ts.isSwitchStatement(s)) return this.switchStmt(s, ind);
     if (ts.isThrowStatement(s)) return [`${ind}push_error(str(${this.expr(s.expression)}))`, `${ind}return${this.returnsVoid(s) ? '' : ' null'}`];
     if (ts.isTryStatement(s)) {
@@ -794,6 +840,12 @@ export class Converter {
       if (h === 'float' && sym) this.floats.add(sym);
       if (!d.initializer) {
         out.push(`${ind}var ${name}${h ? ': ' + h : ''}${boxed ? ' = [null]' : ''}`);
+        continue;
+      }
+      if (boxed && sym && this.selfRec.has(sym)) {
+        out.push(`${ind}var ${name} = [null]`);
+        const fv = this.expr(d.initializer);
+        out.push(...this.scope.pre.splice(0).map((l) => ind + l), `${ind}${name}[0] = ${fv}`);
         continue;
       }
       let v = this.expr(d.initializer);
@@ -980,7 +1032,11 @@ export class Converter {
       }
       return `${obj}[${JSON.stringify(e.name.text)}]`;
     }
-    if (ts.isElementAccessExpression(e)) return `${this.expr(e.expression)}[${this.key(e.argumentExpression, e.expression)}]`;
+    if (ts.isElementAccessExpression(e)) {
+      // Writes need a whole index (GDScript refuses `arr[1.0] = v`).
+      const k = this.isArrayType(this.typeOf(e.expression)) ? this.intOf(e.argumentExpression) : this.key(e.argumentExpression, e.expression);
+      return `${this.expr(e.expression)}[${k}]`;
+    }
     this.problem(e, 'lvalue ' + ts.SyntaxKind[e.kind]);
     return this.expr(e);
   }
@@ -1061,14 +1117,24 @@ export class Converter {
 
   private forStmt(s: ts.ForStatement, ind: string): Lines {
     const r = this.rangeLoop(s);
-    if (r) return [`${ind}for ${r.v} in ${r.range}:`, ...this.body(s.statement, ind + TAB)];
+    if (r) {
+      this.loopIncr.push([]);
+      try { return [`${ind}for ${r.v} in ${r.range}:`, ...this.body(s.statement, ind + TAB)]; } finally { this.loopIncr.pop(); }
+    }
     const out: Lines = [];
     if (s.initializer) {
       if (ts.isVariableDeclarationList(s.initializer)) out.push(...this.varDecls(s.initializer, ind));
       else out.push(...this.exprStmt(s.initializer, ind));
     }
-    const incr = s.incrementor ? this.exprStmt(s.incrementor, '') : [];
     const sc = this.scope;
+    let incr: Lines = [];
+    if (s.incrementor) {
+      // Its hoisted temporaries (`j = i++`) belong at the end of each pass, not before the loop.
+      const keep = sc.pre; sc.pre = [];
+      const st = this.exprStmt(s.incrementor, '');
+      incr = [...sc.pre, ...st];
+      sc.pre = keep;
+    }
     const saved = sc.pre; sc.pre = [];
     const c = s.condition ? this.cond(s.condition) : 'true';
     const cpre = sc.pre;
@@ -1106,6 +1172,17 @@ export class Converter {
     const boundSyms = new Set<ts.Symbol>();
     const collect = (n: ts.Node) => { if (ts.isIdentifier(n)) { const x = this.checker.getSymbolAtLocation(n); if (x) boundSyms.add(x); } ts.forEachChild(n, collect); };
     collect(bound);
+    // JS re-evaluates the bound every pass: a call in it (rng.int(1, 3)) must keep doing so.
+    let impure = false;
+    const calls = (n: ts.Node) => {
+      if (ts.isCallExpression(n)) {
+        const f = n.expression;
+        if (!(ts.isPropertyAccessExpression(f) && ts.isIdentifier(f.expression) && f.expression.text === 'Math' && f.name.text !== 'random')) impure = true;
+      }
+      ts.forEachChild(n, calls);
+    };
+    calls(bound);
+    if (impure) return null;
     let boundTouched = false;
     const visit = (n: ts.Node) => {
       if (ts.isBinaryExpression(n) && isAssignOp(n.operatorToken.kind)) {
@@ -1176,6 +1253,44 @@ export class Converter {
   }
 
   private switchStmt(s: ts.SwitchStatement, ind: string): Lines {
+    // A `break` out of the middle of a case: run the cases inside a one-pass loop it can leave.
+    if (this.innerBreak(s)) {
+      if (this.hasContinue(s)) this.problem(s, 'switch with both an early break and a continue');
+      const inner = this.switchStmt0(s, ind + TAB);
+      return [`${ind}while true:`, ...inner, `${ind}${TAB}break`];
+    }
+    return this.switchStmt0(s, ind);
+  }
+
+  /** A break inside a case that isn't the case's last statement (or sits in a nested block). */
+  private innerBreak(s: ts.SwitchStatement): boolean {
+    let found = false;
+    const visit = (n: ts.Node, top: boolean) => {
+      if (found) return;
+      if (ts.isBreakStatement(n) && !n.label && !top) { found = true; return; }
+      if (ts.isIterationStatement(n, false) || ts.isSwitchStatement(n) || ts.isFunctionLike(n)) return;
+      ts.forEachChild(n, (k) => visit(k, false));
+    };
+    for (const c of s.caseBlock.clauses) {
+      const st = c.statements.length === 1 && ts.isBlock(c.statements[0]) ? [...(c.statements[0] as ts.Block).statements] : [...c.statements];
+      st.forEach((x, i) => visit(x, i === st.length - 1));
+    }
+    return found;
+  }
+
+  private hasContinue(s: ts.SwitchStatement): boolean {
+    let found = false;
+    const visit = (n: ts.Node) => {
+      if (found) return;
+      if (ts.isContinueStatement(n)) { found = true; return; }
+      if (ts.isIterationStatement(n, false) || ts.isFunctionLike(n)) return;
+      ts.forEachChild(n, visit);
+    };
+    ts.forEachChild(s.caseBlock, visit);
+    return found;
+  }
+
+  private switchStmt0(s: ts.SwitchStatement, ind: string): Lines {
     const v = this.scope.tmp('sw');
     const out: Lines = [`${ind}var ${v} = ${this.expr(s.expression)}`];
     let labels: string[] = [];
@@ -1597,7 +1712,7 @@ export class Converter {
   private floatOf(e: ts.Expression): string {
     const u = unwrap(e);
     const v = this.expr(e);
-    if (ts.isNumericLiteral(u)) return u.text.includes('.') || /e/i.test(u.text) ? v : v + '.0';
+    if (ts.isNumericLiteral(u)) return /^0x/i.test(v) ? `float(${v})` : /[.e]/i.test(v) ? v : v + '.0';
     if (this.isFloatExpr(u)) return paren(v);
     return `float(${v})`;
   }
@@ -1658,16 +1773,34 @@ export class Converter {
   }
 
   private bitwise(op: string, a: ts.Expression, b: ts.Expression): string {
-    const ua = unwrap(a), ub = unwrap(b);
+    const ub = unwrap(b), ua = unwrap(a);
+    const A = () => this.intOf(a), B = () => this.intOf(b);
+    const lit = (e: ts.Expression) => ts.isNumericLiteral(e) && /^(0x[0-9a-f]+|\d+)$/i.test(e.text) ? Number(e.text) : null;
+    const kb = lit(ub), ka = lit(ua);
+    const sh = (k: number | null) => k !== null ? String(k & 31) : `(${B()} & 31)`;
+    // Inline int32 arithmetic: no calls in the hot paths (hashes, rng, colour packing).
     // x | 0 truncates to int32 in JS.
-    if (op === '|' && ts.isNumericLiteral(ub) && ub.text === '0') return `TS.i32(${this.expr(a)})`;
-    if (op === '>>>' ) return `TS.ushr(${this.intOf(a)}, ${this.intOf(b)})`;
-    if (op === '<<') return `TS.shl(${this.intOf(a)}, ${this.intOf(b)})`;
-    if (op === '^' || op === '|' || op === '&') {
-      void ua;
-      return `TS.i32(${this.intOf(a)} ${op} ${this.intOf(b)})`;
+    if (op === '|' && kb === 0) return wrap32(this.intOf(a), this.isI32(a));
+    if (op === '>>>') return kb === 0 ? `(${A()} & 0xFFFFFFFF)` : `((${A()} & 0xFFFFFFFF) >> ${sh(kb)})`;
+    if (op === '<<') return wrap32(`(${A()} << ${sh(kb)})`, false);
+    if (op === '>>') return `(${wrap32(A(), this.isI32(a))} >> ${sh(kb)})`;
+    if (op === '&' && ((kb !== null && kb <= 0x7fffffff) || (ka !== null && ka <= 0x7fffffff))) return `(${A()} & ${B()})`;
+    if (op === '^' || op === '|' || op === '&') return wrap32(`(${A()} ${op} ${B()})`, this.isI32(a) && this.isI32(b));
+    return `(${A()} ${op} ${B()})`;
+  }
+
+  /** Expressions whose GDScript value is already a signed 32-bit int. */
+  private isI32(e: ts.Expression): boolean {
+    e = unwrap(e);
+    if (ts.isNumericLiteral(e)) { const v = Number(e.text); return Number.isInteger(v) && v >= -0x80000000 && v <= 0x7fffffff; }
+    if (ts.isBinaryExpression(e)) {
+      const k = e.operatorToken.kind;
+      return [ts.SyntaxKind.BarToken, ts.SyntaxKind.AmpersandToken, ts.SyntaxKind.CaretToken, ts.SyntaxKind.LessThanLessThanToken,
+        ts.SyntaxKind.GreaterThanGreaterThanToken].includes(k);
     }
-    return `(${this.intOf(a)} ${op} ${this.intOf(b)})`;
+    if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ts.isIdentifier(e.expression.expression) &&
+      e.expression.expression.text === 'Math' && e.expression.name.text === 'imul') return true;
+    return false;
   }
 
   private objectLit(e: ts.ObjectLiteralExpression): string {
@@ -1930,8 +2063,13 @@ export class Converter {
         case 'Array': return args.length ? `TS.array(${a(0)})` : '[]';
         case 'Error': return args.length ? a(0) : '"error"';
         case 'Uint32Array': case 'Uint16Array': case 'Uint8Array': case 'Int32Array': case 'Float32Array': case 'Float64Array':
-        case 'Uint8ClampedArray': case 'Int8Array': case 'Int16Array':
+        case 'Uint8ClampedArray': case 'Int8Array': case 'Int16Array': {
+          // A byte view of a pixel buffer is the pixel buffer itself (Canvas2D reads packed RGBA ints).
+          const src = args.length ? unwrap(args[0]) : null;
+          if (src && ts.isPropertyAccessExpression(src) && src.name.text === 'buffer') return this.expr(src.expression);
           return `TS.typed_array(${args.length ? a(0) : 0})`;
+        }
+        case 'ImageData': return `Canvas2D.ImageData.new(${args.map((x) => this.expr(x)).join(', ')})`;
       }
     }
     const t = this.typeRef(c);
@@ -2130,14 +2268,15 @@ export class Converter {
           case 'log10': return `(log(${a(0)}) / log(10.0))`;
           case 'atan2': return `atan2(${a(0)}, ${a(1)})`;
           case 'pow': return `pow(${a(0)}, ${a(1)})`;
-          case 'hypot': return args.length === 2 ? `sqrt(${paren(a(0))} * ${paren(a(0))} + ${paren(a(1))} * ${paren(a(1))})`.replace(/^sqrt\((\w+) \* \1 \+ (\w+) \* \2\)$/, 'sqrt($1 * $1 + $2 * $2)') : `TS.hypot([${all()}])`;
+          case 'hypot': if (args.length === 2 && args.some(hasCall)) return `TS.hypot2(${a(0)}, ${a(1)})`;
+            return args.length === 2 ? `sqrt(${paren(a(0))} * ${paren(a(0))} + ${paren(a(1))} * ${paren(a(1))})`.replace(/^sqrt\((\w+) \* \1 \+ (\w+) \* \2\)$/, 'sqrt($1 * $1 + $2 * $2)') : `TS.hypot([${all()}])`;
           case 'min': case 'max':
             if (args.some(ts.isSpreadElement)) return `TS.${name}v(${this.spreadArgs(args)})`;
             if (args.length === 1) return a(0);
             if (args.length === 2) return `${name}f(${a(0)}, ${a(1)})`;
             return `${name}(${all()})`;
           case 'random': return 'randf()';
-          case 'imul': return `TS.imul(${a(0)}, ${a(1)})`;
+          case 'imul': return wrap32(`${wrap32(this.intOf(args[0]), this.isI32(args[0]))} * ${wrap32(this.intOf(args[1]), this.isI32(args[1]))}`, false);
           case 'fround': return a(0);
         }
         this.problem(e, 'Math.' + name);
@@ -2179,6 +2318,7 @@ export class Converter {
         if (ts.isPropertyAccessExpression(p) && p.name.text === 'prototype') return `${this.expr(p.expression)}.new(TS.BLANK)`;
       }
       if (g === 'performance' && name === 'now') return '(Time.get_ticks_usec() / 1000.0)';
+      if (g === 'document' && name === 'createElement') return 'Canvas2D.Surface.new()';
       if (g === 'Date' && name === 'now') return 'Time.get_unix_time_from_system() * 1000.0';
     }
     const t = this.typeOf(obj);
@@ -2475,4 +2615,9 @@ function hasSideEffect(n: ts.Node): boolean {
   };
   visit(n);
   return found;
+}
+
+/** JS ToInt32 of an int expression, inline: `x` already int32 stays as is. */
+function wrap32(x: string, already: boolean): string {
+  return already ? x : `((((${x}) + 0x80000000) & 0xFFFFFFFF) - 0x80000000)`;
 }

@@ -415,28 +415,28 @@ static func bloodmoon_breeches() -> Variant:
 	return TS.merge([{"mats": {"bloodLeg": {"base": PLUM[2], "ramp": PLUM, "tex": velvet}, "bloodDark": {"base": BLACK[2], "ramp": BLACK, "shiny": true}, "bloodGlow": {"base": RUBY[2], "glow": true, "ramp": RUBY, "tex": beat}, "l.stripe": {"base": VELVET[3], "ramp": VELVET, "tex": damask}, "l.band": {"base": VELVET[2], "ramp": VELVET}, "l.silver": {"base": SILVER[2], "ramp": SILVER, "shiny": true, "tex": gleam(6)}, "l.ruby": {"base": RUBY[2], "glow": true, "ramp": RUBY, "tex": beat}}, "legs": {"mat": "bloodLeg", "trim": null, "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.3, "over": _fn0}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func bloodmoon_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func bloodmoon_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	if layer == "back":
 		# A pool of blood-moon light on the ground, breathing.
-		g["globalAlpha"] = 0.1 + (sin(t * 1.6) * 0.03)
-		g["fillStyle"] = AC["moon"]
-		g["fillRect"].call(x - 9, y - 2, 19, 1)
-		g["fillRect"].call(x - 13, y - 1, 27, 3)
-		g["fillRect"].call(x - 9, y + 2, 19, 1)
-		g["globalAlpha"] = 1
+		g.global_alpha = 0.1 + (sin(t * 1.6) * 0.03)
+		g.fill_style = AC["moon"]
+		g.fill_rect(x - 9, y - 2, 19, 1)
+		g.fill_rect(x - 13, y - 1, 27, 3)
+		g.fill_rect(x - 9, y + 2, 19, 1)
+		g.global_alpha = 1
 	# Crimson mist pooling round the feet, drifting.
 	var _fn0 = func(g_2, px: float, py: float, i: float):
 		var v: float = sin((t * 1.8) + (i * 1.1))
-		g_2["globalAlpha"] = 0.28 + (v * 0.14)
-		g_2["fillStyle"] = (AC["mist"] if fmod(i, 3) else AC["mistDk"])
+		g_2.global_alpha = 0.28 + (v * 0.14)
+		g_2.fill_style = (AC["mist"] if fmod(i, 3) else AC["mistDk"])
 		var w: float = 4 + ((fmod(i, 2)) * 2)
 		var dx: float = TS.round(v * 1.5)
-		g_2["fillRect"].call((px - (int(w) >> 1)) + dx, py - 1, w, 2)
+		g_2.fill_rect((px - (((((int(w)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> 1)) + dx, py - 1, w, 2)
 		if v > 0.3:
-			g_2["globalAlpha"] = 0.25
-			g_2["fillRect"].call((px - (int(w) >> 2)) + dx, (py - 2) - (fmod(i, 2)), (int(w) >> 1), 1)
+			g_2.global_alpha = 0.25
+			g_2.fill_rect((px - (((((int(w)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> 2)) + dx, (py - 2) - (fmod(i, 2)), (((((int(w)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> 1), 1)
 	RenderAuraKit.ring(g, x, y, 15, 3.6, 20, layer, _fn0)
-	g["globalAlpha"] = 1
+	g.global_alpha = 1
 	# Three bats circling at different heights, wings beating.
 	for k in range(3):
 		var a: float = (t * (1.3 + (k * 0.2))) + (((k * PI) * 2) / 3.0)
@@ -446,16 +446,16 @@ static func bloodmoon_aura(g, x: float, y: float, t: float, layer: String) -> vo
 		var px_2: float = TS.round(x + (cos(a) * (14 + (k * 2))))
 		var py_2: float = TS.round((((y - 20) - (k * 11)) + (sin((t * 2.6) + k) * 2)) + (s * 3))
 		var up: bool = fmod(floor((t * 9) + (k * 1.7)), 2) == 0
-		g["fillStyle"] = AC["batWing"]
+		g.fill_style = AC["batWing"]
 		if up:
-			g["fillRect"].call(px_2 - 3, py_2 - 2, 1, 2)
-			g["fillRect"].call(px_2 + 3, py_2 - 2, 1, 2)
-			g["fillRect"].call(px_2 - 2, py_2 - 1, 5, 1)
+			g.fill_rect(px_2 - 3, py_2 - 2, 1, 2)
+			g.fill_rect(px_2 + 3, py_2 - 2, 1, 2)
+			g.fill_rect(px_2 - 2, py_2 - 1, 5, 1)
 		else:
-			g["fillRect"].call(px_2 - 3, py_2 + 1, 2, 1)
-			g["fillRect"].call(px_2 + 2, py_2 + 1, 2, 1)
-			g["fillRect"].call(px_2 - 2, py_2, 5, 1)
-		g["fillStyle"] = AC["bat"]
-		g["fillRect"].call(px_2, py_2 - 1, 1, 3)
-		g["fillStyle"] = AC["eye"]
-		g["fillRect"].call(px_2, py_2 - 1, 1, 1)
+			g.fill_rect(px_2 - 3, py_2 + 1, 2, 1)
+			g.fill_rect(px_2 + 2, py_2 + 1, 2, 1)
+			g.fill_rect(px_2 - 2, py_2, 5, 1)
+		g.fill_style = AC["bat"]
+		g.fill_rect(px_2, py_2 - 1, 1, 3)
+		g.fill_style = AC["eye"]
+		g.fill_rect(px_2, py_2 - 1, 1, 1)

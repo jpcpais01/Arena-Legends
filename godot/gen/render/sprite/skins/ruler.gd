@@ -351,7 +351,7 @@ static func ring_mantle() -> Variant:
 		r.fill(robe, m.call("k.rRobe"), {"group": c["g"] + 1, "bevel": 3, "toneBias": -1, "softLight": true, "local": T})
 		# Kente along the hem: blocks in a band above it, a gold edge under them.
 		var hem = T.poly([(-16) - (s * 1.4), -12.2, -0.4, -11.4, -0.4, -13, (-16) - (s * 1.4), -13.8])
-		kente(r, (-16) - (s * 1.4), -0.4, 1.5, PixelSdf.intersect(robe, hem), (func(x0: float, x1: float): return T.poly([x0, -10, x1, -10, x1, -17, x0, -17])), m, KK, c["g"] + 1, -1, (int(ph) >> 1))
+		kente(r, (-16) - (s * 1.4), -0.4, 1.5, PixelSdf.intersect(robe, hem), (func(x0: float, x1: float): return T.poly([x0, -10, x1, -10, x1, -17, x0, -17])), m, KK, c["g"] + 1, -1, (((((int(ph)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> 1))
 		r.fill(PixelSdf.intersect(robe, T.poly([(-16) - (s * 1.4), -13.6, -0.4, -12.8, -0.4, -17, (-16) - (s * 1.4), -17])), m.call("k.rTrim"), {"group": c["g"] + 1, "bevel": 0.5, "toneBias": -1, "noLine": true})
 		# A gold fringe hanging off the hem.
 		for i in range(7):
@@ -457,18 +457,18 @@ static func stompers() -> Variant:
 	return TS.merge([{"mats": {"es.boot": S["onyx"].call(), "es.band": S["gold"].call(null), "k.rbGold": S["gold"].call(), "k.rbSole": S["gold"].call(sweep(7, 1.75, 0.9)), "k.rbLace": S["gold"].call(null), "k.rbGreen": S["green"].call(), "k.rbRed": S["ruby"].call(), "k.rbInk": {"base": ONYX[1], "ramp": ONYX}, "k.rbEm": S["emerald"].call()}, "boots": {"mat": "es.boot", "height": 0.88, "bulk": 0.6, "trim": "es.band", "wing": null, "knee": null, "over": _fn0}}, FX])
 
 static func kente_dot(g, px: float, py: float, i: float) -> void:
-	g["fillStyle"] = (AC["white"] if (i == ringRun) or (i == fmod((ringRun + 24), 48)) else KENTE_RING[fmod((i + ringShift), KENTE_RING.size())])
-	g["fillRect"].call(px, py, 1, 1)
+	g.fill_style = (AC["white"] if (i == ringRun) or (i == fmod((ringRun + 24), 48)) else KENTE_RING[fmod((i + ringShift), KENTE_RING.size())])
+	g.fill_rect(px, py, 1, 1)
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func ruler_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func ruler_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	var back: bool = layer == "back"
 	var RX: float = 15
 	var RY: float = 3.8
 	# A ring of kente woven on the ground, its pattern creeping round, two glints running the other way.
 	ringRun = fmod((48 - (fmod(floor(t * 10), 48))), 48)
 	ringShift = fmod(floor(t * 3), KENTE_RING.size())
-	g["globalAlpha"] = (0.6 if back else 0.8)
+	g.global_alpha = (0.6 if back else 0.8)
 	RenderAuraKit.ring(g, x, y, RX, RY, 48, layer, kente_dot)
 	# The stomp: every couple of seconds the ground shakes, a shockwave of dust rolling out from the feet,
 	# pebbles hopping, and a burst of gold glitter thrown up.
@@ -478,11 +478,11 @@ static func ruler_aura(g, x: float, y: float, t: float, layer: String) -> void:
 	if u < 0.4:
 		var v: float = u / 0.4
 		var R: float = 4 + (v * 16)
-		g["globalAlpha"] = (1 - v) * 0.9
-		g["fillStyle"] = AC["dust"]
+		g.global_alpha = (1 - v) * 0.9
+		g.fill_style = AC["dust"]
 		var _fn0 = func(g_2, px: float, py: float, i: float):
 			if fmod((i + n), 3) != 0:
-				g_2["fillRect"].call(px, py - (fmod(i, 2)), 1, 1)
+				g_2.fill_rect(px, py - (fmod(i, 2)), 1, 1)
 		RenderAuraKit.ring(g, x, y, R, R * 0.26, 30, layer, _fn0)
 		# Dust puffs at either side, rising and spreading.
 		for s in [-1, 1]:
@@ -490,14 +490,14 @@ static func ruler_aura(g, x: float, y: float, t: float, layer: String) -> void:
 				continue
 			var px_2: float = TS.round(x + (s * R))
 			var py_2: float = TS.round(y - (v * 4))
-			g["globalAlpha"] = (1 - v) * 0.7
-			g["fillRect"].call(px_2, py_2, 2, 1)
-			g["fillRect"].call(px_2 - s, py_2 - 1, 2, 1)
+			g.global_alpha = (1 - v) * 0.7
+			g.fill_rect(px_2, py_2, 2, 1)
+			g.fill_rect(px_2 - s, py_2 - 1, 2, 1)
 			if v > 0.3:
-				g["fillRect"].call(px_2 + s, py_2 - 2, 1, 1)
+				g.fill_rect(px_2 + s, py_2 - 2, 1, 1)
 		# Pebbles hopping off the ground.
-		g["globalAlpha"] = 1
-		g["fillStyle"] = AC["rock"]
+		g.global_alpha = 1
+		g.fill_style = AC["rock"]
 		for k in range(4):
 			var a: float = (PixelTex.hash_(n, k + 3) * PI) * 2
 			var s_2: float = sin(a)
@@ -505,7 +505,7 @@ static func ruler_aura(g, x: float, y: float, t: float, layer: String) -> void:
 				continue
 			var d: float = 5 + (v * (6 + (k * 2)))
 			var hgt: float = sin(minf(1, v * 1.4) * PI) * (3 + k)
-			g["fillRect"].call(TS.round(x + (cos(a) * d)), TS.round((y + ((s_2 * d) * 0.26)) - hgt), 1, 1)
+			g.fill_rect(TS.round(x + (cos(a) * d)), TS.round((y + ((s_2 * d) * 0.26)) - hgt), 1, 1)
 	# Gold glitter drifting down round the fighter like a champion's confetti, tumbling (wide, then edge-on).
 	for k_2 in range(10):
 		if ((k_2 % 2) == 0) != back:
@@ -514,10 +514,10 @@ static func ruler_aura(g, x: float, y: float, t: float, layer: String) -> void:
 		var w: float = fmod((t + (k_2 * 0.53)) / fall, 1)
 		var px_3: float = TS.round((x + ((PixelTex.hash_(k_2, 11) - 0.5) * 34)) + (sin((t * 1.8) + (k_2 * 1.3)) * 2))
 		var py_3: float = TS.round((y - 50) + (w * 50))
-		g["globalAlpha"] = min(1, (1 - w) * 4, w * 8) * (0.7 if back else 1)
+		g.global_alpha = min(1, (1 - w) * 4, w * 8) * (0.7 if back else 1)
 		var turn: float = fmod(floor((t * 5) + k_2), 3)
-		g["fillStyle"] = (AC["glint"] if turn == 0 else (AC["em"] if (k_2 % 4) == 1 else AC["gold"]))
-		g["fillRect"].call(px_3, py_3, (1 if turn == 1 else 2), 1)
+		g.fill_style = (AC["glint"] if turn == 0 else (AC["em"] if (k_2 % 4) == 1 else AC["gold"]))
+		g.fill_rect(px_3, py_3, (1 if turn == 1 else 2), 1)
 	# Emerald motes rising from the ring, flaring as they go.
 	for k_3 in range(3):
 		var a_2: float = (t * 0.5) + (((k_3 * PI) * 2) / 3.0)
@@ -527,13 +527,13 @@ static func ruler_aura(g, x: float, y: float, t: float, layer: String) -> void:
 		var w_2: float = fmod((t * 0.4) + (k_3 * 0.33), 1)
 		var px_4: float = TS.round(x + ((cos(a_2) * RX) * 0.9))
 		var py_4: float = TS.round((y + (s_3 * RY)) - (w_2 * 22))
-		g["globalAlpha"] = min(1, (1 - w_2) * 3, w_2 * 10)
-		g["fillStyle"] = AC["em"]
-		g["fillRect"].call(px_4, py_4, 1, 1)
+		g.global_alpha = min(1, (1 - w_2) * 3, w_2 * 10)
+		g.fill_style = AC["em"]
+		g.fill_rect(px_4, py_4, 1, 1)
 		if sin((t * 5) + (k_3 * 2)) > 0.7:
-			g["globalAlpha"] *= 0.6
-			g["fillRect"].call(px_4 - 1, py_4, 1, 1)
-			g["fillRect"].call(px_4 + 1, py_4, 1, 1)
-			g["fillRect"].call(px_4, py_4 - 1, 1, 1)
-			g["fillRect"].call(px_4, py_4 + 1, 1, 1)
-	g["globalAlpha"] = 1
+			g.global_alpha *= 0.6
+			g.fill_rect(px_4 - 1, py_4, 1, 1)
+			g.fill_rect(px_4 + 1, py_4, 1, 1)
+			g.fill_rect(px_4, py_4 - 1, 1, 1)
+			g.fill_rect(px_4, py_4 + 1, 1, 1)
+	g.global_alpha = 1

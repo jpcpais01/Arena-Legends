@@ -400,19 +400,19 @@ static func boots() -> Variant:
 	return TS.merge([{"mats": {"k.kbBoot": S["onyx"].call(), "k.kbCuff": S["gold"].call(), "k.kbLace": S["white"].call(), "k.kbSole": S["matte"].call(), "k.kbGold": S["gold"].call(sweep(7, 1.75, 0.9)), "k.kbRuby": S["ruby"].call()}, "boots": {"mat": "k.kbBoot", "height": 0.9, "bulk": 0.55, "trim": "k.kbCuff", "wing": null, "knee": null, "over": _fn0}}, FX])
 
 static func ring_dot(g, px: float, py: float, i: float) -> void:
-	g["fillStyle"] = (AC["bolt"] if (i == runA) or (i == runB) else (AC["ruby"] if fmod(i, 6) == 0 else (AC["gold"] if fmod(i, 2) else AC["goldDk"])))
-	g["fillRect"].call(px, py, 1, 1)
+	g.fill_style = (AC["bolt"] if (i == runA) or (i == runB) else (AC["ruby"] if fmod(i, 6) == 0 else (AC["gold"] if fmod(i, 2) else AC["goldDk"])))
+	g.fill_rect(px, py, 1, 1)
 
 ## The full-set aura around the feet at (x, y) art pixels; `t` is seconds. The most electrifying man in
 ## the arena: a gold ring with sparks racing round it and crackling up off it, camera flashes popping all
 ## round him, and his entrance pyro going off at both sides every few seconds.
-static func rock_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func rock_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	var back: bool = layer == "back"
 	var RX: float = 15
 	var RY: float = 3.8
 	runA = fmod(floor(t * 22), 48)
 	runB = fmod((48 - (fmod(floor(t * 17), 48))), 48)
-	g["globalAlpha"] = (0.6 if back else 0.85)
+	g.global_alpha = (0.6 if back else 0.85)
 	RenderAuraKit.ring(g, x, y, RX, RY, 48, layer, ring_dot)
 	# Electricity crackling up off the ring: a short zigzag bolt here and there.
 	if not back:
@@ -423,11 +423,11 @@ static func rock_aura(g, x: float, y: float, t: float, layer: String) -> void:
 			var a: float = (PixelTex.hash_(n, k + 5) * PI) * 2
 			var px: float = TS.round(x + (cos(a) * RX))
 			var py: float = TS.round(y + (sin(a) * RY))
-			g["globalAlpha"] = 1
+			g.global_alpha = 1
 			var h: float = 4 + floor(PixelTex.hash_(n, k + 9) * 5)
 			for j in range(ceili(h)):
-				g["fillStyle"] = (AC["white"] if j < 2 else (AC["bolt"] if j % 2 else AC["boltDk"]))
-				g["fillRect"].call(px, py, 1, 1)
+				g.fill_style = (AC["white"] if j < 2 else (AC["bolt"] if j % 2 else AC["boltDk"]))
+				g.fill_rect(px, py, 1, 1)
 				py -= 1
 				if (j % 2) == 1:
 					px += (-1 if PixelTex.hash_(n + j, k) < 0.5 else 1)
@@ -442,15 +442,15 @@ static func rock_aura(g, x: float, y: float, t: float, layer: String) -> void:
 			continue
 		var px_2: float = TS.round(x + ((PixelTex.hash_(n_2, k_2 + 21) - 0.5) * 44))
 		var py_2: float = TS.round((y - 6) - (PixelTex.hash_(n_2 + 3, k_2) * 44))
-		g["globalAlpha"] = 1 - (u / 0.14)
-		g["fillStyle"] = AC["white"]
-		g["fillRect"].call(px_2 - 1, py_2, 3, 1)
-		g["fillRect"].call(px_2, py_2 - 1, 1, 3)
+		g.global_alpha = 1 - (u / 0.14)
+		g.fill_style = AC["white"]
+		g.fill_rect(px_2 - 1, py_2, 3, 1)
+		g.fill_rect(px_2, py_2 - 1, 1, 3)
 		if u < 0.06:
-			g["fillRect"].call(px_2 - 3, py_2, 2, 1)
-			g["fillRect"].call(px_2 + 2, py_2, 2, 1)
-			g["fillRect"].call(px_2, py_2 - 3, 1, 2)
-			g["fillRect"].call(px_2, py_2 + 2, 1, 2)
+			g.fill_rect(px_2 - 3, py_2, 2, 1)
+			g.fill_rect(px_2 + 2, py_2, 2, 1)
+			g.fill_rect(px_2, py_2 - 3, 1, 2)
+			g.fill_rect(px_2, py_2 + 2, 1, 2)
 	# The pyro: every few seconds a fountain of gold sparks goes up at either side and rains back down.
 	var per_2: float = 3.2
 	var u_2: float = (fmod(t, per_2)) / per_2
@@ -466,11 +466,11 @@ static func rock_aura(g, x: float, y: float, t: float, layer: String) -> void:
 				var vy: float = 28 + (PixelTex.hash_(k_3 + 2, side + 7) * 12)
 				var px_3: float = TS.round(bx + (vx * life))
 				var py_3: float = TS.round(y - ((vy * life) - ((32 * life) * life)))
-				g["globalAlpha"] = minf(1, (1 - life) * 2)
-				g["fillStyle"] = (AC["white"] if life < 0.3 else (AC["gold"] if k_3 % 3 else AC["glint"]))
-				g["fillRect"].call(px_3, py_3, 1, (2 if life < 0.25 else 1))
+				g.global_alpha = minf(1, (1 - life) * 2)
+				g.fill_style = (AC["white"] if life < 0.3 else (AC["gold"] if k_3 % 3 else AC["glint"]))
+				g.fill_rect(px_3, py_3, 1, (2 if life < 0.25 else 1))
 			# The flare at its foot.
-			g["globalAlpha"] = (1 - v) * 0.9
-			g["fillStyle"] = AC["glint"]
-			g["fillRect"].call(TS.round(bx) - 1, y - 1, 3, 2)
-	g["globalAlpha"] = 1
+			g.global_alpha = (1 - v) * 0.9
+			g.fill_style = AC["glint"]
+			g.fill_rect(TS.round(bx) - 1, y - 1, 3, 2)
+	g.global_alpha = 1

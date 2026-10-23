@@ -94,7 +94,7 @@ static func _init_urncharge():
 		ghost_face(r, U, sway - 0.9, gy, 0.85, h.call(UM["void"]), 12, fmod(f, 2))
 		# Sparks of ghost-light spilling over the lip.
 		for d in [-1, 1]:
-			r.dot(U.x(d * (2.8 + (fmod(f, 2))), 4.4 - (int(f) >> 1)), U.y(d * (2.8 + (fmod(f, 2))), 4.4 - (int(f) >> 1)), h.call(UM["light"]), 4, 13)
+			r.dot(U.x(d * (2.8 + (fmod(f, 2))), 4.4 - (((((int(f)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> 1)), U.y(d * (2.8 + (fmod(f, 2))), 4.4 - (((((int(f)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> 1)), h.call(UM["light"]), 4, 13)
 	return {"frames": 4, "outline": true, "draw": _fn0}
 static var ghostProj = _init_ghostproj()
 static func _init_ghostproj():
@@ -112,7 +112,7 @@ static func _init_ghostproj():
 		ghost_face(r, t, 3.6, 0.8, 1.05, h.call(UM["void"]), 4, (1 if fmod(f, 2) else 0.4))
 		# Purple wisps behind.
 		for i in range(3):
-			r.dot(t.x(((-13.6) - (i * 1.6)) - (fmod(f, 2)), (0.6 + (w * (1 - (i * 0.4)))) + ((i - 1) * 0.8)), t.y(((-13.6) - (i * 1.6)) - (fmod(f, 2)), (0.6 + (w * (1 - (i * 0.4)))) + ((i - 1) * 0.8)), h.call(UM["smoke"]), 3 - (i >> 1), 1)
+			r.dot(t.x(((-13.6) - (i * 1.6)) - (fmod(f, 2)), (0.6 + (w * (1 - (i * 0.4)))) + ((i - 1) * 0.8)), t.y(((-13.6) - (i * 1.6)) - (fmod(f, 2)), (0.6 + (w * (1 - (i * 0.4)))) + ((i - 1) * 0.8)), h.call(UM["smoke"]), 3 - (((((i) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> 1), 1)
 	return {"frames": 4, "outline": true, "draw": _fn0}
 static var theUrn = _init_theurn()
 static func _init_theurn():
@@ -440,35 +440,35 @@ static func grave_hand(g, px: float, py: float, u: float, d: float, alpha: float
 	var up: float = TS.round(sin(minf(1, u) * PI) * 7)
 	if up <= 0:
 		return
-	g["globalAlpha"] = alpha
-	g["fillStyle"] = AC["ghost"]
+	g.global_alpha = alpha
+	g.fill_style = AC["ghost"]
 	# The forearm out of the earth, the palm, three fingers and a thumb clawing at the air.
-	g["fillRect"].call(px, py - up, 2, up)
+	g.fill_rect(px, py - up, 2, up)
 	if up > 3:
-		g["fillRect"].call(px - 1, (py - up) - 1, 4, 2)
-		g["fillStyle"] = AC["ghostHi"]
+		g.fill_rect(px - 1, (py - up) - 1, 4, 2)
+		g.fill_style = AC["ghostHi"]
 		for k in [-1, 0.5, 2]:
-			g["fillRect"].call(TS.round((px + k) + (d if up > 5 else 0)), (py - up) - 3, 1, 2)
-		g["fillRect"].call(px + (3 if d > 0 else -2), py - up, 1, 1)
+			g.fill_rect(TS.round((px + k) + (d if up > 5 else 0)), (py - up) - 3, 1, 2)
+		g.fill_rect(px + (3 if d > 0 else -2), py - up, 1, 1)
 	# Earth breaking where it comes up.
-	g["globalAlpha"] = alpha * 0.8
-	g["fillStyle"] = AC["fogHi"]
-	g["fillRect"].call(px - 2, py, 6, 1)
+	g.global_alpha = alpha * 0.8
+	g.fill_style = AC["fogHi"]
+	g.fill_rect(px - 2, py, 6, 1)
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func undertaker_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func undertaker_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	var back: bool = layer == "back"
 	# Graveyard fog rolling round the feet: a dark ring with paler clumps drifting along it.
 	var RX: float = 17
 	var RY: float = 4.2
 	var N: float = 44
-	g["globalAlpha"] = (0.55 if back else 0.7)
+	g.global_alpha = (0.55 if back else 0.7)
 	var _fn0 = func(g_2, px: float, py: float, i: float):
 		var w: float = sin((((i / N) * PI) * 4) + (t * 1.3)) + (sin((((i / N) * PI) * 10) - (t * 0.7)) * 0.5)
-		g_2["fillStyle"] = (AC["fogHi"] if w > 0.6 else AC["fog"])
-		g_2["fillRect"].call(px - 1, py, 3, 1)
+		g_2.fill_style = (AC["fogHi"] if w > 0.6 else AC["fog"])
+		g_2.fill_rect(px - 1, py, 3, 1)
 		if w > 0.2:
-			g_2["fillRect"].call(px, py - 1, 2, 1)
+			g_2.fill_rect(px, py - 1, 2, 1)
 	RenderAuraKit.ring(g, x, y, RX, RY, N, layer, _fn0)
 	# Hands of the dead clawing up out of the ground and sinking back, one after another.
 	var per: float = 2.1
@@ -491,14 +491,14 @@ static func undertaker_aura(g, x: float, y: float, t: float, layer: String) -> v
 			continue
 		var px_2: float = TS.round((x + ((cos(a_2) * RX) * 0.8)) + (sin((t * 2.4) + k_2) * 2))
 		var py_2: float = TS.round((y + (s_2 * RY)) - (w_2 * 34))
-		g["globalAlpha"] = min(1, w_2 * 6, (1 - w_2) * 2) * (0.55 if back else 0.8)
-		g["fillStyle"] = AC["ghost"]
-		g["fillRect"].call(px_2 - 1, py_2 - 2, 3, 3)
-		g["fillRect"].call(px_2 - 2, py_2 - 1, 5, 2)
-		g["fillRect"].call((px_2 - 1) + (fmod(floor((t * 4) + k_2), 2)), py_2 + 1, 2, 1)
-		g["fillStyle"] = AC["void"]
-		g["fillRect"].call(px_2 - 1, py_2 - 1, 1, 1)
-		g["fillRect"].call(px_2 + 1, py_2 - 1, 1, 1)
+		g.global_alpha = min(1, w_2 * 6, (1 - w_2) * 2) * (0.55 if back else 0.8)
+		g.fill_style = AC["ghost"]
+		g.fill_rect(px_2 - 1, py_2 - 2, 3, 3)
+		g.fill_rect(px_2 - 2, py_2 - 1, 5, 2)
+		g.fill_rect((px_2 - 1) + (fmod(floor((t * 4) + k_2), 2)), py_2 + 1, 2, 1)
+		g.fill_style = AC["void"]
+		g.fill_rect(px_2 - 1, py_2 - 1, 1, 1)
+		g.fill_rect(px_2 + 1, py_2 - 1, 1, 1)
 	# Now and then the lights go purple: lightning strikes the ground behind him.
 	if back:
 		var per2: float = 5.5
@@ -508,22 +508,22 @@ static func undertaker_aura(g, x: float, y: float, t: float, layer: String) -> v
 			var side: float = (-1 if PixelTex.hash_(n_3, 41) < 0.5 else 1)
 			var bx: float = x + (side * (24 + TS.round(PixelTex.hash_(n_3, 43) * 6)))
 			var by: float = y - 64
-			g["globalAlpha"] = (1 if (u_2 < 0.03) or ((u_2 > 0.05) and (u_2 < 0.07)) else 0.45)
+			g.global_alpha = (1 if (u_2 < 0.03) or ((u_2 > 0.05) and (u_2 < 0.07)) else 0.45)
 			var i_2: float = 0
 			while (i_2 < 16) and (by < (y - 1)):
 				var step: float = 4 + TS.round(PixelTex.hash_((n_3 * 13) + i_2, 47) * 2)
 				var jog: float = TS.round((PixelTex.hash_(n_3 + (i_2 * 5), 53) - 0.5) * 6)
-				g["fillStyle"] = AC["boltDk"]
-				g["fillRect"].call(minf(bx, bx + jog) - 1, by, absf(jog) + 3, 1)
-				g["fillStyle"] = AC["bolt"]
-				g["fillRect"].call(minf(bx, bx + jog), by, absf(jog) + 1, 1)
+				g.fill_style = AC["boltDk"]
+				g.fill_rect(minf(bx, bx + jog) - 1, by, absf(jog) + 3, 1)
+				g.fill_style = AC["bolt"]
+				g.fill_rect(minf(bx, bx + jog), by, absf(jog) + 1, 1)
 				bx += jog
-				g["fillRect"].call(bx, by, 1, step)
+				g.fill_rect(bx, by, 1, step)
 				by += step
 				i_2 += 1
-			g["globalAlpha"] *= 0.7
-			g["fillStyle"] = AC["fogHi"]
-			g["fillRect"].call(bx - 3, y - 1, 7, 1)
-			g["fillStyle"] = AC["bolt"]
-			g["fillRect"].call(bx - 1, y - 2, 3, 1)
-	g["globalAlpha"] = 1
+			g.global_alpha *= 0.7
+			g.fill_style = AC["fogHi"]
+			g.fill_rect(bx - 3, y - 1, 7, 1)
+			g.fill_style = AC["bolt"]
+			g.fill_rect(bx - 1, y - 2, 3, 1)
+	g.global_alpha = 1

@@ -268,7 +268,7 @@ static func shide(r, t, m, x: float, y: float, s: float, n: float, g: float) -> 
 ## and paper streamers fan out with a burst of leaves.
 static func omamori(r, t, m, f: float) -> void:
 	var lit: bool = f >= 4
-	var k: float = TS.i32(int(f) & 3)
+	var k: float = (int(f) & 3)
 	# The circling leaf, behind on its far half.
 	var _fn0 = func(a: float, R: float, ry: float, front: bool):
 		var s: float = sin(a)
@@ -285,8 +285,8 @@ static func omamori(r, t, m, f: float) -> void:
 	var orbit = _fn1
 	orbit.call(false)
 	if lit:
-		shide(r, t, m, -2.4, 3, -1, 3 + (TS.i32(int(k) & 1)), 2)
-		shide(r, t, m, 2.4, 3, 1, 3 + (TS.i32(int((k + 1)) & 1)), 2)
+		shide(r, t, m, -2.4, 3, -1, 3 + (int(k) & 1), 2)
+		shide(r, t, m, 2.4, 3, 1, 3 + (int((k + 1)) & 1), 2)
 	# The pouch: a tall flat bag, its top corners folded in.
 	var pouch = t.poly([-2.4, 3.4, 2.4, 3.4, 3.2, 2.6, 3.2, -4.4, 2.6, -4.9, -2.6, -4.9, -3.2, -4.4, -3.2, 2.6])
 	r.fill(pouch, m.call("k.silk"), {"group": 3, "bevel": 1.6, "lightBias": (0.25 if lit else 0)})
@@ -512,7 +512,7 @@ static func suneate() -> Variant:
 	return TS.merge([{"mats": {"greave": lacquer(ribs(1.4)), "greaveDark": gold(), "ob.lac": lacquer(), "ob.gold": gold(gleam(6)), "ob.cord": silk(), "ob.ember": EMBER}, "boots": {"mat": "greave", "height": 0.92, "bulk": 0.5, "trim": "greaveDark", "knee": null, "over": _fn0}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func oni_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func oni_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	var back: bool = layer == "back"
 	# A ground ring of crimson lacquer studded in gold, a gleam running round it.
 	var RX: float = 15
@@ -520,15 +520,15 @@ static func oni_aura(g, x: float, y: float, t: float, layer: String) -> void:
 	var run: float = fmod(floor(t * 6), 24)
 	var _fn0 = func(g_2, px: float, py: float, i: float):
 		if fmod(i, 4) == 0:
-			g_2["globalAlpha"] = 0.9
-			g_2["fillStyle"] = (AC["gold"] if i == TS.i32(int(run) & int((~3))) else AC["goldDk"])
-			g_2["fillRect"].call(px, py, 1, 1)
+			g_2.global_alpha = 0.9
+			g_2.fill_style = (AC["gold"] if i == (((((int(run) & int((~3)))) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) else AC["goldDk"])
+			g_2.fill_rect(px, py, 1, 1)
 			return
-		g_2["globalAlpha"] = (0.95 if i == run else 0.55)
-		g_2["fillStyle"] = (AC["gold"] if i == run else AC["red"])
-		g_2["fillRect"].call(px, py, 2, 1)
+		g_2.global_alpha = (0.95 if i == run else 0.55)
+		g_2.fill_style = (AC["gold"] if i == run else AC["red"])
+		g_2.fill_rect(px, py, 2, 1)
 	RenderAuraKit.ring(g, x, y, RX, RY, 24, layer, _fn0)
-	g["globalAlpha"] = 1
+	g.global_alpha = 1
 	# Fallen leaves resting on the ground, slowly turning with the ring.
 	for k in range(4):
 		var a: float = ((k * 1.57) + 0.6) + (t * 0.12)
@@ -537,10 +537,10 @@ static func oni_aura(g, x: float, y: float, t: float, layer: String) -> void:
 			continue
 		var px_2: float = TS.round(x + (cos(a) * (RX - 4)))
 		var py_2: float = TS.round(y + (s * (RY - 1)))
-		g["fillStyle"] = AC["leafDk"]
-		g["fillRect"].call(px_2 - 1, py_2, 3, 1)
-		g["fillStyle"] = AC["leaf"][k % 4]
-		g["fillRect"].call(px_2, py_2 - 1, 1, 1)
+		g.fill_style = AC["leafDk"]
+		g.fill_rect(px_2 - 1, py_2, 3, 1)
+		g.fill_style = AC["leaf"][k % 4]
+		g.fill_rect(px_2, py_2 - 1, 1, 1)
 	# Leaves swirling down round the fighter, tumbling as they go: a cross when flat, a dash edge-on.
 	for _e1 in TS.array_entries(LEAVES):
 		var k_2 = _e1[0]
@@ -560,16 +560,16 @@ static func oni_aura(g, x: float, y: float, t: float, layer: String) -> void:
 		var px_3: float = TS.round(x + ((cos(a_2) * R) * (0.7 + (h / 120.0))))
 		var py_3: float = TS.round((y - h) + (s_2 * 3))
 		var flat: bool = fmod(floor((t * 5) + (k_2 * 1.7)), 3) != 0
-		g["globalAlpha"] = ((36 - h) / 6.0 if h > 30 else 1)
-		g["fillStyle"] = AC["leaf"][fmod(k_2, 4)]
+		g.global_alpha = ((36 - h) / 6.0 if h > 30 else 1)
+		g.fill_style = AC["leaf"][fmod(k_2, 4)]
 		if flat:
-			g["fillRect"].call(px_3 - 1, py_3, 3, 1)
-			g["fillRect"].call(px_3, py_3 - 1, 1, 2)
-			g["fillStyle"] = AC["leafDk"]
-			g["fillRect"].call(px_3, py_3 + 1, 1, 1)
+			g.fill_rect(px_3 - 1, py_3, 3, 1)
+			g.fill_rect(px_3, py_3 - 1, 1, 2)
+			g.fill_style = AC["leafDk"]
+			g.fill_rect(px_3, py_3 + 1, 1, 1)
 		else:
-			g["fillRect"].call(px_3, py_3, 2, 1)
-	g["globalAlpha"] = 1
+			g.fill_rect(px_3, py_3, 2, 1)
+	g.global_alpha = 1
 	# Two oni-fires circling at the waist: crimson tongues with a hot heart, flickering.
 	for k_3 in range(2):
 		var a_3: float = (t * 1.3) + (k_3 * PI)
@@ -579,13 +579,13 @@ static func oni_aura(g, x: float, y: float, t: float, layer: String) -> void:
 		var px_4: float = TS.round(x + (cos(a_3) * 18))
 		var py_4: float = TS.round(((y - 15) + (s_3 * 3)) + (sin((t * 3) + (k_3 * 2)) * 1.5))
 		var fl: float = fmod(floor((t * 10) + (k_3 * 3)), 3)
-		g["globalAlpha"] = (0.75 if back else 0.95)
-		g["fillStyle"] = AC["fire"]
-		g["fillRect"].call(px_4 - 1, py_4 - 1, 3, 3)
-		g["fillRect"].call(px_4 - (1 if fl == 1 else 0), (py_4 - 3) - (1 if fl == 2 else 0), 1, 2)
-		g["fillStyle"] = AC["fireMid"]
-		g["fillRect"].call(px_4, py_4 - 1, 1, 2)
-		g["fillRect"].call(px_4 + (1 if fl == 0 else 0), py_4 - 2, 1, 1)
-		g["fillStyle"] = AC["fireHot"]
-		g["fillRect"].call(px_4, py_4, 1, 1)
-	g["globalAlpha"] = 1
+		g.global_alpha = (0.75 if back else 0.95)
+		g.fill_style = AC["fire"]
+		g.fill_rect(px_4 - 1, py_4 - 1, 3, 3)
+		g.fill_rect(px_4 - (1 if fl == 1 else 0), (py_4 - 3) - (1 if fl == 2 else 0), 1, 2)
+		g.fill_style = AC["fireMid"]
+		g.fill_rect(px_4, py_4 - 1, 1, 2)
+		g.fill_rect(px_4 + (1 if fl == 0 else 0), py_4 - 2, 1, 1)
+		g.fill_style = AC["fireHot"]
+		g.fill_rect(px_4, py_4, 1, 1)
+	g.global_alpha = 1

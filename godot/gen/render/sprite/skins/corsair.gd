@@ -445,7 +445,7 @@ static func captains_coat() -> Variant:
 			var hx: float = hem[i_3 * 2]
 			var hy: float = hem[(i_3 * 2) + 1]
 			r.dot(T.x(hx, hy + 0.4), T.y(hx, hy + 0.4), m.call("k.gem"), 3, 41)
-			if fmod((i_3 >> 1) + ph, 3) == 0:
+			if fmod((((((i_3) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> 1) + ph, 3) == 0:
 				r.dot(T.x(hx - 0.6, hy - 1.4), T.y(hx - 0.6, hy - 1.4), m.call("k.gem"), 3, 41)
 		# Gold lace down the back edge of the tails, the vent seam.
 		r.line(T.x((-6.4) - (s * 0.4), 0), T.y((-6.4) - (s * 0.4), 0), T.x((-9) - (s * 1.2), -12.4), T.y((-9) - (s * 1.2), -12.4), m.call("k.gold"), 3, 41)
@@ -548,7 +548,7 @@ static func seawolf_boots() -> Variant:
 	return TS.merge([{"mats": {"b.boot": R(TAR, {"shiny": true, "tex": polish}), "b.cuff": tar(), "b.gold": gold(), "b.foam": ghost(), "b.foamDk": ghost_dk(), "b.strap": R(EBONY)}, "boots": {"mat": "b.boot", "height": 0.94, "bulk": 0.42, "trim": "b.cuff", "wing": null, "knee": null, "over": _fn0}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func corsair_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func corsair_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	# A ring of ghostly tide round the feet: three waves rolling round it, foam on their crests.
 	var RX: float = 17
 	var RY: float = 4
@@ -556,19 +556,19 @@ static func corsair_aura(g, x: float, y: float, t: float, layer: String) -> void
 	var _fn0 = func(g_2, px: float, py: float, i: float):
 		var w: float = sin((((i / N) * PI) * 6) - (t * 3.2))
 		if w < (-0.4):
-			g_2["globalAlpha"] = 0.55
-			g_2["fillStyle"] = C["dark"]
-			g_2["fillRect"].call(px, py, 1, 1)
-			g_2["globalAlpha"] = 1
+			g_2.global_alpha = 0.55
+			g_2.fill_style = C["dark"]
+			g_2.fill_rect(px, py, 1, 1)
+			g_2.global_alpha = 1
 			return
-		g_2["fillStyle"] = (C["crest"] if w > 0.7 else (C["sea"] if w > 0.1 else C["deep"]))
-		g_2["fillRect"].call(px, py, 1, 1)
+		g_2.fill_style = (C["crest"] if w > 0.7 else (C["sea"] if w > 0.1 else C["deep"]))
+		g_2.fill_rect(px, py, 1, 1)
 		# Foam riding the crest, curling over the way the wave rolls.
 		if w > 0.7:
-			g_2["fillStyle"] = C["foam"]
-			g_2["fillRect"].call(px, py - 1, 1, 1)
+			g_2.fill_style = C["foam"]
+			g_2.fill_rect(px, py - 1, 1, 1)
 			if w > 0.93:
-				g_2["fillRect"].call(px + (-1 if sin(((i / N) * PI) * 2) > 0 else 1), py - 2, 1, 1)
+				g_2.fill_rect(px + (-1 if sin(((i / N) * PI) * 2) > 0 else 1), py - 2, 1, 1)
 	RenderAuraKit.ring(g, x, y, RX, RY, N, layer, _fn0)
 	# Spray thrown up off the crests, arcing out and falling.
 	for k in range(4):
@@ -579,10 +579,10 @@ static func corsair_aura(g, x: float, y: float, t: float, layer: String) -> void
 		var u: float = fmod((t * 0.8) + (k * 0.25), 1)
 		var px_2: float = TS.round(x + (cos(a) * (RX + (u * 4))))
 		var py_2: float = TS.round((y + (s * RY)) - (sin(u * PI) * 9))
-		g["globalAlpha"] = 1 - (u * 0.6)
-		g["fillStyle"] = (C["foam"] if u < 0.5 else C["crest"])
-		g["fillRect"].call(px_2, py_2, 1, 1)
-	g["globalAlpha"] = 1
+		g.global_alpha = 1 - (u * 0.6)
+		g.fill_style = (C["foam"] if u < 0.5 else C["crest"])
+		g.fill_rect(px_2, py_2, 1, 1)
+	g.global_alpha = 1
 	# Two ghost gulls wheeling high round the captain, wings beating now and then.
 	for k_2 in range(2):
 		var a_2: float = (t * (0.55 + (k_2 * 0.12))) + (k_2 * PI)
@@ -593,14 +593,14 @@ static func corsair_aura(g, x: float, y: float, t: float, layer: String) -> void
 		var py_3: float = TS.round((((y - 50) - (k_2 * 6)) + (s_2 * 3)) + (sin((t * 1.3) + k_2) * 2))
 		var flap: bool = fmod(floor((t * 5) + (k_2 * 2)), 4) == 0
 		var dir: float = (1 if cos(a_2 + (PI / 2.0)) > 0 else -1)
-		g["globalAlpha"] = 0.85
-		g["fillStyle"] = C["gull"]
-		g["fillRect"].call(px_3 - 2, py_3 + (1 if flap else -1), 2, 1)
-		g["fillRect"].call(px_3 + 1, py_3 + (1 if flap else -1), 2, 1)
-		g["fillRect"].call(px_3, py_3, 1, 1)
-		g["fillStyle"] = C["gullDk"]
-		g["fillRect"].call(px_3 + (3 if dir > 0 else -3), py_3 + (1 if flap else -1), 1, 1)
-	g["globalAlpha"] = 1
+		g.global_alpha = 0.85
+		g.fill_style = C["gull"]
+		g.fill_rect(px_3 - 2, py_3 + (1 if flap else -1), 2, 1)
+		g.fill_rect(px_3 + 1, py_3 + (1 if flap else -1), 2, 1)
+		g.fill_rect(px_3, py_3, 1, 1)
+		g.fill_style = C["gullDk"]
+		g.fill_rect(px_3 + (3 if dir > 0 else -3), py_3 + (1 if flap else -1), 1, 1)
+	g.global_alpha = 1
 
 # --- hand-written (godot/src/patches/render/sprite/skins/corsair.gd) ---
 

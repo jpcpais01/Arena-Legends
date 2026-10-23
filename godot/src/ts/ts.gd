@@ -52,6 +52,10 @@ static func cbrt(x: float) -> float:
 	return -pow(-x, 1.0 / 3.0) if x < 0.0 else pow(x, 1.0 / 3.0)
 
 
+static func hypot2(a: float, b: float) -> float:
+	return sqrt(a * a + b * b)
+
+
 static func hypot(xs: Array) -> float:
 	var t := 0.0
 	for x in xs:

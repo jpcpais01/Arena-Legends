@@ -91,8 +91,8 @@ static func legend(spark: float, spark2: float, trail = null) -> Variant:
 	return ({"fx": {"spark": spark, "spark2": spark2}, "trail": [trail, mix_rgb(trail, spark2, 0.55)]})
 
 static func mix_rgb(a: float, b: float, t: float) -> float:
-	var c = (func(s: float): return TS.shl(TS.roundi(((TS.i32((int(a) >> int(s)) & 255)) * (1 - t)) + ((TS.i32((int(b) >> int(s)) & 255)) * t)), int(s)))
-	return TS.i32(TS.i32(int(c.call(16)) | int(c.call(8))) | int(c.call(0)))
+	var c = (func(s: float): return (((((TS.roundi((((((((int(a)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> (int(s) & 31)) & 255) * (1 - t)) + (((((((int(b)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> (int(s) & 31)) & 255) * t)) << (int(s) & 31))) + 0x80000000) & 0xFFFFFFFF) - 0x80000000))
+	return ((((((((((int(c.call(16)) | int(c.call(8)))) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) | int(c.call(0)))) + 0x80000000) & 0xFFFFFFFF) - 0x80000000)
 
 ##  A star of `n` points round (cx, cy).
 static func star(F, cx: float, cy: float, R: float, ri: float, n = null, rot = null) -> Variant:

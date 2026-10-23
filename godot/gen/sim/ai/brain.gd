@@ -442,7 +442,7 @@ class Brain:
 			if parried:
 				score = 0
 				self.parried_recently += 1
-			self.hit_rate[o["idx"]] = CoreMath.lerp_(self.hit_rate[o["idx"]], score, rate)
+			self.hit_rate[int(o["idx"])] = CoreMath.lerp_(self.hit_rate[o["idx"]], score, rate)
 		self.parried_recently = maxf(0, self.parried_recently - (SimConstants.DT * 0.08))
 
 	func track(b, idx: float) -> void:
@@ -677,7 +677,7 @@ class Brain:
 		var step: float = (self.footwork(c, waiting) * toward if self.plan == "breathe" else 2)
 		cands.append_array([{"choice": {"kind": "move", "dir": toward}, "prior": (0.01 if step == 1 else 0), "why": ""}, {"choice": {"kind": "move", "dir": -toward}, "prior": (0.01 if step == (-1) else 0), "why": ""}, {"choice": {"kind": "move", "dir": 0}, "prior": (0.01 if waiting or (step == 0) else 0), "why": ""}])
 		# Common random numbers: every option is imagined against the same luck.
-		var seed_: float = TS.ushr(int(((b.seed_ * 31) + (b.tick * 7919)) + (f["id"] * 104729)), 0)
+		var seed_: float = (int(((b.seed_ * 31) + (b.tick * 7919)) + (f["id"] * 104729)) & 0xFFFFFFFF)
 		var enemy = self.enemy_model(e, b)
 		var start = AiBrain.snapshot(f, e)
 		var best = null
@@ -696,7 +696,7 @@ class Brain:
 					me.seen_key = self.seen_key
 					me.seen_at = self.seen_at
 					return ([me, them] if f["id"] == 0 else [them, me])
-				var sim = b.fork((seed_ if k == 0 else TS.ushr((TS.i32(int(seed_) ^ 0x9e3779b9)), 0)), _fn0)
+				var sim = b.fork((seed_ if k == 0 else ((((((int(seed_) ^ 0x9e3779b9)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) & 0xFFFFFFFF)), _fn0)
 				# A storm mark under me: look far enough ahead to see the bolt land.
 				var n: float = maxf(self.horizon_for(o_2["choice"], c["dist"]), (ceil((mark["life"] + 0.1) / float(SimConstants.DT)) if mark != null else 0))
 				var t: float = 0

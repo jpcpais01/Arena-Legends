@@ -306,17 +306,17 @@ static func ring_boots() -> Variant:
 	return TS.merge([{"mats": {"k.obBoot": S["black"].call(), "k.obBand": S["gold"].call(null), "k.obSole": S["gold"].call(sweep(7, 1.75, 0.9)), "k.obLace": S["gold"].call(null)}, "boots": {"mat": "k.obBoot", "height": 0.8, "bulk": 0.7, "trim": "k.obBand", "wing": null, "knee": null, "over": _fn0}}, FX])
 
 static func apron_dot(g, px: float, py: float, i: float) -> void:
-	g["fillStyle"] = ((AC["glint"] if (ringBeat > 0.5) and (fmod(i, 6) == 1) else AC["gold"]) if fmod(i, 6) < 3 else AC["ink"])
-	g["fillRect"].call(px, py, 1, 1)
+	g.fill_style = ((AC["glint"] if (ringBeat > 0.5) and (fmod(i, 6) == 1) else AC["gold"]) if fmod(i, 6) < 3 else AC["ink"])
+	g.fill_rect(px, py, 1, 1)
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func oba_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func oba_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	var back: bool = layer == "back"
 	# A gold and black ring on the ground, beating like a heart (two quick pulses, a rest).
 	var bt: float = fmod(t, 1.4)
 	var beat: float = maxf(0, 1 - (bt * 6)) + maxf(0, 1 - (absf(bt - 0.3) * 6))
 	ringBeat = beat
-	g["globalAlpha"] = (0.5 if back else 0.7) + (beat * 0.25)
+	g.global_alpha = (0.5 if back else 0.7) + (beat * 0.25)
 	RenderAuraKit.ring(g, x, y, 14 + beat, 3.6 + (beat * 0.25), 44, layer, apron_dot)
 	# Steam rising off his shoulders.
 	for k in range(4):
@@ -325,11 +325,11 @@ static func oba_aura(g, x: float, y: float, t: float, layer: String) -> void:
 		var w: float = (fmod((t * 0.5) + (k * 0.27), 1))
 		var px: float = TS.round(((x + (-5 if k < 2 else 5)) + (sin((t * 2) + k) * 1.5)) + ((-w) * 3 if k < 2 else w * 3))
 		var py: float = TS.round((y - 42) - (w * 18))
-		g["globalAlpha"] = min(1, w * 6, (1 - w) * 1.4) * 0.45
-		g["fillStyle"] = AC["steam"]
-		g["fillRect"].call(px, py, (2 if w > 0.5 else 1), 1)
+		g.global_alpha = min(1, w * 6, (1 - w) * 1.4) * 0.45
+		g.fill_style = AC["steam"]
+		g.fill_rect(px, py, (2 if w > 0.5 else 1), 1)
 		if w > 0.35:
-			g["fillRect"].call(px + (1 if k % 2 else -1), py - 1, 1, 1)
+			g.fill_rect(px + (1 if k % 2 else -1), py - 1, 1, 1)
 	# The flex: every few seconds the ground cracks round his feet, dust jumps and gold power streaks
 	# shoot up around him.
 	var per: float = 3.2
@@ -338,8 +338,8 @@ static func oba_aura(g, x: float, y: float, t: float, layer: String) -> void:
 	if u < 0.32:
 		var v: float = u / 0.32
 		# Cracks running out from the feet.
-		g["globalAlpha"] = (1 - v) * 0.85
-		g["fillStyle"] = AC["crack"]
+		g.global_alpha = (1 - v) * 0.85
+		g.fill_style = AC["crack"]
 		for k_2 in range(6):
 			var a: float = (PixelTex.hash_(n, k_2) * PI) * 2
 			var s: float = sin(a)
@@ -348,25 +348,25 @@ static func oba_aura(g, x: float, y: float, t: float, layer: String) -> void:
 			var len_: float = 6 + (PixelTex.hash_(k_2, n + 5) * 8)
 			for d in range(3, ceili(3 + (len_ * minf(1, v * 3)))):
 				var jag: float = TS.round(sin((d * 1.7) + k_2) * 0.6)
-				g["fillRect"].call(TS.round(x + (cos(a) * d)), TS.round(y + ((s * d) * 0.26)) + jag, 1, 1)
+				g.fill_rect(TS.round(x + (cos(a) * d)), TS.round(y + ((s * d) * 0.26)) + jag, 1, 1)
 		# Dust puffs either side.
-		g["fillStyle"] = AC["dust"]
+		g.fill_style = AC["dust"]
 		for s_2 in [-1, 1]:
 			if (s_2 > 0) == back:
 				continue
 			var px_2: float = TS.round(x + (s_2 * (8 + (v * 8))))
 			var py_2: float = TS.round(y - (v * 4))
-			g["globalAlpha"] = (1 - v) * 0.6
-			g["fillRect"].call(px_2, py_2, 2, 1)
-			g["fillRect"].call(px_2 - s_2, py_2 - 1, 2, 1)
+			g.global_alpha = (1 - v) * 0.6
+			g.fill_rect(px_2, py_2, 2, 1)
+			g.fill_rect(px_2 - s_2, py_2 - 1, 2, 1)
 		# Power streaks rising.
 		if not back:
 			for k_3 in range(6):
 				var px_3: float = TS.round(x + ((PixelTex.hash_(k_3, n + 9) - 0.5) * 30))
 				var py_3: float = TS.round(((y - 4) - (v * 40)) - (PixelTex.hash_(n, k_3 + 2) * 10))
-				g["globalAlpha"] = (1 - v) * 0.9
-				g["fillStyle"] = (AC["white"] if (k_3 % 3) == 0 else AC["gold"])
-				g["fillRect"].call(px_3, py_3, 1, 3 + ((k_3 % 3) * 2))
+				g.global_alpha = (1 - v) * 0.9
+				g.fill_style = (AC["white"] if (k_3 % 3) == 0 else AC["gold"])
+				g.fill_rect(px_3, py_3, 1, 3 + ((k_3 % 3) * 2))
 	# Gold glitter drifting down, now and then.
 	for k_4 in range(6):
 		if ((k_4 % 2) == 0) != back:
@@ -375,7 +375,7 @@ static func oba_aura(g, x: float, y: float, t: float, layer: String) -> void:
 		var w_2: float = fmod((t + (k_4 * 0.61)) / fall, 1)
 		var px_4: float = TS.round((x + ((PixelTex.hash_(k_4, 13) - 0.5) * 32)) + (sin((t * 1.6) + k_4) * 2))
 		var py_4: float = TS.round((y - 48) + (w_2 * 48))
-		g["globalAlpha"] = min(1, (1 - w_2) * 4, w_2 * 8) * (0.6 if back else 0.9)
-		g["fillStyle"] = (AC["glint"] if fmod(floor((t * 5) + k_4), 3) == 0 else AC["gold"])
-		g["fillRect"].call(px_4, py_4, 1, 1)
-	g["globalAlpha"] = 1
+		g.global_alpha = min(1, (1 - w_2) * 4, w_2 * 8) * (0.6 if back else 0.9)
+		g.fill_style = (AC["glint"] if fmod(floor((t * 5) + k_4), 3) == 0 else AC["gold"])
+		g.fill_rect(px_4, py_4, 1, 1)
+	g.global_alpha = 1

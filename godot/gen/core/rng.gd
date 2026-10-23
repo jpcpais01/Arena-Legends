@@ -12,7 +12,7 @@ class Rng:
 		self.a = 0x9e3779b9
 		self.b = 0x243f6a88
 		self.c = 0xb7e15162
-		self.d = TS.ushr(int(seed_), 0)
+		self.d = (int(seed_) & 0xFFFFFFFF)
 		for i in range(16):
 			self.next()
 
@@ -23,21 +23,21 @@ class Rng:
 		var b = _d0.b
 		var c = _d0.c
 		var d = _d0.d
-		a = TS.ushr(int(a), 0)
-		b = TS.ushr(int(b), 0)
-		c = TS.ushr(int(c), 0)
-		d = TS.ushr(int(d), 0)
-		var t: float = TS.i32((TS.i32((a + b))) + d)
-		d = TS.i32((d + 1))
-		a = TS.i32(int(b) ^ (TS.ushr(int(b), 9)))
-		b = TS.i32((c + (TS.shl(int(c), 3))))
-		c = TS.i32((TS.shl(int(c), 21)) | (TS.ushr(int(c), 11)))
-		c = TS.i32((c + t))
+		a = (int(a) & 0xFFFFFFFF)
+		b = (int(b) & 0xFFFFFFFF)
+		c = (int(c) & 0xFFFFFFFF)
+		d = (int(d) & 0xFFFFFFFF)
+		var t: float = ((((int(((((int((a + b))) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) + d)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000)
+		d = ((((int((d + 1))) + 0x80000000) & 0xFFFFFFFF) - 0x80000000)
+		a = (((((int(b) ^ ((int(b) & 0xFFFFFFFF) >> 9))) + 0x80000000) & 0xFFFFFFFF) - 0x80000000)
+		b = ((((int((c + (((((int(c) << 3)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000)))) + 0x80000000) & 0xFFFFFFFF) - 0x80000000)
+		c = ((((((((((int(c) << 21)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) | ((int(c) & 0xFFFFFFFF) >> 11))) + 0x80000000) & 0xFFFFFFFF) - 0x80000000)
+		c = ((((int((c + t))) + 0x80000000) & 0xFFFFFFFF) - 0x80000000)
 		self.a = a
 		self.b = b
 		self.c = c
 		self.d = d
-		return (TS.ushr(int(t), 0)) / 4294967296.0
+		return (int(t) & 0xFFFFFFFF) / 4294967296.0
 
 	func range_(min_: float, max_: float) -> float:
 		return min_ + ((max_ - min_) * self.next())
@@ -57,7 +57,7 @@ class Rng:
 			var j: float = floor(self.next() * (i + 1))
 			var tmp = arr[i]
 			arr[i] = arr[j]
-			arr[j] = tmp
+			arr[int(j)] = tmp
 		return arr
 
 # --- hand-written (godot/src/patches/core/rng.gd) ---

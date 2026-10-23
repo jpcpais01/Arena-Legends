@@ -19,6 +19,8 @@ export interface Config {
    * `.`, `X.new()` instead of dictionaries). Value: the GDScript class.
    */
   classTypes: Record<string, string>;
+  /** Methods emitted under another name ("Class.method" → name), so a hand-written one can wrap them. */
+  rename?: Record<string, Record<string, string>>;
 }
 
 export const CONFIG: Config = {
@@ -39,11 +41,16 @@ export const CONFIG: Config = {
     'character/appearance',
     'character/finales',
     'character/entrances',
+    'render/battleView',
+    'character/profile',
   ],
   manual: {
     'render/pixel/raster': { cls: 'PixelRaster' },
     'render/pixel/sdf': { cls: 'PixelSdf' },
-    'render/pixel/paint': { cls: 'PixelPaint' },
+    'render/sprite/bank': { cls: 'SpriteBankLib' },
+    'render/glfx': { cls: 'GlFxLib' },
+    'render/softLight': { cls: 'SoftLightLib' },
+    'audio/sfx': { cls: 'Sfx' },
   },
   skip: {
     'render/sprite/draw': ['blendShapes', 'drawSmear', 'drawRing', 'hairCap', 'above'],
@@ -51,6 +58,20 @@ export const CONFIG: Config = {
     'core/rng': ['randomSeed'],
     'sim/battle': ['isPlain'],
     'render/sprite/skins/corsair': ['along'],
+    'render/arena': ['ArenaView.castShafts'],
+    'character/profile': ['cleanName'],
+    // Hand-tuned in src/patches (per-pixel hot paths).
+    'render/pixel/paint': ['bayer', 'Pix.set', 'Pix.get', 'Pix.has'],
+    'render/pixel/color': ['rgbOf', 'pack', 'unpackHex', 'mix'],
+    'render/scenery': ['hash', 'noise', 'tone'],
+    // Cached (ArenaCache): painting takes seconds in GDScript.
+    'render/arenaArt': ['buildArena'],
+    // Their frames bake straight to GPU sprites (Forge.bake_one).
+    'render/projArt': ['projSprite', 'bottleSprite'],
+    'render/specialArt': ['sprite', 'skinFrame'],
+  },
+  rename: {
+    'render/arena': { 'ArenaView.light': 'light__web' },
   },
   classTypes: {
     'render/pixel/sdf:Shape': 'PixelSdf.Shape',

@@ -403,24 +403,24 @@ static func frostbound_chausses() -> Variant:
 	return TS.merge([{"mats": {"chain": {"base": IRON[2], "ramp": IRON, "shiny": true, "step": 0.14, "tex": (func(x, y, _a2 = null): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(x, y)), 2), 0), -1, 0)))}, "chainDark": {"base": IRON_DK[2], "ramp": IRON_DK, "shiny": true}, "chainPlate": {"base": IRON[2], "ramp": IRON, "shiny": true, "tex": rime_soft}, "l.fur": {"base": FUR[2], "ramp": FUR, "tex": tufts}, "l.dark": {"base": IRON_DK[2], "ramp": IRON_DK, "shiny": true}, "l.ice": {"base": ICE[2], "ramp": ICE, "shiny": true, "tex": sweep(8, 2)}, "l.rune": {"base": RUNE[3], "ramp": RUNE, "glow": true, "tex": pulse}}, "legs": {"mat": "chain", "trim": null, "knee": "chainPlate", "tasset": null, "rune": null, "wraps": null, "bulk": 0.25, "over": _fn1}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func frostbound_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func frostbound_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	# A frosted ring on the ground, a shimmer running round it, small ice shards jutting up.
 	var step: float = floor(t * 9)
 	var _fn0 = func(g_2, px: float, py: float, i: float):
 		if fmod(i, 6) == 5:
 			return
 		var k: float = fmod((i + step), 12)
-		g_2["fillStyle"] = (C["white"] if k == 0 else (C["rim"] if k < 3 else (C["frostDk"] if fmod(i, 3) else C["frost"])))
-		g_2["fillRect"].call(px, py, 1, 1)
+		g_2.fill_style = (C["white"] if k == 0 else (C["rim"] if k < 3 else (C["frostDk"] if fmod(i, 3) else C["frost"])))
+		g_2.fill_rect(px, py, 1, 1)
 	RenderAuraKit.ring(g, x, y, 16, 3.8, 48, layer, _fn0)
 	var _fn1 = func(g_3, px_2: float, py_2: float, i_2: float):
 		var h: float = 1 + (2 if fmod(i_2, 3) == 1 else 1)
-		g_3["fillStyle"] = C["frost"]
-		g_3["fillRect"].call(px_2, (py_2 - h) + 1, 1, h)
-		g_3["fillStyle"] = (C["white"] if fmod((i_2 + floor(t * 3)), 7) == 0 else C["rim"])
-		g_3["fillRect"].call(px_2, py_2 - h, 1, 1)
-		g_3["fillStyle"] = C["frostDk"]
-		g_3["fillRect"].call(px_2 + 1, py_2, 1, 1)
+		g_3.fill_style = C["frost"]
+		g_3.fill_rect(px_2, (py_2 - h) + 1, 1, h)
+		g_3.fill_style = (C["white"] if fmod((i_2 + floor(t * 3)), 7) == 0 else C["rim"])
+		g_3.fill_rect(px_2, py_2 - h, 1, 1)
+		g_3.fill_style = C["frostDk"]
+		g_3.fill_rect(px_2 + 1, py_2, 1, 1)
 	RenderAuraKit.ring(g, x, y, 16, 3.8, 7, layer, _fn1)
 	# Snowflakes drifting down around the fighter, swaying as they fall.
 	for k_2 in range(8):
@@ -431,13 +431,13 @@ static func frostbound_aura(g, x: float, y: float, t: float, layer: String) -> v
 		var u: float = fmod((t * (0.18 + ((k_2 % 3) * 0.04))) + (k_2 * 0.31), 1)
 		var px_3: float = TS.round((x + (cos(a) * (12 + ((k_2 % 3) * 4)))) + (sin((t * 1.6) + (k_2 * 1.3)) * 2))
 		var py_3: float = TS.round(((y + (s * 3)) - 60) + (u * 60))
-		g["globalAlpha"] = ((1 - u) / 0.15 if u > 0.85 else 1)
-		g["fillStyle"] = C["snow"]
-		g["fillRect"].call(px_3, py_3, 1, 1)
+		g.global_alpha = ((1 - u) / 0.15 if u > 0.85 else 1)
+		g.fill_style = C["snow"]
+		g.fill_rect(px_3, py_3, 1, 1)
 		if (k_2 % 2) == 0:
-			g["fillStyle"] = C["frost"]
-			g["fillRect"].call(px_3 - 1, py_3, 3, 1)
-			g["fillRect"].call(px_3, py_3 - 1, 1, 3)
-			g["fillStyle"] = C["white"]
-			g["fillRect"].call(px_3, py_3, 1, 1)
-	g["globalAlpha"] = 1
+			g.fill_style = C["frost"]
+			g.fill_rect(px_3 - 1, py_3, 3, 1)
+			g.fill_rect(px_3, py_3 - 1, 1, 3)
+			g.fill_style = C["white"]
+			g.fill_rect(px_3, py_3, 1, 1)
+	g.global_alpha = 1

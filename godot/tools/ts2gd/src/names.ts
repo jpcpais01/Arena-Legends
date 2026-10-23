@@ -48,6 +48,7 @@ export function snake(name: string): string {
 export function ident(name: string, keepCase = false): string {
   let n = keepCase ? name : snake(name);
   if (n.startsWith('$')) n = 'S' + n.slice(1);
+  if (n === '_') n = '_u';
   if (RESERVED.has(n)) n += '_';
   return n;
 }

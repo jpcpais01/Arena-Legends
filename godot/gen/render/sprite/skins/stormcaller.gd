@@ -482,18 +482,18 @@ static func rnd(n: float) -> float:
 	return PixelTex.hash_(n, 977)
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func stormcaller_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func stormcaller_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	var RX: float = 16
 	var RY: float = 3.8
 	# A faint ring of charged ground, its dashes drifting.
 	var step: float = floor(t * 5)
-	g["globalAlpha"] = 0.5
-	g["fillStyle"] = AC["ring"]
+	g.global_alpha = 0.5
+	g.fill_style = AC["ring"]
 	var _fn0 = func(g_2, px: float, py: float, i: float):
 		if fmod((i + step), 3):
-			g_2["fillRect"].call(px, py, 1, 1)
+			g_2.fill_rect(px, py, 1, 1)
 	RenderAuraKit.ring(g, x, y, RX, RY, 30, layer, _fn0)
-	g["globalAlpha"] = 1
+	g.global_alpha = 1
 	# Lightning arcs crackling along the ring: each flashes for a beat at random, somewhere new each time.
 	# Drawn a pixel per step round the ring, jagging up and down a pixel at a time, white-hot at the kinks.
 	var tick: float = floor(t * 14)
@@ -513,8 +513,8 @@ static func stormcaller_aura(g, x: float, y: float, t: float, layer: String) -> 
 			up = nu
 			if (s < 0) != (layer == "back"):
 				continue
-			g["fillStyle"] = (AC["hot"] if kink else AC["arc"])
-			g["fillRect"].call(TS.round(x + (cos(a) * RX)), TS.round(y + (s * RY)) - up, 1, (2 if kink else 1))
+			g.fill_style = (AC["hot"] if kink else AC["arc"])
+			g.fill_rect(TS.round(x + (cos(a) * RX)), TS.round(y + (s * RY)) - up, 1, (2 if kink else 1))
 	# Now and then a bolt leaps up off the ring.
 	var leap: float = floor(t * 7)
 	if rnd(leap + 5000) > 0.55:
@@ -523,15 +523,15 @@ static func stormcaller_aura(g, x: float, y: float, t: float, layer: String) -> 
 		if (s_2 < 0) == (layer == "back"):
 			var px_2: float = TS.round(x + (cos(a_2) * RX))
 			var py_2: float = TS.round(y + (s_2 * RY))
-			g["fillStyle"] = AC["hot"]
+			g.fill_style = AC["hot"]
 			for i_3 in range(4):
 				var dx: float = (-1 if rnd((leap * 4) + i_3) < 0.5 else 1)
 				var h: float = 2 + floor(rnd(((leap * 4) + i_3) + 50) * 2)
-				g["fillRect"].call(px_2, py_2 - h, 1, h)
+				g.fill_rect(px_2, py_2 - h, 1, h)
 				py_2 -= h
 				px_2 += dx
-			g["fillStyle"] = AC["arc"]
-			g["fillRect"].call(px_2 - 1, py_2, 3, 1)
+			g.fill_style = AC["arc"]
+			g.fill_rect(px_2 - 1, py_2, 3, 1)
 	# A few sparks jumping up from the ring and falling back.
 	for k_2 in range(4):
 		var u: float = fmod((t * 1.6) + (k_2 * 0.25), 1)
@@ -541,8 +541,8 @@ static func stormcaller_aura(g, x: float, y: float, t: float, layer: String) -> 
 			continue
 		var px_3: float = TS.round((x + (cos(a_3) * RX)) + ((u * 3) * cos(a_3)))
 		var py_3: float = TS.round((y + (s_3 * RY)) - (sin(u * PI) * 7))
-		g["fillStyle"] = (AC["gold"] if k_2 % 2 else AC["hot"])
-		g["fillRect"].call(px_3, py_3, 1, 1)
+		g.fill_style = (AC["gold"] if k_2 % 2 else AC["hot"])
+		g.fill_rect(px_3, py_3, 1, 1)
 
 ## Builder-mode twin of crackle (called from surface textures).
 static func crackle__tx(period = null, density = null, along = null):

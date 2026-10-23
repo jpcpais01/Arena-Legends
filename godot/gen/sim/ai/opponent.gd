@@ -63,7 +63,7 @@ class OpponentModel:
 		var dist: float = absf(e["x"] - me["x"])
 		if new_enemy_action:
 			var info = ek["info"][ea["ability"]]
-			self.uses[ea["ability"]] += 1
+			self.uses[int(ea["ability"])] += 1
 			self.seen += 1
 			if (info["offensive"] and (not info["ranged"])) and (not ea["isCounter"]):
 				var out: bool = dist > (info["maxReach"] + 0.5)

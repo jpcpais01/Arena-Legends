@@ -543,7 +543,7 @@ static func serpent_sandals() -> Variant:
 	return TS.merge([{"mats": {"leap": {"base": TURQ[2], "ramp": TURQ, "tex": straps}, "leapTrim": gold(), "k.gold": gold(), "k.turq": turq(mosaic(1, 0.08)), "k.plume": plume(barbs(false)), "k.plumeDk": plume_dk(), "k.red": scarlet(), "k.eye": SkinsKit.glow(0xff5a2a)}, "boots": {"height": 0.72, "wing": null, "over": _fn0}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func quetzal_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func quetzal_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	# A sun-stone ring on the ground: stepped dashes of gold and turquoise turning slowly, a notch every few.
 	var RX: float = 16
 	var RY: float = 3.8
@@ -553,12 +553,12 @@ static func quetzal_aura(g, x: float, y: float, t: float, layer: String) -> void
 		var k: float = fmod((i + step), 8)
 		if k == 7:
 			return
-		g_2["fillStyle"] = ((C["goldHi"] if k == 1 else C["gold"]) if k < 3 else (C["goldDk"] if k == 3 else (C["turqHi"] if k == 5 else C["turq"])))
-		g_2["fillRect"].call(px, py, 1, 1)
+		g_2.fill_style = ((C["goldHi"] if k == 1 else C["gold"]) if k < 3 else (C["goldDk"] if k == 3 else (C["turqHi"] if k == 5 else C["turq"])))
+		g_2.fill_rect(px, py, 1, 1)
 		# A stepped tooth standing up off the gold dashes.
 		if k == 1:
-			g_2["fillStyle"] = C["goldDk"]
-			g_2["fillRect"].call(px, py - 1, 1, 1)
+			g_2.fill_style = C["goldDk"]
+			g_2.fill_rect(px, py - 1, 1, 1)
 	RenderAuraKit.ring(g, x, y, RX, RY, N, layer, _fn0)
 	# The feathered serpent spirit, spiralling up around the fighter: head, body segments and plume tips.
 	var cyc: float = 3.6
@@ -574,27 +574,27 @@ static func quetzal_aura(g, x: float, y: float, t: float, layer: String) -> void
 		var rad: float = 13 - (u * 4)
 		var px_2: float = TS.round(x + (cos(a) * rad))
 		var py_2: float = TS.round((y + ((s * rad) * 0.28)) - (u * 54))
-		g["globalAlpha"] = (u / 0.08 if u < 0.08 else (maxf(0, (1 - u) / 0.18) if u > 0.82 else 1))
+		g.global_alpha = (u / 0.08 if u < 0.08 else (maxf(0, (1 - u) / 0.18) if u > 0.82 else 1))
 		if k_2 == 0:
 			# The head: turquoise with a gold brow, a glowing eye and a crest plume.
-			g["fillStyle"] = C["turq"]
-			g["fillRect"].call(px_2 - 1, py_2 - 1, 3, 2)
-			g["fillStyle"] = C["gold"]
-			g["fillRect"].call(px_2 - 1, py_2 - 2, 2, 1)
-			g["fillStyle"] = C["eye"]
-			g["fillRect"].call(px_2, py_2 - 1, 1, 1)
-			g["fillStyle"] = C["green"]
-			g["fillRect"].call(px_2 - 2, py_2 - 3, 1, 2)
+			g.fill_style = C["turq"]
+			g.fill_rect(px_2 - 1, py_2 - 1, 3, 2)
+			g.fill_style = C["gold"]
+			g.fill_rect(px_2 - 1, py_2 - 2, 2, 1)
+			g.fill_style = C["eye"]
+			g.fill_rect(px_2, py_2 - 1, 1, 1)
+			g.fill_style = C["green"]
+			g.fill_rect(px_2 - 2, py_2 - 3, 1, 2)
 		else:
-			g["fillStyle"] = (C["turqDk"] if k_2 % 2 else C["turq"])
-			g["fillRect"].call(px_2, py_2, 2, 2)
+			g.fill_style = (C["turqDk"] if k_2 % 2 else C["turq"])
+			g.fill_rect(px_2, py_2, 2, 2)
 			if (k_2 % 2) == 0:
-				g["fillStyle"] = C["gold"]
-				g["fillRect"].call(px_2, py_2, 2, 1)
+				g.fill_style = C["gold"]
+				g.fill_rect(px_2, py_2, 2, 1)
 			# Plume tips flaring off alternate segments.
 			if (k_2 % 2) == 1:
-				g["fillStyle"] = (C["red"] if k_2 == 5 else C["green"])
-				g["fillRect"].call(px_2 + (-1 if s < 0 else 2), py_2 - 1, 1, 2)
+				g.fill_style = (C["red"] if k_2 == 5 else C["green"])
+				g.fill_rect(px_2 + (-1 if s < 0 else 2), py_2 - 1, 1, 2)
 	# A few quetzal feathers drifting down, rocking as they fall.
 	for k_3 in range(4):
 		var a_2: float = ((k_3 * 1.9) + 0.8) + (t * 0.15)
@@ -605,12 +605,12 @@ static func quetzal_aura(g, x: float, y: float, t: float, layer: String) -> void
 		var rock: float = sin((t * 2.4) + (k_3 * 1.7))
 		var px_3: float = TS.round((x + (cos(a_2) * (11 + ((k_3 % 3) * 3)))) + (rock * 2))
 		var py_3: float = TS.round(((y + (s_2 * 3)) - 52) + (u_2 * 52))
-		g["globalAlpha"] = ((1 - u_2) / 0.15 if u_2 > 0.85 else (u_2 / 0.1 if u_2 < 0.1 else 1))
+		g.global_alpha = ((1 - u_2) / 0.15 if u_2 > 0.85 else (u_2 / 0.1 if u_2 < 0.1 else 1))
 		var lean: float = (1 if rock > 0.3 else (-1 if rock < (-0.3) else 0))
-		g["fillStyle"] = C["greenDk"]
-		g["fillRect"].call(px_3, py_3, 1, 3)
-		g["fillStyle"] = C["green"]
-		g["fillRect"].call(px_3 + lean, py_3 - 1, 1, 2)
-		g["fillStyle"] = (C["red"] if k_3 % 2 else C["turqHi"])
-		g["fillRect"].call(px_3, py_3 + 3, 1, 1)
-	g["globalAlpha"] = 1
+		g.fill_style = C["greenDk"]
+		g.fill_rect(px_3, py_3, 1, 3)
+		g.fill_style = C["green"]
+		g.fill_rect(px_3 + lean, py_3 - 1, 1, 2)
+		g.fill_style = (C["red"] if k_3 % 2 else C["turqHi"])
+		g.fill_rect(px_3, py_3 + 3, 1, 1)
+	g.global_alpha = 1

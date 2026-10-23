@@ -7,9 +7,9 @@ class_name PixelTex
 ## frame: flowing patterns move one step per frame at no extra cost.
 ##  Stable 0..1 noise per integer cell.
 static func hash_(x: float, y: float) -> float:
-	var h: float = TS.imul(TS.i32(x), 374761393) + TS.imul(TS.i32(y), 668265263)
-	h = TS.imul(TS.i32(int(h) ^ (TS.ushr(int(h), 13))), 1274126177)
-	return (TS.ushr((TS.i32(int(h) ^ (TS.ushr(int(h), 16)))), 0)) / 4294967296.0
+	var h: float = ((((((((int(x)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) * 374761393) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) + ((((((((int(y)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) * 668265263) + 0x80000000) & 0xFFFFFFFF) - 0x80000000)
+	h = (((((((((int(h) ^ ((int(h) & 0xFFFFFFFF) >> 13))) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) * 1274126177) + 0x80000000) & 0xFFFFFFFF) - 0x80000000)
+	return ((((((int(h) ^ ((int(h) & 0xFFFFFFFF) >> 16))) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) & 0xFFFFFFFF) / 4294967296.0
 
 static func wrap_(v: float, p: float) -> float:
 	return fmod((fmod(v, p)) + p, p)

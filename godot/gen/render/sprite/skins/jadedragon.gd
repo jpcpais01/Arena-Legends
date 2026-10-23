@@ -400,7 +400,7 @@ static func cloudstep() -> Variant:
 	return TS.merge([{"mats": {"boot": silk((func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.6), 0.4), -1, 0)))), "bootDark": gold(), "k.gold": gold(gleam(6)), "k.cloud": {"base": CLOUD[2], "ramp": CLOUD}, "k.jade": jade_lit()}, "boots": {"height": 0.72, "bulk": 0.32, "trim": "bootDark", "over": _fn0}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func jadedragon_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func jadedragon_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	# Gold cloud scrolls drifting slowly round the ground ring.
 	var RX: float = 15
 	var RY: float = 3.8
@@ -411,22 +411,22 @@ static func jadedragon_aura(g, x: float, y: float, t: float, layer: String) -> v
 			continue
 		var px: float = TS.round(x + (cos(a) * RX))
 		var py: float = TS.round(y + (s * RY))
-		g["globalAlpha"] = 0.85
-		g["fillStyle"] = AC["cloudDk"]
-		g["fillRect"].call(px - 3, py, 6, 1)
-		g["fillStyle"] = AC["cloud"]
-		g["fillRect"].call(px - 2, py - 1, 3, 1)
-		g["fillRect"].call(px + 1, py - 2, 2, 1)
-		g["fillStyle"] = AC["gold"]
-		g["fillRect"].call(px + 2, py - 1, 1, 1)
-	g["globalAlpha"] = 0.45
-	g["fillStyle"] = AC["jadeDk"]
+		g.global_alpha = 0.85
+		g.fill_style = AC["cloudDk"]
+		g.fill_rect(px - 3, py, 6, 1)
+		g.fill_style = AC["cloud"]
+		g.fill_rect(px - 2, py - 1, 3, 1)
+		g.fill_rect(px + 1, py - 2, 2, 1)
+		g.fill_style = AC["gold"]
+		g.fill_rect(px + 2, py - 1, 1, 1)
+	g.global_alpha = 0.45
+	g.fill_style = AC["jadeDk"]
 	var step: float = floor(t * 4)
 	var _fn0 = func(g_2, px_2: float, py_2: float, i: float):
 		if fmod((i + step), 3) == 0:
-			g_2["fillRect"].call(px_2, py_2, 2, 1)
+			g_2.fill_rect(px_2, py_2, 2, 1)
 	RenderAuraKit.ring(g, x, y, RX, RY, 24, layer, _fn0)
-	g["globalAlpha"] = 1
+	g.global_alpha = 1
 	# The dragon swimming round the fighter: a slim gold body undulating behind its head, a jade belly,
 	# a crimson crest along its back, passing behind and in front of the fighter.
 	var N: float = 20
@@ -448,22 +448,22 @@ static func jadedragon_aura(g, x: float, y: float, t: float, layer: String) -> v
 			i_3 -= 1
 			continue
 		var thin: bool = i_3 > (N - 4)
-		g["fillStyle"] = (AC["gold"] if (int(i_3) >> 1) % 2 else AC["goldDk"])
-		g["fillRect"].call(px_3, py_3, (1 if thin else 2), 2)
+		g.fill_style = (AC["gold"] if (((((int(i_3)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> 1) % 2 else AC["goldDk"])
+		g.fill_rect(px_3, py_3, (1 if thin else 2), 2)
 		if (fmod(i_3, 2) == 0) and (not thin):
-			g["fillStyle"] = (AC["jadeDk"] if fmod(i_3, 4) else AC["jade"])
-			g["fillRect"].call(px_3, py_3 + 2, 2, 1)
+			g.fill_style = (AC["jadeDk"] if fmod(i_3, 4) else AC["jade"])
+			g.fill_rect(px_3, py_3 + 2, 2, 1)
 		if fmod(i_3, 3) == 1:
-			g["fillStyle"] = AC["red"]
-			g["fillRect"].call(px_3, py_3 - 1, 1, 1)
+			g.fill_style = AC["red"]
+			g.fill_rect(px_3, py_3 - 1, 1, 1)
 		if i_3 == N:
-			g["fillStyle"] = AC["red"]
-			g["fillRect"].call(px_3 - 1, py_3 - 2, 1, 2)
-			g["fillRect"].call(px_3 + 1, py_3 + 1, 1, 2)
+			g.fill_style = AC["red"]
+			g.fill_rect(px_3 - 1, py_3 - 2, 1, 2)
+			g.fill_rect(px_3 + 1, py_3 + 1, 1, 2)
 		# Claws on two of the segments.
 		if (i_3 == 5) or (i_3 == 13):
-			g["fillStyle"] = AC["goldHi"]
-			g["fillRect"].call(px_3, (py_3 + 2) + (1 if i_3 == 5 else 0), 1, 1)
+			g.fill_style = AC["goldHi"]
+			g.fill_rect(px_3, (py_3 + 2) + (1 if i_3 == 5 else 0), 1, 1)
 		i_3 -= 1
 	var hd = at.call(0)
 	if (hd["s"] < 0) == (layer == "back"):
@@ -471,30 +471,30 @@ static func jadedragon_aura(g, x: float, y: float, t: float, layer: String) -> v
 		var px_4 = hd.get("px")
 		var py_4 = hd.get("py")
 		var fx: float = (-1 if hd["s"] > 0 else 1)
-		g["fillStyle"] = AC["gold"]
-		g["fillRect"].call(px_4 - 1, py_4 - 1, 3, 3)
-		g["fillRect"].call(px_4 + (fx * 2), py_4, 1, 2)
-		g["fillRect"].call(px_4 + (fx * 3), py_4 + 1, 1, 1)
-		g["fillStyle"] = AC["goldHi"]
-		g["fillRect"].call(px_4, py_4 - 1, 1, 1)
-		g["fillStyle"] = AC["jade"]
-		g["fillRect"].call(px_4 - fx, py_4 - 2, 1, 1)
-		g["fillRect"].call(px_4 - (fx * 2), py_4 - 3, 1, 1)
-		g["fillStyle"] = AC["eye"]
-		g["fillRect"].call(px_4 + fx, py_4, 1, 1)
-		g["fillStyle"] = AC["goldDk"]
+		g.fill_style = AC["gold"]
+		g.fill_rect(px_4 - 1, py_4 - 1, 3, 3)
+		g.fill_rect(px_4 + (fx * 2), py_4, 1, 2)
+		g.fill_rect(px_4 + (fx * 3), py_4 + 1, 1, 1)
+		g.fill_style = AC["goldHi"]
+		g.fill_rect(px_4, py_4 - 1, 1, 1)
+		g.fill_style = AC["jade"]
+		g.fill_rect(px_4 - fx, py_4 - 2, 1, 1)
+		g.fill_rect(px_4 - (fx * 2), py_4 - 3, 1, 1)
+		g.fill_style = AC["eye"]
+		g.fill_rect(px_4 + fx, py_4, 1, 1)
+		g.fill_style = AC["goldDk"]
 		var wv: float = fmod(floor(t * 4), 2)
-		g["fillRect"].call(px_4 + (fx * 2), py_4 + 2, 1, 1)
-		g["fillRect"].call(px_4 + fx, py_4 + 3, 1, 1)
-		g["fillRect"].call(px_4, (py_4 + 3) + wv, 1, 1)
+		g.fill_rect(px_4 + (fx * 2), py_4 + 2, 1, 1)
+		g.fill_rect(px_4 + fx, py_4 + 3, 1, 1)
+		g.fill_rect(px_4, (py_4 + 3) + wv, 1, 1)
 		# The flaming pearl it chases, just ahead.
 		var qa: float = hd["a"] + 0.42
 		var qs: float = sin(qa)
 		var qx: float = TS.round(x + (cos(qa) * R))
 		var qy: float = TS.round(((y - H) - 3) + (qs * 5))
-		g["fillStyle"] = AC["flame"]
-		g["fillRect"].call(qx - 1, qy, 3, 1)
-		g["fillRect"].call(qx, (qy - 1) - (fmod(floor(t * 6), 2)), 1, 1)
-		g["fillStyle"] = AC["pearl"]
-		g["fillRect"].call(qx, qy, 1, 1)
-	g["globalAlpha"] = 1
+		g.fill_style = AC["flame"]
+		g.fill_rect(qx - 1, qy, 3, 1)
+		g.fill_rect(qx, (qy - 1) - (fmod(floor(t * 6), 2)), 1, 1)
+		g.fill_style = AC["pearl"]
+		g.fill_rect(qx, qy, 1, 1)
+	g.global_alpha = 1

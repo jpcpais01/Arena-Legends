@@ -463,40 +463,40 @@ static func high_tops() -> Variant:
 
 ##  An eighth note at (x, y), its head at the bottom left.
 static func note(g, x: float, y: float, col: String) -> void:
-	g["fillStyle"] = col
-	g["fillRect"].call(x, y, 2, 1)
-	g["fillRect"].call(x + 1, y - 3, 1, 3)
-	g["fillRect"].call(x + 2, y - 2, 1, 1)
+	g.fill_style = col
+	g.fill_rect(x, y, 2, 1)
+	g.fill_rect(x + 1, y - 3, 1, 3)
+	g.fill_rect(x + 2, y - 2, 1, 1)
 
 ##  The "You can't see me" hand waving in front of the face at (x, y) (bottom of the wristband), `k` 0..1.
 static func wave_hand(g, x: float, y: float, k: float) -> void:
 	var a: float = (k / 0.15 if k < 0.15 else ((1 - k) / 0.15 if k > 0.85 else 1))
 	var dx: float = TS.round(sin((k * PI) * 6) * 3)
 	var hx: float = x + dx
-	g["globalAlpha"] = 0.9 * a
+	g.global_alpha = 0.9 * a
 	# Wristband.
-	g["fillStyle"] = AC["lime"]
-	g["fillRect"].call(hx - 2, y - 2, 6, 2)
-	g["fillStyle"] = AC["ink"]
-	g["fillRect"].call(hx - 2, y - 2, 6, 1)
+	g.fill_style = AC["lime"]
+	g.fill_rect(hx - 2, y - 2, 6, 2)
+	g.fill_style = AC["ink"]
+	g.fill_rect(hx - 2, y - 2, 6, 1)
 	# Palm, fingers and thumb.
-	g["fillStyle"] = AC["hand"]
-	g["fillRect"].call(hx - 2, y - 6, 6, 4)
+	g.fill_style = AC["hand"]
+	g.fill_rect(hx - 2, y - 6, 6, 4)
 	for _e0 in [[0, 3], [1, 4], [2, 4], [3, 3]]:
 		var i = _e0[0]
 		var h = _e0[1]
-		g["fillRect"].call(((hx - 2) + i) + (1 if i > 1 else 0), (y - 6) - h, 1, h)
-	g["fillRect"].call(hx - 3, y - 5, 1, 2)
-	g["fillRect"].call(hx - 4, y - 6, 1, 1)
-	g["fillStyle"] = AC["crease"]
-	g["fillRect"].call(hx, y - 5, 2, 1)
+		g.fill_rect(((hx - 2) + i) + (1 if i > 1 else 0), (y - 6) - h, 1, h)
+	g.fill_rect(hx - 3, y - 5, 1, 2)
+	g.fill_rect(hx - 4, y - 6, 1, 1)
+	g.fill_style = AC["crease"]
+	g.fill_rect(hx, y - 5, 2, 1)
 	# Wave marks off the fingertips, on the side it's swinging away from.
 	var s: float = (-1 if cos((k * PI) * 6) > 0 else 1)
-	g["globalAlpha"] = 0.7 * a
-	g["fillStyle"] = AC["white"]
+	g.global_alpha = 0.7 * a
+	g.fill_style = AC["white"]
 	var ex: float = (hx - 5 if s < 0 else hx + 6)
-	g["fillRect"].call(ex, y - 10, 1, 2)
-	g["fillRect"].call(ex + s, y - 7, 1, 2)
+	g.fill_rect(ex, y - 10, 1, 2)
+	g.fill_rect(ex + s, y - 7, 1, 2)
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
 static func champ_aura(g, x: float, y: float, t: float, layer: String, facing = null) -> void:
@@ -504,13 +504,13 @@ static func champ_aura(g, x: float, y: float, t: float, layer: String, facing = 
 	var back: bool = layer == "back"
 	# A ring at the feet in lime and black, its dashes running round like the lights on a ring apron.
 	var run: float = floor(t * 9)
-	g["globalAlpha"] = (0.6 if back else 0.85)
+	g.global_alpha = (0.6 if back else 0.85)
 	var _fn0 = func(g_2, px: float, py: float, i: float):
 		var k: float = fmod((i + run), 4)
 		if k == 3:
 			return
-		g_2["fillStyle"] = (AC["white"] if k == 0 else (AC["lime"] if k == 1 else AC["limeDk"]))
-		g_2["fillRect"].call(px, py, 1, 1)
+		g_2.fill_style = (AC["white"] if k == 0 else (AC["lime"] if k == 1 else AC["limeDk"]))
+		g_2.fill_rect(px, py, 1, 1)
 	RenderAuraKit.ring(g, x, y, 15, 3.8, 44, layer, _fn0)
 	# The fanfare: notes rising off the shoulders and drifting away.
 	for k_2 in range(4):
@@ -521,23 +521,23 @@ static func champ_aura(g, x: float, y: float, t: float, layer: String, facing = 
 		var side: float = (-1 if k_2 < 2 else 1)
 		var px_2: float = TS.round((x + (side * (7 + (w * 9)))) + (sin((t * 3) + k_2) * 1.5))
 		var py_2: float = TS.round((y - 40) - (w * 20))
-		g["globalAlpha"] = min(1, (1 - w) * 3, w * 8) * (0.7 if back else 0.95)
+		g.global_alpha = min(1, (1 - w) * 3, w * 8) * (0.7 if back else 0.95)
 		note(g, px_2, py_2, (AC["lime"] if k_2 % 2 else AC["white"]))
 	# You can't see me: the hand waves in front of his face, a shimmer of haze running up beside him.
 	var k_3: float = see_me(t)
 	if k_3 >= 0:
 		var a: float = (k_3 / 0.2 if k_3 < 0.2 else ((1 - k_3) / 0.2 if k_3 > 0.8 else 1))
-		g["fillStyle"] = AC["white"]
+		g.fill_style = AC["white"]
 		for c in range(6):
 			var side_2: float = (1 if c % 2 else -1)
 			if (side_2 < 0) != back:
 				continue
-			var px_3: float = TS.round((x + (side_2 * (6 + ((c >> 1) * 3)))) + (sin((t * 9) + c) * 1))
+			var px_3: float = TS.round((x + (side_2 * (6 + ((((((c) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) >> 1) * 3)))) + (sin((t * 9) + c) * 1))
 			for j in range(7):
 				if fmod((j + floor(t * 18)) + c, 3) == 0:
 					continue
-				g["globalAlpha"] = 0.28 * a
-				g["fillRect"].call(px_3, TS.round(((y - 6) - (j * 7)) - (fmod((t * 30) + (c * 5), 7))), 1, 3)
+				g.global_alpha = 0.28 * a
+				g.fill_rect(px_3, TS.round(((y - 6) - (j * 7)) - (fmod((t * 30) + (c * 5), 7))), 1, 3)
 		if not back:
 			wave_hand(g, x + (facing * 4), y - 41, k_3)
-	g["globalAlpha"] = 1
+	g.global_alpha = 1

@@ -438,13 +438,13 @@ static func gravewalkers() -> Variant:
 	return TS.merge([{"mats": {"shadow": {"base": GRAVE[2], "ramp": (TS.arr(GRAVE) + [0x56605a]), "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.6), 0.4), -1, 0)))}, "shadowGlow": silver(tarnish(6)), "k.bone": bone(), "k.claw": black_bone(), "k.soul": soul(burn(1, 3)), "k.hot": {"base": HOT, "glow": true}}, "boots": {"height": 0.72, "bulk": 0.34, "over": _fn0}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func lichborne_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func lichborne_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	# A rune circle on the ground: a ring of soul-light, glyphs turning round it, each flaring in turn.
-	g["globalAlpha"] = 0.55
-	g["fillStyle"] = A["rune"]
+	g.global_alpha = 0.55
+	g.fill_style = A["rune"]
 	var _fn0 = func(g_2, px: float, py: float, i: float):
 		if fmod(i, 4):
-			g_2["fillRect"].call(px, py, 1, 1)
+			g_2.fill_rect(px, py, 1, 1)
 	RenderAuraKit.ring(g, x, y, 15, 3.8, 36, layer, _fn0)
 	var turn: float = t * 0.5
 	for i_2 in range(10):
@@ -455,17 +455,17 @@ static func lichborne_aura(g, x: float, y: float, t: float, layer: String) -> vo
 		var px_2: float = TS.round(x + (cos(a) * 12))
 		var py_2: float = TS.round(y + (s * 2.9))
 		var lit: bool = sin((t * 3) + (i_2 * 1.7)) > 0.55
-		g["globalAlpha"] = (1 if lit else 0.7)
-		g["fillStyle"] = (A["runeHi"] if lit else A["rune"])
+		g.global_alpha = (1 if lit else 0.7)
+		g.fill_style = (A["runeHi"] if lit else A["rune"])
 		# Glyphs: a dash with a tick, a hook or a cross.
-		g["fillRect"].call(px_2 - 1, py_2, 3, 1)
+		g.fill_rect(px_2 - 1, py_2, 3, 1)
 		if (i_2 % 3) == 0:
-			g["fillRect"].call(px_2, py_2 - 1, 1, 1)
+			g.fill_rect(px_2, py_2 - 1, 1, 1)
 		elif (i_2 % 3) == 1:
-			g["fillRect"].call(px_2 + 1, py_2 - 1, 1, 1)
+			g.fill_rect(px_2 + 1, py_2 - 1, 1, 1)
 		else:
-			g["fillRect"].call(px_2 - 1, py_2 - 1, 1, 1)
-	g["globalAlpha"] = 1
+			g.fill_rect(px_2 - 1, py_2 - 1, 1, 1)
+	g.global_alpha = 1
 	# Skeletal hands clawing up out of the ground and sinking back.
 	for k in range(3):
 		var a_2: float = (k * 2.2) + 0.7
@@ -479,24 +479,24 @@ static func lichborne_aura(g, x: float, y: float, t: float, layer: String) -> vo
 		var py_3: float = TS.round(y + (s_2 * 4))
 		var open: float = (1 if sin((t * 4) + k) > 0 else 0)
 		# Grave dirt heaped where it breaks the ground.
-		g["globalAlpha"] = 0.7
-		g["fillStyle"] = A["deep"]
-		g["fillRect"].call(px_3 - 2, py_3, 5, 1)
-		g["globalAlpha"] = 1
+		g.global_alpha = 0.7
+		g.fill_style = A["deep"]
+		g.fill_rect(px_3 - 2, py_3, 5, 1)
+		g.global_alpha = 1
 		# Forearm: two bones.
-		g["fillStyle"] = A["boneDk"]
-		g["fillRect"].call(px_3, (py_3 - h) + 3, 1, h - 3)
-		g["fillStyle"] = A["bone"]
-		g["fillRect"].call(px_3 + 1, (py_3 - h) + 3, 1, h - 3)
+		g.fill_style = A["boneDk"]
+		g.fill_rect(px_3, (py_3 - h) + 3, 1, h - 3)
+		g.fill_style = A["bone"]
+		g.fill_rect(px_3 + 1, (py_3 - h) + 3, 1, h - 3)
 		if h >= 4:
 			# Palm, then fingers spread wide or curled into a claw.
-			g["fillRect"].call(px_3 - 1, (py_3 - h) + 2, 4, 1)
-			g["fillRect"].call((px_3 - 1) - open, py_3 - h, 1, 2)
-			g["fillRect"].call(px_3, (py_3 - h) - open, 1, 2)
-			g["fillRect"].call(px_3 + 1, ((py_3 - h) - 1) - open, 1, 2)
-			g["fillRect"].call((px_3 + 2) + open, py_3 - h, 1, 2)
-			g["fillStyle"] = A["boneDk"]
-			g["fillRect"].call(px_3 - 1, (py_3 - h) + 1, 4, 1)
+			g.fill_rect(px_3 - 1, (py_3 - h) + 2, 4, 1)
+			g.fill_rect((px_3 - 1) - open, py_3 - h, 1, 2)
+			g.fill_rect(px_3, (py_3 - h) - open, 1, 2)
+			g.fill_rect(px_3 + 1, ((py_3 - h) - 1) - open, 1, 2)
+			g.fill_rect((px_3 + 2) + open, py_3 - h, 1, 2)
+			g.fill_style = A["boneDk"]
+			g.fill_rect(px_3 - 1, (py_3 - h) + 1, 4, 1)
 	# Soul wisps spiralling up round the fighter and fading.
 	for k_2 in range(4):
 		var u: float = fmod((t * 0.3) + (k_2 / 4.0), 1)
@@ -507,13 +507,13 @@ static func lichborne_aura(g, x: float, y: float, t: float, layer: String) -> vo
 		var px_4: float = TS.round(x + (cos(a_3) * (13 - (u * 5))))
 		var py_4: float = TS.round(((y - 3) - (u * 36)) + (s_3 * 3))
 		var tail: float = (-1 if cos(a_3) > 0 else 1)
-		g["globalAlpha"] = minf(1, (1 - u) * 1.8)
-		g["fillStyle"] = A["deep"]
-		g["fillRect"].call(px_4 + tail, py_4 + 2, 1, 2)
-		g["fillRect"].call(px_4 + (tail * 2), py_4 + 4, 1, 1)
-		g["fillStyle"] = A["wisp"]
-		g["fillRect"].call(px_4 - 1, py_4, 3, 2)
-		g["fillRect"].call(px_4, py_4 - 1, 1, 4)
-		g["fillStyle"] = A["hot"]
-		g["fillRect"].call(px_4, py_4, 1, 1)
-	g["globalAlpha"] = 1
+		g.global_alpha = minf(1, (1 - u) * 1.8)
+		g.fill_style = A["deep"]
+		g.fill_rect(px_4 + tail, py_4 + 2, 1, 2)
+		g.fill_rect(px_4 + (tail * 2), py_4 + 4, 1, 1)
+		g.fill_style = A["wisp"]
+		g.fill_rect(px_4 - 1, py_4, 3, 2)
+		g.fill_rect(px_4, py_4 - 1, 1, 4)
+		g.fill_style = A["hot"]
+		g.fill_rect(px_4, py_4, 1, 1)
+	g.global_alpha = 1

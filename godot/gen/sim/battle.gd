@@ -100,7 +100,7 @@ class Battle:
 		self.next_projectile_id = 1
 		self.next_zone_id = 1
 		self.sandbox = false
-		self.seed_ = TS.ushr(int(cfg["seed"]), 0)
+		self.seed_ = (int(cfg["seed"]) & 0xFFFFFFFF)
 		self.rng = CoreRng.Rng.new(self.seed_)
 		var a = SimFighter.create_fighter(0, cfg["fighters"][0])
 		var b = SimFighter.create_fighter(1, cfg["fighters"][1])
@@ -182,14 +182,14 @@ class Battle:
 			self.update_timers(f_3)
 			SimFighter.refresh_stats(f_3)
 		# Alternate think order every tick so neither side gets a systematic edge.
-		var first: float = (0 if TS.i32(int(self.tick) & 1) == 0 else 1)
+		var first: float = (0 if (int(self.tick) & 1) == 0 else 1)
 		self.brains[first]["think"].call(self)
 		self.brains[1 - first]["think"].call(self)
 		if self.lock != null:
 			self.update_lock()
 		elif self.lock_cd > 0:
 			self.lock_cd -= SimConstants.DT
-		if TS.i32(int(self.tick) & 1) == 0:
+		if (int(self.tick) & 1) == 0:
 			self.update_action(a)
 			self.update_action(b)
 		else:
@@ -324,8 +324,8 @@ class Battle:
 		if _c0:
 			f["histT"] = SimBattle.HISTORY_STEP
 			var i: float = fmod(f["histI"], SimBattle.HISTORY_SIZE)
-			f["hist"][i * 2] = f["x"]
-			f["hist"][(i * 2) + 1] = f["hp"]
+			f["hist"][int(i * 2)] = f["x"]
+			f["hist"][int((i * 2) + 1)] = f["hp"]
 			f["histI"] += 1
 		var _c1 = false
 		_c1 = has.has("storm_cloud")
@@ -418,10 +418,10 @@ class Battle:
 		var ab = f["abilities"][idx]
 		var e = self.other(f)
 		var spd: float = f["stats"]["attackSpeed"]
-		f["cooldowns"][idx] = self.cooldown_of(f, ab)
+		f["cooldowns"][int(idx)] = self.cooldown_of(f, ab)
 		f["energy"] -= ab["cost"]
 		if f["uses"][idx] > 0:
-			f["uses"][idx] -= 1
+			f["uses"][int(idx)] -= 1
 		if ab["slot"] == "item":
 			var hx: float = f["x"] - (f["facing"] * 0.5)
 			f["item"] = {"ability": idx, "phase": "windup", "t": 0, "x": hx, "y": 2.1, "targetX": e["x"], "hitsDone": 0}
@@ -478,10 +478,10 @@ class Battle:
 		a["t"] = 0
 		a["recovery"] = 0.12 + a["stow"]
 		# Feinting refunds most of the cooldown so the real attack can follow.
-		f["cooldowns"][a["ability"]] = minf(f["cooldowns"][a["ability"]], 0.6)
+		f["cooldowns"][int(a["ability"])] = minf(f["cooldowns"][a["ability"]], 0.6)
 		f["energy"] = minf(SimConstants.MAX_ENERGY, f["energy"] + ab["cost"])
 		if ab.get("uses"):
-			f["uses"][a["ability"]] += 1
+			f["uses"][int(a["ability"])] += 1
 		f["totals"]["feints"] += 1
 		self.emit({"type": "feint", "f": f["id"]})
 		return true
@@ -922,7 +922,7 @@ class Battle:
 			if p_2["alive"]:
 				var _i0 = w
 				w += 1
-				self.projectiles[_i0] = p_2
+				self.projectiles[int(_i0)] = p_2
 		self.projectiles.resize(int(w))
 
 	func reflect_projectile(p, by) -> void:

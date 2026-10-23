@@ -44,7 +44,7 @@ static func _init_crowcloud():
 	var _fn0 = func(r, t, f: float, h):
 		var m = (func(k: String): return h.call(CM.get(k)))
 		var F = SpriteXform.Xf.new(t.ox, t.oy - 8, 0, 1, 1)
-		var k_2: float = TS.i32(int(f) & 3)
+		var k_2: float = (int(f) & 3)
 		var charged: bool = f >= 4
 		thunderhead(r, F, 0.78, m, 1)
 		# Three crows circling round the cloud: the ones behind it are hidden, the ones in front pass across.
@@ -323,15 +323,15 @@ static func talon_greaves() -> Variant:
 	return TS.merge([{"mats": {"k.scScale": {"base": FEATHER[2], "ramp": FEATHER, "shiny": true, "step": 0.13, "tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 1.1), TX.mul((TX.band(TX.floor(TX.mul(y, 1.1)), 1)), 0.5)), 1.2), 0.3), -1, 0)))}, "k.scClaw": S["silver"].call(null), "k.scCuff": S["feather"].call(), "k.scGem": S["storm"].call()}, "boots": {"mat": "k.scScale", "height": 0.78, "bulk": 0.35, "trim": null, "wing": null, "knee": null, "over": _fn1}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func stormcrow_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func stormcrow_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	var back: bool = layer == "back"
 	# A dark ring on the ground, a spark of storm light running round it.
 	var run: float = fmod(floor(t * 18), 44)
-	g["globalAlpha"] = (0.45 if back else 0.65)
+	g.global_alpha = (0.45 if back else 0.65)
 	var _fn0 = func(g_2, px: float, py: float, i: float):
 		var d: float = fmod((i - run) + 44, 44)
-		g_2["fillStyle"] = (AC["hot"] if d == 0 else (AC["storm"] if d < 3 else (AC["deep"] if fmod(i, 3) else AC["feather"])))
-		g_2["fillRect"].call(px, py, 1, 1)
+		g_2.fill_style = (AC["hot"] if d == 0 else (AC["storm"] if d < 3 else (AC["deep"] if fmod(i, 3) else AC["feather"])))
+		g_2.fill_rect(px, py, 1, 1)
 	RenderAuraKit.ring(g, x, y, 15, 3.8, 44, layer, _fn0)
 	# Feathers drifting down, rocking side to side as they fall.
 	for k in range(6):
@@ -342,12 +342,12 @@ static func stormcrow_aura(g, x: float, y: float, t: float, layer: String) -> vo
 		var sway: float = sin((t * 2.4) + (k * 1.7))
 		var px_2: float = TS.round((x + ((PixelTex.hash_(k, 21) - 0.5) * 34)) + (sway * 3))
 		var py_2: float = TS.round((y - 52) + (w * 52))
-		g["globalAlpha"] = min(1, (1 - w) * 4, w * 8) * (0.6 if back else 0.9)
-		g["fillStyle"] = AC["feather"]
-		g["fillRect"].call(px_2, py_2, 2, 1)
-		g["fillRect"].call(px_2 + (2 if sway > 0 else -1), py_2 + (-1 if sway > 0 else 1), 1, 1)
-		g["fillStyle"] = AC["sheen"]
-		g["fillRect"].call(px_2, py_2, 1, 1)
+		g.global_alpha = min(1, (1 - w) * 4, w * 8) * (0.6 if back else 0.9)
+		g.fill_style = AC["feather"]
+		g.fill_rect(px_2, py_2, 2, 1)
+		g.fill_rect(px_2 + (2 if sway > 0 else -1), py_2 + (-1 if sway > 0 else 1), 1, 1)
+		g.fill_style = AC["sheen"]
+		g.fill_rect(px_2, py_2, 1, 1)
 	# Every few seconds a thread of lightning cracks down to the ring.
 	var per: float = 2.6
 	var u: float = (fmod(t, per)) / per
@@ -355,14 +355,14 @@ static func stormcrow_aura(g, x: float, y: float, t: float, layer: String) -> vo
 	if (not back) and (u < 0.12):
 		var side: float = (-1 if PixelTex.hash_(n, 3) < 0.5 else 1)
 		var bx: float = x + (side * (8 + (PixelTex.hash_(n, 4) * 6)))
-		g["globalAlpha"] = 1 - (u / 0.12)
+		g.global_alpha = 1 - (u / 0.12)
 		var px_3: float = bx
 		var py_3: float = y - 30
 		while py_3 < y:
 			var nx: float = px_3 + TS.round((PixelTex.hash_(n, py_3) - 0.5) * 5)
 			var ny: float = py_3 + 2
-			g["fillStyle"] = (AC["storm"] if py_3 > (y - 6) else AC["hot"])
-			g["fillRect"].call(nx, ny, 1, 2)
+			g.fill_style = (AC["storm"] if py_3 > (y - 6) else AC["hot"])
+			g.fill_rect(nx, ny, 1, 2)
 			px_3 = nx
 			py_3 = ny
-	g["globalAlpha"] = 1
+	g.global_alpha = 1

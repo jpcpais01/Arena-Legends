@@ -468,13 +468,13 @@ static func constellation_leggings() -> Variant:
 	return TS.merge([{"mats": {"runeLeg": SkinsKit.veined(NIGHT, 0xf4f0ff, starfield(2.8, 0.2, 7)), "runeDark": SkinsKit.shiny(SILVER[2], gleam(8)), "runeGlow": SkinsKit.glow(STAR), "l.line": SkinsKit.plain(0x8a84d8), "l.star": SkinsKit.glow(STAR), "l.hot": SkinsKit.glow(0xffffff), "l.moon": {"base": SILVER[2], "ramp": SILVER, "shiny": true, "step": 0.16}}, "legs": {"mat": "runeLeg", "trim": "runeDark", "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.2, "over": _fn4}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func starweaver_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func starweaver_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	# A faint dusting of violet on the ground.
-	g["globalAlpha"] = 0.45
-	g["fillStyle"] = A["dust"]
+	g.global_alpha = 0.45
+	g.fill_style = A["dust"]
 	var _fn0 = func(g_2, px: float, py: float, i: float):
 		if fmod(i, 3) == 0:
-			g_2["fillRect"].call(px, py, 1, 1)
+			g_2.fill_rect(px, py, 1, 1)
 	RenderAuraKit.ring(g, x, y, 15, 3.6, 30, layer, _fn0)
 	# A constellation turning slowly round the feet: stars joined by faint lines.
 	var spin: float = t * 0.35
@@ -492,8 +492,8 @@ static func starweaver_aura(g, x: float, y: float, t: float, layer: String) -> v
 		var s: float = s0 + ((s1 - s0) * u)
 		return [x + ((cos(a) * RX) * s), y + ((sin(a) * RY) * s), sin(a)]
 	var pos = _fn3
-	g["globalAlpha"] = 0.5
-	g["fillStyle"] = A["line"]
+	g.global_alpha = 0.5
+	g.fill_style = A["line"]
 	for k_2 in range(RING_STARS.size()):
 		for u_2 in [0.3, 0.5, 0.7]:
 			var _d4 = pos.call(k_2, u_2)
@@ -501,8 +501,8 @@ static func starweaver_aura(g, x: float, y: float, t: float, layer: String) -> v
 			var py_2 = _d4[1]
 			var s_2 = _d4[2]
 			if (s_2 < 0) == (layer == "back"):
-				g["fillRect"].call(TS.round(px_2), TS.round(py_2), 1, 1)
-	g["globalAlpha"] = 1
+				g.fill_rect(TS.round(px_2), TS.round(py_2), 1, 1)
+	g.global_alpha = 1
 	for k_3 in range(RING_STARS.size()):
 		var _d5 = pos.call(k_3)
 		var px_3 = _d5[0]
@@ -513,12 +513,12 @@ static func starweaver_aura(g, x: float, y: float, t: float, layer: String) -> v
 		var X: float = TS.round(px_3)
 		var Y: float = TS.round(py_3)
 		var tw: float = sin((t * 3.2) + (k_3 * 2.1))
-		g["fillStyle"] = (A["hot"] if tw > 0.55 else A["star"])
-		g["fillRect"].call(X, Y, 1, 1)
+		g.fill_style = (A["hot"] if tw > 0.55 else A["star"])
+		g.fill_rect(X, Y, 1, 1)
 		if tw > 0.55:
-			g["fillStyle"] = A["star"]
-			g["fillRect"].call(X - 1, Y, 3, 1)
-			g["fillRect"].call(X, Y - 1, 1, 3)
+			g.fill_style = A["star"]
+			g.fill_rect(X - 1, Y, 3, 1)
+			g.fill_rect(X, Y - 1, 1, 3)
 	# A small moon orbiting at the waist, lit on its outer side.
 	var a_2: float = t * 0.9
 	var s_4: float = sin(a_2)
@@ -528,12 +528,12 @@ static func starweaver_aura(g, x: float, y: float, t: float, layer: String) -> v
 	var my: float = TS.round((y - 20) + (s_4 * 3))
 	# A crescent, its horns turned away from the fighter.
 	var d: float = (-1 if cos(a_2) < 0 else 1)
-	g["fillStyle"] = A["moonDk"]
-	g["fillRect"].call(mx - d, my - 3, 1, 1)
-	g["fillRect"].call(mx - d, my + 3, 1, 1)
-	g["fillStyle"] = A["moon"]
-	g["fillRect"].call(mx - 1, my - 2, 2, 1)
-	g["fillRect"].call(mx - 1, my + 2, 2, 1)
-	g["fillRect"].call(mx + (-2 if d > 0 else 1), my - 1, 1, 3)
-	g["fillStyle"] = A["hot"]
-	g["fillRect"].call(mx + (-2 if d > 0 else 1), my, 1, 1)
+	g.fill_style = A["moonDk"]
+	g.fill_rect(mx - d, my - 3, 1, 1)
+	g.fill_rect(mx - d, my + 3, 1, 1)
+	g.fill_style = A["moon"]
+	g.fill_rect(mx - 1, my - 2, 2, 1)
+	g.fill_rect(mx - 1, my + 2, 2, 1)
+	g.fill_rect(mx + (-2 if d > 0 else 1), my - 1, 1, 3)
+	g.fill_style = A["hot"]
+	g.fill_rect(mx + (-2 if d > 0 else 1), my, 1, 1)

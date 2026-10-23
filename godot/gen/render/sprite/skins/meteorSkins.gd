@@ -37,7 +37,7 @@ static func _init_tidemeteor():
 			r.dot(t.x(x_2, y_3), t.y(x_2, y_3), h.call(WM["foam"]), 3, 2)
 		# The foam crest breaking over the leading face.
 		r.fill(PixelSdf.subtract(t.circ(4.2, 0, 7.8), t.circ(2.2, 0.4, 7.4)), h.call(WM["foam"]), {"group": 3})
-		r.dot(t.x(7.6, 3 - (TS.i32(int(f) & 1))), t.y(7.6, 3 - (TS.i32(int(f) & 1))), h.call(WM["foam"]), 3, 3)
+		r.dot(t.x(7.6, 3 - (int(f) & 1)), t.y(7.6, 3 - (int(f) & 1)), h.call(WM["foam"]), 3, 3)
 		r.dot(t.x(5.4, 3.6), t.y(5.4, 3.6), h.call(WM["foam"]), 3, 3)
 	return {"frames": 4, "outline": true, "draw": _fn1}
 static var tideSigil = _init_tidesigil()

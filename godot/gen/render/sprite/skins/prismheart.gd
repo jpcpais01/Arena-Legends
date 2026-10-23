@@ -477,7 +477,7 @@ static func geode_stompers() -> Variant:
 	return TS.merge([{"mats": TS.merge([{"colossus": {"base": SLATE[2], "ramp": (TS.arr(SLATE) + [VEIN]), "tex": geode(3.6, 0, 8)}, "colossusDark": polished(), "k.rock": rock(3.2, 0, 9), "k.crystal": quartz(), "k.core": {"base": CORE, "glow": true}}, rain_mats("k.")]), "boots": {"over": _fn2}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func prismheart_aura(g, x: float, y: float, t: float, layer: String) -> void:
+static func prismheart_aura(g, x: float, y: float, t: float, layer: String, _a5 = null) -> void:
 	var RX: float = 15
 	var RY: float = 3.8
 	var back: bool = layer == "back"
@@ -499,19 +499,19 @@ static func prismheart_aura(g, x: float, y: float, t: float, layer: String) -> v
 			if (py < 0) != back:
 				continue
 			if k == 0:
-				g["globalAlpha"] = 0.9
-				g["fillStyle"] = AC["vertex"]
+				g.global_alpha = 0.9
+				g.fill_style = AC["vertex"]
 			else:
-				g["globalAlpha"] = (0.95 if ((((i * 3) + k) % 24) == run) or (((((i * 3) + k) + 12) % 24) == run) else 0.45)
-				g["fillStyle"] = AC["ring"]
-			g["fillRect"].call(TS.round(x + px), TS.round(y + py), 1, 1)
-	g["globalAlpha"] = 0.35
-	g["fillStyle"] = AC["lilac"]
+				g.global_alpha = (0.95 if ((((i * 3) + k) % 24) == run) or (((((i * 3) + k) + 12) % 24) == run) else 0.45)
+				g.fill_style = AC["ring"]
+			g.fill_rect(TS.round(x + px), TS.round(y + py), 1, 1)
+	g.global_alpha = 0.35
+	g.fill_style = AC["lilac"]
 	var _fn0 = func(g_2, px_2: float, py_2: float, i_2: float):
 		if fmod(i_2, 2):
-			g_2["fillRect"].call(px_2, py_2, 1, 1)
+			g_2.fill_rect(px_2, py_2, 1, 1)
 	RenderAuraKit.ring(g, x, y, RX - 3, RY - 1, 16, layer, _fn0)
-	g["globalAlpha"] = 1
+	g.global_alpha = 1
 	# Now and then a vertex throws a rainbow spark: a coloured cross, rising a little.
 	var tick: float = floor(t * 4)
 	for k_2 in range(2):
@@ -526,11 +526,11 @@ static func prismheart_aura(g, x: float, y: float, t: float, layer: String) -> v
 		var u_2: float = (t * 4) - tick
 		var px_3: float = TS.round(x + (cos(a) * RX))
 		var py_3: float = TS.round((y + (s * RY)) - (u_2 * 3))
-		g["fillStyle"] = AC["rain"][floor(PixelTex.hash_(seed_, 91) * 6)]
-		g["fillRect"].call(px_3 - 1, py_3, 3, 1)
-		g["fillRect"].call(px_3, py_3 - 1, 1, 3)
-		g["fillStyle"] = AC["vertex"]
-		g["fillRect"].call(px_3, py_3, 1, 1)
+		g.fill_style = AC["rain"][floor(PixelTex.hash_(seed_, 91) * 6)]
+		g.fill_rect(px_3 - 1, py_3, 3, 1)
+		g.fill_rect(px_3, py_3 - 1, 1, 3)
+		g.fill_style = AC["vertex"]
+		g.fill_rect(px_3, py_3, 1, 1)
 	# Crystal shards orbiting at different heights and speeds, turning as they go: a lit facet, a lilac
 	# facet, and a rainbow flash as each turns its face to the light.
 	for _e1 in TS.array_entries(ORBIT):
@@ -549,19 +549,19 @@ static func prismheart_aura(g, x: float, y: float, t: float, layer: String) -> v
 		var face: float = cos(((a_2 * 2) + (t * 3)) + k_3)
 		# The diamond: a tall centre column, and shorter columns either side; the facet facing the light swaps as it turns.
 		var lit: float = (-1 if face > 0 else 1)
-		g["fillStyle"] = AC["vertex"]
-		g["fillRect"].call(px_4, py_4 - 3, 1, 7)
-		g["fillStyle"] = AC["lit"]
-		g["fillRect"].call(px_4 + lit, py_4 - 2, 1, 5)
-		g["fillStyle"] = AC["dark"]
-		g["fillRect"].call(px_4 - lit, py_4 - 2, 1, 5)
-		g["fillStyle"] = (AC["dark"] if back else AC["lilac"])
-		g["fillRect"].call(px_4 - (2 * lit), py_4 - 1, 1, 3)
-		g["fillStyle"] = AC["lit"]
-		g["fillRect"].call(px_4 + (2 * lit), py_4 - 1, 1, 3)
+		g.fill_style = AC["vertex"]
+		g.fill_rect(px_4, py_4 - 3, 1, 7)
+		g.fill_style = AC["lit"]
+		g.fill_rect(px_4 + lit, py_4 - 2, 1, 5)
+		g.fill_style = AC["dark"]
+		g.fill_rect(px_4 - lit, py_4 - 2, 1, 5)
+		g.fill_style = (AC["dark"] if back else AC["lilac"])
+		g.fill_rect(px_4 - (2 * lit), py_4 - 1, 1, 3)
+		g.fill_style = AC["lit"]
+		g.fill_rect(px_4 + (2 * lit), py_4 - 1, 1, 3)
 		if absf(face) > 0.7:
-			g["fillStyle"] = AC["rain"][fmod((k_3 + floor(t * 3)), 6)]
-			g["fillRect"].call(px_4, py_4 - 1, 1, 2)
+			g.fill_style = AC["rain"][fmod((k_3 + floor(t * 3)), 6)]
+			g.fill_rect(px_4, py_4 - 1, 1, 2)
 
 ## Builder-mode twin of geode (called from surface textures).
 static func geode__tx(cell = null, vein = null, seed_ = null):

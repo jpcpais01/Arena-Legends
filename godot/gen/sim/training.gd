@@ -71,14 +71,14 @@ static func auto_training(points: float, seed_: float) -> Variant:
 	var total: float = 0
 	for id in TRAIN_IDS:
 		total += LEAN.get(id)
-	var x: float = (TS.ushr(int(seed_), 0) if TS.ushr(int(seed_), 0) else 1)
+	var x: float = ((int(seed_) & 0xFFFFFFFF) if (int(seed_) & 0xFFFFFFFF) else 1)
 	for i in range(ceili(points)):
 		# xorshift: cheap, deterministic, no Math.random.
-		x = TS.i32(int(x) ^ TS.shl(int(x), 13))
-		x = TS.ushr(int(x), 0)
-		x = TS.i32(int(x) ^ TS.ushr(int(x), 17))
-		x = TS.i32(int(x) ^ TS.shl(int(x), 5))
-		x = TS.ushr(int(x), 0)
+		x = (((((int(x) ^ (((((int(x) << 13)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000))) + 0x80000000) & 0xFFFFFFFF) - 0x80000000)
+		x = (int(x) & 0xFFFFFFFF)
+		x = (((((int(x) ^ ((int(x) & 0xFFFFFFFF) >> 17))) + 0x80000000) & 0xFFFFFFFF) - 0x80000000)
+		x = (((((int(x) ^ (((((int(x) << 5)) + 0x80000000) & 0xFFFFFFFF) - 0x80000000))) + 0x80000000) & 0xFFFFFFFF) - 0x80000000)
+		x = (int(x) & 0xFFFFFFFF)
 		var k: float = (x / 4294967296.0) * total
 		var pick: String = "health"
 		for id_2 in TRAIN_IDS:
@@ -93,5 +93,5 @@ static func auto_training(points: float, seed_: float) -> Variant:
 static func str_hash(s: String) -> float:
 	var h: float = 0x811c9dc5
 	for i in range(s.length()):
-		h = TS.imul(TS.i32(int(h) ^ int(s.unicode_at(i))), 0x01000193)
-	return TS.ushr(int(h), 0)
+		h = (((((((((int(h) ^ int(s.unicode_at(i)))) + 0x80000000) & 0xFFFFFFFF) - 0x80000000) * 0x01000193) + 0x80000000) & 0xFFFFFFFF) - 0x80000000)
+	return (int(h) & 0xFFFFFFFF)

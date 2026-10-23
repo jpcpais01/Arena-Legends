@@ -69,8 +69,8 @@ static func _init_centaurbarding():
 			var u: float = i / 6.0
 			var x: float = bx + ((fx - bx) * u)
 			var y: float = by + ((fy - by) * u)
-			var d: float = (1.8 + ((TS.i32(i & 1)) * 0.5)) + (((1 - u) * sw) * 0.6)
-			ln(r, t, x + 0.3, y, x - d, y - (((1 - u) * sw) * 0.5), fr, (2 if TS.i32(i & 1) else 3), GL + 1)
+			var d: float = (1.8 + ((i & 1) * 0.5)) + (((1 - u) * sw) * 0.6)
+			ln(r, t, x + 0.3, y, x - d, y - (((1 - u) * sw) * 0.5), fr, (2 if (i & 1) else 3), GL + 1)
 		# A gold band at the top of the cloth.
 		r.fill(PixelSdf.intersect(cloth, t.rect(L * 0.82, 0, 0.5, w + 3)), m.call("l4.cb.gold"), {"group": GL, "flat": 2, "noLine": true})
 		if not c["far"]:
@@ -279,7 +279,7 @@ static func _init_glacierskates():
 			var a = _p0[1]
 			var len_ = _p0[2]
 			var wd = _p0[3]
-			r.fill(shard(shin, c["top"] - 0.6, y, a, len_, wd), fr, {"group": (GL + 2) + (TS.i32(int(i) & 1)), "bevel": 0.6, "toneBias": c["bias"]})
+			r.fill(shard(shin, c["top"] - 0.6, y, a, len_, wd), fr, {"group": (GL + 2) + (int(i) & 1), "bevel": 0.6, "toneBias": c["bias"]})
 		TS.for_each(spikes, _fn1)
 		r.fill(shard(back_of(foot), 1.2, 0.2, 0.45, 2.4, 0.6), fr, {"group": GL + 2, "bevel": 0.5, "toneBias": c["bias"]})
 		# A glowing ice core at the ankle, set in a frost diamond.
