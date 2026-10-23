@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.100.0',
+    date: '2026-10-23',
+    title: 'Arena Legends on Android (first preview)',
+    notes: [
+      'Arena Legends is becoming a native Android game. The first preview APK is up on the GitHub releases page (android-v0.100.0) for anyone who wants an early look.',
+      'This first build shows the battle itself: endless AI duels between random rivals on all four arenas, with the same pixel art, light shafts, day-to-night sky, entrances, supers, finishers and HUD as the web game.',
+      'The fight runs on its own thread and the arenas are painted once and remembered, so battles start fast after the first time an arena loads.',
+      'Your hero, the menus, the Armory, the Shop and online play come to the Android version in the next updates. The web game keeps working as always.',
+    ],
+  },
+  {
     version: '0.99.0',
     date: '2026-10-23',
     title: 'Eight new items and the Stormcrow set',
