@@ -245,7 +245,8 @@ static func usable_clip(art, stance, anim: String, sec_out: String) -> Variant:
 	elif two_hand:
 		stow.append(F({}, "calm", {"hold": {"use": "none", "oneHand": false}}))
 	var ph
-	if (anim == "toss") and ((null if (null if SimGear.gear_of(art["useId"]).get("abilities") == null else TS.at(SimGear.gear_of(art["useId"]).get("abilities"), 0)) == null else (null if SimGear.gear_of(art["useId"]).get("abilities") == null else TS.at(SimGear.gear_of(art["useId"]).get("abilities"), 0))["kind"]) == "buff"):
+	var _q1 = SimGear.gear_of(art["useId"]).get("abilities")
+	if (anim == "toss") and ((null if _q1 == null else (null if TS.at(_q1, 0) == null else TS.at(_q1, 0)["kind"])) == "buff"):
 		# Smashed at your own feet (smoke bomb): raised high, then dashed down hard in a crouch.
 		ph = {"w": [U.call({"hFx": 0.32, "hFy": 0.32, "sAng": 2.2, "lean": stance["lean"] - 0.06, "head": 0.06}, "fierce"), U.call({"hFx": 0.22, "hFy": 0.56, "sAng": 2.7, "lean": -0.08, "head": 0.1, "hipY": -0.02, "toeF": 0.15}, "fierce")], "a": [done.call({"hFx": 0.56, "hFy": -0.72, "elF": 1, "lean": 0.4, "hipY": -0.17, "head": -0.12, "fNx": -0.38, "fFx": 0.4}, "shout")], "r": [done.call({"hFx": 0.48, "hFy": -0.6, "lean": 0.32, "hipY": -0.15, "fNx": -0.38, "fFx": 0.4}), done.call({"hFx": 0.42, "hFy": -0.36, "lean": 0.16, "hipY": -0.06}, "calm")]}
 	elif anim == "toss":
@@ -293,7 +294,7 @@ static func inbetween(base, frames, from) -> Variant:
 	var prev = from
 	for f in frames:
 		# Whole-body turns (rolls) wrap around; tweening them would spin the wrong way.
-		var turn: bool = absf((f["p"].get("rot") if f["p"].get("rot") != null else 0) - (TS.nn((null if prev == null else prev["p"]).get("rot"), 0))) > 1
+		var turn: bool = absf((f["p"].get("rot") if f["p"].get("rot") != null else 0) - (TS.nn((null if prev == null else prev["p"].get("rot")), 0))) > 1
 		if ((((prev != null) and (not (prev.get("smear") != null))) and (not turn)) and same_hold(prev.get("hold"), f.get("hold"))) and (gap(base, prev["p"], f["p"]) >= 1):
 			out.append(between(base, prev, f, 0.5))
 		out.append(f)

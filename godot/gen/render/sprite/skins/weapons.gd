@@ -107,7 +107,7 @@ static func bone_torch() -> Variant:
 
 static func volcano_heart() -> Variant:
 	# Twisted obsidian with lava veins that crawl, claws holding a molten crystal.
-	var _fn0 = func(x: float, y: float, ph: float):
+	var _fn0 = func(x, y, ph):
 		var v = TX.add(TX.sin(TX.add(TX.mul(x, 0.9), TX.mul(TX.sin(TX.mul(y, 1.6)), 2.4))), TX.mul(TX.sin(TX.sub(TX.mul(y, 1.1), TX.mul(x, 0.3))), 0.6))
 		return TX.sel(TX.lt(TX.abs(v), TX.add(0.2, TX.mul(0.14, TX.sin(TX.sub(TX.mul(x, 0.45), TX.mul(ph, (TX.div(PI, 2)))))))), 4, 0)
 	var lava = _fn0
@@ -146,7 +146,7 @@ static func serpent_staff() -> Variant:
 
 static func cosmic_staff() -> Variant:
 	# A gold crescent cradling a galaxy orb, with stars orbiting it frame by frame.
-	var _fn3 = func(x: float, y: float, ph: float):
+	var _fn3 = func(x, y, ph):
 		var dx = TX.sub(x, 29.4)
 		var dy = y
 		var a = TX.atan2(dy, dx)
@@ -179,7 +179,7 @@ static func cosmic_staff() -> Variant:
 # -----------------------------------------------------------------------------
 static func thunderfall() -> Variant:
 	# Winged hammer head with lightning crawling through it.
-	var _fn0 = func(x: float, y: float, ph: float):
+	var _fn0 = func(x, y, ph):
 		var q = TX.mul(ph, (TX.div(PI, 2)))
 		var v = TX.add(TX.sin(TX.add(TX.mul(y, 1.1), TX.mul(TX.sin(TX.add(TX.mul(x, 1.7), q)), 2))), TX.mul(TX.sin(TX.sub(TX.mul(x, 0.8), q)), 0.5))
 		return TX.sel(TX.lt(TX.abs(v), 0.26), 4, 0)
@@ -280,7 +280,7 @@ static func bow(spec) -> Variant:
 
 static func wyvern_recurve() -> Variant:
 	# Dark horn limbs with ridges, curling tips and bony fins near the grip.
-	var _fn0 = func(r, t, m, o):
+	var _fn0 = func(r, t, m, o, _a4 = null):
 		for s in [-1, 1]:
 			SpriteWeaponKit.fill_all(r, [t.poly([-1.2, s * 3, 1.8, s * 5.5, 1.2, s * 8.6, -1.6, s * 7])], m.call("fin"), o, 1)
 	return bow({"mats": {"limb": PixelRaster.material({"base": 0x4a3440, "shiny": true, "tex": PixelTex.bands(2.2, 1, 1)}), "fin": PixelRaster.material({"base": 0xb83a3a}), "grip": PixelRaster.material({"base": 0x7a2a22}), "tip": PixelRaster.material({"base": 0xf0e4c8, "shiny": true}), "string": PixelRaster.material({"base": 0xe8e0c8}), "arrow": SpriteWeaponKit.M["steel"].call(), "fletch": PixelRaster.material({"base": 0x3ab870})}, "thick": (func(u: float): return (1.45 - (u * 0.55)) + (0.25 if u > 0.85 else 0)), "recurve": 1.2, "extra": _fn0})

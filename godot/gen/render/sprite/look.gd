@@ -196,7 +196,7 @@ static func make_art(build) -> Variant:
 	var special_skin_id = _d10[0]
 	var special_skin = _d10[1]
 	for k_6 in ["plume", "plumeTip", "fangTooth", "fangBlood"]:
-		var spec_3 = (null if (null if special_skin == null else special_skin.get("mats")) == null else (null if special_skin == null else special_skin.get("mats")).get(k_6))
+		var spec_3 = (null if special_skin == null else (null if special_skin.get("mats") == null else special_skin.get("mats").get(k_6)))
 		if spec_3 != null:
 			mats[k_6] = PixelRaster.material(spec_3)
 	# A reshaped plume brings its own materials (named `p.*`).

@@ -19,7 +19,7 @@ static func veined(dark, hot: float, tex) -> Variant:
 # -----------------------------------------------------------------------------
 static func raven_feather() -> Variant:
 	# Throwing knives as black raven feathers: a bone quill, a dark vane and a steel-edged tip.
-	var barbs = (func(x: float, y: float, _a2 = null): return (TX.sel(TX.eq(wrap___tx(TX.floor(TX.add(TX.mul(x, 1.4), TX.mul(TX.abs(y), 1.6))), 2), 0), -1, 0)))
+	var barbs = (func(x, y, _a2 = null): return (TX.sel(TX.eq(wrap___tx(TX.floor(TX.add(TX.mul(x, 1.4), TX.mul(TX.abs(y), 1.6))), 2), 0), -1, 0)))
 	var _fn0 = func(r, t, m, o):
 		var g: float = (o.get("group") if o.get("group") != null else 6)
 		SpriteWeaponKit.fill_all(r, [t.cap(-3, 0, 1, 0, 0.55, 0.45)], m.call("quill"), o, 0.8)
@@ -51,7 +51,7 @@ static func lotus_chakram() -> Variant:
 # -----------------------------------------------------------------------------
 static func tidecaller() -> Variant:
 	# A wavy blade of living water: foam crests roll down it, a shell guard and a pearl pommel.
-	var _fn0 = func(x: float, y: float, ph: float):
+	var _fn0 = func(x, y, ph):
 		var v = TX.sin(TX.add(TX.sub(TX.mul(x, 1.1), TX.mul(TX.mul(ph, Q), 2)), TX.mul(y, 0.9)))
 		return TX.sel(TX.gt(v, 0.86), 4, TX.sel(TX.lt(v, -0.7), -1, 0))
 	var wave = _fn0
@@ -107,7 +107,7 @@ static func everbloom() -> Variant:
 
 static func venomspitter() -> Variant:
 	# A viper-headed crossbow: coiled-snake limbs, glowing venom sacs and a drip that keeps falling.
-	var ooze = (func(x: float, y: float, ph: float): return (TX.sel(TX.gt(TX.sin(TX.sub(TX.add(TX.mul(x, 1.3), TX.mul(y, 0.8)), TX.mul(TX.mul(ph, Q), 2))), 0.7), 4, 0)))
+	var ooze = (func(x, y, ph): return (TX.sel(TX.gt(TX.sin(TX.sub(TX.add(TX.mul(x, 1.3), TX.mul(y, 0.8)), TX.mul(TX.mul(ph, Q), 2))), 0.7), 4, 0)))
 	var _fn0 = func(r, t, m, o):
 		var g: float = (o.get("group") if o.get("group") != null else 6)
 		SpriteWeaponKit.fill_all(r, [t.poly([-2, -1.6, 8, -1.2, 8, 1.2, 1, 1.4, -1, 3.8, -3, 3.6, -1.6, 0.6])], m.call("stock"), o, 1.4)
@@ -131,7 +131,7 @@ static func venomspitter() -> Variant:
 
 static func aurora_horn() -> Variant:
 	# A pale spiralled horn with the northern lights flowing through it, glowing from the bell.
-	var _fn0 = func(x: float, y: float, ph: float):
+	var _fn0 = func(x, y, ph):
 		var v = TX.sin(TX.add(TX.sub(TX.mul(x, 0.8), TX.mul(ph, Q)), TX.mul(TX.sin(TX.mul(y, 1.6)), 1.2)))
 		return TX.sel(TX.gt(v, 0.35), 1, TX.sel(TX.lt(v, -0.55), -1, 0))
 	var aurora = _fn0
@@ -163,5 +163,5 @@ static func aurora_horn() -> Variant:
 	return {"tip": 10, "mats": {"horn": PixelRaster.material({"base": 0x3ac8a0, "ramp": [0x1a2a4a, 0x2a5a8a, 0x3ab8a0, 0x9af0c0, 0xead8ff], "tex": aurora}), "ridge": PixelRaster.material({"base": 0xf2f6ff, "shiny": true}), "band": PixelRaster.material({"base": 0xd8e0f0, "shiny": true, "step": 0.16}), "bell": PixelRaster.material({"base": 0xb8ffe0, "glow": true}), "star": PixelRaster.material({"base": 0xffffff, "glow": true})}, "draw": _fn1}
 
 ## Builder-mode twin of wrap_ (called from surface textures).
-static func wrap___tx(v: float, p: float, _a2 = null):
+static func wrap___tx(v, p, _a2 = null):
 	return TX.mod((TX.add((TX.mod(v, p)), p)), p)

@@ -26,7 +26,7 @@ static var DJINN_FX = {"spark": 0xc8f0ff, "spark2": 0x2a5ad8, "kind": "flame"}
 # -----------------------------------------------------------------------------
 # Sands of the Djinn (hourglass): icon and battle sprite share one drawing
 # -----------------------------------------------------------------------------
-static var HG_SPECS = {"k.gold": gold(), "k.band": gold(filigree), "k.turq": turq(), "k.gem": gem(), "k.glass": ramp([0x0e3a48, 0x1e7080, 0x3aa8b0, 0x8ae0e0, 0xe8ffff], {"shiny": true}), "k.sand": sand((func(x: float, y: float, ph: float): return (TX.sel(TX.lt(TX.hash(TX.add(TX.floor(TX.mul(x, 1.3)), TX.mul(ph, 7)), TX.floor(TX.mul(y, 1.3))), 0.08), 2, 0)))), "k.stream": {"base": SAND[3], "ramp": SAND, "glow": true}, "k.smoke": smoke(), "k.fire": fire(), "k.hot": {"base": 0xe8faff, "glow": true}}
+static var HG_SPECS = {"k.gold": gold(), "k.band": gold(filigree), "k.turq": turq(), "k.gem": gem(), "k.glass": ramp([0x0e3a48, 0x1e7080, 0x3aa8b0, 0x8ae0e0, 0xe8ffff], {"shiny": true}), "k.sand": sand((func(x, y, ph): return (TX.sel(TX.lt(TX.hash(TX.add(TX.floor(TX.mul(x, 1.3)), TX.mul(ph, 7)), TX.floor(TX.mul(y, 1.3))), 0.08), 2, 0)))), "k.stream": {"base": SAND[3], "ramp": SAND, "glow": true}, "k.smoke": smoke(), "k.fire": fire(), "k.hot": {"base": 0xe8faff, "glow": true}}
 static var HG = SkinsKit.mats(HG_SPECS)
 static var hourglassProj = _init_hourglassproj()
 static func _init_hourglassproj():
@@ -49,7 +49,7 @@ static var DJINN = {"katana.djinn": TS.merge([{"weapon": scimitar}, FX]), "trick
 # -----------------------------------------------------------------------------
 ##  Silk: soft folds, and a sheen sliding across it one step per frame.
 static func silk(fold: float = 3.2, sheen: bool = true) -> Variant:
-	var _fn3 = func(x: float, y: float, ph: float):
+	var _fn3 = func(x, y, ph):
 		var _c0 = TX.and_(sheen, TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.55), TX.mul(y, 0.35)), TX.mul(ph, 1.7)), 9), 1.1))
 		var _r1 = 1
 		var _r2 = TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(y, 0.9), TX.mul(TX.sin(TX.mul(x, 0.5)), 0.8)), fold), 0.6), -1, 0)
@@ -57,14 +57,14 @@ static func silk(fold: float = 3.2, sheen: bool = true) -> Variant:
 	return _fn3
 
 ##  Loose trousers: long folds down the leg (thigh and shin frames run along it), the sheen sliding over them.
-static func drape(x: float, y: float, ph: float):
+static func drape(x, y, ph):
 	var _c0 = TX.lt(SkinsKit.wrap___tx(TX.add(TX.sub(TX.mul(x, 0.35), TX.mul(y, 0.6)), TX.mul(ph, 1.5)), 10), 1)
 	var _r1 = 1
 	var _r2 = TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(y, TX.mul(TX.sin(TX.mul(x, 0.45)), 0.7)), 3.8), 0.7), -1, 0)
 	return TX.sel(_c0, _r1, _r2)
 
 ##  Wrapped cloth: diagonal folds round a turban, the sheen riding along them.
-static func wound(x: float, y: float, ph: float):
+static func wound(x, y, ph):
 	var v = SkinsKit.wrap___tx(TX.sub(TX.mul(y, 0.85), TX.mul(x, 0.32)), 2.4)
 	var _c0 = TX.lt(v, 0.55)
 	var _r1 = -1
@@ -72,7 +72,7 @@ static func wound(x: float, y: float, ph: float):
 	return TX.sel(_c0, _r1, _r2)
 
 ##  Gold filigree: a band of tiny scrolls (dark), a glint wandering along it.
-static func filigree(x: float, y: float, ph: float):
+static func filigree(x, y, ph):
 	var _c0 = TX.lt(TX.hash(TX.add(TX.floor(TX.mul(x, 0.8)), TX.mul(ph, 17)), TX.sub(TX.floor(TX.mul(y, 0.8)), TX.mul(ph, 5))), 0.05)
 	var _r1 = 1
 	var a = TX.sub(SkinsKit.wrap___tx(x, 2.6), 1.3)
@@ -82,27 +82,27 @@ static func filigree(x: float, y: float, ph: float):
 	return TX.sel(_c0, _r1, _r2)
 
 ##  Watered (damascus) steel ripples down the blade.
-static func watered(x: float, y: float, _a2 = null):
+static func watered(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.55), TX.mul(TX.sin(TX.add(TX.mul(y, 2.2), TX.mul(x, 0.3))), 0.7)), 2.4), 0.55), -1, 0))
 
 ##  Flames flickering upward, hot tongues stepping each frame.
-static func flicker(x: float, y: float, ph: float):
+static func flicker(x, y, ph):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.sub(TX.mul(y, 0.9), TX.mul(ph, 1.4)), TX.mul(TX.sin(TX.mul(x, 1.3)), 0.6)), 3), 0.9), 1, 0))
 
 ##  A gem's heart breathing over the loop.
-static func pulse(_x: float, _y: float, ph: float):
+static func pulse(_x, _y, ph):
 	return TX.pick([0, 1, 0, -1], TX.mod(ph, 4))
 
 ##  Thread wound round a grip.
-static func binding(x: float, y: float, _a2 = null):
+static func binding(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 1.1), TX.mul(y, 0.6)), 1.4), 0.45), -1, 0))
 
 ##  Embroidered stripes of the sash.
-static func sash_stripe(_x: float, y: float, _a2 = null):
+static func sash_stripe(_x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(y, 2.2), 0.55), 1, 0))
 
 ##  Embroidery on slippers: little gold lozenges.
-static func lozenge(x: float, y: float, _a2 = null):
+static func lozenge(x, y, _a2 = null):
 	return (TX.sel(TX.and_(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.9))), 3), 0), TX.eq(SkinsKit.wrap___tx(TX.floor(TX.sub(TX.mul(x, 0.9), TX.mul(y, 0.9))), 3), 0)), 1, 0))
 
 # -----------------------------------------------------------------------------
@@ -122,7 +122,7 @@ static func saff(tex = null) -> Variant:
 ## tone but never the top one (cloth stays dark at night; only gems, gold and fire shine).
 static func cloth(r, tex = null) -> Variant:
 	if tex == null: tex = silk()
-	return ({"base": r[2], "ramp": [PixelColor.mix(r[0], r[1], 0.45), r[2], r[3], r[4], r[4]], "tex": (func(x: float, y: float, ph: float): return TX.sub(tex.call(x, y, ph), 1))})
+	return ({"base": r[2], "ramp": [PixelColor.mix(r[0], r[1], 0.45), r[2], r[3], r[4], r[4]], "tex": (func(x, y, ph): return TX.sub(tex.call(x, y, ph), 1))})
 
 static func gold(tex = null) -> Variant:
 	return ramp(GOLD, {"shiny": true, "tex": tex})
@@ -238,7 +238,7 @@ static func scimitar() -> Variant:
 		SpriteWeaponKit.fill_all(r, [PixelSdf.union(t.rect(0.6, 0, 0.75, 2.9, 0.3), t.cap(0.8, 2.6, 2.6, 3.6, 0.55, 0.45), t.cap(0.8, -2.6, 2.6, -3.6, 0.55, 0.45))], m.call("gold"), o, 1)
 		SpriteWeaponKit.fill_all(r, [t.circ(2.9, 3.7, 0.65), t.circ(2.9, -3.7, 0.65)], m.call("grip"), o, 0.6)
 		r.fill(t.circ(0.7, 0, 0.55), m.call("gem"), {"group": g})
-	return {"tip": 31, "mats": {"blade": PixelRaster.material(ramp(STEEL, {"shiny": true, "tex": watered})), "gold": PixelRaster.material(gold()), "inlay": PixelRaster.material(gold(filigree)), "grip": PixelRaster.material(turq(binding)), "gem": PixelRaster.material(gem()), "fire": PixelRaster.material(fire()), "hot": PixelRaster.material({"base": 0xe8faff, "glow": true}), "tassel": PixelRaster.material(saff((func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(x, 2), 1.6), 0.5), -1, 0)))))}, "draw": _fn0}
+	return {"tip": 31, "mats": {"blade": PixelRaster.material(ramp(STEEL, {"shiny": true, "tex": watered})), "gold": PixelRaster.material(gold()), "inlay": PixelRaster.material(gold(filigree)), "grip": PixelRaster.material(turq(binding)), "gem": PixelRaster.material(gem()), "fire": PixelRaster.material(fire()), "hot": PixelRaster.material({"base": 0xe8faff, "glow": true}), "tassel": PixelRaster.material(saff((func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(x, 2), 1.6), 0.5), -1, 0)))))}, "draw": _fn0}
 
 static func wishing_lamp() -> Variant:
 	# A gold oil lamp held by its handle, upright whatever angle the hand is at: a filigree band round the
@@ -282,7 +282,7 @@ static func wishing_lamp() -> Variant:
 		# A glint wandering over the belly.
 		var ga: float = (ph * SkinsKit.Q) + 2.2
 		r.dot(L.x(6.8 + (cos(ga) * 2.6), (sin(ga) * 1.4) + 0.6), L.y(6.8 + (cos(ga) * 2.6), (sin(ga) * 1.4) + 0.6), m.call("gold"), 4, g)
-	return {"tip": 13, "mats": {"gold": PixelRaster.material(gold()), "band": PixelRaster.material(gold(filigree)), "turq": PixelRaster.material(turq()), "gem": PixelRaster.material(gem()), "smoke": PixelRaster.material(smoke()), "fire": PixelRaster.material(fire()), "hot": PixelRaster.material({"base": 0xe8faff, "glow": true}), "tassel": PixelRaster.material(saff((func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(x, 2), 1.6), 0.5), -1, 0)))))}, "draw": _fn2}
+	return {"tip": 13, "mats": {"gold": PixelRaster.material(gold()), "band": PixelRaster.material(gold(filigree)), "turq": PixelRaster.material(turq()), "gem": PixelRaster.material(gem()), "smoke": PixelRaster.material(smoke()), "fire": PixelRaster.material(fire()), "hot": PixelRaster.material({"base": 0xe8faff, "glow": true}), "tassel": PixelRaster.material(saff((func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(x, 2), 1.6), 0.5), -1, 0)))))}, "draw": _fn2}
 
 ## An hourglass of turquoise glass between two gold plates, an onion dome on top crowned with a sapphire,
 ## twisted gold posts, golden sand trickling through, and the bound djinn slipping out of the finial as a
@@ -364,7 +364,7 @@ static func sultans_turban() -> Variant:
 				var i = _e0[0]
 				var x_2 = _e0[1]
 				r.dot(H.x(x_2, 2.3 + (x_2 * 0.06)), H.y(x_2, 2.3 + (x_2 * 0.06)), m.call("h.dj.gold"), (4 if i == fmod(ph, 3) else 3), 54)
-		return ({"mats": {"h.dj.silk": PixelRaster.material(cloth(TURQ, wound)), "h.dj.saff": PixelRaster.material(cloth(SAFF, wound)), "h.dj.gold": PixelRaster.material(gold()), "h.dj.band": PixelRaster.material(gold(filigree)), "h.dj.gem": PixelRaster.material(gem()), "h.dj.pearl": PixelRaster.material(pearl()), "h.dj.plume": PixelRaster.material(pearl((func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.5)), 2.6), 0.5), -1, 0))))), "h.dj.tail": PixelRaster.material(cloth(TURQ, silk(3, false)))}, "face": true, "draw": _fn1})
+		return ({"mats": {"h.dj.silk": PixelRaster.material(cloth(TURQ, wound)), "h.dj.saff": PixelRaster.material(cloth(SAFF, wound)), "h.dj.gold": PixelRaster.material(gold()), "h.dj.band": PixelRaster.material(gold(filigree)), "h.dj.gem": PixelRaster.material(gem()), "h.dj.pearl": PixelRaster.material(pearl()), "h.dj.plume": PixelRaster.material(pearl((func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.5)), 2.6), 0.5), -1, 0))))), "h.dj.tail": PixelRaster.material(cloth(TURQ, silk(3, false)))}, "face": true, "draw": _fn1})
 	return TS.merge([{"head": _fn2}, FX])
 
 static func djinn_silks() -> Variant:

@@ -44,7 +44,7 @@ static var HIND = [0, -0.7, 2.8, -2.4, 5.8, -2.5, 7.6, -1, 10, -0.2, 13, 0.3, 14
 # -----------------------------------------------------------------------------
 # Battle sprites (their own materials)
 # -----------------------------------------------------------------------------
-static var PM = SkinsKit.mats({"wing": {"base": LUNA[3], "ramp": LUNA, "glow": true}, "wingDeep": {"base": LUNA[1], "ramp": LUNA, "glow": true}, "edge": {"base": EDGE[3], "ramp": EDGE, "glow": true}, "spot": {"base": SPOT[3], "ramp": SPOT, "glow": true}, "hot": {"base": WHITE, "glow": true}, "stone": {"base": MOONSTONE[3], "ramp": MOONSTONE, "glow": true}, "moon": {"base": MOONSTONE[3], "ramp": MOONSTONE, "glow": true, "tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.add(TX.floor(TX.mul(x, 0.5)), 3), TX.floor(TX.mul(y, 0.5))), 0.12), -1, 0)))}, "shadow": {"base": 0x2a1a44, "ramp": [0x120a20, 0x1e1234, 0x2a1a44, 0x3a2858, 0x50407a]}, "silver": {"base": SILVER[2], "ramp": SILVER, "shiny": true, "step": 0.16}, "fur": {"base": FUZZ[3], "ramp": FUZZ}, "dust": {"base": 0xd8e4ff, "glow": true}, "teal": {"base": SHROOM[2], "ramp": SHROOM, "glow": true}})
+static var PM = SkinsKit.mats({"wing": {"base": LUNA[3], "ramp": LUNA, "glow": true}, "wingDeep": {"base": LUNA[1], "ramp": LUNA, "glow": true}, "edge": {"base": EDGE[3], "ramp": EDGE, "glow": true}, "spot": {"base": SPOT[3], "ramp": SPOT, "glow": true}, "hot": {"base": WHITE, "glow": true}, "stone": {"base": MOONSTONE[3], "ramp": MOONSTONE, "glow": true}, "moon": {"base": MOONSTONE[3], "ramp": MOONSTONE, "glow": true, "tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.add(TX.floor(TX.mul(x, 0.5)), 3), TX.floor(TX.mul(y, 0.5))), 0.12), -1, 0)))}, "shadow": {"base": 0x2a1a44, "ramp": [0x120a20, 0x1e1234, 0x2a1a44, 0x3a2858, 0x50407a]}, "silver": {"base": SILVER[2], "ramp": SILVER, "shiny": true, "step": 0.16}, "fur": {"base": FUZZ[3], "ramp": FUZZ}, "dust": {"base": 0xd8e4ff, "glow": true}, "teal": {"base": SHROOM[2], "ramp": SHROOM, "glow": true}})
 static var mothBolt = _init_mothbolt()
 static func _init_mothbolt():
 	var _fn0 = func(r, t, f: float, h):
@@ -137,12 +137,12 @@ static var MOTHQUEEN = {"arcane_staff.mothqueen": TS.merge([{"weapon": moonlit_s
 # Textures
 # -----------------------------------------------------------------------------
 ##  Faint veins fanning along a wing (wing-local space).
-static func veins(x: float, y: float, _a2 = null):
+static func veins(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(y, 1.1), TX.mul(x, 0.18)), 1.9), 0.3), -1, 0))
 
 ##  Silver dust on velvet: sparse motes that flare in turn (hot tone 4) over a soft nap.
 static func dust(cell: float = 2.8, density: float = 0.012) -> Variant:
-	var _fn3 = func(x: float, y: float, ph: float):
+	var _fn3 = func(x, y, ph):
 		var cx = TX.floor(TX.div(x, cell))
 		var cy = TX.floor(TX.div(y, cell))
 		var h = TX.hash(TX.add(TX.mul(cx, 3), 1), TX.add(TX.mul(cy, 5), 2))
@@ -153,23 +153,23 @@ static func dust(cell: float = 2.8, density: float = 0.012) -> Variant:
 	return _fn3
 
 ##  Moth fur: soft tufts.
-static func tufts(x: float, y: float, _a2 = null):
+static func tufts(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.4)), TX.floor(TX.mul(y, 1.4))), 0.16), -1, 0))
 
 ##  Birch bark: dark dashes across a pale trunk.
-static func bark(x: float, y: float, _a2 = null):
+static func bark(x, y, _a2 = null):
 	return (TX.sel(TX.and_(TX.lt(SkinsKit.wrap___tx(x, 3.1), 0.5), TX.lt(TX.abs(TX.add(y, TX.mul(TX.sin(x), 0.4))), 0.7)), -2, TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 2)), TX.floor(TX.mul(y, 2))), 0.07), -1, 0)))
 
 ##  A glint sliding along a part, one step per frame.
 static func sheen(period: float = 8.0, speed: float = 2.0, w: float = 1.0) -> Variant:
-	return (func(x: float, _y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, speed)), period), w), 1, 0)))
+	return (func(x, _y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, speed)), period), w), 1, 0)))
 
 ##  A moonstone's milky light rolling over it.
-static func milk(_x: float, _y: float, ph: float):
+static func milk(_x, _y, ph):
 	return TX.pick([0, 1, 0, -1], TX.mod(ph, 4))
 
 ##  Silk wound round a leg: diagonal wraps.
-static func silk(x: float, y: float, _a2 = null):
+static func silk(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.8), TX.mul(y, 1.3)), 2.2), 0.42), -1, 0))
 
 # -----------------------------------------------------------------------------
@@ -189,7 +189,7 @@ static func hoop(F, cx: float, cy: float, rx: float, ry: float, w: float, n: flo
 		var a: float = ((i / n) * PI) * 2
 		out.append_array([cx + (cos(a) * rx), cy + (sin(a) * ry)])
 		inn.append_array([cx + (cos(a) * (rx - w)), cy + (sin(a) * (ry - w))])
-	var pts = TS.arr(out)
+	var pts = TS.arr(out).duplicate()
 	for i_2 in range(inn.size() - 2, 0 - 1, -2):
 		pts.append_array([inn[i_2], inn[i_2 + 1]])
 	return F.poly(pts)
@@ -313,7 +313,7 @@ static func lunar_chakram() -> Variant:
 		wing_wheel(r, t, 3, 0.35, 1, {"wing": m.call("wing"), "edge": m.call("edge"), "spot": m.call("spot"), "eye": m.call("eye"), "silver": m.call("silver"), "stone": m.call("stone")}, 40, (o.get("toneBias") if o.get("toneBias") != null else 0))
 		SpriteWeaponKit.fill_all(r, [t.cap(-1.2, -1.5, -1.2, 1.5, 0.95)], m.call("grip"), o, 1)
 		dot(r, t, -1.2, 0, m.call("silver"), 4, g)
-	return {"tip": 5, "mats": {"silver": PixelRaster.material({"base": SILVER[2], "ramp": SILVER, "shiny": true, "step": 0.16, "tex": sheen(7, 1.75)}), "grip": PixelRaster.material({"base": LUNA[1], "ramp": LUNA, "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.2), 0.4), -1, 0)))}), "stone": PixelRaster.material({"base": MOONSTONE[3], "ramp": MOONSTONE, "glow": true, "tex": milk}), "wing": PixelRaster.material({"base": LUNA[2], "ramp": LUNA, "tex": veins}), "edge": PixelRaster.material({"base": SILVER[3], "ramp": SILVER, "shiny": true}), "spot": PixelRaster.material({"base": SPOT[2], "ramp": SPOT, "shiny": true}), "eye": PixelRaster.material({"base": MOONSTONE[3], "ramp": MOONSTONE, "glow": true, "tex": milk})}, "draw": _fn0}
+	return {"tip": 5, "mats": {"silver": PixelRaster.material({"base": SILVER[2], "ramp": SILVER, "shiny": true, "step": 0.16, "tex": sheen(7, 1.75)}), "grip": PixelRaster.material({"base": LUNA[1], "ramp": LUNA, "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.2), 0.4), -1, 0)))}), "stone": PixelRaster.material({"base": MOONSTONE[3], "ramp": MOONSTONE, "glow": true, "tex": milk}), "wing": PixelRaster.material({"base": LUNA[2], "ramp": LUNA, "tex": veins}), "edge": PixelRaster.material({"base": SILVER[3], "ramp": SILVER, "shiny": true}), "spot": PixelRaster.material({"base": SPOT[2], "ramp": SPOT, "shiny": true}), "eye": PixelRaster.material({"base": MOONSTONE[3], "ramp": MOONSTONE, "glow": true, "tex": milk})}, "draw": _fn0}
 
 ##  Silver dust scattered along a trail running back from x0 to x1 (half width `w`), reshuffled each frame.
 static func glitter(r, t, f: float, x0: float, x1: float, w: float, n: float, hot: float, dim: float, g: float) -> void:
@@ -431,7 +431,7 @@ static func antennae_circlet() -> Variant:
 			# A mote of silver dust shaken from the antennae.
 			var u_2: float = ph / 4.0
 			dot(r, H, (-2.6) - (u_2 * 3), 13.4 - (u_2 * 4), m.call("h.dust"), 3, GA + 5)
-		return ({"mats": {"h.silk": PixelRaster.material({"base": 0xd8d6ec, "ramp": [0x5e5a84, 0x9894bc, 0xcac8e2, 0xeae8f6, 0xffffff], "tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(y, 1.4), TX.mul(x, 0.15)), 2.2), 0.45), -1, 0)))}), "h.tail": PixelRaster.material({"base": 0xd8d6ec, "ramp": [0x5e5a84, 0x9894bc, 0xcac8e2, 0xeae8f6, 0xffffff]}), "h.edge": PixelRaster.material({"base": EDGE[2], "ramp": EDGE}), "h.spot": PixelRaster.material({"base": SPOT[2], "ramp": SPOT, "shiny": true}), "h.silver": PixelRaster.material({"base": SILVER[2], "ramp": SILVER, "shiny": true, "step": 0.16, "tex": sheen(6, 1.5)}), "h.stone": PixelRaster.material({"base": MOONSTONE[3], "ramp": MOONSTONE, "glow": true, "tex": milk}), "h.ant": PixelRaster.material({"base": SILVER[3], "ramp": SILVER, "shiny": true}), "h.dust": PixelRaster.material({"base": DUST, "glow": true})}, "draw": _fn5})
+		return ({"mats": {"h.silk": PixelRaster.material({"base": 0xd8d6ec, "ramp": [0x5e5a84, 0x9894bc, 0xcac8e2, 0xeae8f6, 0xffffff], "tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(y, 1.4), TX.mul(x, 0.15)), 2.2), 0.45), -1, 0)))}), "h.tail": PixelRaster.material({"base": 0xd8d6ec, "ramp": [0x5e5a84, 0x9894bc, 0xcac8e2, 0xeae8f6, 0xffffff]}), "h.edge": PixelRaster.material({"base": EDGE[2], "ramp": EDGE}), "h.spot": PixelRaster.material({"base": SPOT[2], "ramp": SPOT, "shiny": true}), "h.silver": PixelRaster.material({"base": SILVER[2], "ramp": SILVER, "shiny": true, "step": 0.16, "tex": sheen(6, 1.5)}), "h.stone": PixelRaster.material({"base": MOONSTONE[3], "ramp": MOONSTONE, "glow": true, "tex": milk}), "h.ant": PixelRaster.material({"base": SILVER[3], "ramp": SILVER, "shiny": true}), "h.dust": PixelRaster.material({"base": DUST, "glow": true})}, "draw": _fn5})
 	return TS.merge([{"head": _fn6}, FX])
 
 # -----------------------------------------------------------------------------
@@ -548,7 +548,7 @@ static func dewdrop_slippers() -> Variant:
 		var hand: float = (signf(shin.sx * shin.sy) if signf(shin.sx * shin.sy) else 1)
 		hind_wing(r, sub(shin, 1.4, (-w) + 0.2, (-2.25) + (beat * 0.5), 0.36, ((-1) * hand) * hand), ink, {"group": 30, "toneBias": c["bias"], "spots": false})
 		fore_wing(r, sub(shin, 1.6, (-w) + 0.2, (-1.05) + beat, 0.42, ((-1) * hand) * hand), ink, {"group": 31, "toneBias": c["bias"]})
-	return TS.merge([{"mats": {"zephyr": {"base": VELVET[3], "ramp": [VELVET[1], VELVET[2], VELVET[3], 0x6a58a0, 0xb8b0e0], "shiny": true, "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3), 0.4), -1, 0)))}, "zephyrTrim": {"base": SILVER[2], "ramp": SILVER, "shiny": true}, "b.ribbon": {"base": SILVER[3], "ramp": SILVER}, "b.dew": {"base": MOONSTONE[3], "ramp": MOONSTONE, "glow": true, "tex": milk}, "b.wing": {"base": LUNA[2], "ramp": LUNA}, "b.edge": {"base": EDGE[2], "ramp": EDGE}, "b.spot": {"base": SPOT[2], "ramp": SPOT, "shiny": true}}, "boots": {"wing": null, "height": 0.42, "bulk": 0.18, "over": _fn0}}, FX])
+	return TS.merge([{"mats": {"zephyr": {"base": VELVET[3], "ramp": [VELVET[1], VELVET[2], VELVET[3], 0x6a58a0, 0xb8b0e0], "shiny": true, "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3), 0.4), -1, 0)))}, "zephyrTrim": {"base": SILVER[2], "ramp": SILVER, "shiny": true}, "b.ribbon": {"base": SILVER[3], "ramp": SILVER}, "b.dew": {"base": MOONSTONE[3], "ramp": MOONSTONE, "glow": true, "tex": milk}, "b.wing": {"base": LUNA[2], "ramp": LUNA}, "b.edge": {"base": EDGE[2], "ramp": EDGE}, "b.spot": {"base": SPOT[2], "ramp": SPOT, "shiny": true}}, "boots": {"wing": null, "height": 0.42, "bulk": 0.18, "over": _fn0}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
 static func mothqueen_aura(g, x: float, y: float, t: float, layer: String) -> void:

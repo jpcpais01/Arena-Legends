@@ -31,7 +31,7 @@ static func legend(spark: float, spark2: float, trail = null) -> Variant:
 	if trail == null: trail = spark
 	return ({"fx": {"spark": spark, "spark2": spark2}, "trail": [trail, PixelColor.mix(trail, spark2, 0.55)]})
 
-static func hamon(x: float, y: float, _a2 = null):
+static func hamon(x, y, _a2 = null):
 	return (TX.sel(TX.lt(y, TX.add(-0.25, TX.mul(TX.sin(TX.mul(x, 0.9)), 0.35))), 1, 0))
 
 ##  Dark tones with a hot fifth tone that the texture lights up.
@@ -39,13 +39,13 @@ static func veined(dark, hot: float, tex) -> Variant:
 	return ({"base": dark[2], "ramp": (TS.arr(dark) + [hot]), "tex": tex})
 
 ##  Nebula cloth: drifting violet clouds and twinkling stars (torso space).
-static func nebula(x: float, y: float, ph: float):
+static func nebula(x, y, ph):
 	var _c0 = TX.lt(TX.hash(TX.add(TX.floor(x), TX.mul(ph, 29)), TX.sub(TX.floor(y), TX.mul(ph, 11))), 0.045)
 	var _r1 = 4
 	var _r2 = TX.sel(TX.gt(TX.sin(TX.add(TX.sub(TX.add(TX.mul(x, 0.55), TX.mul(y, 0.4)), TX.mul(ph, Q)), TX.mul(TX.sin(TX.mul(y, 0.3)), 1.5))), 0.55), 1, 0)
 	return TX.sel(_c0, _r1, _r2)
 
 ##  Forked lightning crawling through a material.
-static func storm(x: float, y: float, ph: float):
+static func storm(x, y, ph):
 	var v = TX.add(TX.sin(TX.add(TX.mul(y, 1.2), TX.mul(TX.sin(TX.add(TX.mul(x, 1.6), TX.mul(ph, Q))), 2))), TX.mul(TX.sin(TX.sub(TX.mul(x, 0.9), TX.mul(ph, Q))), 0.5))
 	return TX.sel(TX.lt(TX.abs(v), 0.24), 4, 0)

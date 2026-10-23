@@ -16,7 +16,7 @@ const GOLD = 0xe8c050
 static var FOX = [0x1a2a8a, 0x2a5ae0, 0x4aa8ff, 0x9ae8ff, 0xf0ffff]
 static var FX = SkinsKit.epic_fx(0xd8f8ff, 0x2a5ae0, "flame", 0x9ae8ff)
 # Battle sprites (their own materials).
-static var FM = SkinsKit.mats({"paper": {"base": 0xfff4e0, "glow": true, "ramp": [0xc8a888, 0xe8d4b8, 0xfff4e0, 0xfffaf0, 0xffffff], "tex": (func(_x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(y, 2), 0.6), -1, 0)))}, "lacq": {"base": BLACK, "shiny": true}, "verm": {"base": VERMILION}, "gold": {"base": GOLD, "shiny": true}, "fire": {"base": FOX[2], "glow": true, "ramp": FOX}, "hot": {"base": 0xf0ffff, "glow": true}, "deep": {"base": FOX[1], "glow": true, "ramp": FOX}})
+static var FM = SkinsKit.mats({"paper": {"base": 0xfff4e0, "glow": true, "ramp": [0xc8a888, 0xe8d4b8, 0xfff4e0, 0xfffaf0, 0xffffff], "tex": (func(_x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(y, 2), 0.6), -1, 0)))}, "lacq": {"base": BLACK, "shiny": true}, "verm": {"base": VERMILION}, "gold": {"base": GOLD, "shiny": true}, "fire": {"base": FOX[2], "glow": true, "ramp": FOX}, "hot": {"base": 0xf0ffff, "glow": true}, "deep": {"base": FOX[1], "glow": true, "ramp": FOX}})
 static var lanternProj = _init_lanternproj()
 static func _init_lanternproj():
 	var _fn0 = func(r, t, f: float, h):
@@ -63,12 +63,12 @@ static func _init_lantern():
 		r.fill(PixelSdf.union(t.poly([-2.6, 1.6, 0, -3.4, 2.6, 1.6]), t.poly([-2.6, 1.6, -2.4, 4.4, -0.8, 1.8]), t.poly([2.6, 1.6, 2.4, 4.4, 0.8, 1.8])), m.call("k.verm"), {"group": 5, "flat": 2})
 		r.dot(t.x(-1, 0.6), t.y(-1, 0.6), m.call("k.gold"), 4, 5)
 		r.dot(t.x(1, 0.6), t.y(1, 0.6), m.call("k.gold"), 4, 5)
-	return {"mats": {"lantern": SkinsKit.shiny(BLACK), "wisp": SkinsKit.glow(FOX[2]), "wispHot": SkinsKit.glow(0xf0ffff), "k.paper": {"base": 0xfff4e0, "ramp": [0xc8a888, 0xe8d4b8, 0xfff4e0, 0xfffaf0, 0xffffff], "tex": (func(_x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(y, 2.2), 0.6), -1, 0)))}, "k.lacq": SkinsKit.shiny(BLACK), "k.verm": SkinsKit.plain(VERMILION), "k.gold": SkinsKit.shiny(GOLD), "k.fire": SkinsKit.glow(FOX[2]), "k.hot": SkinsKit.glow(0xf0ffff)}, "glow": [0xc8f4ff, 0x2a5ae0], "icon": _fn0, "proj": {"lantern": lanternProj, "wisp": wispProj}}
+	return {"mats": {"lantern": SkinsKit.shiny(BLACK), "wisp": SkinsKit.glow(FOX[2]), "wispHot": SkinsKit.glow(0xf0ffff), "k.paper": {"base": 0xfff4e0, "ramp": [0xc8a888, 0xe8d4b8, 0xfff4e0, 0xfffaf0, 0xffffff], "tex": (func(_x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(y, 2.2), 0.6), -1, 0)))}, "k.lacq": SkinsKit.shiny(BLACK), "k.verm": SkinsKit.plain(VERMILION), "k.gold": SkinsKit.shiny(GOLD), "k.fire": SkinsKit.glow(FOX[2]), "k.hot": SkinsKit.glow(0xf0ffff)}, "glow": [0xc8f4ff, 0x2a5ae0], "icon": _fn0, "proj": {"lantern": lanternProj, "wisp": wispProj}}
 static var FOXFIRE = {"katana.kitsunebi": TS.merge([{"weapon": kitsunebi}, FX]), "frost_wand.gohei": TS.merge([{"weapon": gohei}, FX]), "wisp_lantern.foxfire": lantern, "duelist_band.kitsune": kitsune_mask(), "phase_cloak.ninetails": nine_tails(), "leather_boots.geta": geta(), "leather_leggings.hakama": hakama()}
 
 ##  Foxfire: blue flame with a bright band running through it, one step per frame.
 static func foxfire(speed: float = 1.5, period: float = 6.0) -> Variant:
-	return PixelRaster.material({"base": FOX[2], "glow": true, "ramp": FOX, "tex": (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, speed)), period), 1.4), 1, 0)))})
+	return PixelRaster.material({"base": FOX[2], "glow": true, "ramp": FOX, "tex": (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, speed)), period), 1.4), 1, 0)))})
 
 ##  Piecewise-linear lookup through (x, y) points.
 static func lerp_pts(pts, x: float) -> float:
@@ -142,7 +142,7 @@ static func gohei() -> Variant:
 		r.fill(t.circ(13.4 + bob, 0, 1.5), m.call("fire"), {"group": g, "local": o.get("local")})
 		SkinsKit.flame_tongue(r, F, 0, -0.6, 1.1, ([2.6, 3.4, 2.2, 3])[ph], (0.5 if fmod(ph, 2) else -0.5), m.call("fire"), m.call("hot"), g)
 		r.dot(t.x(13.4 + bob, 0), t.y(13.4 + bob, 0), m.call("hot"), 3, g)
-	return {"tip": 14, "mats": {"shaft": PixelRaster.material({"base": VERMILION, "shiny": true, "step": 0.14}), "gold": PixelRaster.material({"base": GOLD, "shiny": true, "step": 0.15}), "paper": PixelRaster.material({"base": 0xfaf6ee, "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.4), 0.5), -1, 0)))}), "fire": foxfire(1, 4), "hot": SpriteWeaponKit.M["glow"].call(0xf0ffff)}, "draw": _fn1}
+	return {"tip": 14, "mats": {"shaft": PixelRaster.material({"base": VERMILION, "shiny": true, "step": 0.14}), "gold": PixelRaster.material({"base": GOLD, "shiny": true, "step": 0.15}), "paper": PixelRaster.material({"base": 0xfaf6ee, "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.4), 0.5), -1, 0)))}), "fire": foxfire(1, 4), "hot": SpriteWeaponKit.M["glow"].call(0xf0ffff)}, "draw": _fn1}
 
 static func kitsune_mask() -> Variant:
 	# A white fox mask worn tilted on the side of the head, its eyes lit with foxfire; a vermilion cord streams behind.
@@ -219,11 +219,11 @@ static func nine_tails() -> Variant:
 		r_2.line(T_2.x(x_4 - 1.6, top + 0.4), T_2.y(x_4 - 1.6, top + 0.4), T_2.x(x_4 + 1.4, 3.4), T_2.y(x_4 + 1.4, 3.4), m_2.call("cloakTrim"), 2, c_2["g"])
 		r_2.dot(T_2.x(c_2["body"]["waistW"] + 0.2, 2.6), T_2.y(c_2["body"]["waistW"] + 0.2, 2.6), m_2.call("k.gold"), 4, c_2["g"])
 		r_2.dot(T_2.x(c_2["body"]["waistW"] - 0.4, 1.4), T_2.y(c_2["body"]["waistW"] - 0.4, 1.4), m_2.call("k.gold"), 3, c_2["g"])
-	return TS.merge([{"mats": {"cloak": SkinsKit.plain(WHITE, PixelTex.lattice(3, -1)), "cloakTrim": SkinsKit.shiny(VERMILION, null, 0.13), "k.obi": SkinsKit.shiny(VERMILION, (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3), 0.5), -1, 0))), 0.13), "k.gold": SkinsKit.shiny(GOLD), "k.fur": {"base": 0xf6f2ea, "ramp": [0x9a8e8a, 0xc8bcb4, 0xe8e0d6, 0xf6f2ea, 0xffffff], "tex": (func(x_2: float, y: float, _a2 = null): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.sub(TX.mul(x_2, 0.8), TX.mul(y, 0.6))), 3), 0), -1, 0)))}, "k.tip": {"base": FOX[3], "glow": true, "ramp": FOX, "tex": (func(x_3: float, y_2: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x_3, y_2), TX.mul(ph, 1.5)), 6), 1.4), 1, 0)))}}, "chest": {"torso": "cloak", "cape": null, "hood": null, "belt": "k.obi", "back": _fn5, "over": _fn6}}, FX])
+	return TS.merge([{"mats": {"cloak": SkinsKit.plain(WHITE, PixelTex.lattice(3, -1)), "cloakTrim": SkinsKit.shiny(VERMILION, null, 0.13), "k.obi": SkinsKit.shiny(VERMILION, (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3), 0.5), -1, 0))), 0.13), "k.gold": SkinsKit.shiny(GOLD), "k.fur": {"base": 0xf6f2ea, "ramp": [0x9a8e8a, 0xc8bcb4, 0xe8e0d6, 0xf6f2ea, 0xffffff], "tex": (func(x_2, y, _a2 = null): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.sub(TX.mul(x_2, 0.8), TX.mul(y, 0.6))), 3), 0), -1, 0)))}, "k.tip": {"base": FOX[3], "glow": true, "ramp": FOX, "tex": (func(x_3, y_2, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x_3, y_2), TX.mul(ph, 1.5)), 6), 1.4), 1, 0)))}}, "chest": {"torso": "cloak", "cape": null, "hood": null, "belt": "k.obi", "back": _fn5, "over": _fn6}}, FX])
 
 static func geta() -> Variant:
 	# White tabi under vermilion lacquer shin guards, black geta soles, and foxfire circling the ankles.
-	var tabi = (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.2), 0.4), -1, 0)))
+	var tabi = (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.2), 0.4), -1, 0)))
 	var _fn0 = func(r, shin, foot, m, c):
 		var o = {"group": c["g"], "toneBias": c["bias"]}
 		r.fill(foot.cap(-1.4, -1.7, c["toe"] - 0.2, -1.5, 0.6), m.call("k.lacq"), TS.merge([o, {"bevel": 0.6}]))
@@ -245,7 +245,7 @@ static func geta() -> Variant:
 static func hakama() -> Variant:
 	# Wide vermilion shrine hakama hanging in pleats past the knee, white showing at the side slit,
 	# a gold cord knotted at the hip with swinging tassels, and a foxfire flame burning on the hem.
-	var pleats = (func(_x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(y, 2.4), 0.55), -1, 0)))
+	var pleats = (func(_x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(y, 2.4), 0.55), -1, 0)))
 	var _fn1 = func(r, t, m, c):
 		var o = {"group": c["g"], "toneBias": c["bias"]}
 		var L: float = c["len"]
@@ -284,4 +284,4 @@ static func hakama() -> Variant:
 		var fx: float = hem + 2.4
 		var fy: float = ((front + back) * 0.5) - 0.2
 		SkinsKit.flame_tongue(r, SpriteXform.Xf.new(K.x(fx, fy), K.y(fx, fy), 0), 0, 0, 1.3, ([3.2, 4, 3, 3.8])[ph_2], (0.4 if fmod(ph_2, 2) else -0.3), m.call("l.fire"), m.call("l.hot"), c["g"])
-	return TS.merge([{"mats": {"l.hak": SkinsKit.plain(VERMILION, (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3), 0.45), -1, 0)))), "l.pleat": SkinsKit.plain(VERMILION, pleats), "l.white": SkinsKit.plain(WHITE), "l.gold": SkinsKit.shiny(GOLD), "l.cord": SkinsKit.shiny(GOLD, (func(x_2: float, y_2: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(x_2, y_2), 1.6), 0.5), -1, 0)))), "l.fire": {"base": FOX[2], "glow": true, "ramp": FOX, "tex": (func(x_3: float, y_3: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x_3, TX.mul(y_3, 0.5)), TX.mul(ph, 1.5)), 5), 1.4), 1, 0)))}, "l.hot": SkinsKit.glow(0xf0ffff)}, "legs": {"mat": "l.hak", "trim": null, "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.3, "over": _fn1}}, FX])
+	return TS.merge([{"mats": {"l.hak": SkinsKit.plain(VERMILION, (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3), 0.45), -1, 0)))), "l.pleat": SkinsKit.plain(VERMILION, pleats), "l.white": SkinsKit.plain(WHITE), "l.gold": SkinsKit.shiny(GOLD), "l.cord": SkinsKit.shiny(GOLD, (func(x_2, y_2, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(x_2, y_2), 1.6), 0.5), -1, 0)))), "l.fire": {"base": FOX[2], "glow": true, "ramp": FOX, "tex": (func(x_3, y_3, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x_3, TX.mul(y_3, 0.5)), TX.mul(ph, 1.5)), 5), 1.4), 1, 0)))}, "l.hot": SkinsKit.glow(0xf0ffff)}, "legs": {"mat": "l.hak", "trim": null, "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.3, "over": _fn1}}, FX])

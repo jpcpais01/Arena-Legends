@@ -23,7 +23,7 @@ static func _init_specs():
 			lift = {"hNx": 0.42, "hNy": -0.25, "wAng": 1.25, "hFx": 0.2, "hFy": -0.7}
 			sal = {"hNx": 0.3, "hNy": 0.1, "elN": 1, "wAng": UPR, "hFx": 0.12, "hFy": -0.86}
 		return {"hold": ({"oneHand": true} if k["two"] else null), "intro": [[F(TS.merge([k["stance"], lift, heels, {"hipY": -0.06}]), "calm"), 0.1], [F(TS.merge([sal, heels, {"hipY": -0.01, "head": 0.12}]), "fierce"), 0.14], [F(TS.merge([sal, heels]), "fierce"), 0.9]], "loop": [[F(TS.merge([sal, heels]), "calm"), 0.7], [F(TS.merge([sal, heels, {"hipY": -0.045, "head": 0.03, "hNy": (sal.get("hNy") if sal.get("hNy") != null else 0) - 0.02, "hFy": (sal.get("hFy") if sal.get("hFy") != null else 0) - 0.02}]), "calm"), 0.7]]}
-	var _fn2 = func():
+	var _fn2 = func(_a0 = null):
 		var wide = {"fNx": -0.32, "fNy": -1, "fFx": 0.34, "fFy": -1, "toeN": 0, "toeF": 0}
 		var a = TS.merge([wide, {"hipY": -0.09, "lean": -0.12, "head": 0.16, "hNx": -0.62, "hNy": 0.3, "elN": 1, "hFx": 0.66, "hFy": 0.34, "elF": 1, "sway": -0.6}])
 		var b = TS.merge([wide, {"hipY": -0.05, "lean": -0.06, "head": 0.08, "hNx": -0.56, "hNy": 0.4, "elN": 1, "hFx": 0.6, "hFy": 0.46, "elF": 1, "sway": 0.3}])
@@ -64,12 +64,12 @@ static func _init_specs():
 		var plant = ({} if k["two"] and (rest.get("wAng") == (-UPR)) else ({"oneHand": true} if k["two"] else {}))
 		var settle = TS.merge([TALL, rest, {"lean": 0.14, "hipY": -0.06}])
 		return {"intro": (TS.arr(spin) + [[F(TS.merge([settle, {"hipY": -0.12, "lean": 0.2}]), "fierce", plant), 0.12], [F(settle, "fierce", plant), 0.6]]), "loop": [[F(TS.merge([settle, {"head": 0.06}]), "calm", plant), 0.7], [F(TS.merge([settle, {"hipY": -0.085, "head": 0.02}]), "calm", plant), 0.7]]}
-	var _fn5 = func():
+	var _fn5 = func(_a0 = null):
 		var base = TS.merge([TALL, {"fNx": -0.26, "fFx": 0.28, "hNx": -0.18, "hNy": -0.6, "elN": -1, "hFx": 0.06, "hFy": -0.62, "elF": -1, "wAng": -1.6}])
 		var ha = TS.merge([base, {"lean": -0.14, "head": 0.32, "hipY": -0.05}])
 		var ho = TS.merge([base, {"lean": -0.06, "head": 0.18, "hipY": -0.09}])
 		return {"hold": {"main": "back"}, "intro": [[F(TS.merge([base, {"lean": 0.1}]), "calm"), 0.18]], "loop": [[F(ha, "shout"), 0.13], [F(ho, "shout"), 0.13], [F(ha, "shout"), 0.13], [F(ho, "shout"), 0.13], [F(ha, "shout"), 0.13], [F(TS.merge([base, {"head": 0.1, "lean": 0.02}]), "calm"), 0.9]]}
-	var _fn6 = func():
+	var _fn6 = func(_a0 = null):
 		var kneel = {"hipY": -0.47, "hipX": -0.02, "lean": 0.04, "head": -0.1, "fNx": -0.55, "fNy": -1, "toeN": -0.7, "fFx": 0.34, "fFy": -1, "toeF": 0, "hNx": 0.42, "hNy": -0.22, "elN": 1, "hFx": 0.3, "hFy": -0.22, "elF": 1, "sway": 0}
 		return {"hold": {"main": "back"}, "intro": [[F(TS.merge([kneel, {"hipY": -0.18, "lean": 0.2, "hNy": -0.5, "hFy": -0.5, "fNx": -0.35}]), "calm"), 0.14], [F(TS.merge([kneel, {"hipY": -0.38, "lean": 0.12}]), "calm"), 0.14]], "loop": [[F(kneel, "blink"), 0.9], [F(TS.merge([kneel, {"hipY": -0.455, "lean": 0.02, "head": -0.06, "hNy": -0.2, "hFy": -0.2}]), "blink"), 0.9]]}
 	var _fn7 = func(k):

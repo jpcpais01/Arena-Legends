@@ -244,4 +244,4 @@ class Animator:
 			return ab["anim"] + "2"
 		if has.call(ab["anim"]):
 			return ab["anim"]
-		return (TS.find(TS.arr(self.set_["clips"].keys()), (func(k_2: String, _a1 = null, _a2 = null): return ((((k_2 == "slash") or (k_2 == "thrust")) or (k_2 == "cast")) or (k_2 == "shoot")))) if TS.find(TS.arr(self.set_["clips"].keys()), (func(k_2: String, _a1 = null, _a2 = null): return ((((k_2 == "slash") or (k_2 == "thrust")) or (k_2 == "cast")) or (k_2 == "shoot")))) != null else "idle")
+		return (TS.find(TS.arr(self.set_["clips"].keys()).duplicate(), (func(k_2: String, _a1 = null, _a2 = null): return ((((k_2 == "slash") or (k_2 == "thrust")) or (k_2 == "cast")) or (k_2 == "shoot")))) if TS.find(TS.arr(self.set_["clips"].keys()).duplicate(), (func(k_2: String, _a1 = null, _a2 = null): return ((((k_2 == "slash") or (k_2 == "thrust")) or (k_2 == "cast")) or (k_2 == "shoot")))) != null else "idle")

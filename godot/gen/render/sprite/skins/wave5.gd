@@ -25,15 +25,15 @@ static func bend(t, pts) -> Variant:
 	return PixelSdf.union.callv(TS.arr(out))
 
 ##  Overlapping scales (weapon or hand space).
-static func scales(x: float, y: float, _a2 = null):
+static func scales(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.9), TX.mul((TX.band(TX.floor(TX.mul(y, 0.9)), 1)), 0.55)), 1.1), 0.3), -1, 0))
 
 ##  Veins of light crawling through dark glass.
-static func veins(x: float, y: float, ph: float):
+static func veins(x, y, ph):
 	return (TX.sel(TX.lt(TX.abs(TX.sin(TX.add(TX.mul(x, 0.7), TX.mul(TX.sin(TX.add(TX.mul(y, 1.3), TX.mul(ph, 0.8))), 1.6)))), 0.14), 4, 0))
 
 ##  Wind-rippled sand.
-static func dunes(x: float, y: float, _a2 = null):
+static func dunes(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(y, 1.3), TX.mul(TX.sin(TX.mul(x, 0.6)), 0.9)), 2.2), 0.5), -1, 0))
 
 # -----------------------------------------------------------------------------
@@ -125,7 +125,7 @@ static func lotus_wraps() -> Variant:
 		# The lotus: three petals fanning up off the back of the hand around a glowing heart.
 		SpriteWeaponKit.fill_all(r, [t.poly([-1.4, 1.8, -1.6, 3.8, -0.4, 2.2]), t.poly([1.2, 1.8, 1.6, 3.8, 0.4, 2.2]), t.poly([-0.6, 1.9, 0, 4.4, 0.6, 1.9])], m.call("petal"), o, 0.6)
 		r.dot(t.x(0, 2.1), t.y(0, 2.1), m.call("heart"), 4, g)
-	return {"tip": 4.1, "mats": {"silk": PixelRaster.material({"base": 0xf0a8c0, "tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.5)), 1.6), 0.4), -1, 0)))}), "silkDk": PixelRaster.material({"base": 0xc0607e}), "jade": PixelRaster.material({"base": 0x3ac08a, "shiny": true}), "petal": PixelRaster.material({"base": 0xffe0ea, "shiny": true, "step": 0.12}), "heart": PixelRaster.material({"base": 0xffe08a, "glow": true})}, "draw": _fn0}
+	return {"tip": 4.1, "mats": {"silk": PixelRaster.material({"base": 0xf0a8c0, "tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.5)), 1.6), 0.4), -1, 0)))}), "silkDk": PixelRaster.material({"base": 0xc0607e}), "jade": PixelRaster.material({"base": 0x3ac08a, "shiny": true}), "petal": PixelRaster.material({"base": 0xffe0ea, "shiny": true, "step": 0.12}), "heart": PixelRaster.material({"base": 0xffe08a, "glow": true})}, "draw": _fn0}
 
 # -----------------------------------------------------------------------------
 # Whirlpool Conch (maelstrom flask, legendary)
@@ -152,4 +152,4 @@ static func whirlpool_conch() -> Variant:
 		for i in range(3):
 			var b: float = a + (i * 2.1)
 			r.dot(t.x(1.8 + (cos(b) * 0.8), (-1.2) + (sin(b) * 0.7)), t.y(1.8 + (cos(b) * 0.8), (-1.2) + (sin(b) * 0.7)), m.call(("sea" if i else "foam")), 4, g)
-	return {"mats": SkinsKit.mats({"shell": ramp([0x8a5a4a, 0xc89a80, 0xf0d0b8, 0xfff0e2, 0xffffff], {"shiny": true, "tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(x, 1.2), TX.mul(y, 0.5)), 1.8), 0.45), -1, 0)))}), "lip": SkinsKit.plain(0xf09a9a), "coral": SkinsKit.shiny(0xff6a5a), "sea": SkinsKit.glow(0x3ae8e0), "foam": SkinsKit.glow(0xeafffc)}), "glow": [0xc8fff8, 0x1a8a9a], "draw": _fn1}
+	return {"mats": SkinsKit.mats({"shell": ramp([0x8a5a4a, 0xc89a80, 0xf0d0b8, 0xfff0e2, 0xffffff], {"shiny": true, "tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(x, 1.2), TX.mul(y, 0.5)), 1.8), 0.45), -1, 0)))}), "lip": SkinsKit.plain(0xf09a9a), "coral": SkinsKit.shiny(0xff6a5a), "sea": SkinsKit.glow(0x3ae8e0), "foam": SkinsKit.glow(0xeafffc)}), "glow": [0xc8fff8, 0x1a8a9a], "draw": _fn1}

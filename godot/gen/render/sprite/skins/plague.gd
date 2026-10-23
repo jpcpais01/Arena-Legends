@@ -87,31 +87,31 @@ static var AC = {"haze": PixelColor.css(0x8aaa3a), "fog": PixelColor.css(0x5e7a3
 static var PLAGUE = {"mace.plague": TS.merge([{"weapon": miasma_censer}, FX]), "hand_crossbow.plague": TS.merge([{"weapon": syringe_crossbow, "proj": {"bolt": syringeBolt}}, FX]), "vampiric_fang.plague": leechJarSkin, "hawkeye_hood.plague": beaked_mask(), "shadow_garb.plague": physician_coat(), "leather_leggings.plague": physician_breeches(), "leather_boots.plague": physician_boots()}
 
 ##  Creases in waxed leather (never brighter: the sheen is the ramp's light tone).
-static func crease(x: float, y: float, _a2 = null):
+static func crease(x, y, _a2 = null):
 	return (TX.sel(TX.or_(TX.gt(TX.sin(TX.add(TX.mul(x, 0.7), TX.mul(TX.sin(TX.mul(y, 0.45)), 1.2))), 0.86), TX.lt(TX.hash(TX.floor(x), TX.add(TX.floor(y), 5)), 0.04)), -1, 0))
 
 ##  A brass gleam sliding along, one step per frame.
 static func gleam(period: float = 7.0) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1), 1, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1), 1, 0)))
 
 ##  Bubbles rising through the draught.
-static func bubbles(x: float, y: float, ph: float):
+static func bubbles(x, y, ph):
 	return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 0.9)), TX.floor(TX.sub(TX.mul(y, 0.9), ph))), 0.07), 1, 0))
 
 ##  A slow pulse: the draught breathes.
-static func pulse(_x: float, _y: float, ph: float):
+static func pulse(_x, _y, ph):
 	return TX.pick([0, 1, 0, -1], TX.mod(ph, 4))
 
 ##  Wrapped leather grip.
-static func wrap_tex(x: float, _a1 = null, _a2 = null):
+static func wrap_tex(x, _a1 = null, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.3), 0.4), -1, 0))
 
 ##  Ebony grain.
-static func grain_tex(x: float, y: float, _a2 = null):
+static func grain_tex(x, y, _a2 = null):
 	return (TX.sel(TX.gt(TX.sin(TX.add(TX.mul(y, 3.1), TX.mul(TX.sin(TX.mul(x, 0.4)), 1.3))), 0.8), -1, 0))
 
 ##  Stitched seams: a dashed dark line every few units.
-static func seams(x: float, y: float, _a2 = null):
+static func seams(x, y, _a2 = null):
 	return (TX.sel(TX.and_(TX.lt(SkinsKit.wrap___tx(y, 5.5), 0.45), TX.lt(SkinsKit.wrap___tx(x, 1.2), 0.6)), -1, crease(x, y)))
 
 static func wax(tex = null) -> Variant:

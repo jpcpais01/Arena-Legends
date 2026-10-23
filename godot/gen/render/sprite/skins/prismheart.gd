@@ -102,7 +102,7 @@ static func polished(tex = null) -> Variant:
 ## Geode rock: chunky angular facets (a few cells a shade darker) and thin
 ## crystal veins, a light running along them one step per frame.
 static func geode(cell: float = 3.4, vein: float = 0.09, seed_: float = 0.0) -> Variant:
-	var _fn3 = func(x: float, y: float, ph: float):
+	var _fn3 = func(x, y, ph):
 		var v = TX.add(TX.sin(TX.add(TX.mul(x, 0.55), TX.mul(TX.sin(TX.add(TX.mul(y, 0.7), seed_)), 1.8))), TX.mul(TX.sin(TX.add(TX.sub(TX.mul(y, 0.8), TX.mul(x, 0.3)), seed_)), 0.6))
 		var _c0 = TX.lt(TX.abs(v), vein)
 		var _r1 = TX.sel(TX.eq(SkinsKit.wrap___tx(TX.sub(TX.floor(TX.mul((TX.add(x, y)), 0.4)), ph), 4), 0), 4, 1)
@@ -241,7 +241,7 @@ static func prism_maul() -> Variant:
 		var sx = _d3[0]
 		var sy = _d3[1]
 		sparkle(r, sx, sy, m.call(rk("", ph * 2)), m.call("core"), g, fmod(ph, 2) == 0)
-	return {"tip": 31, "grip2": 10, "mats": TS.merge([{"haft": PixelRaster.material(polished((func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3.2), 0.5), -1, 0))))), "rock": PixelRaster.material(rock(3.2, 0.07, 2)), "band": PixelRaster.material(polished()), "crystal": PixelRaster.material(quartz()), "core": PixelRaster.material({"base": CORE, "glow": true})}, TS.from_entries(TS.entries(rain_mats("")).map(_fn1))]), "draw": _fn4}
+	return {"tip": 31, "grip2": 10, "mats": TS.merge([{"haft": PixelRaster.material(polished((func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3.2), 0.5), -1, 0))))), "rock": PixelRaster.material(rock(3.2, 0.07, 2)), "band": PixelRaster.material(polished()), "crystal": PixelRaster.material(quartz()), "core": PixelRaster.material({"base": CORE, "glow": true})}, TS.from_entries(TS.entries(rain_mats("")).map(_fn1))]), "draw": _fn4}
 
 static func facet_ward() -> Variant:
 	# A slate kite set with interlocking crystal facets like a leaded window, crystal points jutting from its
@@ -316,7 +316,7 @@ static func crystal_crown() -> Variant:
 			var k = _p0[0]
 			var v = _p0[1]
 			return [k, PixelRaster.material(v)]
-		var _fn4 = func(r, H, m, g: float):
+		var _fn4 = func(r, H, m, g: float, _a4 = null):
 			var ph: float = fmod(r.phase, 4)
 			var cr: float = m.call("h.crystal")
 			# Spires standing on the band, back to front: x, height, lean, half width, far-side shade.
@@ -397,7 +397,7 @@ static func crystalline_carapace() -> Variant:
 			r_3.line(T_2.x(x_3 - 1.2, y_3 + (signf(dy) * 1.6)), T_2.y(x_3 - 1.2, y_3 + (signf(dy) * 1.6)), T_2.x(x_3 + dx, y_3 + dy), T_2.y(x_3 + dx, y_3 + dy), m_3.call("k.crystal"), 2, c_3["g"])
 		var a_2: float = (PI / 2.0) + (ph_3 * SkinsKit.Q)
 		r_3.dot(T_2.x(x_3 + (cos(a_2) * 1.9), y_3 + (sin(a_2) * 2.3)), T_2.y(x_3 + (cos(a_2) * 1.9), y_3 + (sin(a_2) * 2.3)), m_3.call(rk("k.", (ph_3 * 2) + 1)), 3, c_3["g"])
-	return TS.merge([{"mats": TS.merge([{"thorn": {"base": SLATE[2], "ramp": (TS.arr(SLATE) + [VEIN]), "tex": (func(x: float, y: float, ph: float): return TX.add((TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(y, TX.mul(x, 0.35)), 4.2), 0.5), -1, 0)), geode__tx(4, 0, 1).call(x, y, ph)))}, "thornDark": polished(), "thornSpike": quartz(), "k.rock": rock(3.4, 0, 3), "k.slate": polished(), "k.crystal": quartz(), "k.core": {"base": CORE, "glow": true}, "k.lilac": hue(0x9a6aff)}, rain_mats("k.")]), "chest": {"pauldron": null, "spikes": null, "sleeve": "thorn", "sleeveLen": 1, "back": _fn3, "shoulder": _fn4, "over": _fn6}}, FX])
+	return TS.merge([{"mats": TS.merge([{"thorn": {"base": SLATE[2], "ramp": (TS.arr(SLATE) + [VEIN]), "tex": (func(x, y, ph): return TX.add((TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(y, TX.mul(x, 0.35)), 4.2), 0.5), -1, 0)), geode__tx(4, 0, 1).call(x, y, ph)))}, "thornDark": polished(), "thornSpike": quartz(), "k.rock": rock(3.4, 0, 3), "k.slate": polished(), "k.crystal": quartz(), "k.core": {"base": CORE, "glow": true}, "k.lilac": hue(0x9a6aff)}, rain_mats("k.")]), "chest": {"pauldron": null, "spikes": null, "sleeve": "thorn", "sleeveLen": 1, "back": _fn3, "shoulder": _fn4, "over": _fn6}}, FX])
 
 # -----------------------------------------------------------------------------
 # Geode Legguards
@@ -556,8 +556,8 @@ static func prismheart_aura(g, x: float, y: float, t: float, layer: String) -> v
 			g["fillRect"].call(px_4, py_4 - 1, 1, 2)
 
 ## Builder-mode twin of geode (called from surface textures).
-static func geode__tx(cell: float = 3.4, vein: float = 0.09, seed_: float = 0.0):
-	var _fn3 = func(x: float, y: float, ph: float):
+static func geode__tx(cell = 3.4, vein = 0.09, seed_ = 0):
+	var _fn3 = func(x, y, ph):
 		var v = TX.add(TX.sin(TX.add(TX.mul(x, 0.55), TX.mul(TX.sin(TX.add(TX.mul(y, 0.7), seed_)), 1.8))), TX.mul(TX.sin(TX.add(TX.sub(TX.mul(y, 0.8), TX.mul(x, 0.3)), seed_)), 0.6))
 		var _c0 = TX.lt(TX.abs(v), vein)
 		var _r1 = TX.sel(TX.eq(SkinsKit.wrap___tx(TX.sub(TX.floor(TX.mul((TX.add(x, y)), 0.4)), ph), 4), 0), 4, 1)

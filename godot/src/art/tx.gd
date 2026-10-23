@@ -265,7 +265,7 @@ static func compile(tex) -> PackedInt32Array:
 	var root = tex.call(X, Y, PH) if tex is Callable else tex
 	var code := PackedInt32Array()
 	if _num(root):
-		code.append_array([OP_CONST | (3 << 8), _bits(_f(root))])
+		code.append_array([OP_CONST | (3 << 8), _bits(_f(root)), OP_CONST | (255 << 8), 3])
 		return code
 	# Post-order with sharing; last use per node for register reuse.
 	var order: Array[Expr] = []

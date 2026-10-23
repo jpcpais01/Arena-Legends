@@ -40,5 +40,5 @@ static func flame_tongue(r, F, x: float, y: float, w: float, h: float, lean: flo
 		r.fill(F.poly([x - (w * 0.45), y, x + (lean * 0.6), y + (h * 0.6), x + (w * 0.45), y]), hot, {"group": g, "noLine": true, "local": local})
 
 ## Builder-mode twin of wrap_ (called from surface textures).
-static func wrap___tx(v: float, p: float, _a2 = null):
+static func wrap___tx(v, p, _a2 = null):
 	return TX.mod((TX.add((TX.mod(v, p)), p)), p)

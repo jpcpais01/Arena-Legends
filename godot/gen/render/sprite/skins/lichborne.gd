@@ -24,7 +24,7 @@ static var FX = SkinsKit.epic_fx(PALE, DEEP, "flame", 0x8affc0)
 static var LICHBORNE_FX = {"spark": PALE, "spark2": DEEP, "kind": "flame"}
 static var SKULL_RAMP = [0x2a5a44, 0x5a9a7a, 0xa8dcbc, 0xd8f8e4, 0xffffff]
 static var PIT_RAMP = [0x020a06, 0x041a10, 0x082a1a, 0x0e3a24, 0x16503a]
-static var LM = SkinsKit.mats({"ghost": {"base": SOUL[3], "glow": true, "ramp": SOUL, "tex": GHOST_TEX}, "deep": {"base": SOUL[2], "glow": true, "ramp": SOUL, "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3), 1), -1, 0)))}, "hot": {"base": HOT, "glow": true}, "skull": {"base": SKULL_RAMP[2], "ramp": SKULL_RAMP}, "pit": {"base": PIT_RAMP[1], "ramp": PIT_RAMP}})
+static var LM = SkinsKit.mats({"ghost": {"base": SOUL[3], "glow": true, "ramp": SOUL, "tex": GHOST_TEX}, "deep": {"base": SOUL[2], "glow": true, "ramp": SOUL, "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3), 1), -1, 0)))}, "hot": {"base": HOT, "glow": true}, "skull": {"base": SKULL_RAMP[2], "ramp": SKULL_RAMP}, "pit": {"base": PIT_RAMP[1], "ramp": PIT_RAMP}})
 static var soulBolt = _init_soulbolt()
 static func _init_soulbolt():
 	var _fn0 = func(r, t, f: float, h):
@@ -71,30 +71,30 @@ static var LICHBORNE = {"arcane_staff.phylactery": TS.merge([{"weapon": phylacte
 
 ##  Soulfire with a bright band running through it, one step per frame.
 static func burn(speed: float = 1.5, period: float = 5.0) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, speed)), period), 1.2), 1, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, speed)), period), 1.2), 1, 0)))
 
 ##  Flicker: bright, dim, bright, brighter.
-static func flick(_x: float, _y: float, ph: float):
+static func flick(_x, _y, ph):
 	return TX.pick([0, -1, 0, 1], TX.mod(ph, 4))
 
 ##  Bone: a few pits and hairline cracks.
-static func aged(x: float, y: float, _a2 = null):
+static func aged(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.3)), TX.floor(TX.mul(y, 1.3))), 0.06), -1, 0))
 
 ##  Knuckled black bone: a joint every few units.
 static func knuckles(p: float = 3.4) -> Variant:
-	return (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, p), 0.5), -1, 0)))
+	return (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, p), 0.5), -1, 0)))
 
 ##  Tarnish with a dull gleam sliding along.
 static func tarnish(period: float = 8.0) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1), 1, TX.sel(TX.lt(TX.hash(TX.floor(x), TX.floor(y)), 0.1), -1, 0))))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1), 1, TX.sel(TX.lt(TX.hash(TX.floor(x), TX.floor(y)), 0.1), -1, 0))))
 
 ##  Grave cloth: long hanging folds.
-static func folds(x: float, y: float, _a2 = null):
+static func folds(x, y, _a2 = null):
 	return (TX.sel(TX.gt(TX.sin(TX.add(TX.mul(x, 0.8), TX.mul(TX.sin(TX.mul(y, 0.3)), 0.8))), 0.8), -1, 0))
 
 ##  Rune stitching: short green glyph dashes in columns, a glint running down them one step per frame.
-static func stitch(x: float, y: float, ph: float):
+static func stitch(x, y, ph):
 	var cx = SkinsKit.wrap___tx(x, 7)
 	var row = TX.floor(TX.div(y, 1.6))
 	var _c0 = TX.and_(TX.and_(TX.lt(cx, 0.75), TX.lt(SkinsKit.wrap___tx(y, 1.6), 1)), TX.lt(TX.hash(TX.floor(TX.div(x, 7)), row), 0.45))
@@ -103,7 +103,7 @@ static func stitch(x: float, y: float, ph: float):
 	return TX.sel(_c0, _r1, _r2)
 
 ##  Grave wrappings: diagonal binding seams.
-static func binding(x: float, y: float, _a2 = null):
+static func binding(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.7)), 2.2), 0.45), -1, 0))
 
 static func bone(tex = null) -> Variant:
@@ -203,12 +203,12 @@ static func gravecaller() -> Variant:
 		SpriteWeaponKit.fill_all(r, [t.cap(10, -0.8, 12, -0.5, 0.45, 0.32)], m.call("bone"), o, 0.5)
 		# Soulfire flickering off the gem.
 		SkinsKit.flame_tongue(r, along(t, 13.6, 0), 0, 0, 1.1, ([2, 3, 2.3, 3.4])[ph], (0.6 if fmod(ph, 2) else -0.6), m.call("fire"), m.call("hot"), g, o.get("local"))
-	return {"tip": 14, "mats": {"grip": PixelRaster.material({"base": GRAVE[2], "ramp": (TS.arr(GRAVE) + [0x56605a]), "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.3), 0.4), -1, 0)))}), "bone": PixelRaster.material(bone()), "cord": PixelRaster.material(black_bone()), "claw": PixelRaster.material(black_bone()), "silver": PixelRaster.material(silver(null)), "gem": PixelRaster.material(soul(burn(1, 3))), "hot": PixelRaster.material({"base": HOT, "glow": true}), "fire": PixelRaster.material(soul(burn(1, 4)))}, "draw": _fn1}
+	return {"tip": 14, "mats": {"grip": PixelRaster.material({"base": GRAVE[2], "ramp": (TS.arr(GRAVE) + [0x56605a]), "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.3), 0.4), -1, 0)))}), "bone": PixelRaster.material(bone()), "cord": PixelRaster.material(black_bone()), "claw": PixelRaster.material(black_bone()), "silver": PixelRaster.material(silver(null)), "gem": PixelRaster.material(soul(burn(1, 3))), "hot": PixelRaster.material({"base": HOT, "glow": true}), "fire": PixelRaster.material(soul(burn(1, 4)))}, "draw": _fn1}
 
 # -----------------------------------------------------------------------------
 # Battle sprites
 # -----------------------------------------------------------------------------
-static func GHOST_TEX(x: float, y: float, _a2 = null):
+static func GHOST_TEX(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.6), y), 3), 0.5), -1, 0))
 
 ## A skull seen face on, its crown toward +x of F and its jaw toward -x (eyes either side of the x axis,
@@ -427,7 +427,7 @@ static func gravewalkers() -> Variant:
 		var my: float = 3.8 + (ph * 0.7)
 		if ph != 3:
 			r.dot(back.x(mx, my), back.y(mx, my), m.call(("k.soul" if ph else "k.hot")), 3, c["g"])
-	return TS.merge([{"mats": {"shadow": {"base": GRAVE[2], "ramp": (TS.arr(GRAVE) + [0x56605a]), "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.6), 0.4), -1, 0)))}, "shadowGlow": silver(tarnish(6)), "k.bone": bone(), "k.claw": black_bone(), "k.soul": soul(burn(1, 3)), "k.hot": {"base": HOT, "glow": true}}, "boots": {"height": 0.72, "bulk": 0.34, "over": _fn0}}, FX])
+	return TS.merge([{"mats": {"shadow": {"base": GRAVE[2], "ramp": (TS.arr(GRAVE) + [0x56605a]), "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.6), 0.4), -1, 0)))}, "shadowGlow": silver(tarnish(6)), "k.bone": bone(), "k.claw": black_bone(), "k.soul": soul(burn(1, 3)), "k.hot": {"base": HOT, "glow": true}}, "boots": {"height": 0.72, "bulk": 0.34, "over": _fn0}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
 static func lichborne_aura(g, x: float, y: float, t: float, layer: String) -> void:

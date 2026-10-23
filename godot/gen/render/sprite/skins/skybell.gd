@@ -133,35 +133,35 @@ static var auraStep = 0
 static var SKYBELL = {"longbow.skybell": TS.merge([{"weapon": windsong_bow, "proj": {"arrow": arrowProj}}, FX]), "wind_chakram.skybell": TS.merge([{"weapon": prayer_wheel, "proj": {"chakram": wheelProj}}, FX]), "gale_bell.skybell": bellSkin, "hawkeye_hood.skybell": pilgrims_windhat(), "mage_robe.skybell": windward_robes(), "windrunner_leggings.skybell": cloudstep_trousers(), "zephyr_boots.skybell": cloudwalker_sandals()}
 
 ##  A jade rune swelling and dimming over the loop.
-static func breathe(_x: float, _y: float, ph: float):
+static func breathe(_x, _y, ph):
 	return TX.pick([0, 1, 0, -1], TX.mod(ph, 4))
 
 ##  Lacquer with a thin gold-leaf band every so often (along local y, the limb).
-static func lacquer(_x: float, y: float, _a2 = null):
+static func lacquer(_x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(y, 4.4), 0.55), 1, 0))
 
 ##  Bronze catching the light in a band that slides along it.
 static func sheen(period: float = 9.0, speed: float = 2.2, w: float = 1.0) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.4)), TX.mul(ph, speed)), period), w), 1, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.4)), TX.mul(ph, speed)), period), w), 1, 0)))
 
 ##  Cloth wound in strips.
-static func wound(x: float, y: float, _a2 = null):
+static func wound(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.35)), 1.5), 0.42), -1, 0))
 
 ##  Straw woven in a twill.
-static func weave(x: float, y: float, _a2 = null):
+static func weave(x, y, _a2 = null):
 	return (TX.sel(TX.ne((TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.8)), 1.7), 0.55)), (TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(x, 0.8), TX.mul(y, 0.8)), 1.7), 0.55))), -1, 0))
 
 ##  Robes: soft vertical folds swaying a little.
-static func folds(x: float, y: float, _a2 = null):
+static func folds(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(y, 0.42), TX.mul(TX.sin(TX.mul(x, 0.45)), 0.9)), 3.2), 0.55), -1, 0))
 
 ##  Tassel threads.
-static func strands(x: float, _a1 = null, _a2 = null):
+static func strands(x, _a1 = null, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.2), 0.4), -1, 0))
 
 ##  Patina creeping over bronze in patches.
-static func blotch(x: float, y: float, _a2 = null):
+static func blotch(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 0.7)), TX.add(TX.floor(TX.mul(y, 0.7)), 5)), 0.18), -1, 0))
 
 # -----------------------------------------------------------------------------

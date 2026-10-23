@@ -41,11 +41,11 @@ static func _init_spectertrain():
 		for i in range(3):
 			var u: float = SkinsKit.wrap_((i * 0.34) + (ph * 0.25), 1)
 			dt(r, shin, ((x0 + 2) + (u * 3)) + (sin(u * 5) * 0.4), ((-w) - 3.6) - (u * 2.6), mote, 3, GL + 2)
-	return TS.merge([{"mats": {"l4.sp.cloth": ramp((TS.arr(SPECTRE) + [0xe8fff8]), {"tex": spectre_tex}), "l4.sp.train": ramp([0x4a7a90, 0x76aabc, 0xa6d6e0, 0xd2f2f4, 0xf8ffff], {"tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(y, 1.1), TX.mul(x, 0.25)), 2.6), 0.6), -1, 0)))}), "l4.sp.band": ramp([0x10141c, 0x1e2632, 0x323e4e, 0x56647a, 0xc0d0e0], {"shiny": true}), "l4.sp.wisp": ramp([0x5aa0a8, 0x84c8c8, 0xaee4de, 0xd8f8f0, 0xf6fffc]), "l4.sp.soul": SkinsKit.glow(0x9affe0), "l4.sp.mote": SkinsKit.glow(0xd8fff4)}, "legs": {"mat": "l4.sp.cloth", "trim": null, "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.25, "over": _fn0, "shin": _fn1}}, legend(0xe8fff8, 0x3ab8a8)])
+	return TS.merge([{"mats": {"l4.sp.cloth": ramp((TS.arr(SPECTRE) + [0xe8fff8]), {"tex": spectre_tex}), "l4.sp.train": ramp([0x4a7a90, 0x76aabc, 0xa6d6e0, 0xd2f2f4, 0xf8ffff], {"tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(y, 1.1), TX.mul(x, 0.25)), 2.6), 0.6), -1, 0)))}), "l4.sp.band": ramp([0x10141c, 0x1e2632, 0x323e4e, 0x56647a, 0xc0d0e0], {"shiny": true}), "l4.sp.wisp": ramp([0x5aa0a8, 0x84c8c8, 0xaee4de, 0xd8f8f0, 0xf6fffc]), "l4.sp.soul": SkinsKit.glow(0x9affe0), "l4.sp.mote": SkinsKit.glow(0xd8fff4)}, "legs": {"mat": "l4.sp.cloth", "trim": null, "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.25, "over": _fn0, "shin": _fn1}}, legend(0xe8fff8, 0x3ab8a8)])
 # =============================================================================
 # Charger Cuisses
 # =============================================================================
-static var bronzeCuisses = {"mats": {"cc.under": ramp([0x0e1a16, 0x18282a, 0x243a3a, 0x345050, 0x4a6a68]), "cc.plate": ramp([0x3e220a, 0x7a4818, 0xb87a2e, 0xe6b058, 0xfff0b8], {"shiny": true, "tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.2)), TX.add(TX.floor(TX.mul(y, 1.2)), 3)), 0.1), -2, 0)))}), "cc.dark": ramp([0x123028, 0x1e4a3c, 0x2e6a56, 0x4a9278, 0x8ad0b0], {"shiny": true}), "cc.rivet": SkinsKit.shiny(0xfff0b0)}}
+static var bronzeCuisses = {"mats": {"cc.under": ramp([0x0e1a16, 0x18282a, 0x243a3a, 0x345050, 0x4a6a68]), "cc.plate": ramp([0x3e220a, 0x7a4818, 0xb87a2e, 0xe6b058, 0xfff0b8], {"shiny": true, "tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.2)), TX.add(TX.floor(TX.mul(y, 1.2)), 3)), 0.1), -2, 0)))}), "cc.dark": ramp([0x123028, 0x1e4a3c, 0x2e6a56, 0x4a9278, 0x8ad0b0], {"shiny": true}), "cc.rivet": SkinsKit.shiny(0xfff0b0)}}
 static var BARD_STEEL = [0x262a34, 0x4a5262, 0x7a8496, 0xb0bacb, 0xf0f6ff]
 static var GOLD = [0x5a3a0a, 0x9a6a18, 0xd0a030, 0xf0d070, 0xfff8d0]
 static var centaurBarding = _init_centaurbarding()
@@ -89,8 +89,8 @@ static func _init_centaurbarding():
 		r.fill(PixelSdf.intersect(cop, t.rect(kr - 0.2, ky, 0.4, kr + 2)), m.call("l4.cb.gold"), {"group": GL + 4, "flat": 2, "noLine": true})
 		if not c["far"]:
 			r.dot(t.x(0, ky + 0.3), t.y(0, ky + 0.3), m.call("l4.cb.gem"), 3, GL + 4)
-	return {"mats": {"l4.cb.under": ramp([0x1a1210, 0x2e221c, 0x4a3426, 0x6a4c36, 0x8a6a4e]), "l4.cb.cloth": ramp([0x0e1440, 0x1a2468, 0x2a3a98, 0x4a5cc0, 0xe8c860], {"tex": cap_tex}), "l4.cb.border": ramp([0x4a0a12, 0x7a141e, 0xb02030, 0xd84a4a, 0xff9a8a]), "l4.cb.steel": ramp(BARD_STEEL, {"shiny": true}), "l4.cb.gold": ramp(GOLD, {"shiny": true}), "l4.cb.fringe": ramp([0x6a4410, 0xa87420, 0xd8a838, 0xf4d878, 0xfff4c0], {"tex": (func(_x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.floor(y), 2), 1), -1, 0)))}), "l4.cb.gem": SkinsKit.glow(0xff5a5a)}, "legs": {"mat": "l4.cb.under", "trim": null, "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.3, "over": _fn0}}
-static var harlequinTrousers = {"mats": {"ac.cloth": ramp([0x140c14, 0x2a1220, 0xc02838, 0xe85a5a, 0xffb8a8], {"tex": harlequin_tex}), "ac.sash": ramp([0x6a4a10, 0xa8781e, 0xe0b040, 0xf8dc80, 0xfffae0], {"shiny": true}), "ac.sash2": ramp([0x14141a, 0x24242e, 0x3a3a48, 0xd8d8e0, 0xffffff], {"tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2), 1), 1, 0)))})}}
+	return {"mats": {"l4.cb.under": ramp([0x1a1210, 0x2e221c, 0x4a3426, 0x6a4c36, 0x8a6a4e]), "l4.cb.cloth": ramp([0x0e1440, 0x1a2468, 0x2a3a98, 0x4a5cc0, 0xe8c860], {"tex": cap_tex}), "l4.cb.border": ramp([0x4a0a12, 0x7a141e, 0xb02030, 0xd84a4a, 0xff9a8a]), "l4.cb.steel": ramp(BARD_STEEL, {"shiny": true}), "l4.cb.gold": ramp(GOLD, {"shiny": true}), "l4.cb.fringe": ramp([0x6a4410, 0xa87420, 0xd8a838, 0xf4d878, 0xfff4c0], {"tex": (func(_x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.floor(y), 2), 1), -1, 0)))}), "l4.cb.gem": SkinsKit.glow(0xff5a5a)}, "legs": {"mat": "l4.cb.under", "trim": null, "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.3, "over": _fn0}}
+static var harlequinTrousers = {"mats": {"ac.cloth": ramp([0x140c14, 0x2a1220, 0xc02838, 0xe85a5a, 0xffb8a8], {"tex": harlequin_tex}), "ac.sash": ramp([0x6a4a10, 0xa8781e, 0xe0b040, 0xf8dc80, 0xfffae0], {"shiny": true}), "ac.sash2": ramp([0x14141a, 0x24242e, 0x3a3a48, 0xd8d8e0, 0xffffff], {"tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2), 1), 1, 0)))})}}
 static var RED = [0x4a0812, 0x7e1020, 0xb81e30, 0xe04450, 0xff8a80]
 static var CREAM = [0x7a5a1a, 0xb08a30, 0xe8c860, 0xfae6a0, 0xfffbe6]
 static var ringmasterStripes = _init_ringmasterstripes()
@@ -135,11 +135,11 @@ static func _init_ringmasterstripes():
 		if c["far"]:
 			return
 		r.fill(shin.cap(top + 0.6, (-w) - 0.6, (top - 1.8) - (s * 0.5), ((-w) - 1.4) - s, 0.3, 0.55), m.call("l4.rm.tassel"), {"group": GL + 4, "bevel": 0.6})
-	return TS.merge([{"mats": {"l4.rm.cloth": ramp(RED, {"tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(y, 0.7), TX.mul(x, 0.12)), 3.6), 0.5), -1, 0)))}), "l4.rm.stripe": ramp(CREAM), "l4.rm.belt": ramp([0x08080c, 0x141418, 0x24242c, 0x3a3a46, 0x8a8a9a], {"shiny": true}), "l4.rm.gold": ramp(GOLD, {"shiny": true}), "l4.rm.tassel": ramp([0x6a4410, 0xa87420, 0xd8a838, 0xf4d878, 0xfff4c0], {"tex": (func(_x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(y, 2), 2), 1), -1, 0)))}), "l4.rm.star": SkinsKit.glow(0xfff0a0)}, "legs": {"mat": "l4.rm.cloth", "trim": null, "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.8, "over": _fn1, "shin": _fn2}}, legend(0xfff4c0, 0xe0303a)])
+	return TS.merge([{"mats": {"l4.rm.cloth": ramp(RED, {"tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(y, 0.7), TX.mul(x, 0.12)), 3.6), 0.5), -1, 0)))}), "l4.rm.stripe": ramp(CREAM), "l4.rm.belt": ramp([0x08080c, 0x141418, 0x24242c, 0x3a3a46, 0x8a8a9a], {"shiny": true}), "l4.rm.gold": ramp(GOLD, {"shiny": true}), "l4.rm.tassel": ramp([0x6a4410, 0xa87420, 0xd8a838, 0xf4d878, 0xfff4c0], {"tex": (func(_x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(y, 2), 2), 1), -1, 0)))}), "l4.rm.star": SkinsKit.glow(0xfff0a0)}, "legs": {"mat": "l4.rm.cloth", "trim": null, "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.8, "over": _fn1, "shin": _fn2}}, legend(0xfff4c0, 0xe0303a)])
 # =============================================================================
 # Warlord Faulds
 # =============================================================================
-static var blackironFaulds = {"mats": {"wf.cloth": ramp([0x1a0608, 0x320c10, 0x52161c, 0x74242a, 0x94383c]), "wf.plate": ramp([0x0e0e12, 0x1c1c22, 0x2e2e36, 0x4a4a56, 0xa8acb8], {"shiny": true, "tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.4)), TX.add(TX.floor(TX.mul(y, 1.4)), 9)), 0.05), 1, 0)))}), "wf.dark": ramp([0x3a2408, 0x6a4412, 0xa8742a, 0xd8a850, 0xfff0b0], {"shiny": true}), "wf.stud": SkinsKit.shiny(0xfff0b0)}}
+static var blackironFaulds = {"mats": {"wf.cloth": ramp([0x1a0608, 0x320c10, 0x52161c, 0x74242a, 0x94383c]), "wf.plate": ramp([0x0e0e12, 0x1c1c22, 0x2e2e36, 0x4a4a56, 0xa8acb8], {"shiny": true, "tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.4)), TX.add(TX.floor(TX.mul(y, 1.4)), 9)), 0.05), 1, 0)))}), "wf.dark": ramp([0x3a2408, 0x6a4412, 0xa8742a, 0xd8a850, 0xfff0b0], {"shiny": true}), "wf.stud": SkinsKit.shiny(0xfff0b0)}}
 ##  Lacquered lames: black with a deep sheen, a dark seam between each row.
 static var LACQUER = [0x0a0a10, 0x16161e, 0x262632, 0x40404e, 0x9aa0b8]
 static var kusazuri = _init_kusazuri()
@@ -181,7 +181,7 @@ static func _init_kusazuri():
 # =============================================================================
 # Warp Boots
 # =============================================================================
-static var tealWarpers = {"mats": {"wb.boot": ramp([0x08302e, 0x0e4a46, 0x187064, 0x2e9c88, 0x7ae0c8], {"shiny": true, "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.4), 0.4), -1, 0)))}), "wb.trim": ramp([0x4a2410, 0x7a3e1a, 0xb0642e, 0xe09a58, 0xffe0b0], {"shiny": true}), "wb.rune": SkinsKit.glow(0x8affe8), "wb.mote": SkinsKit.glow(0xd8fff4)}}
+static var tealWarpers = {"mats": {"wb.boot": ramp([0x08302e, 0x0e4a46, 0x187064, 0x2e9c88, 0x7ae0c8], {"shiny": true, "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.4), 0.4), -1, 0)))}), "wb.trim": ramp([0x4a2410, 0x7a3e1a, 0xb0642e, 0xe09a58, 0xffe0b0], {"shiny": true}), "wb.rune": SkinsKit.glow(0x8affe8), "wb.mote": SkinsKit.glow(0xd8fff4)}}
 ##  Void leather: near-black with a faint violet sheen and a few hairline cracks of rift-light.
 static var VOID = [0x07050e, 0x140c26, 0x241646, 0x3a2670]
 static var riftwalkers = _init_riftwalkers()
@@ -254,8 +254,8 @@ static func _init_tectonictreads():
 		if ph == 2:
 			r.fill(foot.cap(c["toe"] + 2.6, -1.4, c["toe"] + 2.6, -2.5, 0.25), m.call("b4.tt.magma"), {"group": c["g"]})
 		dt(r, shin, c["top"] * 0.55, w + 0.6, m.call("b4.tt.hot"), 3, GL)
-	return TS.merge([{"mats": {"b4.tt.rock": ramp((TS.arr(BASALT) + [0xffa040]), {"tex": magma_tex}), "b4.tt.slab": ramp([0x1e1814, 0x3a302a, 0x5a4c40, 0x7c6a5a, 0xa8947e], {"step": 0.13, "tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.2)), TX.add(TX.floor(TX.mul(y, 1.2)), 2)), 0.14), -1, 0)))}), "b4.tt.band": ramp([0x0e0c0c, 0x1c1818, 0x2e2828, 0x4a4040, 0x8a7a70], {"shiny": true}), "b4.tt.magma": {"base": 0xff8020, "glow": true, "ramp": [0x5a0e04, 0xa82808, 0xe85a10, 0xff9a30, 0xffe090], "tex": (func(_x: float, _y: float, ph: float): return TX.pick([0, 1, 0, -1], TX.mod(ph, 4)))}, "b4.tt.hot": SkinsKit.glow(0xffe070)}, "boots": {"mat": "b4.tt.rock", "height": 0.66, "bulk": 0.95, "trim": "b4.tt.band", "wing": null, "knee": null, "over": _fn0}}, legend(0xffd070, 0xd8380a)])
-static var yetiBoots = {"mats": {"fw.boot": ramp([0x4a5a6a, 0x7a8c9c, 0xb4c4d0, 0xdce6ee, 0xf6faff], {"tex": shag}), "fw.fur": ramp([0x6a5a4a, 0x9a8670, 0xc8b496, 0xe8dcc4, 0xfff8ea], {"tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 1.2), TX.mul(TX.sin(TX.mul(y, 1.9)), 0.7)), 1.4), 0.45), -1, 0)))}), "fw.strap": ramp([0x3a2a1a, 0x5a4430, 0x846a4e, 0xac9070, 0xd0b896]), "fw.ice": ramp([0x6a6250, 0x9a9278, 0xd0c8a8, 0xf0ead2, 0xffffff], {"shiny": true})}}
+	return TS.merge([{"mats": {"b4.tt.rock": ramp((TS.arr(BASALT) + [0xffa040]), {"tex": magma_tex}), "b4.tt.slab": ramp([0x1e1814, 0x3a302a, 0x5a4c40, 0x7c6a5a, 0xa8947e], {"step": 0.13, "tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.2)), TX.add(TX.floor(TX.mul(y, 1.2)), 2)), 0.14), -1, 0)))}), "b4.tt.band": ramp([0x0e0c0c, 0x1c1818, 0x2e2828, 0x4a4040, 0x8a7a70], {"shiny": true}), "b4.tt.magma": {"base": 0xff8020, "glow": true, "ramp": [0x5a0e04, 0xa82808, 0xe85a10, 0xff9a30, 0xffe090], "tex": (func(_x, _y, ph): return TX.pick([0, 1, 0, -1], TX.mod(ph, 4)))}, "b4.tt.hot": SkinsKit.glow(0xffe070)}, "boots": {"mat": "b4.tt.rock", "height": 0.66, "bulk": 0.95, "trim": "b4.tt.band", "wing": null, "knee": null, "over": _fn0}}, legend(0xffd070, 0xd8380a)])
+static var yetiBoots = {"mats": {"fw.boot": ramp([0x4a5a6a, 0x7a8c9c, 0xb4c4d0, 0xdce6ee, 0xf6faff], {"tex": shag}), "fw.fur": ramp([0x6a5a4a, 0x9a8670, 0xc8b496, 0xe8dcc4, 0xfff8ea], {"tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 1.2), TX.mul(TX.sin(TX.mul(y, 1.9)), 0.7)), 1.4), 0.45), -1, 0)))}), "fw.strap": ramp([0x3a2a1a, 0x5a4430, 0x846a4e, 0xac9070, 0xd0b896]), "fw.ice": ramp([0x6a6250, 0x9a9278, 0xd0c8a8, 0xf0ead2, 0xffffff], {"shiny": true})}}
 static var GICE = [0x1e4a7a, 0x3a7ab0, 0x6ab4e0, 0xaee4fa, 0xffffff]
 static var glacierSkates = _init_glacierskates()
 static func _init_glacierskates():
@@ -317,7 +317,7 @@ static func _init_ironlotus():
 		var s: float = ([0, 0.4, 0.7, 0.3])[ph]
 		r.fill(shin.cap(c["top"] - 0.4, (-w) - 0.4, (c["top"] - 2.6) - (s * 0.4), ((-w) - 1.6) - s, 0.35, 0.3), m.call("b4.il.cord"), {"group": GL + 4, "bevel": 0.5})
 		r.fill(shin.cap(c["top"] - 0.4, (-w) - 0.4, (c["top"] - 1.6) - (s * 0.3), ((-w) - 2.6) - (s * 0.8), 0.35, 0.3), m.call("b4.il.cord"), {"group": GL + 4, "bevel": 0.5})
-	return {"mats": {"b4.il.wrap": ramp([0x6a6458, 0x9a948a, 0xcac4b8, 0xeae6dc, 0xfffcf4], {"tex": wrap_tex}), "b4.il.slip": ramp([0x08080c, 0x121218, 0x1e1e28, 0x30303e, 0x585868]), "b4.il.iron": ramp([0x1e2026, 0x3a3e48, 0x60666e, 0x9aa0aa, 0xeef2f8], {"shiny": true}), "b4.il.petal": ramp([0x8a2a52, 0xc44a78, 0xec84a6, 0xfcc4d6, 0xfff4f8], {"tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.gt(x, 4.6), 1, 0)))}), "b4.il.cord": ramp([0x4a0a10, 0x7e141c, 0xb8202a, 0xe04a4a, 0xff9a8a]), "b4.il.gem": SkinsKit.glow(0x8affc0)}, "boots": {"mat": "b4.il.wrap", "height": 0.8, "bulk": 0.05, "trim": "b4.il.cord", "wing": null, "knee": null, "over": _fn0}}
+	return {"mats": {"b4.il.wrap": ramp([0x6a6458, 0x9a948a, 0xcac4b8, 0xeae6dc, 0xfffcf4], {"tex": wrap_tex}), "b4.il.slip": ramp([0x08080c, 0x121218, 0x1e1e28, 0x30303e, 0x585868]), "b4.il.iron": ramp([0x1e2026, 0x3a3e48, 0x60666e, 0x9aa0aa, 0xeef2f8], {"shiny": true}), "b4.il.petal": ramp([0x8a2a52, 0xc44a78, 0xec84a6, 0xfcc4d6, 0xfff4f8], {"tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.gt(x, 4.6), 1, 0)))}), "b4.il.cord": ramp([0x4a0a10, 0x7e141c, 0xb8202a, 0xe04a4a, 0xff9a8a]), "b4.il.gem": SkinsKit.glow(0x8affc0)}, "boots": {"mat": "b4.il.wrap", "height": 0.8, "bulk": 0.05, "trim": "b4.il.cord", "wing": null, "knee": null, "over": _fn0}}
 static var WAVE4_LEGS = {"ghoststep_leggings.mist": mistLeggings, "ghoststep_leggings.specter": specterTrain, "charger_cuisses.bronze": bronzeCuisses, "charger_cuisses.centaur": centaurBarding, "acrobat_trousers.harlequin": harlequinTrousers, "acrobat_trousers.ringmaster": ringmasterStripes, "warlord_faulds.blackiron": blackironFaulds, "warlord_faulds.kusazuri": kusazuri, "warp_boots.teal": tealWarpers, "warp_boots.riftwalker": riftwalkers, "earthshaker_boots.basalt": basaltTreads, "earthshaker_boots.tectonic": tectonicTreads, "frostwalkers.yeti": yetiBoots, "frostwalkers.glacier": glacierSkates, "savate_boots.redlace": redlaceSavates, "savate_boots.lotus": ironLotus}
 
 ## Fourth-wave skins (v0.40.0) for the v0.39 legs and boots. Rare skins
@@ -369,11 +369,11 @@ static func shard(F, x: float, y: float, a: float, len_: float, w: float) -> Var
 # Ghoststep Leggings
 # =============================================================================
 ##  Mist: drifting soft swirls in the cloth (thigh space).
-static func mist_tex(x: float, y: float, ph: float):
+static func mist_tex(x, y, ph):
 	var v = TX.sin(TX.sub(TX.add(TX.mul(x, 0.7), TX.mul(TX.sin(TX.add(TX.mul(y, 0.9), TX.mul(ph, SkinsKit.Q))), 1.6)), TX.mul(TX.mul(ph, SkinsKit.Q), 0.5)))
 	return TX.sel(TX.gt(v, 0.75), 1, TX.sel(TX.lt(v, -0.85), -1, 0))
 
-static func spectre_tex(x: float, y: float, ph: float):
+static func spectre_tex(x, y, ph):
 	var v = TX.sin(TX.add(TX.mul(y, 1.5), TX.mul(TX.sin(TX.sub(TX.mul(x, 0.55), TX.mul(ph, SkinsKit.Q))), 1.4)))
 	var _c0 = TX.and_(TX.gt(v, 0.97), TX.eq(SkinsKit.wrap___tx(TX.sub(TX.floor(x), TX.mul(ph, 2)), 9), 0))
 	var _r1 = 3
@@ -381,23 +381,23 @@ static func spectre_tex(x: float, y: float, ph: float):
 	return TX.sel(_c0, _r1, _r2)
 
 ##  Caparison cloth: royal blue, a gold knot here and there where the quilting would cross.
-static func cap_tex(x: float, y: float, _a2 = null):
+static func cap_tex(x, y, _a2 = null):
 	return (TX.sel(TX.and_(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(x, y)), 6), 0), TX.eq(SkinsKit.wrap___tx(TX.floor(TX.sub(x, y)), 6), 0)), 2, 0))
 
 # =============================================================================
 # Acrobat Trousers
 # =============================================================================
 ##  Harlequin diamonds: alternate lozenges drop to near-black.
-static func harlequin_tex(x: float, y: float, _a2 = null):
+static func harlequin_tex(x, y, _a2 = null):
 	return (TX.sel(TX.band((TX.add(TX.floor(TX.div((TX.add(TX.mul(x, 0.6), y)), 3.2)), TX.floor(TX.div((TX.sub(TX.mul(x, 0.6), y)), 3.2)))), 1), -2, 0))
 
-static func kozane(x: float, _a1 = null, _a2 = null):
+static func kozane(x, _a1 = null, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.7), 0.45), -1, 0))
 
-static func hakama_pleats(_x: float, y: float, _a2 = null):
+static func hakama_pleats(_x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(y, 1.9), 0.55), -1, 0))
 
-static func rift_tex(x: float, y: float, ph: float):
+static func rift_tex(x, y, ph):
 	var v = TX.add(TX.sin(TX.add(TX.mul(x, 0.9), TX.mul(TX.sin(TX.mul(y, 1.7)), 1.6))), TX.mul(TX.sin(TX.sub(TX.mul(y, 0.7), TX.mul(x, 0.4))), 0.5))
 	var _c0 = TX.and_(TX.lt(TX.abs(v), 0.08), TX.lt(TX.hash(TX.floor(x), TX.floor(y)), 0.6))
 	var _r1 = TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.floor(TX.mul(x, 0.7)), ph), 4), 2), 4, 2)
@@ -408,13 +408,13 @@ static func rift_tex(x: float, y: float, ph: float):
 # Earthshaker Boots
 # =============================================================================
 ##  Columnar basalt: tight hexagonal joints.
-static func basalt_tex(x: float, y: float, _a2 = null):
+static func basalt_tex(x, y, _a2 = null):
 	var r = TX.floor(TX.div(y, 1.8))
 	var xx = TX.add(x, TX.mul((TX.band(r, 1)), 1.1))
 	return TX.sel(TX.or_(TX.lt(SkinsKit.wrap___tx(xx, 2.2), 0.45), TX.lt(SkinsKit.wrap___tx(y, 1.8), 0.4)), -1, 0)
 
 ##  Magma pulsing down through the seams of the rock.
-static func magma_tex(x: float, y: float, ph: float):
+static func magma_tex(x, y, ph):
 	var v = TX.add(TX.sin(TX.add(TX.mul(x, 1.25), TX.mul(TX.sin(TX.mul(y, 1.6)), 2))), TX.mul(TX.sin(TX.sub(TX.mul(y, 1.05), TX.mul(x, 0.45))), 0.6))
 	var _c0 = TX.ge(TX.abs(v), 0.14)
 	var _r1 = TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.3)), TX.floor(TX.mul(y, 1.3))), 0.12), -1, 0)
@@ -425,16 +425,16 @@ static func magma_tex(x: float, y: float, ph: float):
 # Frostwalkers
 # =============================================================================
 ##  Shaggy yeti hair hanging in long strands.
-static func shag(x: float, y: float, _a2 = null):
+static func shag(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(y, 1.4), TX.mul(TX.sin(TX.mul(x, 0.8)), 0.6)), 1.6), 0.45), -1, 0))
 
 ##  Clear ice: a few frozen-in cracks, a glint sweeping across it.
-static func facet_tex(x: float, y: float, ph: float):
+static func facet_tex(x, y, ph):
 	var _c0 = TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.6)), TX.mul(ph, 2.2)), 10), 0.8)
 	var _r1 = 1
 	var _r2 = TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 0.8)), TX.add(TX.floor(TX.mul(y, 0.8)), 4)), 0.08), -1, 0)
 	return TX.sel(_c0, _r1, _r2)
 
 ##  Cloth wraps crossing diagonally up the shin.
-static func wrap_tex(x: float, y: float, _a2 = null):
+static func wrap_tex(x, y, _a2 = null):
 	return (TX.sel(TX.or_(TX.lt(SkinsKit.wrap___tx(TX.add(x, TX.mul(y, 0.55)), 1.8), 0.45), TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(y, 0.55)), 1.8), 0.3)), -1, 0))

@@ -87,7 +87,7 @@ static func _init_tidefall():
 # =============================================================================
 # Bloomfall: a seed of the first forest
 # =============================================================================
-static var BM = SkinsKit.mats({"seed": {"base": 0xb07a3a, "ramp": [0x3a2414, 0x6a4422, 0x9a6a34, 0xc8944a, 0x9aff6a], "shiny": true, "tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.abs(TX.sin(TX.add(TX.mul(x, 0.7), TX.mul(y, 0.25)))), 0.12), 2, 0)))}, "vine": {"base": 0x3a8a2a, "step": 0.14}, "leaf": {"base": 0x6ac83a, "step": 0.14}, "vein": {"base": 0x9aff6a, "glow": true}, "petal": {"base": 0xff8ad0, "step": 0.12}, "petalHot": {"base": 0xffd8f0, "glow": true}, "pollen": {"base": 0xffe060, "glow": true}, "trail": {"base": 0x6ae05a, "glow": true}, "trailPink": {"base": 0xff9ad8, "glow": true}})
+static var BM = SkinsKit.mats({"seed": {"base": 0xb07a3a, "ramp": [0x3a2414, 0x6a4422, 0x9a6a34, 0xc8944a, 0x9aff6a], "shiny": true, "tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.abs(TX.sin(TX.add(TX.mul(x, 0.7), TX.mul(y, 0.25)))), 0.12), 2, 0)))}, "vine": {"base": 0x3a8a2a, "step": 0.14}, "leaf": {"base": 0x6ac83a, "step": 0.14}, "vein": {"base": 0x9aff6a, "glow": true}, "petal": {"base": 0xff8ad0, "step": 0.12}, "petalHot": {"base": 0xffd8f0, "glow": true}, "pollen": {"base": 0xffe060, "glow": true}, "trail": {"base": 0x6ae05a, "glow": true}, "trailPink": {"base": 0xff9ad8, "glow": true}})
 static var bloomMeteor = _init_bloommeteor()
 static func _init_bloommeteor():
 	var _fn1 = func(r, t, f: float, h):
@@ -245,7 +245,7 @@ static func on(t, a: float, d: float) -> Variant:
 	return [t.x(cos(a) * d, sin(a) * d), t.y(cos(a) * d, sin(a) * d)]
 
 ##  Light running through water: a slow caustic net, one step per frame.
-static func caustic(x: float, y: float, ph: float):
+static func caustic(x, y, ph):
 	return (TX.sel(TX.gt(TX.add(TX.sin(TX.add(TX.mul(x, 0.9), TX.mul(ph, 1.6))), TX.sin(TX.add(TX.sub(TX.mul(y, 1.1), TX.mul(x, 0.4)), ph))), 1.35), 1, 0))
 
 ##  A leaf at (x, y) in frame t pointing along angle a, `s` long.

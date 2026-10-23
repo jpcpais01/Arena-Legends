@@ -23,7 +23,7 @@ const BLOSSOM = 0xf6a8c8
 const FIREFLY = 0xfff07a
 static var FX = SkinsKit.epic_fx(FIREFLY, EMERALD, "twinkle", 0xc8ffd8)
 # Battle sprite (its own materials).
-static var WM = SkinsKit.mats({"spirit": {"base": 0x7af0a8, "glow": true, "ramp": [0x1a6a3a, 0x2e9a5a, 0x5ad88a, 0xa8ffc8, 0xf0fff4], "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.4), 0.5), -1, 0)))}, "hot": {"base": 0xf0fff4, "glow": true}, "wood": {"base": 0xa8e8b8, "glow": true}})
+static var WM = SkinsKit.mats({"spirit": {"base": 0x7af0a8, "glow": true, "ramp": [0x1a6a3a, 0x2e9a5a, 0x5ad88a, 0xa8ffc8, 0xf0fff4], "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.4), 0.5), -1, 0)))}, "hot": {"base": 0xf0fff4, "glow": true}, "wood": {"base": 0xa8e8b8, "glow": true}})
 static var spiritBlade = _init_spiritblade()
 static func _init_spiritblade():
 	var _fn0 = func(r, t, f: float, h):
@@ -54,15 +54,15 @@ static func _init_dryad():
 static var WILDWOOD = {"longsword.elderheart": TS.merge([{"weapon": elderheart}, FX]), "war_horn.wildhunt": TS.merge([{"weapon": wild_hunt}, FX]), "phantom_blade.dryad": dryad, "executioner_hood.stag": stag_hood(), "leather_jerkin.wildwood": mantle(), "zephyr_boots.rootwalkers": rootwalkers(), "windrunner_leggings.vinebound": vinebound()}
 
 ##  Bark: dark furrows running along the part.
-static func bark(x: float, y: float, _a2 = null):
+static func bark(x, y, _a2 = null):
 	return (TX.sel(TX.gt(TX.sin(TX.add(TX.mul(y, 2.6), TX.mul(TX.sin(TX.mul(x, 0.45)), 1.6))), 0.55), -1, 0))
 
 ##  Sap rising through a part, one step per frame.
 static func sap(speed: float = 1.5, period: float = 7.0) -> Variant:
-	return (func(x: float, _y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, speed)), period), 1.6), 1, 0)))
+	return (func(x, _y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, speed)), period), 1.6), 1, 0)))
 
 ##  Leaf veins: a midrib and side veins (in a leaf's own frame, x along it).
-static func veins(x: float, y: float, _a2 = null):
+static func veins(x, y, _a2 = null):
 	return (TX.sel(TX.or_(TX.lt(TX.abs(y), 0.35), TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(TX.abs(y), 1.2)), 2.2), 0.45)), -1, 0))
 
 ##  A leaf from (x, y) in frame F pointing along angle `a`, `l` long.
@@ -83,7 +83,7 @@ static func blossom(F, x: float, y: float, r: float) -> Variant:
 static func elderheart() -> Variant:
 	# An emerald blade with glowing sap up its core, a crossguard of living branches in leaf and bloom,
 	# an ivy vine climbing the blade, an acorn pommel, and two fireflies circling the tip.
-	var facets = (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, 2)), 9), 1.2), 1, TX.sel(TX.gt(y, 0.3), 1, TX.sel(TX.lt(y, -0.6), -1, 0)))))
+	var facets = (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, 2)), 9), 1.2), 1, TX.sel(TX.gt(y, 0.3), 1, TX.sel(TX.lt(y, -0.6), -1, 0)))))
 	var _fn1 = func(r, t, m, o):
 		var g: float = (o.get("group") if o.get("group") != null else 6)
 		SpriteWeaponKit.fill_all(r, [t.cap(-5.6, 0, -1, 0, 1.3, 1.1)], m.call("wood"), o, 1)
@@ -140,12 +140,12 @@ static func wild_hunt() -> Variant:
 		r.dot(t.x(7, 1.8), t.y(7, 1.8), m.call("gem"), 3, g)
 		var a: float = r.phase * SkinsKit.Q
 		r.dot(t.x(4 + (cos(a) * 3), 5.6 + (sin(a) * 1.6)), t.y(4 + (cos(a) * 3), 5.6 + (sin(a) * 1.6)), m.call("fly"), 3, g)
-	return {"tip": 10, "mats": {"horn": PixelRaster.material({"base": 0xe8dcc0, "shiny": true, "step": 0.13, "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.2), 0.4), -1, 0)))}), "band": PixelRaster.material({"base": 0x3a8a3a, "tex": veins}), "mouth": SpriteWeaponKit.M["darkWood"].call(), "leaf": PixelRaster.material({"base": LEAF, "tex": veins}), "bloom": PixelRaster.material({"base": BLOSSOM, "shiny": true, "step": 0.13}), "gem": PixelRaster.material({"base": EMERALD, "glow": true, "tex": (func(_x: float, _y: float, ph: float): return (TX.sel(TX.mod(ph, 2), 1, 0)))}), "fly": SpriteWeaponKit.M["glow"].call(FIREFLY)}, "draw": _fn0}
+	return {"tip": 10, "mats": {"horn": PixelRaster.material({"base": 0xe8dcc0, "shiny": true, "step": 0.13, "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.2), 0.4), -1, 0)))}), "band": PixelRaster.material({"base": 0x3a8a3a, "tex": veins}), "mouth": SpriteWeaponKit.M["darkWood"].call(), "leaf": PixelRaster.material({"base": LEAF, "tex": veins}), "bloom": PixelRaster.material({"base": BLOSSOM, "shiny": true, "step": 0.13}), "gem": PixelRaster.material({"base": EMERALD, "glow": true, "tex": (func(_x, _y, ph): return (TX.sel(TX.mod(ph, 2), 1, 0)))}), "fly": SpriteWeaponKit.M["glow"].call(FIREFLY)}, "draw": _fn0}
 
 static func stag_hood() -> Variant:
 	# A leaf-green hood thrown over the head, the face left open, and a stag's antlers rising through it,
 	# hung with leaves and blossoms, a firefly circling the tines.
-	var leafy = (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.4))), TX.floor(TX.mul(y, 0.9))), 0.22), 1, TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(x, TX.mul(y, 1.3))), 3), 0), -1, 0))))
+	var leafy = (func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.4))), TX.floor(TX.mul(y, 0.9))), 0.22), 1, TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(x, TX.mul(y, 1.3))), 3), 0), -1, 0))))
 	var _fn2 = func():
 		var _fn1 = func(r, H, m, g: float, sway: float):
 			var s: float = sway * 1.2
@@ -166,7 +166,7 @@ static func stag_hood() -> Variant:
 			r.fill(blossom(H, -0.8, 9, 0.7), m.call("h.bloom"), {"group": g, "bevel": 0.6})
 			var a: float = r.phase * SkinsKit.Q
 			r.dot(H.x((-1.8) + (cos(a) * 4), 13 + (sin(a) * 1.4)), H.y((-1.8) + (cos(a) * 4), 13 + (sin(a) * 1.4)), m.call("h.fly"), 3, g)
-		return ({"mats": {"h.hood": PixelRaster.material({"base": 0x3a7a32, "tex": leafy}), "h.trim": PixelRaster.material({"base": 0xe8c050, "shiny": true}), "h.antler": PixelRaster.material({"base": 0xd8c8a8, "shiny": true, "step": 0.13}), "h.leaf": PixelRaster.material({"base": LEAF, "tex": veins}), "h.bloom": PixelRaster.material({"base": BLOSSOM, "shiny": true, "step": 0.13}), "h.fly": PixelRaster.material({"base": FIREFLY, "glow": true}), "h.gem": PixelRaster.material({"base": EMERALD, "glow": true, "tex": (func(_x: float, _y: float, ph: float): return (TX.sel(TX.mod(ph, 2), 1, 0)))})}, "draw": _fn1, "face": true})
+		return ({"mats": {"h.hood": PixelRaster.material({"base": 0x3a7a32, "tex": leafy}), "h.trim": PixelRaster.material({"base": 0xe8c050, "shiny": true}), "h.antler": PixelRaster.material({"base": 0xd8c8a8, "shiny": true, "step": 0.13}), "h.leaf": PixelRaster.material({"base": LEAF, "tex": veins}), "h.bloom": PixelRaster.material({"base": BLOSSOM, "shiny": true, "step": 0.13}), "h.fly": PixelRaster.material({"base": FIREFLY, "glow": true}), "h.gem": PixelRaster.material({"base": EMERALD, "glow": true, "tex": (func(_x, _y, ph): return (TX.sel(TX.mod(ph, 2), 1, 0)))})}, "draw": _fn1, "face": true})
 	return TS.merge([{"head": _fn2}, FX])
 
 static func mantle() -> Variant:
@@ -198,7 +198,7 @@ static func mantle() -> Variant:
 		r_3.line(T_2.x(x_3 - 4, top_2 - 1), T_2.y(x_3 - 4, top_2 - 1), T_2.x(x_3 + 1, 2.6), T_2.y(x_3 + 1, 2.6), m_3.call("k.vine"), 2, c_3["g"])
 		r_3.fill(T_2.poly([x_3, y_4 + 1.6, x_3 + 1.2, y_4, x_3, y_4 - 1.6, x_3 - 1.2, y_4]), m_3.call("k.gem"), {"group": c_3["g"], "bevel": 0.8, "local": T_2})
 		r_3.fill(leaf(T_2, x_3 - 1, y_4 - 0.4, PI + 0.5, 2.2), m_3.call("k.leaf"), {"group": c_3["g"], "bevel": 0.6, "local": T_2})
-	return TS.merge([{"mats": {"jerkin": SkinsKit.plain(BARK, bark), "jerkinDark": SkinsKit.plain(0x3a2618), "k.leaf": {"base": LEAF, "tex": veins}, "k.leafD": {"base": 0x2e7a2e, "tex": veins}, "k.bloom": SkinsKit.shiny(BLOSSOM, null, 0.13), "k.moss": SkinsKit.plain(0x5a8a32, (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 2)), TX.floor(TX.mul(y, 2))), 0.3), 1, 0)))), "k.bark": SkinsKit.plain(0x5a3c24, bark), "k.gem": {"base": EMERALD, "glow": true, "ramp": [0x0e5a3a, 0x1a8a52, EMERALD, 0x8affc0, 0xf0fff4], "tex": (func(_x: float, y_2: float, ph: float): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.add(TX.floor(TX.mul(y_2, 2)), ph), 4), 0), 1, 0)))}, "k.vine": SkinsKit.plain(0x2e6a2a)}, "chest": {"back": _fn0, "shoulder": _fn1, "over": _fn2}}, FX])
+	return TS.merge([{"mats": {"jerkin": SkinsKit.plain(BARK, bark), "jerkinDark": SkinsKit.plain(0x3a2618), "k.leaf": {"base": LEAF, "tex": veins}, "k.leafD": {"base": 0x2e7a2e, "tex": veins}, "k.bloom": SkinsKit.shiny(BLOSSOM, null, 0.13), "k.moss": SkinsKit.plain(0x5a8a32, (func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 2)), TX.floor(TX.mul(y, 2))), 0.3), 1, 0)))), "k.bark": SkinsKit.plain(0x5a3c24, bark), "k.gem": {"base": EMERALD, "glow": true, "ramp": [0x0e5a3a, 0x1a8a52, EMERALD, 0x8affc0, 0xf0fff4], "tex": (func(_x, y_2, ph): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.add(TX.floor(TX.mul(y_2, 2)), ph), 4), 0), 1, 0)))}, "k.vine": SkinsKit.plain(0x2e6a2a)}, "chest": {"back": _fn0, "shoulder": _fn1, "over": _fn2}}, FX])
 
 static func rootwalkers() -> Variant:
 	# Bark boots with roots reaching into the ground, a sprout swaying at the cuff and a glowing rune.
@@ -212,7 +212,7 @@ static func rootwalkers() -> Variant:
 		var sw: float = ([0, 0.25, 0.4, 0.2])[fmod(r.phase, 4)]
 		r.fill(leaf(shin, c["top"] + 0.2, c["w"] - 0.4, 0.5 + sw, 2.8), m.call("k.leaf"), TS.merge([o, {"bevel": 0.8, "local": shin}]))
 		r.fill(leaf(shin, c["top"] + 0.2, c["w"] - 0.4, 1.5 + sw, 2.2), m.call("k.leaf"), TS.merge([o, {"bevel": 0.8, "local": shin}]))
-	return TS.merge([{"mats": {"zephyr": SkinsKit.plain(BARK, bark), "zephyrTrim": SkinsKit.plain(0x5a8a32, (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 2)), TX.floor(TX.mul(y, 2))), 0.3), 1, 0)))), "k.root": SkinsKit.plain(0x4a3220), "k.leaf": {"base": LEAF, "tex": veins}, "k.rune": SkinsKit.glow(0x8affc0, sap(1, 4))}, "boots": {"wing": null, "over": _fn0}}, FX])
+	return TS.merge([{"mats": {"zephyr": SkinsKit.plain(BARK, bark), "zephyrTrim": SkinsKit.plain(0x5a8a32, (func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 2)), TX.floor(TX.mul(y, 2))), 0.3), 1, 0)))), "k.root": SkinsKit.plain(0x4a3220), "k.leaf": {"base": LEAF, "tex": veins}, "k.rune": SkinsKit.glow(0x8affc0, sap(1, 4))}, "boots": {"wing": null, "over": _fn0}}, FX])
 
 static func vinebound() -> Variant:
 	# Bark-plated leggings wound with a living vine: leaves sprouting off it and swaying, a blossom

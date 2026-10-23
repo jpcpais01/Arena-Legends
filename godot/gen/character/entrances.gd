@@ -24,7 +24,7 @@ static func load_() -> Variant:
 		return owned
 	var raw = null
 	raw = JSON.parse_string((Store.get_item(KEY) if Store.get_item(KEY) != null else "null"))
-	owned = (TS.arr(TS.set_of(TS.filter(raw, is_entrance))) if (raw is Array) else [])
+	owned = (TS.arr(TS.set_of(TS.filter(raw, is_entrance))).duplicate() if (raw is Array) else [])
 	return owned
 
 static func owns_entrance(id: String) -> bool:

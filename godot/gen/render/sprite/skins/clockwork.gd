@@ -56,7 +56,7 @@ static var CLOCKWORK = {"warhammer.steamforge": TS.merge([{"weapon": steamforge}
 
 ##  Riveted panels: seams every few units, a rivet at each corner.
 static func rivets(p: float = 3.2, hi: float = 2.0) -> Variant:
-	var _fn3 = func(x: float, y: float, _a2 = null):
+	var _fn3 = func(x, y, _a2 = null):
 		var u = SkinsKit.wrap___tx(x, p)
 		var v = SkinsKit.wrap___tx(y, p)
 		var _c0 = TX.and_(TX.lt(u, 0.75), TX.lt(v, 0.75))
@@ -67,10 +67,10 @@ static func rivets(p: float = 3.2, hi: float = 2.0) -> Variant:
 
 ##  A gleam sliding along polished brass, one step per frame.
 static func gleam(period: float = 8.0) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1.2), 1, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1.2), 1, 0)))
 
 ##  Arcane circuits in dark steel: traces on a grid that light up in a running pulse.
-static func circuit(x: float, y: float, ph: float):
+static func circuit(x, y, ph):
 	var cx = TX.floor(TX.div(x, 2.6))
 	var cy = TX.floor(TX.div(y, 2.6))
 	var on_x = TX.lt(SkinsKit.wrap___tx(y, 2.6), 0.45)
@@ -81,7 +81,7 @@ static func circuit(x: float, y: float, ph: float):
 	return TX.sel(_c0, _r1, _r2)
 
 ##  The arcane core beating: bright on the downbeat.
-static func beat(_x: float, _y: float, ph: float):
+static func beat(_x, _y, ph):
 	return TX.sub(TX.pick([1, 0, 1, 0], TX.mod(ph, 4)), (TX.sel(TX.eq(TX.mod(ph, 4), 3), 1, 0)))
 
 static func brass(tex = null) -> Variant:
@@ -175,7 +175,7 @@ static func automaton() -> Variant:
 	# A riveted brass faceplate with a great glowing lens for an eye, a grille for a mouth,
 	# a cog turning at the temple and copper pipes swept back like horns, venting steam.
 	var _fn1 = func():
-		var _fn0 = func(r, H, m, g: float):
+		var _fn0 = func(r, H, m, g: float, _a4 = null):
 			var ph: float = fmod(r.phase, 4)
 			# Pipes swept back over the head; steam from their ends.
 			steam(r, H, -7.4, 8.2, 2.5, ph, m.call("h.steam"), g)
@@ -228,7 +228,7 @@ static func titan_frame() -> Variant:
 		r_3.fill(PixelSdf.subtract(T_2.circ(x_3, y_2, 2.4), T_2.circ(x_3, y_2, 1.6)), m_3.call("k.hub"), {"group": c_3["g"], "bevel": 0.8})
 		r_3.fill(T_2.circ(x_3, y_2, 1.6), m_3.call("k.core"), {"group": c_3["g"]})
 		r_3.fill(T_2.rect(x_3, y_2, 1.6, 0.25), m_3.call("k.steel"), {"group": c_3["g"], "noLine": true})
-	return TS.merge([{"mats": {"plate": {"base": PLATE[2], "ramp": PLATE, "shiny": true, "step": 0.12, "tex": (func(x: float, y: float, ph: float): return TX.add(rivets__tx(3, 1).call(x, y, ph), gleam__tx(9).call(x, y, ph)))}, "plateDark": SkinsKit.shiny(STEEL[2]), "k.gear": SkinsKit.shiny(COPPER, null, 0.14), "k.hub": {"base": BRASS[2], "ramp": BRASS, "shiny": true}, "k.steel": SkinsKit.shiny(STEEL[2]), "k.core": {"base": CORE, "glow": true, "ramp": [0x1a6a8a, 0x2ab8e0, CORE, 0xb8fcff, CORE_HOT], "tex": beat}, "k.steam": SkinsKit.plain(STEAM), "k.pipe": SkinsKit.shiny(COPPER)}, "chest": {"pauldron": null, "spikes": null, "back": _fn1, "shoulder": _fn2, "over": _fn3}}, FX])
+	return TS.merge([{"mats": {"plate": {"base": PLATE[2], "ramp": PLATE, "shiny": true, "step": 0.12, "tex": (func(x, y, ph): return TX.add(rivets__tx(3, 1).call(x, y, ph), gleam__tx(9).call(x, y, ph)))}, "plateDark": SkinsKit.shiny(STEEL[2]), "k.gear": SkinsKit.shiny(COPPER, null, 0.14), "k.hub": {"base": BRASS[2], "ramp": BRASS, "shiny": true}, "k.steel": SkinsKit.shiny(STEEL[2]), "k.core": {"base": CORE, "glow": true, "ramp": [0x1a6a8a, 0x2ab8e0, CORE, 0xb8fcff, CORE_HOT], "tex": beat}, "k.steam": SkinsKit.plain(STEAM), "k.pipe": SkinsKit.shiny(COPPER)}, "chest": {"pauldron": null, "spikes": null, "back": _fn1, "shoulder": _fn2, "over": _fn3}}, FX])
 
 static func piston_stompers() -> Variant:
 	# Brass stompers driven by a piston up the back of the calf, a cog turning at the ankle and steam off the heel.
@@ -283,11 +283,11 @@ static func piston_cuisses() -> Variant:
 		var ky: float = w * 0.3
 		r.fill(disc(t, kx, ky, c["body"]["kneeR"] + 0.2), m.call("l.brass"), TS.merge([part, {"bevel": 1.2}]))
 		r.fill(t.circ(kx + 0.2, ky + 0.2, 0.75), m.call("l.core"), {"group": c["g"] + 20})
-	return TS.merge([{"mats": {"stoneLeg": SkinsKit.veined(STEEL, CORE, circuit), "stoneDark": {"base": STEEL[3], "ramp": (TS.arr(STEEL) + [0x8a96a4]), "shiny": true}, "l.plate": {"base": PLATE[2], "ramp": PLATE, "shiny": true, "step": 0.12, "tex": (func(x: float, y: float, ph: float): return TX.add(rivets__tx(2.8, 1).call(x, y, ph), gleam__tx(9).call(x, y, ph)))}, "l.brass": {"base": BRASS[2], "ramp": BRASS, "shiny": true}, "l.cog": SkinsKit.shiny(COPPER, null, 0.14), "l.cyl": SkinsKit.shiny(COPPER, null, 0.14), "l.rod": SkinsKit.shiny(0xc8d0dc, null, 0.15), "l.core": {"base": CORE, "glow": true, "ramp": [0x1a6a8a, 0x2ab8e0, CORE, 0xb8fcff, CORE_HOT], "tex": beat}, "l.steam": SkinsKit.plain(STEAM)}, "legs": {"mat": "stoneLeg", "trim": "stoneDark", "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.4, "over": _fn0}}, FX])
+	return TS.merge([{"mats": {"stoneLeg": SkinsKit.veined(STEEL, CORE, circuit), "stoneDark": {"base": STEEL[3], "ramp": (TS.arr(STEEL) + [0x8a96a4]), "shiny": true}, "l.plate": {"base": PLATE[2], "ramp": PLATE, "shiny": true, "step": 0.12, "tex": (func(x, y, ph): return TX.add(rivets__tx(2.8, 1).call(x, y, ph), gleam__tx(9).call(x, y, ph)))}, "l.brass": {"base": BRASS[2], "ramp": BRASS, "shiny": true}, "l.cog": SkinsKit.shiny(COPPER, null, 0.14), "l.cyl": SkinsKit.shiny(COPPER, null, 0.14), "l.rod": SkinsKit.shiny(0xc8d0dc, null, 0.15), "l.core": {"base": CORE, "glow": true, "ramp": [0x1a6a8a, 0x2ab8e0, CORE, 0xb8fcff, CORE_HOT], "tex": beat}, "l.steam": SkinsKit.plain(STEAM)}, "legs": {"mat": "stoneLeg", "trim": "stoneDark", "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.4, "over": _fn0}}, FX])
 
 ## Builder-mode twin of rivets (called from surface textures).
-static func rivets__tx(p: float = 3.2, hi: float = 2.0, _a2 = null):
-	var _fn3 = func(x: float, y: float, _a2 = null):
+static func rivets__tx(p = 3.2, hi = 2, _a2 = null):
+	var _fn3 = func(x, y, _a2 = null):
 		var u = SkinsKit.wrap___tx(x, p)
 		var v = SkinsKit.wrap___tx(y, p)
 		var _c0 = TX.and_(TX.lt(u, 0.75), TX.lt(v, 0.75))
@@ -297,5 +297,5 @@ static func rivets__tx(p: float = 3.2, hi: float = 2.0, _a2 = null):
 	return _fn3
 
 ## Builder-mode twin of gleam (called from surface textures).
-static func gleam__tx(period: float = 8.0, _a1 = null, _a2 = null):
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1.2), 1, 0)))
+static func gleam__tx(period = 8, _a1 = null, _a2 = null):
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1.2), 1, 0)))

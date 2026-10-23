@@ -93,7 +93,7 @@ static var QUETZAL = {"mace.macuahuitl": TS.merge([{"weapon": macuahuitl}, FX]),
 # -----------------------------------------------------------------------------
 ##  Turquoise mosaic: tiles of slightly different stones, a few catching the light each frame.
 static func mosaic(size: float = 1.4, glints: float = 0.05) -> Variant:
-	var _fn3 = func(x: float, y: float, ph: float):
+	var _fn3 = func(x, y, ph):
 		var tx = TX.floor(TX.div(x, size))
 		var ty = TX.floor(TX.add(TX.div(y, size), TX.mul((TX.band(tx, 1)), 0.5)))
 		var _c0 = TX.lt(TX.hash(TX.add(tx, TX.mul(ph, 13)), TX.sub(ty, TX.mul(ph, 7))), glints)
@@ -105,34 +105,34 @@ static func mosaic(size: float = 1.4, glints: float = 0.05) -> Variant:
 
 ##  Feather barbs combed along a plume, a sheen of iridescence sliding down it.
 static func barbs(sheen: bool = true) -> Variant:
-	var _fn0 = func(x: float, y: float, ph: float):
+	var _fn0 = func(x, y, ph):
 		var b = TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.5)), 3), 0.5), -1, 0)
 		return TX.sel(TX.and_(sheen, TX.lt(SkinsKit.wrap___tx(TX.add(TX.sub(TX.mul(x, 0.5), TX.mul(y, 0.7)), TX.mul(ph, 2.2)), 9), 0.9)), TX.add(b, 1), b)
 	return _fn0
 
 ##  Just the iridescent sheen sliding down a plume (small feathers, where barbs turn to noise).
-static func sheen_only(x: float, y: float, ph: float):
+static func sheen_only(x, y, ph):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.sub(TX.mul(x, 0.5), TX.mul(y, 0.7)), TX.mul(ph, 2.2)), 9), 0.9), 1, 0))
 
 ##  Serpent scales: rows of small arcs, a tile here and there catching the light.
-static func scales(x: float, y: float, ph: float):
+static func scales(x, y, ph):
 	var _c0 = TX.lt(TX.hash(TX.add(TX.floor(TX.div(x, 1.6)), TX.mul(ph, 13)), TX.sub(TX.floor(TX.div(y, 1.6)), TX.mul(ph, 7))), 0.04)
 	var _r1 = 2
 	var _r2 = TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(y, TX.mul(TX.abs(TX.sub(SkinsKit.wrap___tx(x, 2), 1)), 0.8)), 1.8), 0.45), -1, 0)
 	return TX.sel(_c0, _r1, _r2)
 
 ##  Stepped fret (greca): a stair of dark steps running along a band.
-static func greca(x: float, y: float, _a2 = null):
+static func greca(x, y, _a2 = null):
 	var i = SkinsKit.wrap___tx(TX.floor(x), 4)
 	var j = SkinsKit.wrap___tx(TX.floor(y), 3)
 	return TX.sel(TX.or_(TX.or_((TX.and_(TX.eq(j, 0), TX.lt(i, 2))), (TX.and_(TX.eq(j, 1), (TX.or_(TX.eq(i, 1), TX.eq(i, 2)))))), (TX.and_(TX.eq(j, 2), TX.ge(i, 2)))), -2, 0)
 
 ##  A glint sweeping along polished obsidian, one step per frame.
 static func sweep(period: float = 9.0, speed: float = 2.6) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.4)), TX.mul(ph, speed)), period), 1), 2, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.4)), TX.mul(ph, speed)), period), 1), 2, 0)))
 
 ##  Jaguar pelt: broken rosettes with darker hearts.
-static func rosettes(x: float, y: float, _a2 = null):
+static func rosettes(x, y, _a2 = null):
 	var P = 3
 	var cx = TX.floor(TX.div(x, P))
 	var cy = TX.floor(TX.add(TX.div(y, P), TX.mul((TX.band(cx, 1)), 0.5)))
@@ -145,15 +145,15 @@ static func rosettes(x: float, y: float, _a2 = null):
 	return TX.sel(_c0, _r1, _r2)
 
 ##  Light pulsing in a sun gem over the loop.
-static func pulse(_x: float, _y: float, ph: float):
+static func pulse(_x, _y, ph):
 	return TX.pick([0, 1, 0, -1], TX.mod(ph, 4))
 
 ##  Rough wood grain along a club.
-static func wood_grain(x: float, y: float, _a2 = null):
+static func wood_grain(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(y, 2.1), TX.mul(TX.sin(TX.mul(x, 0.7)), 0.6)), 1.9), 0.4), -1, 0))
 
 ##  Quilted cotton: a diamond quilting under the feathers.
-static func quilt(x: float, y: float, _a2 = null):
+static func quilt(x, y, _a2 = null):
 	return (TX.sel(TX.and_(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(x, y)), 4), 0), TX.eq(SkinsKit.wrap___tx(TX.floor(TX.sub(x, y)), 2), 0)), -1, 0))
 
 # -----------------------------------------------------------------------------
@@ -284,7 +284,7 @@ static func macuahuitl() -> Variant:
 		# A glint on the gold of the sun disc, wandering round it.
 		var ga: float = (ph * SkinsKit.Q) + 0.8
 		r.dot(t.x(13.2 + (cos(ga) * 1.2), sin(ga) * 1.2), t.y(13.2 + (cos(ga) * 1.2), sin(ga) * 1.2), m.call("gold"), 4, 45)
-	return {"tip": 22.6, "mats": {"wood": PixelRaster.material({"base": WOOD[2], "ramp": WOOD, "tex": wood_grain}), "haft": PixelRaster.material({"base": WOOD[1], "ramp": WOOD}), "wrap": PixelRaster.material(scarlet((func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.4), 0.45), -1, 0))))), "gold": PixelRaster.material(gold()), "blade": PixelRaster.material(obsidian()), "panel": PixelRaster.material(turq(mosaic(1.3, 0.07))), "sun": PixelRaster.material(sun()), "plume": PixelRaster.material(plume()), "plumeDk": PixelRaster.material(plume_dk()), "red": PixelRaster.material(scarlet(barbs(false)))}, "draw": _fn2}
+	return {"tip": 22.6, "mats": {"wood": PixelRaster.material({"base": WOOD[2], "ramp": WOOD, "tex": wood_grain}), "haft": PixelRaster.material({"base": WOOD[1], "ramp": WOOD}), "wrap": PixelRaster.material(scarlet((func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.4), 0.45), -1, 0))))), "gold": PixelRaster.material(gold()), "blade": PixelRaster.material(obsidian()), "panel": PixelRaster.material(turq(mosaic(1.3, 0.07))), "sun": PixelRaster.material(sun()), "plume": PixelRaster.material(plume()), "plumeDk": PixelRaster.material(plume_dk()), "red": PixelRaster.material(scarlet(barbs(false)))}, "draw": _fn2}
 
 static func plume_dart() -> Variant:
 	# A leaf-blade of obsidian, a turquoise-bound hilt with a gold collar and green feather fletching.
@@ -499,12 +499,12 @@ static func jaguar_leggings() -> Variant:
 			var y = _e0[1]
 			var yy: float = y + (sw * (1.1 + (k * 0.2)))
 			r.fill(K.cap(hem + 0.2, yy, hem - 1.2, (yy + (sw * 0.5)) + 0.2, 0.45, 0.3), m.call("l.gold"), TS.merge([o, {"bevel": 0.5}]))
-	return TS.merge([{"mats": {"windLeg": {"base": JAGUAR[2], "ramp": JAGUAR, "tex": rosettes}, "windTrim": obsidian(), "l.gold": gold(), "l.turq": turq(mosaic(1, 0.08)), "l.red": scarlet((func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.4), 0.5), -1, 0)))), "l.fret": gold(greca), "l.obs": obsidian()}, "legs": {"mat": "windLeg", "trim": "windTrim", "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.15, "over": _fn1}}, FX])
+	return TS.merge([{"mats": {"windLeg": {"base": JAGUAR[2], "ramp": JAGUAR, "tex": rosettes}, "windTrim": obsidian(), "l.gold": gold(), "l.turq": turq(mosaic(1, 0.08)), "l.red": scarlet((func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.4), 0.5), -1, 0)))), "l.fret": gold(greca), "l.obs": obsidian()}, "legs": {"mat": "windLeg", "trim": "windTrim", "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.15, "over": _fn1}}, FX])
 
 static func serpent_sandals() -> Variant:
 	# Turquoise straps wound up the shin over a gold sole, a gold cuff with a turquoise disc, a little wing
 	# of quetzal plumes at each ankle fluttering, and a serpent's head of turquoise and gold over the toe.
-	var straps = (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 1.1), TX.mul(y, 0.9)), 2.3), 0.75), -2, TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(x, 1.1), TX.mul(y, 0.9)), 4.6), 0.5), 1, 0))))
+	var straps = (func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 1.1), TX.mul(y, 0.9)), 2.3), 0.75), -2, TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(x, 1.1), TX.mul(y, 0.9)), 4.6), 0.5), 1, 0))))
 	var _fn0 = func(r, shin, foot, m, c):
 		var o = {"group": c["g"], "toneBias": c["bias"]}
 		var ph: float = fmod(r.phase, 4)

@@ -109,7 +109,10 @@ class Battle:
 		b["px"] = SimConstants.START_GAP
 		b["x"] = b["px"]
 		self.fighters = [a, b]
-		var make = (func(i: float, f, v: float): return TS.nn((null if (null if cfg.get("brains") == null else TS.at(cfg.get("brains"), i)) == null else (null if cfg.get("brains") == null else TS.at(cfg.get("brains"), i)).call(f, v)), AiBrain.Brain.new(f, v)))
+		var _fn1 = func(i: float, f, v: float):
+			var _q0 = cfg.get("brains")
+			return TS.nn((null if _q0 == null else (null if TS.at(_q0, i) == null else TS.at(_q0, i).call(f, v))), AiBrain.Brain.new(f, v))
+		var make = _fn1
 		self.brains = [make.call(0, a, self.rng.next()), make.call(1, b, self.rng.next())]
 		for f_2 in self.fighters:
 			SimFighter.refresh_stats(f_2)

@@ -37,7 +37,8 @@ static func defense_of(ab) -> Variant:
 		return "blink"
 	if (ab["slot"] == "evade") or (((ab["kind"] == "dash") and (not (null if ab.get("dash") == null else ab.get("dash").get("strike")))) and ((TS.nn((null if ab.get("dash") == null else ab.get("dash")["iframes"]), 0)) > 0)):
 		return "evade"
-	if (ab["kind"] == "buff") and (null if ab.get("buff") == null else TS.some(ab.get("buff"), (func(s, _a1 = null, _a2 = null): return (TS.nn((null if STATUS_FX.get(s["status"]) == null else STATUS_FX.get(s["status"]).get("taken")), 0)) < 0))):
+	var _q0 = ab.get("buff")
+	if (ab["kind"] == "buff") and (null if _q0 == null else TS.some(_q0, (func(s, _a1 = null, _a2 = null): return (TS.nn((null if STATUS_FX.get(s["status"]) == null else STATUS_FX.get(s["status"]).get("taken")), 0)) < 0))):
 		return "armor"
 	if ab.get("shieldGain") and (ab["power"] <= 0):
 		return "shield"
@@ -65,7 +66,8 @@ static func analyze_kit(f) -> Variant:
 		# Ranged if a repeatable (cheap, short-cooldown) attack works from afar.
 		if (a["ranged"] and (not a["ultimate"])) and (a["ab"]["cooldown"] <= 1.5):
 			ranged_2 = true
-		if a["ab"].get("stun") or (null if a["ab"].get("applies") == null else TS.some(a["ab"].get("applies"), (func(s, _a1 = null, _a2 = null): return (null if STATUS_FX.get(s["status"]) == null else STATUS_FX.get(s["status"]).get("cc"))))):
+		var _q2 = a["ab"].get("applies")
+		if a["ab"].get("stun") or (null if _q2 == null else TS.some(_q2, (func(s, _a1 = null, _a2 = null): return (null if STATUS_FX.get(s["status"]) == null else STATUS_FX.get(s["status"]).get("cc"))))):
 			has_stun = true
 	return {"info": info, "ranged": ranged_2, "meleeReach": (melee_reach if melee_reach else 1.6), "maxReach": max_reach_2, "defenses": TS.filter(info, (func(a_2, _a1 = null, _a2 = null): return a_2["defense"])), "hasStun": has_stun}
 
@@ -165,7 +167,8 @@ static func cc_value(ab, follow_up_per_sec: float) -> float:
 
 ##  Has crowd control worth valuing on top of the damage.
 static func has_control(ab) -> bool:
-	return (((((((not (not ab.get("stun"))) or (not (not ab.get("launch")))) or (not (not ab.get("pull")))) or (not (not ab.get("reel")))) or (not (not ab.get("drainEnergy")))) or ((null if ab.get("projectile") == null else ab.get("projectile").get("zone")) == "vortex")) or (not (not (null if ab.get("applies") == null else TS.some(ab.get("applies"), (func(s, _a1 = null, _a2 = null): return ((((null if STATUS_FX.get(s["status"]) == null else STATUS_FX.get(s["status"]).get("cc")) or (s["status"] == "root")) or (s["status"] == "silence")) or (s["status"] == "bleed"))))))))
+	var _q0 = ab.get("applies")
+	return (((((((not (not ab.get("stun"))) or (not (not ab.get("launch")))) or (not (not ab.get("pull")))) or (not (not ab.get("reel")))) or (not (not ab.get("drainEnergy")))) or ((null if ab.get("projectile") == null else ab.get("projectile").get("zone")) == "vortex")) or (not (not (null if _q0 == null else TS.some(_q0, (func(s, _a1 = null, _a2 = null): return ((((null if STATUS_FX.get(s["status"]) == null else STATUS_FX.get(s["status"]).get("cc")) or (s["status"] == "root")) or (s["status"] == "silence")) or (s["status"] == "bleed"))))))))
 
 # -----------------------------------------------------------------------------
 # Matchup: who wins at which distance

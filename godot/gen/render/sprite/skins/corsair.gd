@@ -118,12 +118,12 @@ static var CORSAIR = {"rapier.corsair": TS.merge([{"weapon": gravetide_cutlass},
 # Textures
 # -----------------------------------------------------------------------------
 ##  Worn tar-black cloth: a faint weave and a few scuffs.
-static func tar_cloth(x: float, y: float, _a2 = null):
+static func tar_cloth(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.1)), TX.add(TX.floor(TX.mul(y, 1.1)), 5)), 0.07), -1, TX.sel(TX.eq(SkinsKit.wrap___tx(TX.add(TX.floor(x), TX.floor(y)), 3), 0), -1, 0)))
 
 ##  Tarnished gold: dark pits, and a glint wandering over it frame by frame.
 static func tarnish(glints: float = 0.05) -> Variant:
-	var _fn3 = func(x: float, y: float, ph: float):
+	var _fn3 = func(x, y, ph):
 		var _c0 = TX.lt(TX.hash(TX.add(TX.floor(x), TX.mul(ph, 31)), TX.sub(TX.floor(y), TX.mul(ph, 17))), glints)
 		var _r1 = 2
 		var _r2 = TX.sel(TX.lt(TX.hash(TX.add(TX.floor(TX.mul(x, 1.3)), 3), TX.floor(TX.mul(y, 1.3))), 0.18), -1, 0)
@@ -131,19 +131,19 @@ static func tarnish(glints: float = 0.05) -> Variant:
 	return _fn3
 
 ##  Silk folds running across a sash.
-static func silk(x: float, y: float, _a2 = null):
+static func silk(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.6), TX.mul(y, 0.9)), 2.6), 0.7), -1, 0))
 
 ##  Polished boot leather: a highlight sliding down the shaft.
-static func polish(x: float, y: float, ph: float):
+static func polish(x, y, ph):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.sub(TX.mul(x, 0.8), TX.mul(y, 0.3)), TX.mul(ph, 2)), 10), 0.8), 1, 0))
 
 ##  Wood grain along the stock.
-static func wood_grain(x: float, y: float, _a2 = null):
+static func wood_grain(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(y, 2.3), TX.mul(TX.sin(TX.mul(x, 0.6)), 0.7)), 2.1), 0.45), -1, 0))
 
 ##  Gull feather: barbs, and the grey band before the tip.
-static func barbs(x: float, y: float, _a2 = null):
+static func barbs(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.6)), 2.4), 0.5), -1, 0))
 
 # -----------------------------------------------------------------------------
@@ -201,7 +201,7 @@ static func feather(F, x: float, y: float, a: float, len_: float, w: float, curl
 	return F.poly((TS.arr(p.call(0, (-w) * 0.3)) + TS.arr(p.call(0.3, (-w) * 0.8)) + TS.arr(p.call(0.66, -w)) + TS.arr(p.call(0.9, (-w) * 0.62)) + TS.arr(p.call(1, 0)) + TS.arr(p.call(0.9, w * 0.62)) + TS.arr(p.call(0.66, w)) + TS.arr(p.call(0.3, w * 0.8)) + TS.arr(p.call(0, w * 0.3))))
 
 ##  The tide along the edge: a bright band, and crests of ghostlight rolling up it toward the point.
-static func tide(x: float, y: float, ph: float):
+static func tide(x, y, ph):
 	var _c0 = TX.or_(TX.lt(x, 2.6), TX.gt(x, 34.4))
 	var _r1 = 0
 	var d = TX.sub(y, along__tx(EDGE, x))
@@ -254,7 +254,7 @@ static func gravetide_cutlass() -> Variant:
 		SpriteWeaponKit.fill_all(r, [t.circ(-6.9, 0, 1.6), t.rect(-8.2, 0, 0.7, 1, 0.3)], m.call("bone"), o, 1.1)
 		r.dot(t.x(-7.2, 0.6), t.y(-7.2, 0.6), m.call("eye"), 3, g)
 		r.dot(t.x(-7.2, -0.6), t.y(-7.2, -0.6), m.call("eye"), 3, g)
-	return {"tip": 34, "mats": {"blade": PixelRaster.material(R(STEEL, {"tex": tide})), "gold": PixelRaster.material(gold()), "grip": PixelRaster.material(tar(null)), "bone": PixelRaster.material(bone()), "eye": PixelRaster.material(ghost()), "crust": PixelRaster.material(R(VERD, {"tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 2)), TX.floor(TX.mul(y, 2))), 0.3), -1, 0)))})), "ribbon": PixelRaster.material(sea(silk))}, "draw": _fn1}
+	return {"tip": 34, "mats": {"blade": PixelRaster.material(R(STEEL, {"tex": tide})), "gold": PixelRaster.material(gold()), "grip": PixelRaster.material(tar(null)), "bone": PixelRaster.material(bone()), "eye": PixelRaster.material(ghost()), "crust": PixelRaster.material(R(VERD, {"tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 2)), TX.floor(TX.mul(y, 2))), 0.3), -1, 0)))})), "ribbon": PixelRaster.material(sea(silk))}, "draw": _fn1}
 
 static func flintlock_repeater() -> Variant:
 	# A black-wood pistol with a revolving brass drum of three chambers glowing green, a long iron barrel

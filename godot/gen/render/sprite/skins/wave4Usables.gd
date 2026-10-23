@@ -19,7 +19,7 @@ static func ramped(ramp, tex = null, shine: bool = true) -> Variant:
 
 # --- Textures (item-local units, about one pixel each) ------------------------------------
 ##  Ink splashed over black lacquer: a few blots and their spatter.
-static func ink_splash(x: float, y: float, _a2 = null):
+static func ink_splash(x, y, _a2 = null):
 	var v = TX.add(TX.sin(TX.add(TX.add(TX.mul(x, 1.25), TX.mul(y, 0.45)), 0.6)), TX.sin(TX.sub(TX.mul(y, 1.6), TX.mul(x, 0.7))))
 	var _c0 = TX.gt(v, 1.25)
 	var _r1 = 2
@@ -27,25 +27,25 @@ static func ink_splash(x: float, y: float, _a2 = null):
 	return TX.sel(_c0, _r1, _r2)
 
 ##  Tooled leather: a diamond stamp with a stitched border.
-static func tooled(x: float, y: float, _a2 = null):
+static func tooled(x, y, _a2 = null):
 	var d = TX.add(TX.abs(TX.sub((TX.mod((TX.add(x, 40)), 3)), 1.5)), TX.abs(TX.sub((TX.mod((TX.add(y, 40)), 3)), 1.5)))
 	return TX.sel(TX.lt(d, 0.5), 1, TX.sel(TX.gt(d, 2.4), -1, 0))
 
 ##  Frost feathering on glass.
-static func frost_glass(x: float, y: float, _a2 = null):
+static func frost_glass(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.abs(TX.sin(TX.add(TX.mul(x, 2.1), TX.mul(TX.sin(TX.mul(y, 2.7)), 1.4)))), 0.16), 1, 0))
 
 ##  Swamp muck: cakes of mud and a few dark specks.
-static func muck(x: float, y: float, _a2 = null):
+static func muck(x, y, _a2 = null):
 	var v = TX.mul(TX.sin(TX.add(TX.mul(x, 0.9), TX.mul(TX.sin(TX.mul(y, 1.4)), 1.8))), TX.sin(TX.sub(TX.mul(y, 0.8), TX.mul(x, 0.3))))
 	return TX.sel(TX.gt(v, 0.45), -1, TX.sel(TX.lt(TX.hash(TX.add(TX.floor(x), 3), TX.sub(TX.floor(y), 5)), 0.08), 1, 0))
 
 ##  Paper ribs of a lantern: thin bamboo bands across it.
-static func ribs(x: float, _a1 = null, _a2 = null):
+static func ribs(x, _a1 = null, _a2 = null):
 	return (TX.sel(TX.lt(TX.mod((TX.add((TX.mod((TX.add(x, 40)), 1.6)), 1.6)), 1.6), 0.45), -1, 0))
 
 ##  Old cracked bone.
-static func bone_crack(x: float, y: float, _a2 = null):
+static func bone_crack(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.abs(TX.add(TX.sin(TX.add(TX.mul(x, 1.7), TX.mul(TX.sin(TX.mul(y, 2.3)), 1.2))), TX.sin(TX.mul(y, 0.9)))), 0.14), -1, TX.sel(TX.lt(TX.hash(TX.floor(x), TX.add(TX.floor(y), 9)), 0.06), -1, 0)))
 
 # --- Sakura Smoke: a paper lantern bomb that bursts into cherry blossom ---------------------

@@ -66,12 +66,12 @@ static func _init_doom():
 		r.fill(t.circ(-2, 0.2, 1.4), m.call("k.eye"), {"group": 4, "noLine": true})
 		r.fill(t.circ(2, 0.2, 1.4), m.call("k.eye"), {"group": 4, "noLine": true})
 		r.line(t.x(-2.4, -4.6), t.y(-2.4, -4.6), t.x(2.4, -4.6), t.y(2.4, -4.6), m.call("k.fire"), 1, 4)
-	return {"mats": {"sigil": SkinsKit.glow(0xff3a2a), "rock": {"base": IRON[2], "ramp": (TS.arr(IRON) + [0xffa040]), "tex": magma(1.2)}, "ember": SkinsKit.glow(0xffd060), "lava": SkinsKit.glow(0xff4a1a), "lavaHot": SkinsKit.glow(0xffe070), "fire": SkinsKit.glow(0xff5a1a), "k.iron": {"base": IRON[2], "ramp": (TS.arr(IRON) + [0xffa040]), "tex": magma(1.2)}, "k.ring": {"base": 0xff3a2a, "glow": true, "tex": (func(x: float, y: float, ph: float): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.sub(TX.floor(TX.mul(TX.atan2(y, x), 2)), ph), 4), 0), 1, 0)))}, "k.horn": SkinsKit.shiny(0xcabaa0, null, 0.14), "k.eye": SkinsKit.glow(0xfff070), "k.fire": SkinsKit.glow(0xff5a1a), "k.hot": SkinsKit.glow(0xffd870)}, "glow": [0xffd060, 0xb0101a], "icon": _fn0, "proj": {"meteor": meteorProj, "sigil": sigilProj}}
+	return {"mats": {"sigil": SkinsKit.glow(0xff3a2a), "rock": {"base": IRON[2], "ramp": (TS.arr(IRON) + [0xffa040]), "tex": magma(1.2)}, "ember": SkinsKit.glow(0xffd060), "lava": SkinsKit.glow(0xff4a1a), "lavaHot": SkinsKit.glow(0xffe070), "fire": SkinsKit.glow(0xff5a1a), "k.iron": {"base": IRON[2], "ramp": (TS.arr(IRON) + [0xffa040]), "tex": magma(1.2)}, "k.ring": {"base": 0xff3a2a, "glow": true, "tex": (func(x, y, ph): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.sub(TX.floor(TX.mul(TX.atan2(y, x), 2)), ph), 4), 0), 1, 0)))}, "k.horn": SkinsKit.shiny(0xcabaa0, null, 0.14), "k.eye": SkinsKit.glow(0xfff070), "k.fire": SkinsKit.glow(0xff5a1a), "k.hot": SkinsKit.glow(0xffd870)}, "glow": [0xffd060, 0xb0101a], "icon": _fn0, "proj": {"meteor": meteorProj, "sigil": sigilProj}}
 static var HELLFORGED = {"greataxe.hellmaw": TS.merge([{"weapon": hellmaw}, FX]), "throwing_knives.brimstone": TS.merge([{"weapon": brimstone_fangs, "proj": {"knife": knifeProj}}, FX]), "meteor_sigil.doom": doom, "storm_crown.brimstone": brimstone_crown(), "thornmail.hellforged": carapace(), "iron_greaves.hellstride": hellstriders(), "runed_leggings.magma": cuisses()}
 
 ##  Cracks through the iron; magma pulses along them, one step per frame.
 static func magma(scale: float = 1.0) -> Variant:
-	var _fn3 = func(x: float, y: float, ph: float):
+	var _fn3 = func(x, y, ph):
 		var v = TX.add(TX.sin(TX.add(TX.mul(TX.mul(x, 0.8), scale), TX.mul(TX.sin(TX.mul(TX.mul(y, 1.4), scale)), 2.2))), TX.mul(TX.sin(TX.sub(TX.mul(y, scale), TX.mul(TX.mul(x, 0.3), scale))), 0.6))
 		var _c0 = TX.ge(TX.abs(v), 0.15)
 		var _r1 = 0
@@ -84,7 +84,7 @@ static func iron(scale: float = 1.0) -> Variant:
 
 ##  Molten glow that brightens and dims over the loop.
 static func molten() -> Variant:
-	return PixelRaster.material({"base": LAVA[2], "glow": true, "ramp": LAVA, "tex": (func(_x: float, _y: float, ph: float): return TX.pick([0, 1, 1, 0], TX.mod(ph, 4)))})
+	return PixelRaster.material({"base": LAVA[2], "glow": true, "ramp": LAVA, "tex": (func(_x, _y, ph): return TX.pick([0, 1, 1, 0], TX.mod(ph, 4)))})
 
 ##  A frame mirrored across its x axis (so "up" points out of a blade's edge).
 static func mirrored(t) -> Variant:
@@ -117,7 +117,7 @@ static func hellmaw() -> Variant:
 		r.dot(t.x(22.4, 0.2), t.y(22.4, 0.2), m.call("eye"), 3, g)
 		r.dot(t.x(24.4, 0.2), t.y(24.4, 0.2), m.call("eye"), 3, g)
 		r.line(t.x(22.4, -2.6), t.y(22.4, -2.6), t.x(24.4, -2.6), t.y(24.4, -2.6), m.call("haft"), 0, g)
-	return {"tip": 31, "grip2": 11, "mats": {"haft": iron(1.4), "head": iron(), "wrap": PixelRaster.material({"base": 0x8a1a1e, "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.6), 0.6), -1, 0)))}), "edge": molten(), "bone": PixelRaster.material({"base": 0xcabaa0, "shiny": true, "step": 0.14}), "eye": SpriteWeaponKit.M["glow"].call(0xffe060), "flame": SpriteWeaponKit.M["glow"].call(0xff6a1a), "hot": SpriteWeaponKit.M["glow"].call(0xffd870)}, "draw": _fn1}
+	return {"tip": 31, "grip2": 11, "mats": {"haft": iron(1.4), "head": iron(), "wrap": PixelRaster.material({"base": 0x8a1a1e, "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.6), 0.6), -1, 0)))}), "edge": molten(), "bone": PixelRaster.material({"base": 0xcabaa0, "shiny": true, "step": 0.14}), "eye": SpriteWeaponKit.M["glow"].call(0xffe060), "flame": SpriteWeaponKit.M["glow"].call(0xff6a1a), "hot": SpriteWeaponKit.M["glow"].call(0xffd870)}, "draw": _fn1}
 
 static func brimstone_fangs() -> Variant:
 	# A hooked obsidian fang with a molten core and a ring pommel.
@@ -141,9 +141,9 @@ static func horned_skull(r, t, x: float, s: float, h, g_base: float) -> void:
 
 static func brimstone_crown() -> Variant:
 	# A jagged black-iron crown with charred demon horns burning at the tips and hellfire on its points.
-	var ridges = (func(x: float, y: float, _a2 = null): return TX.add((TX.sel(TX.lt(x, -5.2), 3, TX.sel(TX.lt(x, -3.6), 1, 0))), (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.sub(TX.mul(y, 1.2), TX.mul(x, 0.8))), 2), 0), -1, 0))))
+	var ridges = (func(x, y, _a2 = null): return TX.add((TX.sel(TX.lt(x, -5.2), 3, TX.sel(TX.lt(x, -3.6), 1, 0))), (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.sub(TX.mul(y, 1.2), TX.mul(x, 0.8))), 2), 0), -1, 0))))
 	var _fn2 = func():
-		var _fn1 = func(r, H, m, g: float):
+		var _fn1 = func(r, H, m, g: float, _a4 = null):
 			var ph_2: float = fmod(r.phase, 4)
 			var horn = (func(dx: float, bias: float): r.fill(H.poly([3.4 + dx, 5.2, 2.8 + dx, 8.8, 0.8 + dx, 11.6, (-2.6) + dx, 13.4, (-7.2) + dx, 13.6, (-4.4) + dx, 12, (-1.8) + dx, 9.8, (-0.6) + dx, 7.2, (-0.6) + dx, 4.8]), m.call("h.horn"), {"group": g, "bevel": 1.6, "toneBias": bias, "local": H}))
 			horn.call(-1.8, -1)
@@ -156,12 +156,12 @@ static func brimstone_crown() -> Variant:
 			r.fill(H.poly([-5.6, 3.6, -6, 7.2, -4.2, 5.6, -2.2, 7.6, 0.2, 5.6, 2.4, 8.4, 4.4, 6, 6.2, 7.6, 6, 4.2, 0, 4.8]), m.call("h.iron"), {"group": g, "bevel": 1.6, "local": H})
 			r.fill(H.poly([0.2, 5.4, 1.2, 6.6, 0.2, 7.8, -0.8, 6.6]), m.call("h.gem"), {"group": g})
 			horn.call(0, 0)
-		return ({"mats": {"h.iron": iron(1.6), "h.horn": PixelRaster.material({"base": 0x6a5a50, "ramp": [0x2a2024, 0x4a3c38, 0x6a5a50, 0x9a5a3a, 0xffb040], "tex": ridges}), "h.gem": PixelRaster.material({"base": LAVA[3], "glow": true, "ramp": LAVA, "tex": (func(_x: float, _y: float, ph: float): return TX.pick([1, 0, 1, 1], TX.mod(ph, 4)))}), "h.flame": SpriteWeaponKit.M["glow"].call(0xff6a1a), "h.hot": SpriteWeaponKit.M["glow"].call(0xffd870)}, "draw": _fn1})
+		return ({"mats": {"h.iron": iron(1.6), "h.horn": PixelRaster.material({"base": 0x6a5a50, "ramp": [0x2a2024, 0x4a3c38, 0x6a5a50, 0x9a5a3a, 0xffb040], "tex": ridges}), "h.gem": PixelRaster.material({"base": LAVA[3], "glow": true, "ramp": LAVA, "tex": (func(_x, _y, ph): return TX.pick([1, 0, 1, 1], TX.mod(ph, 4)))}), "h.flame": SpriteWeaponKit.M["glow"].call(0xff6a1a), "h.hot": SpriteWeaponKit.M["glow"].call(0xffd870)}, "draw": _fn1})
 	return TS.merge([{"head": _fn2}, FX])
 
 static func carapace() -> Variant:
 	# Black iron plates split by magma, a furnace behind a ribcage grille, skull pauldrons and a smouldering cape.
-	var _fn3 = func(x: float, y: float, ph: float):
+	var _fn3 = func(x, y, ph):
 		var _c0 = TX.lt(y, TX.add(-11.2, TX.mul(TX.hash(TX.floor(TX.mul(x, 1.4)), 5), 2.4)))
 		var _r1 = TX.sel(TX.lt(TX.hash(TX.add(TX.floor(TX.mul(x, 2)), TX.mul(ph, 13)), TX.floor(TX.mul(y, 2))), 0.5), 4, 3)
 		var _r2 = TX.sel(TX.lt(TX.hash(TX.sub(TX.floor(TX.mul(x, 2)), TX.mul(ph, 7)), TX.add(TX.floor(TX.mul(y, 2)), TX.mul(ph, 5))), 0.02), 4, 0)
@@ -187,7 +187,7 @@ static func carapace() -> Variant:
 		for dy in [-1.6, 0, 1.6]:
 			r_3.fill(T_2.rect(x_2, y_3 + dy, 2.6, 0.38), m_3.call("k.bar"), {"group": c_3["g"], "bevel": 0.6, "noLine": true})
 		r_3.fill(T_2.rect(x_2 - 0.2, y_3, 0.38, 2.6), m_3.call("k.bar"), {"group": c_3["g"], "bevel": 0.6, "noLine": true})
-	return TS.merge([{"mats": {"thorn": {"base": IRON[2], "ramp": (TS.arr(IRON) + [0xffa040]), "tex": magma(1.1)}, "thornDark": {"base": 0x1a1216}, "thornSpike": SkinsKit.shiny(0x3a2a30), "k.skull": {"base": IRON[2], "ramp": (TS.arr(IRON) + [0xffb040]), "tex": magma(2)}, "k.horn": SkinsKit.shiny(0xcabaa0, null, 0.14), "k.eye": SkinsKit.glow(0xfff070), "k.core": {"base": LAVA[3], "glow": true, "ramp": LAVA, "tex": (func(_x: float, y_2: float, ph_2: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.floor(TX.mul(y_2, 1.2)), ph_2), 4), 2), 1, 0)))}, "k.bar": SkinsKit.shiny(0x3a2a30), "k.cape": {"base": 0x2a1e20, "ramp": [0x0e0a0c, 0x1a1214, 0x2a1e20, 0x3e2c2c, 0xff7a20], "tex": embers}}, "chest": {"pauldron": null, "spikes": null, "sleeve": "thorn", "sleeveLen": 1, "back": _fn4, "shoulder": _fn5, "over": _fn6}}, FX])
+	return TS.merge([{"mats": {"thorn": {"base": IRON[2], "ramp": (TS.arr(IRON) + [0xffa040]), "tex": magma(1.1)}, "thornDark": {"base": 0x1a1216}, "thornSpike": SkinsKit.shiny(0x3a2a30), "k.skull": {"base": IRON[2], "ramp": (TS.arr(IRON) + [0xffb040]), "tex": magma(2)}, "k.horn": SkinsKit.shiny(0xcabaa0, null, 0.14), "k.eye": SkinsKit.glow(0xfff070), "k.core": {"base": LAVA[3], "glow": true, "ramp": LAVA, "tex": (func(_x, y_2, ph_2): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.floor(TX.mul(y_2, 1.2)), ph_2), 4), 2), 1, 0)))}, "k.bar": SkinsKit.shiny(0x3a2a30), "k.cape": {"base": 0x2a1e20, "ramp": [0x0e0a0c, 0x1a1214, 0x2a1e20, 0x3e2c2c, 0xff7a20], "tex": embers}}, "chest": {"pauldron": null, "spikes": null, "sleeve": "thorn", "sleeveLen": 1, "back": _fn4, "shoulder": _fn5, "over": _fn6}}, FX])
 
 static func hellstriders() -> Variant:
 	# Molten-seamed greaves with clawed toes, a horn at the knee and hellfire at the heels.
@@ -233,4 +233,4 @@ static func cuisses() -> Variant:
 		var hs = ([[3.4, 2.2], [2.6, 3.4], [4, 2.6], [2.8, 3]])[ph_2]
 		SkinsKit.flame_tongue(r, up.call(-0.4, w + 1.6), 0, 0, 1.1, hs[0], (0.5 if fmod(ph_2, 2) else -0.2), m.call("l.flame"), m.call("l.hot"), c["g"])
 		SkinsKit.flame_tongue(r, up.call(L * 0.3, (-w) - 0.4), 0, 0, 1, hs[1], (-0.3 if fmod(ph_2, 2) else 0.3), m.call("l.flame"), m.call("l.hot"), c["g"])
-	return TS.merge([{"mats": {"l.iron": {"base": IRON[2], "ramp": (TS.arr(IRON) + [0xffa040]), "tex": magma(0.8)}, "l.plate": {"base": IRON[2], "ramp": (TS.arr(IRON) + [0xffa040])}, "l.dark": {"base": 0x1a1216}, "l.horn": SkinsKit.shiny(0xcabaa0, null, 0.14), "l.seam": {"base": LAVA[2], "glow": true, "ramp": LAVA, "tex": (func(_x: float, _y: float, ph: float): return TX.pick([0, 1, 1, 0], TX.mod(ph, 4)))}, "l.eye": SkinsKit.glow(0xfff070), "l.flame": SkinsKit.glow(0xff6a1a), "l.hot": SkinsKit.glow(0xffd870)}, "legs": {"mat": "l.iron", "trim": null, "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.35, "over": _fn0}}, FX])
+	return TS.merge([{"mats": {"l.iron": {"base": IRON[2], "ramp": (TS.arr(IRON) + [0xffa040]), "tex": magma(0.8)}, "l.plate": {"base": IRON[2], "ramp": (TS.arr(IRON) + [0xffa040])}, "l.dark": {"base": 0x1a1216}, "l.horn": SkinsKit.shiny(0xcabaa0, null, 0.14), "l.seam": {"base": LAVA[2], "glow": true, "ramp": LAVA, "tex": (func(_x, _y, ph): return TX.pick([0, 1, 1, 0], TX.mod(ph, 4)))}, "l.eye": SkinsKit.glow(0xfff070), "l.flame": SkinsKit.glow(0xff6a1a), "l.hot": SkinsKit.glow(0xffd870)}, "legs": {"mat": "l.iron", "trim": null, "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.35, "over": _fn0}}, FX])

@@ -66,22 +66,22 @@ static var OBA = {"spirit_wraps.oba": TS.merge([{"weapon": taped_fists}, FX]), "
 
 ##  A glint sliding along polished gold, one step a frame.
 static func sweep(period: float = 10.0, speed: float = 2.5, w: float = 1.1) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.45)), TX.mul(ph, speed)), period), w), 1, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.45)), TX.mul(ph, speed)), period), w), 1, 0)))
 
 ##  Glossy leather: a few bright flecks.
-static func gloss(x: float, y: float, _a2 = null):
+static func gloss(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.4)), TX.floor(TX.mul(y, 1.4))), 0.07), 1, 0))
 
 ##  Tape wound round in overlapping turns.
-static func turns(x: float, y: float, _a2 = null):
+static func turns(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 1.1), TX.mul(y, 0.35)), 1.6), 0.4), -1, 0))
 
 ##  Tight beard curls.
-static func curls(x: float, y: float, _a2 = null):
+static func curls(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.6)), TX.floor(TX.mul(y, 1.6))), 0.22), -1, TX.sel(TX.lt(TX.hash(TX.add(TX.floor(TX.mul(x, 1.6)), 7), TX.floor(TX.mul(y, 1.6))), 0.08), 1, 0)))
 
 ##  A diamond flashing over the loop.
-static func flash(_x: float, _y: float, ph: float):
+static func flash(_x, _y, ph):
 	return TX.pick([0, 1, 0, -1], TX.mod(ph, 4))
 
 ##  A diamond (a cut gem seen face-on) at (x, y) of F.
@@ -133,7 +133,7 @@ static func grace_wraps() -> Variant:
 		SpriteWeaponKit.fill_all(r, [t.rect(3.3, 0, 0.8, 2.6, 0.5)], m.call("plate"), o, 0.9)
 		for y_2 in [-1.6, 0, 1.6]:
 			SpriteWeaponKit.fill_all(r, [t.circ(4.4, y_2, 0.6)], m.call("gold"), o, 0.5)
-	return {"tip": 5, "mats": {"wrap": PixelRaster.material(S["black"].call((func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 1.1), TX.mul(y, 0.35)), 1.6), 0.4), -1, gloss(x, y)))))), "gold": PixelRaster.material(S["gold"].call(null)), "plate": PixelRaster.material(S["gold"].call(sweep(8, 2, 1))), "tape": PixelRaster.material(S["tape"].call())}, "draw": _fn0}
+	return {"tip": 5, "mats": {"wrap": PixelRaster.material(S["black"].call((func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 1.1), TX.mul(y, 0.35)), 1.6), 0.4), -1, gloss(x, y)))))), "gold": PixelRaster.material(S["gold"].call(null)), "plate": PixelRaster.material(S["gold"].call(sweep(8, 2, 1))), "tape": PixelRaster.material(S["tape"].call())}, "draw": _fn0}
 
 ## The championship in frame F (`s` its scale; about 28 x 22 units at 1): a black strap stitched in white,
 ## a gold side plate each end, and the big centre plate: a gold shield ringed with diamonds round black
@@ -191,7 +191,7 @@ static func oba_beard() -> Variant:
 	# round the jaw joined to the moustache, the ear showing, and a shine on the scalp where the sweat
 	# catches the light.
 	var _fn1 = func():
-		var _fn0 = func(r, H, m, g: float):
+		var _fn0 = func(r, H, m, g: float, _a4 = null):
 			var ph: float = fmod(r.phase, 4)
 			var sk: float = m.call("flesh.scalp")
 			# The shaved scalp, then the ear behind the sideburn.

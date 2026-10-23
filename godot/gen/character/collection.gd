@@ -32,7 +32,7 @@ static func load_collection(worn = null) -> Variant:
 	var raw = null
 	raw = JSON.parse_string((Store.get_item(KEY) if Store.get_item(KEY) != null else "null"))
 	if (raw != null) and (TS.type_of(raw) == "object"):
-		col = {"gems": (maxf(0, floor(raw.get("gems"))) if is_finite(raw.get("gems")) else START_GEMS), "owned": (TS.arr(TS.set_of(TS.filter(raw.get("owned"), (func(id: String, _a1 = null, _a2 = null): return ((TS.type_of(id) == "string") and CharacterSkins.SKIN_BY_ID.has(id)))))) if (raw.get("owned") is Array) else []), "pity": (maxf(0, minf(EPIC_PITY - 1, floor(raw.get("pity")))) if is_finite(raw.get("pity")) else 0), "paid": (TS.slice(TS.filter(raw.get("paid"), (func(k: String, _a1 = null, _a2 = null): return TS.type_of(k) == "string")), -40) if (raw.get("paid") is Array) else []), "spare": clean_spare(raw.get("spare"))}
+		col = {"gems": (maxf(0, floor(raw.get("gems"))) if is_finite(raw.get("gems")) else START_GEMS), "owned": (TS.arr(TS.set_of(TS.filter(raw.get("owned"), (func(id: String, _a1 = null, _a2 = null): return ((TS.type_of(id) == "string") and CharacterSkins.SKIN_BY_ID.has(id)))))).duplicate() if (raw.get("owned") is Array) else []), "pity": (maxf(0, minf(EPIC_PITY - 1, floor(raw.get("pity")))) if is_finite(raw.get("pity")) else 0), "paid": (TS.slice(TS.filter(raw.get("paid"), (func(k: String, _a1 = null, _a2 = null): return TS.type_of(k) == "string")), -40) if (raw.get("paid") is Array) else []), "spare": clean_spare(raw.get("spare"))}
 	else:
 		col = {"gems": START_GEMS, "owned": [], "pity": 0, "paid": [], "spare": {}}
 	# Anything worn stays owned (the first start, and saves from before skins were collectibles).

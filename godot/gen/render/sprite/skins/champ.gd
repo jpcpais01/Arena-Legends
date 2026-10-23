@@ -101,7 +101,7 @@ static func _init_cantseeme():
 # -----------------------------------------------------------------------------
 # The Spinner Title (phoenix feather)
 # -----------------------------------------------------------------------------
-static var SPIN = {"k.sStrap": S["ink"].call((func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.4)), TX.floor(TX.mul(y, 1.4))), 0.07), 1, 0)))), "k.sStud": S["silver"].call(null), "k.sGold": S["gold"].call(), "k.sRim": S["silver"].call(), "k.sInk": S["ink"].call(null), "k.sDia": S["diamond"].call(), "k.sLogo": {"base": GOLD[3], "ramp": GOLD, "shiny": true}, "k.sSpark": {"base": WHITE1, "glow": true}, "k.sLime": S["lime"].call(null)}
+static var SPIN = {"k.sStrap": S["ink"].call((func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.4)), TX.floor(TX.mul(y, 1.4))), 0.07), 1, 0)))), "k.sStud": S["silver"].call(null), "k.sGold": S["gold"].call(), "k.sRim": S["silver"].call(), "k.sInk": S["ink"].call(null), "k.sDia": S["diamond"].call(), "k.sLogo": {"base": GOLD[3], "ramp": GOLD, "shiny": true}, "k.sSpark": {"base": WHITE1, "glow": true}, "k.sLime": S["lime"].call(null)}
 static var SM = SkinsKit.mats(SPIN)
 ##  The title floating at the shoulder, its disc spinning, a shine crossing it now and then.
 static var spinnerCore = _init_spinnercore()
@@ -114,7 +114,7 @@ static var spinnerTitle = _init_spinnertitle()
 static func _init_spinnertitle():
 	var _fn0 = func(r, t, m):
 		spinner(r, SpriteXform.Xf.new(t.x(0, -0.6), t.y(0, -0.6), 0, 1, 1), 1, 0, -0.35, m, 1)
-	var _fn1 = func():
+	var _fn1 = func(_a0 = null, _a1 = null, _a2 = null, _a3 = null, _a4 = null):
 		pass
 	return {"mats": TS.merge([SPIN, {"plume": S["lime"].call(null), "plumeTip": S["mark"].call()}]), "glow": [0xe0ffb0, 0x66c21c], "icon": _fn0, "plume": _fn1, "proj": {"core": spinnerCore}, "revive": "NEVER GIVE UP!"}
 # -----------------------------------------------------------------------------
@@ -125,25 +125,25 @@ static var CHAMP = {"spirit_wraps.champ": TS.merge([{"weapon": wristbands, "proj
 
 ##  A glint sliding along polished metal, one step a frame.
 static func sweep(period: float = 9.0, speed: float = 2.25, w: float = 1.0) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.45)), TX.mul(ph, speed)), period), w), 1, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.45)), TX.mul(ph, speed)), period), w), 1, 0)))
 
 ##  Terry cloth: little loops of a darker tone.
-static func terry(x: float, y: float, _a2 = null):
+static func terry(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.7)), TX.floor(TX.mul(y, 1.7))), 0.2), -1, 0))
 
 ##  Cotton jersey: a few soft flecks.
-static func jersey(x: float, y: float, _a2 = null):
+static func jersey(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.3)), TX.floor(TX.mul(y, 1.3))), 0.06), -1, 0))
 
 ##  Denim twill with stonewashed flecks.
-static func twill(x: float, y: float, _a2 = null):
+static func twill(x, y, _a2 = null):
 	var _c0 = TX.lt(TX.hash(TX.floor(TX.mul(x, 1.2)), TX.floor(TX.mul(y, 1.2))), 0.09)
 	var _r1 = 1
 	var _r2 = TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(x, 0.75), TX.mul(y, 0.75)), 1.5), 0.4), -1, 0)
 	return TX.sel(_c0, _r1, _r2)
 
 ##  Rubber sole: a few ridges.
-static func ridges(x: float, _a1 = null, _a2 = null):
+static func ridges(x, _a1 = null, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.6), 0.45), -1, 0))
 
 ##  0..1 through the wave, or -1 when it isn't happening.
@@ -318,7 +318,7 @@ static func cap() -> Variant:
 	# A lime fitted cap worn forward: six panels seamed to a button on top, a flat black brim stitched in lime,
 	# the logo patch on the front panel, the snapback strap showing at the back.
 	var _fn2 = func():
-		var _fn1 = func(r, H, m, g: float):
+		var _fn1 = func(r, H, m, g: float, _a4 = null):
 			var crown = SpriteDraw.hair_cap(H, 2.9, 0.1, 1.05)
 			r.fill(crown, m.call("h.cap"), {"group": g, "bevel": 2.4, "local": H})
 			# Panel seams down from the button.
@@ -386,7 +386,7 @@ static func tee() -> Variant:
 		SpriteWeaponKit.chain_line(r, T.x(bx, by), T.y(bx, by), T.x((bx - 0.2) - (s * 0.5), ty + 1.4), T.y((bx - 0.2) - (s * 0.5), ty + 1.4), T.x(tx, ty + 1.2), T.y(tx, ty + 1.2), m.call("k.ceChain"), c["g"] + 1)
 		r.fill(T.rect(tx + 0.5, ty - 0.5, 0.75, 1.1, 0.35), m.call("k.ceTag"), {"group": c["g"] + 2, "bevel": 0.6, "local": T})
 		r.fill(T.rect(tx, ty - 0.1, 0.75, 1.1, 0.35), m.call("k.ceTag"), {"group": c["g"] + 3, "bevel": 0.6, "local": T})
-	return TS.merge([{"mats": {"k.ceTee": S["lime"].call(), "k.ceRib": S["lime"].call((func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1), 0.4), -1, 0)))), "k.cePrint": S["ink"].call(null), "k.ceStar": S["white"].call(), "k.ceTag": S["silver"].call(sweep(6, 1.5, 1)), "k.ceChain": S["silver"].call(null)}, "chest": {"torso": "k.ceTee", "sleeve": "k.ceTee", "sleeveLen": 0.6, "forearm": null, "hands": "skin", "pauldron": null, "trim": null, "belt": "k.ceTee", "cape": null, "hood": null, "spikes": null, "skirt": 0, "noScarf": true, "over": _fn1}}, FX])
+	return TS.merge([{"mats": {"k.ceTee": S["lime"].call(), "k.ceRib": S["lime"].call((func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1), 0.4), -1, 0)))), "k.cePrint": S["ink"].call(null), "k.ceStar": S["white"].call(), "k.ceTag": S["silver"].call(sweep(6, 1.5, 1)), "k.ceChain": S["silver"].call(null)}, "chest": {"torso": "k.ceTee", "sleeve": "k.ceTee", "sleeveLen": 0.6, "forearm": null, "hands": "skin", "pauldron": null, "trim": null, "belt": "k.ceTee", "cape": null, "hood": null, "spikes": null, "skirt": 0, "noScarf": true, "over": _fn1}}, FX])
 
 # -----------------------------------------------------------------------------
 # Cena's Jorts (leather leggings)
@@ -456,7 +456,7 @@ static func high_tops() -> Variant:
 			i += 1
 		# The reflective tab at the back of the collar.
 		r.dot(shin.x(c["top"] - 0.9, (-w) + 0.2), shin.y(c["top"] - 0.9, (-w) + 0.2), m.call("k.cebGlow"), 3, c["g"])
-	return TS.merge([{"mats": {"k.cebShoe": S["lime"].call(null), "k.cebSole": S["white"].call(ridges), "k.cebInk": S["ink"].call(), "k.cebLace": S["white"].call(), "k.cebSock": S["white"].call((func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 0.9), 0.35), -1, 0)))), "k.cebGlow": S["mark"].call()}, "boots": {"mat": "k.cebShoe", "height": 0.34, "bulk": 0.5, "trim": "k.cebInk", "wing": null, "knee": null, "over": _fn0}}, FX])
+	return TS.merge([{"mats": {"k.cebShoe": S["lime"].call(null), "k.cebSole": S["white"].call(ridges), "k.cebInk": S["ink"].call(), "k.cebLace": S["white"].call(), "k.cebSock": S["white"].call((func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 0.9), 0.35), -1, 0)))), "k.cebGlow": S["mark"].call()}, "boots": {"mat": "k.cebShoe", "height": 0.34, "bulk": 0.5, "trim": "k.cebInk", "wing": null, "knee": null, "over": _fn0}}, FX])
 
 ##  An eighth note at (x, y), its head at the bottom left.
 static func note(g, x: float, y: float, col: String) -> void:

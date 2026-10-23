@@ -25,7 +25,7 @@ const GH = 60
 static var FX = SkinsKit.epic_fx(0xfff4c8, 0x5ab4ff, "twinkle", 0xfff0c8)
 ##  Particles the full set sheds in battle: gold-white twinkles and blue sparks.
 static var OLYMPIAN_FX = {"spark": 0xfff6c0, "spark2": 0x4ab0ff, "kind": "twinkle"}
-static var PZ_SPECS = {"z.marble": marble(3, {"tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(x, 0.5), 1.8), 0.55), -1, 0)))}), "z.stone": marble(4), "z.bronze": bronze(sheen(6, 1.5, 1)), "z.gold": gold(sheen(5, 1.25, 1)), "z.leaf": gold(), "z.cloth": crimson((func(x: float, y: float, _a2 = null): return (TX.sel(TX.gt(TX.sin(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.3))), 0.8), -1, 0)))), "z.bolt": {"base": 0x9ad8ff, "ramp": [0x2a5ad0, 0x4a9cff, 0x6ab8ff, 0x9ad8ff, 0xffffff], "glow": true, "tex": crackle}, "z.boltHot": {"base": WHITE, "glow": true, "ramp": [0x8ad0ff, 0xd8f2ff, 0xffffff, 0xffffff, 0xffffff]}, "z.vein": bolt(breathe)}
+static var PZ_SPECS = {"z.marble": marble(3, {"tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(x, 0.5), 1.8), 0.55), -1, 0)))}), "z.stone": marble(4), "z.bronze": bronze(sheen(6, 1.5, 1)), "z.gold": gold(sheen(5, 1.25, 1)), "z.leaf": gold(), "z.cloth": crimson((func(x, y, _a2 = null): return (TX.sel(TX.gt(TX.sin(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.3))), 0.8), -1, 0)))), "z.bolt": {"base": 0x9ad8ff, "ramp": [0x2a5ad0, 0x4a9cff, 0x6ab8ff, 0x9ad8ff, 0xffffff], "glow": true, "tex": crackle}, "z.boltHot": {"base": WHITE, "glow": true, "ramp": [0x8ad0ff, 0xd8f2ff, 0xffffff, 0xffffff, 0xffffff]}, "z.vein": bolt(breathe)}
 static var PZ = SkinsKit.mats(PZ_SPECS)
 static var pillarSkin = _init_pillarskin()
 static func _init_pillarskin():
@@ -42,25 +42,25 @@ static var OLYMPIAN = {"spear.olympian": TS.merge([{"weapon": dory}, FX]), "kite
 
 ##  Grey veins wandering through marble (any space), sparse.
 static func veins(seed_: float = 0.0) -> Variant:
-	var _fn0 = func(x: float, y: float, _a2 = null):
+	var _fn0 = func(x, y, _a2 = null):
 		var v = TX.add(TX.sin(TX.add(TX.add(TX.mul(x, 0.42), TX.mul(TX.sin(TX.add(TX.mul(y, 0.55), seed_)), 1.9)), TX.mul(y, 0.28))), TX.mul(TX.sin(TX.add(TX.sub(TX.mul(y, 0.31), TX.mul(x, 0.17)), TX.mul(seed_, 2))), 0.5))
 		return TX.sel(TX.lt(TX.abs(v), 0.075), -1, 0)
 	return _fn0
 
 ##  A glint sliding along polished metal, one step per frame.
 static func sheen(period: float = 8.0, speed: float = 2.0, w: float = 1.1) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.4)), TX.mul(ph, speed)), period), w), 1, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.4)), TX.mul(ph, speed)), period), w), 1, 0)))
 
 ##  A light breathing over the four-frame loop.
-static func breathe(_x: float, _y: float, ph: float):
+static func breathe(_x, _y, ph):
 	return TX.pick([0, 1, 0, -1], TX.mod(ph, 4))
 
 ##  Lightning flicker: a cell or two flashes white each frame.
-static func crackle(x: float, y: float, ph: float):
+static func crackle(x, y, ph):
 	return (TX.sel(TX.lt(TX.hash(TX.add(TX.floor(x), TX.mul(ph, 17)), TX.sub(TX.floor(y), TX.mul(ph, 5))), 0.18), 1, 0))
 
 ##  Wool: fine strands.
-static func strands(x: float, y: float, _a2 = null):
+static func strands(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 1.3), TX.mul(y, 0.25)), 1.5), 0.5), -1, 0))
 
 static func marble(seed_: float = 0.0, o = null) -> Variant:
@@ -97,7 +97,7 @@ static func hoop(F, cx: float, cy: float, rx: float, ry: float, w: float, n: flo
 		var a: float = ((i / n) * PI) * 2
 		out.append_array([cx + (cos(a) * rx), cy + (sin(a) * ry)])
 		inn.append_array([cx + (cos(a) * (rx - w)), cy + (sin(a) * (ry - w))])
-	var pts = TS.arr(out)
+	var pts = TS.arr(out).duplicate()
 	for i_2 in range(inn.size() - 2, 0 - 1, -2):
 		pts.append_array([inn[i_2], inn[i_2 + 1]])
 	return F.poly(pts)
@@ -182,7 +182,7 @@ static func dory() -> Variant:
 		if ph == 3:
 			r.dot(t.x(44.8, 0), t.y(44.8, 0), m.call("spark"), 3, g)
 			r.dot(t.x(43.6, 1.8), t.y(43.6, 1.8), m.call("bolt"), 3, g)
-	return {"tip": 44, "grip2": 13, "mats": {"shaft": PixelRaster.material(marble(1, {"tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.5), TX.mul(y, 0.8)), 6), 0.6), -1, 0)))})), "band": PixelRaster.material(bronze(sheen(7, 1.75))), "head": PixelRaster.material(bronze(sheen(14, 3.5, 0.9))), "gold": PixelRaster.material(gold(sheen(6, 1.5, 1))), "wrap": PixelRaster.material(crimson((func(x_2: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_2, 1.2), 0.4), -1, 0))))), "ribbon": PixelRaster.material(crimson()), "bolt": PixelRaster.material(bolt()), "spark": PixelRaster.material({"base": WHITE, "glow": true})}, "draw": _fn0}
+	return {"tip": 44, "grip2": 13, "mats": {"shaft": PixelRaster.material(marble(1, {"tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.5), TX.mul(y, 0.8)), 6), 0.6), -1, 0)))})), "band": PixelRaster.material(bronze(sheen(7, 1.75))), "head": PixelRaster.material(bronze(sheen(14, 3.5, 0.9))), "gold": PixelRaster.material(gold(sheen(6, 1.5, 1))), "wrap": PixelRaster.material(crimson((func(x_2, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_2, 1.2), 0.4), -1, 0))))), "ribbon": PixelRaster.material(crimson()), "bolt": PixelRaster.material(bolt()), "spark": PixelRaster.material({"base": WHITE, "glow": true})}, "draw": _fn0}
 
 # -----------------------------------------------------------------------------
 # Aspis of the Gods
@@ -213,7 +213,7 @@ static func aspis() -> Variant:
 		# The thunderbolt across the field, along the shield's long axis.
 		r.fill(keraunos(t, cx, 0, 5, 2.3), m.call("gold"), {"group": g, "bevel": 0.7, "toneBias": o.get("toneBias"), "local": o.get("local")})
 		keraunos_core(r, t, cx, 0, 5, 2.3, m.call("bolt"), (4 if ph == 2 else 3), g)
-	return {"tip": 10, "mats": {"rim": PixelRaster.material(bronze(sheen(7, 1.75, 1.2))), "band": PixelRaster.material(marble(2)), "face": PixelRaster.material(crimson((func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.mod(TX.hypot(x, y), 2.4), 0.5), -1, 0))))), "gold": PixelRaster.material(gold(sheen(6, 1.5, 1))), "leaf": PixelRaster.material(gold()), "bolt": PixelRaster.material(bolt())}, "draw": _fn0}
+	return {"tip": 10, "mats": {"rim": PixelRaster.material(bronze(sheen(7, 1.75, 1.2))), "band": PixelRaster.material(marble(2)), "face": PixelRaster.material(crimson((func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.mod(TX.hypot(x, y), 2.4), 0.5), -1, 0))))), "gold": PixelRaster.material(gold(sheen(6, 1.5, 1))), "leaf": PixelRaster.material(gold()), "bolt": PixelRaster.material(bolt())}, "draw": _fn0}
 
 ##  A pixel at local (x, y).
 static func px(r, t, x: float, y: float, m: float, tone: float, g = null) -> void:
@@ -411,7 +411,7 @@ static func cuirass() -> Variant:
 		var fy: float = top_2 - 0.6
 		r_3.fill(T_2.circ(fx, fy, 1.15), gld, {"group": g, "bevel": 0.8})
 		r_3.dot(T_2.x(fx + 0.2, fy + 0.1), T_2.y(fx + 0.2, fy + 0.1), m_3.call("c.ol.bolt"), 3, g)
-	return TS.merge([{"mats": {"c.ol.marble": marble(6), "plateDark": bronze(null), "c.ol.bronze": bronze(sheen(7, 1.75)), "c.ol.gold": gold(sheen(6, 1.5, 1)), "c.ol.line": {"base": MARBLE[1], "ramp": MARBLE}, "c.ol.cloak": crimson((func(x: float, y: float, _a2 = null): return (TX.sel(TX.gt(TX.sin(TX.add(TX.mul(x, 0.55), TX.mul(y, 0.18))), 0.82), -1, 0)))), "c.ol.hem": gold(), "c.ol.strip": {"base": LEATHER[3], "ramp": LEATHER}, "c.ol.bolt": bolt()}, "chest": {"torso": "c.ol.marble", "sleeve": "c.ol.cloak", "sleeveLen": 0.42, "forearm": "plateDark", "hands": "plateDark", "pauldron": null, "spikes": null, "cape": null, "hood": null, "trim": null, "belt": "c.ol.bronze", "back": _fn0, "shoulder": _fn1, "over": _fn2, "noScarf": true}}, FX])
+	return TS.merge([{"mats": {"c.ol.marble": marble(6), "plateDark": bronze(null), "c.ol.bronze": bronze(sheen(7, 1.75)), "c.ol.gold": gold(sheen(6, 1.5, 1)), "c.ol.line": {"base": MARBLE[1], "ramp": MARBLE}, "c.ol.cloak": crimson((func(x, y, _a2 = null): return (TX.sel(TX.gt(TX.sin(TX.add(TX.mul(x, 0.55), TX.mul(y, 0.18))), 0.82), -1, 0)))), "c.ol.hem": gold(), "c.ol.strip": {"base": LEATHER[3], "ramp": LEATHER}, "c.ol.bolt": bolt()}, "chest": {"torso": "c.ol.marble", "sleeve": "c.ol.cloak", "sleeveLen": 0.42, "forearm": "plateDark", "hands": "plateDark", "pauldron": null, "spikes": null, "cape": null, "hood": null, "trim": null, "belt": "c.ol.bronze", "back": _fn0, "shoulder": _fn1, "over": _fn2, "noScarf": true}}, FX])
 
 # -----------------------------------------------------------------------------
 # Pteruges of Olympus
@@ -450,7 +450,7 @@ static func pteruges() -> Variant:
 			return
 		r.fill(t.rect(L + 0.6, w * 0.4, 0.7, 1, 0.2), m.call("l.ol.gold"), TS.merge([{"group": g0 + 5}, part, {"bevel": 0.6}]))
 		r.dot(t.x(L + 0.6, w * 0.4), t.y(L + 0.6, w * 0.4), m.call("l.ol.bolt"), 3, g0 + 5)
-	return TS.merge([{"mats": {"l.ol.chiton": crimson((func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(y, 1.1), TX.mul(x, 0.2)), 2.2), 0.55), -1, 0)))), "l.ol.strip": {"base": LEATHER[3], "ramp": LEATHER, "tex": (func(x_2: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_2, 3), 0.4), -1, 0)))}, "l.ol.bronze": bronze(sheen(6, 1.5, 1)), "l.ol.gold": gold(), "l.ol.bolt": bolt(breathe)}, "legs": {"mat": "skin", "trim": null, "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0, "over": _fn0}}, FX])
+	return TS.merge([{"mats": {"l.ol.chiton": crimson((func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(y, 1.1), TX.mul(x, 0.2)), 2.2), 0.55), -1, 0)))), "l.ol.strip": {"base": LEATHER[3], "ramp": LEATHER, "tex": (func(x_2, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_2, 3), 0.4), -1, 0)))}, "l.ol.bronze": bronze(sheen(6, 1.5, 1)), "l.ol.gold": gold(), "l.ol.bolt": bolt(breathe)}, "legs": {"mat": "skin", "trim": null, "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0, "over": _fn0}}, FX])
 
 # -----------------------------------------------------------------------------
 # Winged Sandals of Hermes

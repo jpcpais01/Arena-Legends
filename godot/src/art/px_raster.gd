@@ -38,11 +38,16 @@ class Registry extends RefCounted:
 	var tex_code := PackedInt32Array()
 	var _tex_at := {}
 
+	## Source dictionaries, parallel to `mats` (dedupe compares contents).
+	var _src: Array[Dictionary] = []
+
 	func index_of(m: Dictionary) -> int:
 		var h := m.hash()
-		var i = _index.get(h)
-		if i != null: return i
-		i = mats.size()
+		var bucket = _index.get(h)
+		if bucket != null:
+			for k in bucket:
+				if _src[k] == m: return k
+		var i := mats.size()
 		var entry := m.duplicate()
 		var tex = m.get("tex")
 		entry["_tex_off"] = -1
@@ -57,7 +62,9 @@ class Registry extends RefCounted:
 			entry["_tex_off"] = at[0]
 			entry["_tex_len"] = at[1]
 		mats.append(entry)
-		_index[h] = i
+		_src.append(m)
+		if bucket == null: _index[h] = [i]
+		else: bucket.append(i)
 		return i
 
 
@@ -168,7 +175,7 @@ class Raster extends RefCounted:
 		if ix < 0 or iy < 0 or ix >= w or iy >= h: return
 		if _skipped(m): return
 		_grow(ix, iy, ix, iy)
-		ops.append_array([OP_DOT, 8, ix, iy, _handles[m], clampf(tone, 0, 4), -1.0 if group == null else group, _next_order])
+		ops.append_array([OP_DOT, 10, ix, iy, ix, iy, _handles[m], tone, -1.0 if group == null else group, _next_order])
 		_next_order += 1
 
 	## One-pixel line without doubled corners (bowstrings, cracks, trims).
@@ -226,7 +233,7 @@ class Raster extends RefCounted:
 
 	## Closes the frame: queues it on the forge job and returns where it will land.
 	## (ox, oy) is the sprite origin in raster space.
-	func compose(ox: float, oy: float, outline := true, night := false) -> Dictionary:
+	func compose(ox: float, oy: float, outline := true, night := false):
 		if job == null:
 			push_error("PixelRaster.Raster.compose(): no forge job attached")
 			return {}

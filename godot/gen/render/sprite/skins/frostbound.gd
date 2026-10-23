@@ -111,23 +111,23 @@ static var C = {"frost": PixelColor.css(0x6ac8f0), "frostDk": PixelColor.css(0x2
 static var FROSTBOUND = {"mace.winterfist": TS.merge([{"weapon": winterfist}, FX]), "buckler.rimeguard": TS.merge([{"weapon": rimeguard}, FX]), "frost_core.winter": heartOfWinter, "iron_helm.jarl": jarl_helm(), "plate_armor.frostbound": frostbound_plate(), "iron_greaves.glacier": glacier_greaves(), "chain_leggings.frostbound": frostbound_chausses()}
 
 ##  Hoarfrost on iron: sparse frost crystals lighting up the top tone.
-static func rime(x: float, y: float, _a2 = null):
+static func rime(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.3)), TX.floor(TX.mul(y, 1.3))), 0.07), 2, 0))
 
 ##  A lighter rime for small, busy parts.
-static func rime_soft(x: float, y: float, _a2 = null):
+static func rime_soft(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.hash(TX.floor(x), TX.add(TX.floor(y), 7)), 0.035), 1, 0))
 
 ##  A glint sweeping across ice, one step per frame.
 static func sweep(period: float = 9.0, speed: float = 2.4) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.6)), TX.mul(ph, speed)), period), 1.1), 2, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.6)), TX.mul(ph, speed)), period), 1.1), 2, 0)))
 
 ##  Fur: soft tufts combed in one direction.
-static func tufts(x: float, y: float, _a2 = null):
+static func tufts(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 1.2), TX.mul(TX.sin(TX.mul(y, 1.9)), 0.7)), 1.7), 0.4), -1, 0))
 
 ##  Rune light pulsing over the loop.
-static func pulse(_x: float, _y: float, ph: float):
+static func pulse(_x, _y, ph):
 	return TX.pick([-1, 0, 1, 0], TX.mod(ph, 4))
 
 static func iron(tex = null) -> Variant:
@@ -220,7 +220,7 @@ static func winterfist() -> Variant:
 		for k in range(2):
 			var a_2: float = ((ph * SkinsKit.Q) + (k * PI)) + 0.6
 			r.dot(t.x(19.4 + (cos(a_2) * 5), sin(a_2) * 5), t.y(19.4 + (cos(a_2) * 5), sin(a_2) * 5), m.call("mist"), (3 if k else 4), g)
-	return {"tip": 22.4, "mats": {"haft": iron_dk(), "wrap": PixelRaster.material({"base": LEATHER, "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.5), 0.5), -1, 0)))}), "fur": fur(), "head": iron(), "band": iron_dk(), "ice": ice(), "rune": rune(), "mist": PixelRaster.material({"base": 0xe8fbff, "glow": true})}, "draw": _fn2}
+	return {"tip": 22.4, "mats": {"haft": iron_dk(), "wrap": PixelRaster.material({"base": LEATHER, "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.5), 0.5), -1, 0)))}), "fur": fur(), "head": iron(), "band": iron_dk(), "ice": ice(), "rune": rune(), "mist": PixelRaster.material({"base": 0xe8fbff, "glow": true})}, "draw": _fn2}
 
 static func rimeguard() -> Variant:
 	# A round Norse shield seen side-on: iron-rimmed planks crusted with ice, a ring of runes
@@ -240,7 +240,7 @@ static func rimeguard() -> Variant:
 		# The boss and its ice spike.
 		SpriteWeaponKit.fill_all(r, [t.ell(4.4, 0, 1.5, 2)], m.call("boss"), o, 1.4)
 		r.fill(shard(t, 5.2, 0, 0, 2.6, 1.1), m.call("ice"), {"group": 45, "bevel": 1, "toneBias": o.get("toneBias"), "local": o.get("local")})
-	return {"tip": 7.6, "mats": {"rim": iron(), "face": PixelRaster.material({"base": 0x45627e, "ramp": [0x1e2a3a, 0x2e4258, 0x45627e, 0x6a8aa6, 0x9ab8cc], "tex": (func(_x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(y, 2.2), 0.45), -1, 0)))}), "boss": PixelRaster.material({"base": IRON_DK[3], "ramp": IRON, "shiny": true, "tex": rime}), "ice": ice(sweep(8, 2)), "rune": rune()}, "draw": _fn0}
+	return {"tip": 7.6, "mats": {"rim": iron(), "face": PixelRaster.material({"base": 0x45627e, "ramp": [0x1e2a3a, 0x2e4258, 0x45627e, 0x6a8aa6, 0x9ab8cc], "tex": (func(_x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(y, 2.2), 0.45), -1, 0)))}), "boss": PixelRaster.material({"base": IRON_DK[3], "ramp": IRON, "shiny": true, "tex": rime}), "ice": ice(sweep(8, 2)), "rune": rune()}, "draw": _fn0}
 
 # -----------------------------------------------------------------------------
 # Armour
@@ -249,7 +249,7 @@ static func jarl_helm() -> Variant:
 	# A rimed iron spangenhelm with a nasal, a roll of white fur round the brow, two great horns
 	# curving up and back whose tips are glacier ice, icicles under the fur and the ice rune glowing on the brow.
 	var _fn8 = func():
-		var _fn7 = func(r, H, m, g: float):
+		var _fn7 = func(r, H, m, g: float, _a4 = null):
 			var ph: float = fmod(r.phase, 4)
 			# A horn as a chain of tapering segments along a curve, its tip grown over with glacier ice.
 			var _fn5 = func(pts, bias: float, gg: float):
@@ -303,13 +303,13 @@ static func jarl_helm() -> Variant:
 			horn.call([[-1, 4.6, 1.6], [-4, 5.4, 1.45], [-6.6, 6.8, 1.2], [-8.2, 8.8, 0.95], [-8.6, 11, 0.7], [-7.8, 12.8, 0.4]], 0, 53)
 			r.fill(H.circ(-0.8, 4.4, 1.3), m.call("h.dark"), {"group": 55, "bevel": 1, "local": H})
 			r.dot(H.x(-0.8, 4.5), H.y(-0.8, 4.5), m.call("h.rune"), ([2, 3, 4, 3])[ph], 55)
-		return ({"mats": {"h.iron": iron(rime_soft), "h.dark": iron_dk(), "h.fur": fur(), "h.horn": PixelRaster.material({"base": 0xd8ccb0, "ramp": [0x5a4e40, 0x8a7a64, 0xb8a888, 0xe0d4b8, 0xf6f0e0], "shiny": true, "tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(x, 0.9), TX.mul(y, 0.5)), 1.6), 0.4), -1, 0)))}), "h.ice": ice(sweep(10, 2.6)), "h.rune": rune()}, "draw": _fn7})
+		return ({"mats": {"h.iron": iron(rime_soft), "h.dark": iron_dk(), "h.fur": fur(), "h.horn": PixelRaster.material({"base": 0xd8ccb0, "ramp": [0x5a4e40, 0x8a7a64, 0xb8a888, 0xe0d4b8, 0xf6f0e0], "shiny": true, "tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(x, 0.9), TX.mul(y, 0.5)), 1.6), 0.4), -1, 0)))}), "h.ice": ice(sweep(10, 2.6)), "h.rune": rune()}, "draw": _fn7})
 	return TS.merge([{"head": _fn8}, FX])
 
 static func frostbound_plate() -> Variant:
 	# Rimed iron plate under a heavy white fur mantle, pauldrons crusted with ice crystals,
 	# a hail rune pulsing on the breast and a fur cloak swaying behind.
-	var cloak_fur = (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.9), TX.mul(TX.sin(TX.mul(y, 0.8)), 0.8)), 2.2), 0.5), -1, 0)))
+	var cloak_fur = (func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.9), TX.mul(TX.sin(TX.mul(y, 0.8)), 0.8)), 2.2), 0.5), -1, 0)))
 	var _fn0 = func(r, T, m, c):
 		# A long fur cloak, its hem in tufts, trailing the motion.
 		var s: float = c["sway"] * 3
@@ -397,7 +397,7 @@ static func frostbound_chausses() -> Variant:
 		var hem: float = L * 0.56
 		var fl: float = ([0, 0.3, 0.5, 0.3])[ph]
 		r.fill(PixelSdf.union(t.poly([L + 1, (-w) - 0.2, L + 1, w + 1.2, hem + 0.6, w + 1.4, hem + 0.6, -w]), fur_roll(t, hem + 0.6, (-w) + 0.1, (hem + 0.2) - fl, w + 1.3, 1.1, 3)), m.call("l.fur"), TS.merge([o, {"bevel": 1.4}]))
-	return TS.merge([{"mats": {"chain": {"base": IRON[2], "ramp": IRON, "shiny": true, "step": 0.14, "tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(x, y)), 2), 0), -1, 0)))}, "chainDark": {"base": IRON_DK[2], "ramp": IRON_DK, "shiny": true}, "chainPlate": {"base": IRON[2], "ramp": IRON, "shiny": true, "tex": rime_soft}, "l.fur": {"base": FUR[2], "ramp": FUR, "tex": tufts}, "l.dark": {"base": IRON_DK[2], "ramp": IRON_DK, "shiny": true}, "l.ice": {"base": ICE[2], "ramp": ICE, "shiny": true, "tex": sweep(8, 2)}, "l.rune": {"base": RUNE[3], "ramp": RUNE, "glow": true, "tex": pulse}}, "legs": {"mat": "chain", "trim": null, "knee": "chainPlate", "tasset": null, "rune": null, "wraps": null, "bulk": 0.25, "over": _fn1}}, FX])
+	return TS.merge([{"mats": {"chain": {"base": IRON[2], "ramp": IRON, "shiny": true, "step": 0.14, "tex": (func(x, y, _a2 = null): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(x, y)), 2), 0), -1, 0)))}, "chainDark": {"base": IRON_DK[2], "ramp": IRON_DK, "shiny": true}, "chainPlate": {"base": IRON[2], "ramp": IRON, "shiny": true, "tex": rime_soft}, "l.fur": {"base": FUR[2], "ramp": FUR, "tex": tufts}, "l.dark": {"base": IRON_DK[2], "ramp": IRON_DK, "shiny": true}, "l.ice": {"base": ICE[2], "ramp": ICE, "shiny": true, "tex": sweep(8, 2)}, "l.rune": {"base": RUNE[3], "ramp": RUNE, "glow": true, "tex": pulse}}, "legs": {"mat": "chain", "trim": null, "knee": "chainPlate", "tasset": null, "rune": null, "wraps": null, "bulk": 0.25, "over": _fn1}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
 static func frostbound_aura(g, x: float, y: float, t: float, layer: String) -> void:

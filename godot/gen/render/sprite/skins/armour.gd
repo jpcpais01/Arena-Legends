@@ -75,7 +75,7 @@ static func rosethorn_mail() -> Variant:
 	return {"mats": {"thorn": shiny(0x2e6a3a), "thornDark": plain(0x1a3a22), "k.vine": plain(0x2a4a1e), "k.rose": shiny(0xd8284a, null, 0.14), "k.roseDark": plain(0x7a1028), "k.leaf": shiny(0x4a9a40), "k.prick": shiny(0xe8e0c0)}, "chest": {"spikes": null, "shoulder": _fn0, "over": _fn2}}
 
 static func ranger_mantle() -> Variant:
-	var fur = (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.5)), TX.floor(TX.mul(y, 2))), 0.3), -1, 0)))
+	var fur = (func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.5)), TX.floor(TX.mul(y, 2))), 0.3), -1, 0)))
 	var _fn0 = func(r, T, m, c):
 		# A quiver slung across the back, fletchings over the shoulder.
 		var top: float = c["top"]
@@ -125,7 +125,7 @@ static func gothic_sabatons() -> Variant:
 # --- Legendary --------------------------------------------------------------------
 static func soulbound_plate() -> Variant:
 	# Runes climb the plate in a slow wave of soul light.
-	var _fn6 = func(x: float, y: float, ph: float):
+	var _fn6 = func(x, y, ph):
 		var cx = TX.floor(TX.div(x, 2.2))
 		var cy = TX.floor(TX.div(y, 2.2))
 		var _c0 = TX.gt(TX.hash(TX.add(cx, 7), cy), 0.24)
@@ -157,7 +157,7 @@ static func soulbound_plate() -> Variant:
 static func prism_mail() -> Variant:
 	# Light splits into colours that sweep across the crystal, frame by frame.
 	var RAMP = [0x5a4ab8, 0x4a8ae0, 0x4ad0c8, 0xe8f0a0, 0xffffff]
-	var _fn0 = func(x: float, y: float, ph: float):
+	var _fn0 = func(x, y, ph):
 		var b = wrap___tx(TX.sub(TX.floor(TX.mul((TX.add(x, TX.mul(y, 0.7))), 0.45)), ph), 4)
 		return TX.sel(TX.eq(b, 0), 1, TX.sel(TX.eq(b, 2), -1, 0))
 	var sweep = _fn0
@@ -180,7 +180,7 @@ static func prism_mail() -> Variant:
 
 static func earthshakers() -> Variant:
 	# Cracks in the stone glow with magma that pulses down toward the ground.
-	var _fn3 = func(x: float, y: float, ph: float):
+	var _fn3 = func(x, y, ph):
 		var v = TX.add(TX.sin(TX.add(TX.mul(x, 1.3), TX.mul(TX.sin(TX.mul(y, 1.7)), 2.2))), TX.mul(TX.sin(TX.sub(TX.mul(y, 1.1), TX.mul(x, 0.4))), 0.6))
 		var _c0 = TX.ge(TX.abs(v), 0.24)
 		var _r1 = 0
@@ -198,7 +198,7 @@ static func earthshakers() -> Variant:
 
 static func umbral_treads() -> Variant:
 	# Glowing glyphs rise up the boots; shadow smoke curls off the heels.
-	var glyphs = (func(x: float, y: float, ph: float): return (TX.sel(TX.and_(TX.eq(wrap___tx(TX.add(TX.floor(TX.mul(y, 0.9)), ph), 4), 0), TX.lt(TX.hash(TX.floor(TX.mul(x, 1.2)), TX.floor(TX.mul(y, 0.9))), 0.5)), 4, 0)))
+	var glyphs = (func(x, y, ph): return (TX.sel(TX.and_(TX.eq(wrap___tx(TX.add(TX.floor(TX.mul(y, 0.9)), ph), 4), 0), TX.lt(TX.hash(TX.floor(TX.mul(x, 1.2)), TX.floor(TX.mul(y, 0.9))), 0.5)), 4, 0)))
 	var _fn0 = func(r, shin, foot, m, c):
 		# Three puffs rise and shrink, looping every four frames.
 		for k in range(3):
@@ -208,5 +208,5 @@ static func umbral_treads() -> Variant:
 	return {"mats": {"shadow": veined([0x120a1e, 0x1e1230, 0x2c1c48, 0x3e2a62], 0xc08aff, glyphs), "shadowGlow": glow(0xc08aff), "k.smoke": plain(0x3a2460), "k.claw": shiny(0xd8c8f0)}, "boots": {"over": _fn0}}
 
 ## Builder-mode twin of wrap_ (called from surface textures).
-static func wrap___tx(v: float, p: float, _a2 = null):
+static func wrap___tx(v, p, _a2 = null):
 	return TX.mod((TX.add((TX.mod(v, p)), p)), p)

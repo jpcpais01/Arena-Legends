@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://ds0wwjjm1aihc"
+path="res://.godot/imported/forge_raster.glsl-3949b4f06eb282805880f6f2a07c304a.res"
+
+[deps]
+
+source_file="res://src/art/forge_raster.glsl"
+dest_files=["res://.godot/imported/forge_raster.glsl-3949b4f06eb282805880f6f2a07c304a.res"]
+
+[params]
+

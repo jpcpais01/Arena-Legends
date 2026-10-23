@@ -141,7 +141,7 @@ static func icicle_scepter() -> Variant:
 # -----------------------------------------------------------------------------
 static func kagutsuchi() -> Variant:
 	# A black blade cracked with fire that crawls toward the tip, flames licking off the spine.
-	var _fn0 = func(x: float, y: float, ph: float):
+	var _fn0 = func(x, y, ph):
 		var v = TX.sin(TX.add(TX.sub(TX.mul(x, 0.8), TX.mul(ph, Q)), TX.mul(TX.sin(TX.mul(y, 2.2)), 1.4)))
 		return TX.sel(TX.gt(v, 0.82), 4, TX.sel(TX.gt(v, 0.55), 1, 0))
 	var fire = _fn0
@@ -163,7 +163,7 @@ static func kagutsuchi() -> Variant:
 
 static func voidfang() -> Variant:
 	# A jagged blade of night with violet cracks, and a void shard circling the pommel.
-	var _fn3 = func(x: float, y: float, ph: float):
+	var _fn3 = func(x, y, ph):
 		var v = TX.add(TX.sin(TX.add(TX.mul(x, 1.3), TX.mul(TX.sin(TX.add(TX.mul(y, 2.4), TX.mul(ph, Q))), 1.8))), TX.mul(TX.sin(TX.sub(TX.mul(y, 1.6), TX.mul(x, 0.4))), 0.5))
 		var _c0 = TX.lt(TX.hash(TX.add(TX.floor(TX.mul(x, 1.5)), TX.mul(ph, 7)), TX.floor(TX.mul(y, 1.5))), 0.05)
 		var _r1 = 4

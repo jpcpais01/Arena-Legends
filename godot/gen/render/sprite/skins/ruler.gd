@@ -72,22 +72,22 @@ static var RULER = {"boxing_gloves.ruler": TS.merge([{"weapon": gloves}, FX]), "
 
 ##  A glint sliding along polished gold, one step a frame.
 static func sweep(period: float = 10.0, speed: float = 2.5, w: float = 1.1) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.45)), TX.mul(ph, speed)), period), w), 1, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.45)), TX.mul(ph, speed)), period), w), 1, 0)))
 
 ##  Leather grain: a few glossy flecks.
-static func grain(x: float, y: float, _a2 = null):
+static func grain(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.4)), TX.floor(TX.mul(y, 1.4))), 0.07), 1, 0))
 
 ##  Velvet nap with soft folds.
-static func velvet(x: float, y: float, _a2 = null):
+static func velvet(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.5), TX.mul(TX.sin(TX.mul(y, 0.6)), 0.7)), 2.8), 0.55), -1, 0))
 
 ##  Glass beads in rows: every other bead a shade darker.
-static func beads(x: float, _a1 = null, _a2 = null):
+static func beads(x, _a1 = null, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.4), 0.6), -1, 0))
 
 ##  A gem breathing over the loop.
-static func breathe(_x: float, _y: float, ph: float):
+static func breathe(_x, _y, ph):
 	return TX.pick([0, 1, 0, -1], TX.mod(ph, 4))
 
 # -----------------------------------------------------------------------------
@@ -161,7 +161,7 @@ static func sceptre() -> Variant:
 			var len__2 = _p2[1]
 			r.dot(t.x(len__2 + 0.5, y_3), t.y(len__2 + 0.5, y_3), m.call(("spark" if i == (ph + 1) else "pearl")), (3 if i == (ph + 1) else 3), g)
 		TS.for_each(pts, _fn3)
-	return {"tip": 21.8, "mats": {"shaft": PixelRaster.material(S["onyx"].call()), "gold": PixelRaster.material(S["gold"].call()), "band": PixelRaster.material(S["gold"].call(null)), "grip": PixelRaster.material(S["green"].call((func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.2), 0.4), -1, 0))))), "cap": PixelRaster.material(S["green"].call(beads)), "emerald": PixelRaster.material(S["emerald"].call()), "ruby": PixelRaster.material(S["ruby"].call()), "pearl": PixelRaster.material(S["pearl"].call()), "spark": PixelRaster.material({"base": WHITE, "glow": true})}, "draw": _fn4}
+	return {"tip": 21.8, "mats": {"shaft": PixelRaster.material(S["onyx"].call()), "gold": PixelRaster.material(S["gold"].call()), "band": PixelRaster.material(S["gold"].call(null)), "grip": PixelRaster.material(S["green"].call((func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.2), 0.4), -1, 0))))), "cap": PixelRaster.material(S["green"].call(beads)), "emerald": PixelRaster.material(S["emerald"].call()), "ruby": PixelRaster.material(S["ruby"].call()), "pearl": PixelRaster.material(S["pearl"].call()), "spark": PixelRaster.material({"base": WHITE, "glow": true})}, "draw": _fn4}
 
 # -----------------------------------------------------------------------------
 # Gloves of the Undisputed (boxing gloves)
@@ -221,7 +221,7 @@ static func knuckles() -> Variant:
 		SpriteWeaponKit.fill_all(r, [PixelSdf.union.callv(TS.arr(spikes))], m.call("gold"), o, 0.7)
 		for y_3 in [-1, 1]:
 			r.dot(t.x(3.1, y_3), t.y(3.1, y_3), m.call("red"), 3, g)
-	return {"tip": 5.1, "mats": {"wrap": PixelRaster.material(S["onyx"].call((func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.5)), 1.5), 0.4), -1, grain(x, y)))))), "lace": PixelRaster.material(S["gold"].call(null)), "gold": PixelRaster.material(S["gold"].call()), "bar": PixelRaster.material(S["gold"].call(sweep(8, 2, 1))), "green": PixelRaster.material(S["green"].call()), "red": PixelRaster.material(S["ruby"].call()), "ink": PixelRaster.material({"base": ONYX[1], "ramp": ONYX}), "emerald": PixelRaster.material(S["emerald"].call())}, "draw": _fn1}
+	return {"tip": 5.1, "mats": {"wrap": PixelRaster.material(S["onyx"].call((func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.5)), 1.5), 0.4), -1, grain(x, y)))))), "lace": PixelRaster.material(S["gold"].call(null)), "gold": PixelRaster.material(S["gold"].call()), "bar": PixelRaster.material(S["gold"].call(sweep(8, 2, 1))), "green": PixelRaster.material(S["green"].call()), "red": PixelRaster.material(S["ruby"].call()), "ink": PixelRaster.material({"base": ONYX[1], "ramp": ONYX}), "emerald": PixelRaster.material(S["emerald"].call())}, "draw": _fn1}
 
 ## The championship title in frame F (`s` its scale; about 26 x 20 units at 1): a black leather strap with
 ## gold stitching, a side plate either end with an emerald, and the great centre plate: a gold rim around
@@ -399,7 +399,7 @@ static func ring_mantle() -> Variant:
 		var dx: float = cx + 2.6
 		var dy: float = cy - 3.9
 		r_3.fill(diamond(T_2, dx, dy, 0.85, 1.2), m_3.call("k.rEm"), {"group": c_3["g"] + 2})
-	return TS.merge([{"mats": {"k.rRobe": S["velvet"].call(), "k.rGold": S["gold"].call(), "k.rTrim": S["gold"].call(null), "k.rGreen": S["green"].call(), "k.rRed": S["ruby"].call(), "k.rInk": {"base": ONYX[1], "ramp": ONYX}, "k.rTrunk": S["onyx"].call(), "k.rWrap": S["onyx"].call((func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.6), y), 1.6), 0.4), -1, 0)))), "k.rEm": S["emerald"].call(), "k.rRuby": S["ruby"].call(), "k.rBelt": S["onyx"].call((func(x_2: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_2, 1.8), 0.45), 2, 0))))}, "chest": {"torso": "skin", "sleeve": null, "sleeveLen": 0, "forearm": "k.rWrap", "hands": "skin", "pauldron": null, "trim": null, "belt": "k.rBelt", "cape": null, "hood": null, "spikes": null, "skirt": 0, "noScarf": true, "back": _fn0, "shoulder": _fn1, "over": _fn3}}, FX])
+	return TS.merge([{"mats": {"k.rRobe": S["velvet"].call(), "k.rGold": S["gold"].call(), "k.rTrim": S["gold"].call(null), "k.rGreen": S["green"].call(), "k.rRed": S["ruby"].call(), "k.rInk": {"base": ONYX[1], "ramp": ONYX}, "k.rTrunk": S["onyx"].call(), "k.rWrap": S["onyx"].call((func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.6), y), 1.6), 0.4), -1, 0)))), "k.rEm": S["emerald"].call(), "k.rRuby": S["ruby"].call(), "k.rBelt": S["onyx"].call((func(x_2, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_2, 1.8), 0.45), 2, 0))))}, "chest": {"torso": "skin", "sleeve": null, "sleeveLen": 0, "forearm": "k.rWrap", "hands": "skin", "pauldron": null, "trim": null, "belt": "k.rBelt", "cape": null, "hood": null, "spikes": null, "skirt": 0, "noScarf": true, "back": _fn0, "shoulder": _fn1, "over": _fn3}}, FX])
 
 # -----------------------------------------------------------------------------
 # Champion's Ring Tights (warlord faulds)

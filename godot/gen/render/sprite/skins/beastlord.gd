@@ -88,7 +88,7 @@ static func _init_bolasproj():
 # -----------------------------------------------------------------------------
 # Raptor Pup
 # -----------------------------------------------------------------------------
-static var RAPTOR = {"k.pelt": pelt((func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.8), TX.mul(TX.sin(TX.mul(y, 0.9)), 0.6)), 3), 0.7), -1, 0)))), "k.belly": {"base": 0xe8d0a0, "ramp": [0x8a6a42, 0xb8946a, 0xe0c696, 0xf2e2c0, 0xfff6e0]}, "k.feather": {"base": FUR[3], "ramp": [FUR[0], FUR[1], FUR[3], FUR[4], 0xb08a62]}, "k.quill": ochre(), "k.bone": ivory(null), "k.eye": ember(flick), "k.ink": pit(), "k.paint": ochre(), "k.fire": {"base": EMBER[2], "ramp": EMBER, "glow": true}, "k.fireDeep": {"base": OCHRE[3], "ramp": [OCHRE[0], OCHRE[1], OCHRE[2], OCHRE[3], EMBER[2]], "glow": true}, "k.hot": hot()}
+static var RAPTOR = {"k.pelt": pelt((func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.8), TX.mul(TX.sin(TX.mul(y, 0.9)), 0.6)), 3), 0.7), -1, 0)))), "k.belly": {"base": 0xe8d0a0, "ramp": [0x8a6a42, 0xb8946a, 0xe0c696, 0xf2e2c0, 0xfff6e0]}, "k.feather": {"base": FUR[3], "ramp": [FUR[0], FUR[1], FUR[3], FUR[4], 0xb08a62]}, "k.quill": ochre(), "k.bone": ivory(null), "k.eye": ember(flick), "k.ink": pit(), "k.paint": ochre(), "k.fire": {"base": EMBER[2], "ramp": EMBER, "glow": true}, "k.fireDeep": {"base": OCHRE[3], "ramp": [OCHRE[0], OCHRE[1], OCHRE[2], OCHRE[3], EMBER[2]], "glow": true}, "k.hot": hot()}
 static var RM = SkinsKit.mats(RAPTOR)
 static var RAPTOR_INK = {"P": ["k.pelt", 2], "p": ["k.pelt", 1], "L": ["k.pelt", 3], "s": ["k.pelt", 0], "c": ["k.belly", 2], "C": ["k.belly", 1], "F": ["k.feather", 1], "f": ["k.feather", 3], "r": ["k.quill", 2], "R": ["k.quill", 3], "o": ["k.paint", 2], "w": ["k.bone", 3], "e": ["k.eye", 3], "k": ["k.ink", 1], "m": ["k.ink", 0]}
 ## The raptor pup, pixel by pixel (faces +x, anchor at its belly; specialArt's WHELP_POSES order):
@@ -126,42 +126,42 @@ static var BEASTLORD = {"warhammer.beastlord": TS.merge([{"weapon": mammoth_club
 # Textures
 # -----------------------------------------------------------------------------
 ##  Bone: a few pits and pores.
-static func aged(x: float, y: float, _a2 = null):
+static func aged(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.3)), TX.floor(TX.mul(y, 1.3))), 0.07), -1, 0))
 
 ##  Ivory: fine growth rings across the tusk.
-static func rings(x: float, _a1 = null, _a2 = null):
+static func rings(x, _a1 = null, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.2), 0.4), -1, 0))
 
 ##  Tanned hide: a few scars and darker blotches.
-static func tanned(x: float, y: float, _a2 = null):
+static func tanned(x, y, _a2 = null):
 	var h = TX.hash(TX.floor(TX.mul(x, 0.7)), TX.floor(TX.mul(y, 0.7)))
 	return TX.sel(TX.lt(h, 0.08), -1, TX.sel(TX.gt(h, 0.95), 1, 0))
 
 ##  Shaggy fur hanging in locks (strands run along y).
-static func shag(x: float, y: float, _a2 = null):
+static func shag(x, y, _a2 = null):
 	var v = SkinsKit.wrap___tx(TX.add(TX.mul(x, 1.2), TX.mul(TX.sin(TX.mul(y, 1.3)), 0.6)), 1.8)
 	return TX.sel(TX.lt(v, 0.5), -1, TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 2)), TX.floor(y)), 0.08), 1, 0))
 
 ##  Shaggy fur combed the other way (strands run along x: thighs and shins).
-static func shag_x(x: float, y: float, _a2 = null):
+static func shag_x(x, y, _a2 = null):
 	return shag(y, x)
 
 ##  Sabertooth pelt: broken dark stripes.
-static func stripes(x: float, y: float, _a2 = null):
+static func stripes(x, y, _a2 = null):
 	var v = SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.55), TX.mul(TX.sin(TX.mul(y, 0.5)), 1.2)), 3.4)
 	return TX.sel(TX.lt(v, 0.75), (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 0.5)), TX.floor(TX.mul(y, 0.6))), 0.3), -1, -2)), 0)
 
 ##  Mastodon hide: deep horizontal wrinkles.
-static func wrinkles(x: float, y: float, _a2 = null):
+static func wrinkles(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(x, TX.mul(TX.sin(TX.mul(y, 0.9)), 0.4)), 1.6), 0.38), -1, TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.5)), TX.floor(TX.mul(y, 1.5))), 0.05), 1, 0)))
 
 ##  A smouldering ember: dim, bright, brighter, bright.
-static func smoulder(_x: float, _y: float, ph: float):
+static func smoulder(_x, _y, ph):
 	return TX.pick([0, 1, 1, 0], TX.mod(ph, 4))
 
 ##  Flicker for eyes: bright, dim, bright, brighter.
-static func flick(_x: float, _y: float, ph: float):
+static func flick(_x, _y, ph):
 	return TX.pick([0, -1, 0, 1], TX.mod(ph, 4))
 
 # -----------------------------------------------------------------------------
@@ -294,7 +294,7 @@ static func mammoth_club() -> Variant:
 		r.fill(fang(H, 3.4, sw, 0.1, 2.6, 0.55, 0.2), m.call("fang"), {"group": g, "bevel": 0.6})
 		r.fill(H.poly([1, -0.2, 3.2, (-1.4) - (sw * 0.4), 5.8, (-1.2) - sw, 4.2, (-0.4) - (sw * 0.5), 1.4, 0.4]), m.call("feather"), {"group": g, "bevel": 0.6})
 		r.dot(H.x(5.4, (-1.2) - sw), H.y(5.4, (-1.2) - sw), m.call("paint"), 3, g)
-	return {"tip": 30.4, "grip2": 10, "mats": {"bone": PixelRaster.material({"base": OLDBONE[2], "ramp": OLDBONE, "shiny": true, "step": 0.13, "tex": aged}), "ivory": PixelRaster.material(ivory()), "fang": PixelRaster.material(ivory(null)), "wrap": PixelRaster.material(hide((func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(x, 1.4), 1.1), 0.4), -1, 0))))), "cord": PixelRaster.material(strap()), "paint": PixelRaster.material(ochre()), "crack": PixelRaster.material(pit()), "ember": PixelRaster.material(ember()), "hot": PixelRaster.material(hot()), "feather": PixelRaster.material({"base": FUR[3], "ramp": [FUR[0], FUR[1], FUR[3], FUR[4], 0xb08a62]})}, "draw": _fn0}
+	return {"tip": 30.4, "grip2": 10, "mats": {"bone": PixelRaster.material({"base": OLDBONE[2], "ramp": OLDBONE, "shiny": true, "step": 0.13, "tex": aged}), "ivory": PixelRaster.material(ivory()), "fang": PixelRaster.material(ivory(null)), "wrap": PixelRaster.material(hide((func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(x, 1.4), 1.1), 0.4), -1, 0))))), "cord": PixelRaster.material(strap()), "paint": PixelRaster.material(ochre()), "crack": PixelRaster.material(pit()), "ember": PixelRaster.material(ember()), "hot": PixelRaster.material(hot()), "feather": PixelRaster.material({"base": FUR[3], "ramp": [FUR[0], FUR[1], FUR[3], FUR[4], 0xb08a62]})}, "draw": _fn0}
 
 ##  A small beast skull upright at (x, y) of frame F (x right, y up), `s` its size: cranium, ember sockets, snout and two fangs.
 static func beast_skull(r, F, x: float, y: float, s: float, h, g: float, eye_tone: float = 3.0, paint: bool = true) -> void:
@@ -507,7 +507,7 @@ static func beastlord_hides() -> Variant:
 			var d: float = 4.2 + ((fmod(k_3, 2)) * 1.2)
 			var lean: float = (sin((ph_2 * SkinsKit.Q) + (k_3 * 1.7)) * 0.5) - (sw * 0.4)
 			r_3.fill(chain(T_2, [[x_3, -0.6, 0.85], [x_3 + (lean * 0.5), (-d) * 0.5, 1], [x_3 + lean, -d, 0.35]]), m_3.call(("bk.pelt" if k_3 == 1 else "bk.fur")), {"group": c_3["g"], "bevel": 0.8, "local": T_2, "toneBias": (-1 if k_3 == 0 else 0)})
-	return TS.merge([{"mats": {"bk.hide": pelt(), "bk.wrap": TS.merge([strap(), {"tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(y, 1.2), TX.mul(x, 0.3)), 1.4), 0.4), -1, 0)))}]), "bk.belt": strap(), "bk.fur": fur(), "bk.pelt": pelt(), "bk.bone": bone(), "bk.tusk": ivory(), "bk.fang": ivory(null), "bk.paint": ochre(), "bk.bead": ember(), "bk.hot": hot(), "bk.pit": pit()}, "chest": {"torso": "bk.hide", "sleeve": "bk.fur", "sleeveLen": 0.4, "forearm": "bk.wrap", "hands": "skin", "pauldron": null, "trim": null, "belt": "bk.belt", "cape": null, "hood": null, "spikes": null, "skirt": 0, "noScarf": true, "back": _fn1, "shoulder": _fn2, "over": _fn5}}, FX])
+	return TS.merge([{"mats": {"bk.hide": pelt(), "bk.wrap": TS.merge([strap(), {"tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(y, 1.2), TX.mul(x, 0.3)), 1.4), 0.4), -1, 0)))}]), "bk.belt": strap(), "bk.fur": fur(), "bk.pelt": pelt(), "bk.bone": bone(), "bk.tusk": ivory(), "bk.fang": ivory(null), "bk.paint": ochre(), "bk.bead": ember(), "bk.hot": hot(), "bk.pit": pit()}, "chest": {"torso": "bk.hide", "sleeve": "bk.fur", "sleeveLen": 0.4, "forearm": "bk.wrap", "hands": "skin", "pauldron": null, "trim": null, "belt": "bk.belt", "cape": null, "hood": null, "spikes": null, "skirt": 0, "noScarf": true, "back": _fn1, "shoulder": _fn2, "over": _fn5}}, FX])
 
 # -----------------------------------------------------------------------------
 # Mammoth Fur Leggings

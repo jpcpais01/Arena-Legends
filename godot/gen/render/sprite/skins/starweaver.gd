@@ -173,7 +173,7 @@ static var STARWEAVER = {"ember_wand.starfall": TS.merge([{"weapon": starfall, "
 ## flare to full starlight while the rest glow dim, so the sky glitters
 ## without turning to noise. `seed` gives another sky.
 static func starfield(cell: float = 3.0, density: float = 0.32, seed_: float = 0.0) -> Variant:
-	var _fn6 = func(x: float, y: float, ph: float):
+	var _fn6 = func(x, y, ph):
 		var cx = TX.floor(TX.div(x, cell))
 		var cy = TX.floor(TX.div(y, cell))
 		var h = TX.hash(TX.add(TX.add(TX.mul(cx, 7), 3), seed_), TX.add(TX.mul(cy, 13), 1))
@@ -190,10 +190,10 @@ static func starfield(cell: float = 3.0, density: float = 0.32, seed_: float = 0
 
 ##  A gleam sliding along polished silver, one step per frame.
 static func gleam(period: float = 9.0) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.4)), TX.mul(ph, 2.25)), period), 1.1), 1, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.4)), TX.mul(ph, 2.25)), period), 1.1), 1, 0)))
 
 ##  Twinkle: bright on the downbeat.
-static func twinkle(_x: float, _y: float, ph: float):
+static func twinkle(_x, _y, ph):
 	return TX.pick([1, 0, 1, -1], TX.mod(ph, 4))
 
 static func silver(tex = null, step: float = 0.15) -> Variant:
@@ -290,7 +290,7 @@ static func moon_circlet() -> Variant:
 	# A fine silver circlet set with gold stars; a crescent moon rises from the brow holding a star,
 	# and a tiny star orbits it, passing behind and in front.
 	var _fn2 = func():
-		var _fn1 = func(r, H, m, g: float):
+		var _fn1 = func(r, H, m, g: float, _a4 = null):
 			var ph: float = fmod(r.phase, 4)
 			var cx: float = 5.6
 			var cy: float = 7.6

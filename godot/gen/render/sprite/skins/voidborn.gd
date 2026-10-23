@@ -76,7 +76,7 @@ static var VOIDBORN = {"greataxe.voidreaver": TS.merge([{"weapon": voidreaver}, 
 
 ##  Organic veins through chitin; light pulses along them one step per frame.
 static func veins(scale: float = 1.0, w: float = 0.13) -> Variant:
-	var _fn3 = func(x: float, y: float, ph: float):
+	var _fn3 = func(x, y, ph):
 		var v = TX.add(TX.sin(TX.add(TX.mul(TX.mul(x, 0.7), scale), TX.mul(TX.sin(TX.mul(TX.mul(y, 1.1), scale)), 2.4))), TX.mul(TX.sin(TX.add(TX.mul(TX.mul(y, 0.9), scale), TX.mul(TX.mul(x, 0.35), scale))), 0.7))
 		var _c0 = TX.ge(TX.abs(v), w)
 		var _r1 = 0
@@ -86,15 +86,15 @@ static func veins(scale: float = 1.0, w: float = 0.13) -> Variant:
 
 ##  Segment seams across a part (insect-leg joints), plus veins.
 static func segments(p: float = 3.0, scale: float = 1.3) -> Variant:
-	return (func(x: float, y: float, ph: float): return TX.add((TX.sel(TX.lt(SkinsKit.wrap___tx(x, p), 0.45), -1, 0)), veins__tx(scale, 0.1).call(x, y, ph)))
+	return (func(x, y, ph): return TX.add((TX.sel(TX.lt(SkinsKit.wrap___tx(x, p), 0.45), -1, 0)), veins__tx(scale, 0.1).call(x, y, ph)))
 
 ##  Leg-like segments whose joints light up in turn, a pulse climbing toward the head.
 static func joints(p: float = 3.2) -> Variant:
-	return (func(x: float, _y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, p), 0.55), (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.sub(TX.floor(TX.div(x, p)), ph), 4), 0), 4, -1)), 0)))
+	return (func(x, _y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, p), 0.55), (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.sub(TX.floor(TX.div(x, p)), ph), 4), 0), 4, -1)), 0)))
 
 ##  Light running along void-light, one step per frame.
 static func run(speed: float = 1.5, period: float = 6.0) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.4)), TX.mul(ph, speed)), period), 1.3), 1, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.4)), TX.mul(ph, speed)), period), 1.3), 1, 0)))
 
 static func chitin(tex = null) -> Variant:
 	if tex == null: tex = veins()
@@ -164,7 +164,7 @@ static func voidreaver() -> Variant:
 	# that looks around and blinks, veins of light running from it, tendrils curling off the haft.
 	var OUT = [13.6, -12.4, 15.6, -14.2, 18.6, -15.2, 22, -15.6, 25.4, -15.3, 28.4, -14.4, 31, -12.8, 32.8, -10.4]
 	var blade = (TS.arr(OUT) + [30.6, -10.2, 29.6, -7.6, 28.8, -4.4, 28.2, -1.1, 19.6, -1.1, 18.8, -4, 17.6, -7.4, 16, -10, 14.6, -10.6])
-	var band = TS.arr(OUT)
+	var band = TS.arr(OUT).duplicate()
 	for i in range(OUT.size() - 2, 0 - 1, -2):
 		var inner: float = (0.7 if (i == 0) or (i == (OUT.size() - 2)) else 2.1)
 		band.append_array([OUT[i] + (0.4 if OUT[i] < 20 else (-0.4 if OUT[i] > 28 else 0)), OUT[i + 1] + inner])
@@ -284,7 +284,7 @@ static func VK(k: String) -> Variant:
 static func thousand_eyes() -> Variant:
 	# A black hood whose peak curls back like a tendril, small violet eyes all over it blinking out of step,
 	# tendrils hanging from the hem and three burning eyes in the shadow where the face should be.
-	var folds = (func(x: float, y: float, _a2 = null): return (TX.sel(TX.gt(TX.sin(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.35))), 0.82), -1, 0)))
+	var folds = (func(x, y, _a2 = null): return (TX.sel(TX.gt(TX.sin(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.35))), 0.82), -1, 0)))
 	var EYES = [[-3.2, 6.4], [0.4, 7], [-6.2, 3.8], [-2.4, 3.2], [-5.8, -0.8], [-2.8, -4.4], [-6.6, -5], [-6.4, 9.2]]
 	var _fn5 = func():
 		var _fn4 = func(r, H, m, g: float, sway: float):
@@ -373,7 +373,7 @@ static func tendril_carapace() -> Variant:
 		r_3.fill(T_2.ell(x_3, y_3, 1.1, 2), m_3.call("k.white"), {"group": c_3["g"], "bevel": 0.8})
 		var ly: float = ([0.4, 0, 0, -0.5])[ph_3]
 		r_3.line(T_2.x(x_3, (y_3 + ly) - 0.8), T_2.y(x_3, (y_3 + ly) - 0.8), T_2.x(x_3, (y_3 + ly) + 0.8), T_2.y(x_3, (y_3 + ly) + 0.8), m_3.call("k.iris"), 3, c_3["g"])
-	return TS.merge([{"mats": {"thorn": chitin((func(x: float, y: float, ph: float): return TX.add((TX.sel(TX.lt(SkinsKit.wrap___tx(y, 2.6), 0.45), -1, 0)), veins__tx(1, 0.09).call(x, y, ph)))), "thornDark": SkinsKit.plain(0x120c1c), "thornSpike": shell(), "k.shell": shell(), "k.flesh": flesh(), "k.tip": void_light(), "k.white": sclera(), "k.iris": iris(), "k.vein": void_light(), "k.pupil": SkinsKit.plain(0x0a0610)}, "chest": {"pauldron": null, "spikes": null, "sleeve": "thorn", "sleeveLen": 1, "back": _fn3, "shoulder": _fn4, "over": _fn6}}, FX])
+	return TS.merge([{"mats": {"thorn": chitin((func(x, y, ph): return TX.add((TX.sel(TX.lt(SkinsKit.wrap___tx(y, 2.6), 0.45), -1, 0)), veins__tx(1, 0.09).call(x, y, ph)))), "thornDark": SkinsKit.plain(0x120c1c), "thornSpike": shell(), "k.shell": shell(), "k.flesh": flesh(), "k.tip": void_light(), "k.white": sclera(), "k.iris": iris(), "k.vein": void_light(), "k.pupil": SkinsKit.plain(0x0a0610)}, "chest": {"pauldron": null, "spikes": null, "sleeve": "thorn", "sleeveLen": 1, "back": _fn3, "shoulder": _fn4, "over": _fn6}}, FX])
 
 static func voidwalkers() -> Variant:
 	# Chitin boots in overlapping plates with a hooked insect claw at the toe, a small eye at the ankle
@@ -407,7 +407,7 @@ static func voidwalkers() -> Variant:
 		if ph == 3:
 			r.fill(back.ell(2.1, -2.5, 1.6, 0.45), oz, {"group": c["g"]})
 		r.dot(back.x(1.3, 0.2), back.y(1.3, 0.2), oz, 4, c["g"])
-	return TS.merge([{"mats": {"shadow": chitin((func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.2), 0.45), -1, 0)))), "shadowGlow": {"base": 0x4a2a7a, "ramp": [0x1a0e2a, 0x2e1a4a, 0x4a2a7a, 0x6a3aa8, 0xa060f0]}, "k.plate": shell(), "k.white": sclera(), "k.iris": iris(), "k.vein": void_light(), "k.ooze": {"base": 0x7a2ae0, "glow": true, "ramp": [0x14061e, 0x3a1070, 0x5a1aa8, 0x7a2ae0, PALE]}}, "boots": {"over": _fn0}}, FX])
+	return TS.merge([{"mats": {"shadow": chitin((func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.2), 0.45), -1, 0)))), "shadowGlow": {"base": 0x4a2a7a, "ramp": [0x1a0e2a, 0x2e1a4a, 0x4a2a7a, 0x6a3aa8, 0xa060f0]}, "k.plate": shell(), "k.white": sclera(), "k.iris": iris(), "k.vein": void_light(), "k.ooze": {"base": 0x7a2ae0, "glow": true, "ramp": [0x14061e, 0x3a1070, 0x5a1aa8, 0x7a2ae0, PALE]}}, "boots": {"over": _fn0}}, FX])
 
 static func chitin_cuisses() -> Variant:
 	# Segmented black chitin with violet veins, shell plates overlapping down the front of the thigh,
@@ -515,8 +515,8 @@ static func voidborn_aura(g, x: float, y: float, t: float, layer: String) -> voi
 		g["fillRect"].call(px_3 + look, py_3, 1, 1)
 
 ## Builder-mode twin of veins (called from surface textures).
-static func veins__tx(scale: float = 1.0, w: float = 0.13, _a2 = null):
-	var _fn3 = func(x: float, y: float, ph: float):
+static func veins__tx(scale = 1, w = 0.13, _a2 = null):
+	var _fn3 = func(x, y, ph):
 		var v = TX.add(TX.sin(TX.add(TX.mul(TX.mul(x, 0.7), scale), TX.mul(TX.sin(TX.mul(TX.mul(y, 1.1), scale)), 2.4))), TX.mul(TX.sin(TX.add(TX.mul(TX.mul(y, 0.9), scale), TX.mul(TX.mul(x, 0.35), scale))), 0.7))
 		var _c0 = TX.ge(TX.abs(v), w)
 		var _r1 = 0

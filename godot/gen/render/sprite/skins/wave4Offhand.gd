@@ -127,12 +127,12 @@ static func inlay(r, s, mat: float, o, bevel: float = 1.0, local = null) -> void
 # Rare
 # =============================================================================
 ##  Tiger's eye: honey-gold bands that shimmer across dark brown.
-static func chatoyant(x: float, y: float, _a2 = null):
+static func chatoyant(x, y, _a2 = null):
 	var v = TX.sin(TX.add(TX.mul(x, 1.5), TX.mul(TX.sin(TX.add(TX.mul(y, 0.9), TX.mul(x, 0.3))), 1.4)))
 	return TX.sel(TX.gt(v, 0.62), 1, TX.sel(TX.lt(v, -0.55), -1, 0))
 
 ##  Planks running the shield's length, a dark seam between them, oak grain in each.
-static func planks(x: float, y: float, _a2 = null):
+static func planks(x, y, _a2 = null):
 	var _c0 = TX.lt(SkinsKit.wrap___tx(TX.add(y, 0.5), 3.4), 0.75)
 	var _r1 = -1
 	var _r2 = TX.sel(TX.gt(TX.sin(TX.add(TX.add(TX.mul(x, 0.7), TX.mul(TX.sin(TX.mul(y, 2.1)), 1.6)), TX.mul(TX.floor(TX.div((TX.add(y, 0.5)), 3.4)), 2.3))), 0.8), -1, 0)
@@ -142,7 +142,7 @@ static func planks(x: float, y: float, _a2 = null):
 # Comet Bolas
 # =============================================================================
 ##  Night-blue cord strewn with stars that wink in turn.
-static func star_cord(x: float, y: float, ph: float):
+static func star_cord(x, y, ph):
 	var k = TX.floor(TX.add(TX.mul(x, 1.3), TX.mul(y, 0.7)))
 	var _c0 = TX.ne(SkinsKit.wrap___tx(k, 3), 0)
 	var _r1 = 0
@@ -150,7 +150,7 @@ static func star_cord(x: float, y: float, ph: float):
 	return TX.sel(_c0, _r1, _r2)
 
 ##  Glowing cracks crawling over a dark meteor stone.
-static func cracks(x: float, y: float, ph: float):
+static func cracks(x, y, ph):
 	var v = TX.add(TX.sin(TX.add(TX.mul(x, 2.1), TX.mul(TX.sin(TX.mul(y, 1.7)), 1.8))), TX.mul(TX.sin(TX.add(TX.sub(TX.mul(y, 2.3), TX.mul(x, 0.8)), TX.mul(ph, SkinsKit.Q))), 0.6))
 	return TX.sel(TX.lt(TX.abs(v), 0.22), 4, TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 2)), TX.floor(TX.mul(y, 2))), 0.1), -1, 0))
 
@@ -240,7 +240,7 @@ static func janus_mask() -> Variant:
 		SpriteWeaponKit.fill_all(r, [bend(U, [2.2, 3.8, 1.35, 4.4, 5.8, 1.05, 6.6, 6.6, 0.75, 7.9, 5.8, 0.5])], m.call("hornG"), o, 1, 0)
 		SpriteWeaponKit.fill_all(r, [U.circ((-8.1) + bell.call(-1), 4.8, 0.85), U.circ(8.1 + bell.call(1), 4.8, 0.85)], m.call("bell"), o, 0.8)
 		# Two half faces: laughing gold on the left, weeping violet on the right.
-		SpriteWeaponKit.fill_all(r, [U.poly(TS.arr(MASK_HALF))], m.call("gold"), o, 1.6)
+		SpriteWeaponKit.fill_all(r, [U.poly(TS.arr(MASK_HALF).duplicate())], m.call("gold"), o, 1.6)
 		SpriteWeaponKit.fill_all(r, [U.poly(mirror(MASK_HALF))], m.call("enamel"), o, 1.6)
 		# Laughing eye (an upturned crescent) and grin.
 		inlay(r, U.poly([-3.7, 0.7, -2.4, 2.3, -0.8, 1.1, -1.3, 0.4, -2.4, 1.1, -3.1, 0.1]), m.call("hole"), o, 0)
@@ -262,7 +262,7 @@ static func janus_mask() -> Variant:
 # Citadel Gate
 # =============================================================================
 ##  Ashlar blocks in running bond (x along the shield is "up").
-static func ashlar(x: float, y: float, _a2 = null):
+static func ashlar(x, y, _a2 = null):
 	var row = TX.floor(TX.div((TX.add(x, 20)), 2.6))
 	var _c0 = TX.lt(SkinsKit.wrap___tx(TX.add(x, 20), 2.6), 0.7)
 	var _r1 = -1
@@ -270,7 +270,7 @@ static func ashlar(x: float, y: float, _a2 = null):
 	return TX.sel(_c0, _r1, _r2)
 
 ##  Round tower stones: rows of blocks curving round the drum.
-static func drum(x: float, y: float, _a2 = null):
+static func drum(x, y, _a2 = null):
 	var row = TX.floor(TX.div((TX.add(x, 20)), 2.2))
 	var _c0 = TX.lt(SkinsKit.wrap___tx(TX.add(x, 20), 2.2), 0.6)
 	var _r1 = -1
@@ -278,7 +278,7 @@ static func drum(x: float, y: float, _a2 = null):
 	return TX.sel(_c0, _r1, _r2)
 
 ##  Torchlight in the arrow slits and gate, breathing over the loop.
-static func torch(_x: float, _y: float, ph: float):
+static func torch(_x, _y, ph):
 	return TX.pick([0, 1, 0, -1], TX.mod(ph, 4))
 
 static func citadel_gate() -> Variant:
@@ -333,7 +333,7 @@ static func citadel_gate() -> Variant:
 	return {"tip": 14, "mats": {"wall": PixelRaster.material({"base": 0xd4cab2, "step": 0.11, "tex": ashlar}), "tower": PixelRaster.material({"base": 0x8e8070, "step": 0.13, "tex": drum}), "cap": PixelRaster.material({"base": 0x7a6e60, "step": 0.12}), "dark": PixelRaster.material({"base": 0x1e1622}), "bars": PixelRaster.material({"base": 0xe0b040, "shiny": true, "step": 0.15}), "gold": PixelRaster.material({"base": 0xf0c050, "shiny": true, "step": 0.15}), "light": PixelRaster.material({"base": 0xffb84a, "glow": true, "tex": torch}), "gem": PixelRaster.material({"base": 0x6ab8ff, "glow": true}), "banner": PixelRaster.material({"base": 0x2a4ac0, "tex": PixelTex.bands(1.6, 0.5, 1)}), "pole": PixelRaster.material({"base": 0x5a4a3a})}, "draw": _fn0}
 
 ##  A spiral of gold binding winding up the pale shaft.
-static func spiral(x: float, y: float, _a2 = null):
+static func spiral(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.7), TX.mul(y, 0.9)), 2.2), 0.55), 1, 0))
 
 static func sun_mats() -> Variant:
@@ -375,7 +375,7 @@ static func sunspear() -> Variant:
 	return {"tip": 23, "mats": sun_mats(), "draw": _fn0}
 
 ##  Runes cut into the plate: their strokes pulse up the arm over the loop.
-static func rune_cut(x: float, y: float, ph: float):
+static func rune_cut(x, y, ph):
 	var u = SkinsKit.wrap___tx(TX.add(x, 20), 2.6)
 	var v = TX.abs(y)
 	var stroke = TX.or_((TX.and_(TX.lt(u, 0.5), TX.lt(v, 1.2))), (TX.and_(TX.and_(TX.lt(TX.abs(TX.sub(TX.sub(u, 1.3), TX.mul((TX.sel(TX.gt(y, 0), 0.6, -0.6)), 0.5))), 0.35), TX.gt(v, 0.3)), TX.lt(v, 1.1))))
@@ -385,7 +385,7 @@ static func rune_cut(x: float, y: float, ph: float):
 	return TX.sel(_c0, _r1, _r2)
 
 ##  A gleam sliding over polished bronze.
-static func bronze_gleam(x: float, y: float, ph: float):
+static func bronze_gleam(x, y, ph):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.sub(x, TX.mul(y, 0.6)), TX.mul(ph, 1.5)), 6), 0.9), 1, 0))
 
 static func titan_fist() -> Variant:

@@ -81,7 +81,7 @@ static var STORMCALLER = {"longbow.thunderstring": TS.merge([{"weapon": thunders
 ## Lightning crawling through a material: thin forked veins that take a new
 ## path every frame (and nearly die out on the last), so the surface flickers.
 static func crackle(period: float = 7.0, density: float = 0.45, along: bool = false) -> Variant:
-	var _fn6 = func(x0: float, y0: float, ph: float):
+	var _fn6 = func(x0, y0, ph):
 		# Bolts run along y (or along x for long parts): one per column of `period`, jagging every 2.6 units.
 		var x = TX.sel(along, y0, x0)
 		var y = TX.sel(along, x0, y0)
@@ -94,7 +94,7 @@ static func crackle(period: float = 7.0, density: float = 0.45, along: bool = fa
 		var f = TX.sub(sy, seg)
 		var _c2 = TX.gt(TX.hash(TX.add(TX.mul(col, 5), 2), TX.add(seg, TX.mul(p, 17))), 0.72)
 		var _r3 = 0
-		var jag = (func(s: float): return ((PixelTex.hash_((col * 3) + 7, (s * 5) + (p * 11)) - 0.5) * period) * 0.55)
+		var jag = (func(s, _a1 = null, _a2 = null): return TX.mul(TX.mul((TX.sub(TX.hash(TX.add(TX.mul(col, 3), 7), TX.add(TX.mul(s, 5), TX.mul(p, 11))), 0.5)), period), 0.55))
 		var cx = TX.add(TX.add(TX.mul((TX.add(col, 0.5)), period), jag.call(seg)), TX.mul((TX.sub(jag.call(TX.add(seg, 1)), jag.call(seg))), f))
 		var _r4 = TX.sel(TX.lt(TX.abs(TX.sub(x, cx)), 0.55), 4, 0)
 		var _r5 = TX.sel(_c2, _r3, _r4)
@@ -102,18 +102,18 @@ static func crackle(period: float = 7.0, density: float = 0.45, along: bool = fa
 	return _fn6
 
 ##  Overlapping scales, rows of arcs.
-static func scales(x: float, y: float, _a2 = null):
+static func scales(x, y, _a2 = null):
 	var row = TX.floor(TX.div(y, 1.6))
 	var u = TX.sub(SkinsKit.wrap___tx(TX.add(x, TX.mul((TX.mod(row, 2)), 1.2)), 2.4), 1.2)
 	var v = SkinsKit.wrap___tx(y, 1.6)
 	return TX.sel(TX.lt(TX.add(TX.mul(TX.mul(u, u), 0.6), TX.mul((TX.sub(v, 1.6)), (TX.sub(v, 1.6)))), 0.5), 0, -1)
 
 ##  Feather rows on gold wings (darker between the quills).
-static func quills(x: float, y: float, _a2 = null):
+static func quills(x, y, _a2 = null):
 	return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(TX.mul(TX.abs(y), 1.3), TX.mul(x, 0.3))), 2), 0), -1, 0))
 
 ##  Thunderheads: billows rolling slowly through, one step per frame.
-static func billow(x: float, y: float, ph: float):
+static func billow(x, y, ph):
 	return TX.sub((TX.sel(TX.gt(TX.sin(TX.sub(TX.add(TX.mul(x, 0.7), TX.mul(TX.sin(TX.add(TX.mul(y, 0.9), TX.mul(ph, SkinsKit.Q))), 1.6)), TX.mul(TX.mul(ph, SkinsKit.Q), 0.5))), 0.45), 1, 0)), (TX.sel(TX.gt(TX.sin(TX.add(TX.mul(y, 1.3), TX.mul(x, 0.3))), 0.8), 1, 0)))
 
 # -----------------------------------------------------------------------------
@@ -232,7 +232,7 @@ static func thunderstring() -> Variant:
 			strike(r, bolt_pts(st[0], st[1], hx, hy, 4, 0.8, (ph_2 * 5) + 2), m.call("arrow"), 9)
 			r.dot(hx, hy, m.call("string"), 4, 9)
 			r.dot(st[0], st[1] - 1, m.call("fletch"), 3, 9)
-	return {"tip": 22, "mats": {"limb": PixelRaster.material({"base": STORM[2], "ramp": (TS.arr(STORM) + [VEIN]), "tex": crackle(3, 0.7, true)}), "wing": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true, "tex": quills}), "gold": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true}), "grip": PixelRaster.material({"base": 0x2a3858, "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.4), 0.45), -1, 0)))}), "tip": PixelRaster.material({"base": BOLT, "glow": true}), "eye": PixelRaster.material({"base": ARC, "glow": true, "tex": (func(_x: float, _y: float, ph: float): return (TX.sel(TX.mod(ph, 2), 1, 0)))}), "string": PixelRaster.material({"base": BOLT, "glow": true}), "arc": PixelRaster.material({"base": ARC, "glow": true}), "arrow": PixelRaster.material({"base": ARC, "glow": true}), "fletch": PixelRaster.material({"base": GOLD[3], "glow": true})}, "draw": _fn7}
+	return {"tip": 22, "mats": {"limb": PixelRaster.material({"base": STORM[2], "ramp": (TS.arr(STORM) + [VEIN]), "tex": crackle(3, 0.7, true)}), "wing": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true, "tex": quills}), "gold": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true}), "grip": PixelRaster.material({"base": 0x2a3858, "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.4), 0.45), -1, 0)))}), "tip": PixelRaster.material({"base": BOLT, "glow": true}), "eye": PixelRaster.material({"base": ARC, "glow": true, "tex": (func(_x, _y, ph): return (TX.sel(TX.mod(ph, 2), 1, 0)))}), "string": PixelRaster.material({"base": BOLT, "glow": true}), "arc": PixelRaster.material({"base": ARC, "glow": true}), "arrow": PixelRaster.material({"base": ARC, "glow": true}), "fletch": PixelRaster.material({"base": GOLD[3], "glow": true})}, "draw": _fn7}
 
 # -----------------------------------------------------------------------------
 # Tempest Aegis
@@ -267,7 +267,7 @@ static func tempest_aegis() -> Variant:
 		zap(r, t, 2, 0, 9, 0, 4, 1, 40 + (fmod(ph_2, 2)), m.call(("arc" if ph_2 == 3 else "bolt")), g)
 		r.fill(thunderbird(t, 0, 1), m.call("bird"), {"group": g, "bevel": 0.9, "lightBias": 0.15, "toneBias": o.get("toneBias"), "local": o.get("local")})
 		r.dot(t.x(-4.8, 0.3), t.y(-4.8, 0.3), m.call("eye"), 3, g)
-	return {"tip": 10.5, "mats": {"rim": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true, "step": 0.15}), "face": PixelRaster.material({"base": STORM[2], "ramp": (TS.arr(STORM) + [VEIN]), "tex": (func(x: float, y: float, ph: float): return (TX.sel(TX.gt(TX.sin(TX.add(TX.mul(y, 0.9), TX.mul(TX.sin(TX.add(TX.mul(x, 0.7), TX.mul(ph, SkinsKit.Q))), 1.4))), 0.6), -1, 0)))}), "bird": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true, "step": 0.15}), "bolt": PixelRaster.material({"base": BOLT, "glow": true}), "arc": PixelRaster.material({"base": ARC, "glow": true}), "eye": PixelRaster.material({"base": ARC, "glow": true})}, "draw": _fn2}
+	return {"tip": 10.5, "mats": {"rim": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true, "step": 0.15}), "face": PixelRaster.material({"base": STORM[2], "ramp": (TS.arr(STORM) + [VEIN]), "tex": (func(x, y, ph): return (TX.sel(TX.gt(TX.sin(TX.add(TX.mul(y, 0.9), TX.mul(TX.sin(TX.add(TX.mul(x, 0.7), TX.mul(ph, SkinsKit.Q))), 1.4))), 0.6), -1, 0)))}), "bird": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true, "step": 0.15}), "bolt": PixelRaster.material({"base": BOLT, "glow": true}), "arc": PixelRaster.material({"base": ARC, "glow": true}), "eye": PixelRaster.material({"base": ARC, "glow": true})}, "draw": _fn2}
 
 # -----------------------------------------------------------------------------
 # Stormheart
@@ -281,7 +281,7 @@ static func hoop(F, cx: float, cy: float, rx: float, ry: float, w: float, a0: fl
 		var a: float = a0 + (((a1 - a0) * i) / n)
 		out.append_array([cx + (cos(a) * rx), cy + (sin(a) * ry)])
 		inn.append_array([cx + (cos(a) * (rx - w)), cy + (sin(a) * (ry - w))])
-	var pts = TS.arr(out)
+	var pts = TS.arr(out).duplicate()
 	for i_2 in range(inn.size() - 2, 0 - 1, -2):
 		pts.append_array([inn[i_2], inn[i_2 + 1]])
 	return F.poly(pts)
@@ -306,7 +306,7 @@ static func thunder_king() -> Variant:
 	# A gold crown whose points are lightning bolts, a storm sapphire at the brow, small gold thunderbird wings
 	# swept back from the temples, and sparks arcing from point to point.
 	var _fn8 = func():
-		var _fn7 = func(r, H, m, g: float):
+		var _fn7 = func(r, H, m, g: float, _a4 = null):
 			var ph_2: float = fmod(r.phase, 4)
 			var lift: float = ([0, 0.4, 0.7, 0.4])[ph_2]
 			# Bolt-shaped points, the tallest in the middle, standing on the band (the rear one a shade back).
@@ -345,7 +345,7 @@ static func thunder_king() -> Variant:
 					var x_2 = _d6[0]
 					var y_2 = _d6[1]
 					r.dot(H.x(x_2, y_2 + 1.2), H.y(x_2, y_2 + 1.2), m.call("h.bolt"), 3, g)
-		return ({"mats": {"h.gold": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true, "step": 0.15}), "h.wing": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true, "tex": quills}), "h.steel": PixelRaster.material({"base": STEEL[2], "ramp": STEEL, "shiny": true}), "h.gem": PixelRaster.material({"base": ELEC, "glow": true, "ramp": [0x1a2a8a, ELEC, 0x6aa8ff, ARC, BOLT], "tex": (func(_x: float, _y: float, ph: float): return TX.pick([1, 0, 1, -1], TX.mod(ph, 4)))}), "h.bolt": PixelRaster.material({"base": BOLT, "glow": true}), "h.arc": PixelRaster.material({"base": ARC, "glow": true})}, "draw": _fn7})
+		return ({"mats": {"h.gold": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true, "step": 0.15}), "h.wing": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true, "tex": quills}), "h.steel": PixelRaster.material({"base": STEEL[2], "ramp": STEEL, "shiny": true}), "h.gem": PixelRaster.material({"base": ELEC, "glow": true, "ramp": [0x1a2a8a, ELEC, 0x6aa8ff, ARC, BOLT], "tex": (func(_x, _y, ph): return TX.pick([1, 0, 1, -1], TX.mod(ph, 4)))}), "h.bolt": PixelRaster.material({"base": BOLT, "glow": true}), "h.arc": PixelRaster.material({"base": ARC, "glow": true})}, "draw": _fn7})
 	return TS.merge([{"head": _fn8}, FX])
 
 # -----------------------------------------------------------------------------
@@ -400,7 +400,7 @@ static func storm_mail() -> Variant:
 		var bird = PixelSdf.union(T_2.poly([x_5 - 0.6, y_3 - 0.2, x_5 - 3.4, y_3 + 2.2, x_5 - 2.6, y_3 + 0.4, x_5 - 3.2, y_3 - 0.2, x_5 - 0.6, y_3 - 1.2]), T_2.poly([x_5 + 0.6, y_3 - 0.2, x_5 + 3.2, y_3 + 2.4, x_5 + 2.6, y_3 + 0.6, x_5 + 3.2, y_3 + 0, x_5 + 0.6, y_3 - 1.2]), T_2.poly([x_5 - 0.7, y_3 + 1.4, x_5 + 0.7, y_3 + 1.4, x_5 + 0.8, y_3 - 1.8, x_5, y_3 - 3, x_5 - 0.8, y_3 - 1.8]))
 		r_3.fill(bird, m_3.call("k.gold"), {"group": c_3["g"], "bevel": 0.8})
 		r_3.dot(T_2.x(x_5, y_3 + 0.8), T_2.y(x_5, y_3 + 0.8), m_3.call("k.eye"), 3, c_3["g"])
-	return TS.merge([{"mats": {"mirror": {"base": STORM[2], "ramp": (TS.arr(STORM) + [VEIN]), "tex": (func(x: float, y: float, ph: float): return TX.add(scales(x, y), crackle__tx(5.5, 0.55).call(x, y, ph)))}, "mirrorGlow": {"base": GOLD[3], "ramp": [0x8a5a14, 0xe0a830, GOLD[3], 0xffe080, GOLD[4]]}, "k.gold": {"base": GOLD[2], "ramp": GOLD, "shiny": true}, "k.wing": {"base": GOLD[2], "ramp": GOLD, "shiny": true}, "k.steel": {"base": STEEL[2], "ramp": STEEL, "shiny": true}, "k.cloud": {"base": CLOUD[2], "ramp": CLOUD, "tex": billow}, "k.cloudD": {"base": CLOUD[1], "ramp": CLOUD, "tex": billow}, "k.bolt": SkinsKit.glow(BOLT), "k.arc": SkinsKit.glow(ARC), "k.eye": SkinsKit.glow(ARC)}, "chest": {"pauldron": null, "forearm": "k.gold", "back": _fn0, "shoulder": _fn3, "over": _fn4}}, FX])
+	return TS.merge([{"mats": {"mirror": {"base": STORM[2], "ramp": (TS.arr(STORM) + [VEIN]), "tex": (func(x, y, ph): return TX.add(scales(x, y), crackle__tx(5.5, 0.55).call(x, y, ph)))}, "mirrorGlow": {"base": GOLD[3], "ramp": [0x8a5a14, 0xe0a830, GOLD[3], 0xffe080, GOLD[4]]}, "k.gold": {"base": GOLD[2], "ramp": GOLD, "shiny": true}, "k.wing": {"base": GOLD[2], "ramp": GOLD, "shiny": true}, "k.steel": {"base": STEEL[2], "ramp": STEEL, "shiny": true}, "k.cloud": {"base": CLOUD[2], "ramp": CLOUD, "tex": billow}, "k.cloudD": {"base": CLOUD[1], "ramp": CLOUD, "tex": billow}, "k.bolt": SkinsKit.glow(BOLT), "k.arc": SkinsKit.glow(ARC), "k.eye": SkinsKit.glow(ARC)}, "chest": {"pauldron": null, "forearm": "k.gold", "back": _fn0, "shoulder": _fn3, "over": _fn4}}, FX])
 
 # -----------------------------------------------------------------------------
 # Galewalkers
@@ -435,7 +435,7 @@ static func galewalkers() -> Variant:
 			var sy: float = (-1) + (([0.4, 0, 1.6, 0.8])[ph_2])
 			r.dot(foot.x(sx, sy), foot.y(sx, sy), m.call(("k.bolt" if ph_2 == 2 else "k.arc")), 3, c["g"])
 			r.dot(foot.x(sx + 0.9, sy + 1), foot.y(sx + 0.9, sy + 1), m.call("k.arc"), 3, c["g"])
-	return TS.merge([{"mats": {"zephyr": {"base": STORM[2], "ramp": (TS.arr(STORM) + [VEIN]), "tex": (func(x: float, y: float, ph: float): return TX.add(crackle__tx(4, 0.5, true).call(x, y, ph), (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.6), 0.5), -1, 0))))}, "zephyrTrim": {"base": GOLD[2], "ramp": GOLD, "shiny": true}, "k.wing": {"base": GOLD[2], "ramp": GOLD, "shiny": true, "tex": quills}, "k.wind": SkinsKit.glow(0xd8ecff), "k.windD": SkinsKit.glow(0x7aa8e0), "k.bolt": SkinsKit.glow(BOLT), "k.arc": SkinsKit.glow(ARC)}, "boots": {"wing": null, "height": 0.68, "over": _fn0}}, FX])
+	return TS.merge([{"mats": {"zephyr": {"base": STORM[2], "ramp": (TS.arr(STORM) + [VEIN]), "tex": (func(x, y, ph): return TX.add(crackle__tx(4, 0.5, true).call(x, y, ph), (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.6), 0.5), -1, 0))))}, "zephyrTrim": {"base": GOLD[2], "ramp": GOLD, "shiny": true}, "k.wing": {"base": GOLD[2], "ramp": GOLD, "shiny": true, "tex": quills}, "k.wind": SkinsKit.glow(0xd8ecff), "k.windD": SkinsKit.glow(0x7aa8e0), "k.bolt": SkinsKit.glow(BOLT), "k.arc": SkinsKit.glow(ARC)}, "boots": {"wing": null, "height": 0.68, "over": _fn0}}, FX])
 
 static func thunderstride() -> Variant:
 	# Storm-steel leggings banded in gold with lightning veins crawling down them (a new path every frame),
@@ -464,7 +464,7 @@ static func thunderstride() -> Variant:
 			var sy: float = (c["body"]["kneeR"] + 1.6) + (([0.2, 0.8, 0])[ph_2])
 			r.dot(t.x(sx, sy), t.y(sx, sy), m.call(("l.bolt" if ph_2 == 1 else "l.arc")), 3, c["g"])
 			r.dot(t.x(sx + (([0.9, -0.9, 1])[ph_2]), sy + 1), t.y(sx + (([0.9, -0.9, 1])[ph_2]), sy + 1), m.call("l.arc"), 3, c["g"])
-	return TS.merge([{"mats": {"windLeg": {"base": STORM[2], "ramp": (TS.arr(STORM) + [VEIN]), "tex": (func(x: float, y: float, ph: float): return TX.add(crackle__tx(3.2, 0.6, true).call(x, y, ph), (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3), 0.5), -1, 0))))}, "windTrim": {"base": GOLD[2], "ramp": GOLD, "shiny": true}, "l.wing": {"base": GOLD[2], "ramp": GOLD, "shiny": true}, "l.gold": {"base": GOLD[2], "ramp": GOLD, "shiny": true}, "l.steel": {"base": STEEL[2], "ramp": STEEL, "shiny": true}, "l.bolt": SkinsKit.glow(BOLT), "l.arc": SkinsKit.glow(ARC), "l.dark": {"base": GOLD[0], "ramp": GOLD}}, "legs": {"mat": "windLeg", "trim": "windTrim", "knee": "l.steel", "tasset": null, "rune": null, "wraps": null, "bulk": 0.15, "over": _fn0}}, FX])
+	return TS.merge([{"mats": {"windLeg": {"base": STORM[2], "ramp": (TS.arr(STORM) + [VEIN]), "tex": (func(x, y, ph): return TX.add(crackle__tx(3.2, 0.6, true).call(x, y, ph), (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3), 0.5), -1, 0))))}, "windTrim": {"base": GOLD[2], "ramp": GOLD, "shiny": true}, "l.wing": {"base": GOLD[2], "ramp": GOLD, "shiny": true}, "l.gold": {"base": GOLD[2], "ramp": GOLD, "shiny": true}, "l.steel": {"base": STEEL[2], "ramp": STEEL, "shiny": true}, "l.bolt": SkinsKit.glow(BOLT), "l.arc": SkinsKit.glow(ARC), "l.dark": {"base": GOLD[0], "ramp": GOLD}}, "legs": {"mat": "windLeg", "trim": "windTrim", "knee": "l.steel", "tasset": null, "rune": null, "wraps": null, "bulk": 0.15, "over": _fn0}}, FX])
 
 ##  0..1 noise for the aura's flashes.
 static func rnd(n: float) -> float:
@@ -534,8 +534,8 @@ static func stormcaller_aura(g, x: float, y: float, t: float, layer: String) -> 
 		g["fillRect"].call(px_3, py_3, 1, 1)
 
 ## Builder-mode twin of crackle (called from surface textures).
-static func crackle__tx(period: float = 7.0, density: float = 0.45, along: bool = false):
-	var _fn6 = func(x0: float, y0: float, ph: float):
+static func crackle__tx(period = 7, density = 0.45, along = false):
+	var _fn6 = func(x0, y0, ph):
 		# Bolts run along y (or along x for long parts): one per column of `period`, jagging every 2.6 units.
 		var x = TX.sel(along, y0, x0)
 		var y = TX.sel(along, x0, y0)
@@ -548,7 +548,7 @@ static func crackle__tx(period: float = 7.0, density: float = 0.45, along: bool 
 		var f = TX.sub(sy, seg)
 		var _c2 = TX.gt(TX.hash(TX.add(TX.mul(col, 5), 2), TX.add(seg, TX.mul(p, 17))), 0.72)
 		var _r3 = 0
-		var jag = (func(s: float): return ((PixelTex.hash_((col * 3) + 7, (s * 5) + (p * 11)) - 0.5) * period) * 0.55)
+		var jag = (func(s, _a1 = null, _a2 = null): return TX.mul(TX.mul((TX.sub(TX.hash(TX.add(TX.mul(col, 3), 7), TX.add(TX.mul(s, 5), TX.mul(p, 11))), 0.5)), period), 0.55))
 		var cx = TX.add(TX.add(TX.mul((TX.add(col, 0.5)), period), jag.call(seg)), TX.mul((TX.sub(jag.call(TX.add(seg, 1)), jag.call(seg))), f))
 		var _r4 = TX.sel(TX.lt(TX.abs(TX.sub(x, cx)), 0.55), 4, 0)
 		var _r5 = TX.sel(_c2, _r3, _r4)

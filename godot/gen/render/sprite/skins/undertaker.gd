@@ -34,7 +34,7 @@ static func _init_s():
 	var _fn2 = func(tex = null):
 		if tex == null: tex = granite
 		return R(STONE, {"step": 0.12, "tex": tex})
-	return {"leather": _fn0, "matte": (func(): return R(INK)), "purple": (func(tex = null): return R(PURPLE, {"tex": tex})), "spirit": (func(tex = null): return ({"base": SPIRIT[3], "ramp": SPIRIT, "glow": true, "tex": tex})), "amethyst": (func(): return ({"base": PURPLE[3], "ramp": [PURPLE[1], PURPLE[2], PURPLE[3], SPIRIT[3], SPIRIT[4]], "glow": true, "tex": breathe})), "urn": _fn1, "stone": _fn2, "moss": (func(): return R(MOSS, {"tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(x), TX.floor(y)), 0.3), -1, 0)))})), "silver": (func(): return R(SILVER, {"shiny": true, "step": 0.16})), "hair": (func(): return R(HAIR, {"shiny": true, "step": 0.12, "tex": strands}))}
+	return {"leather": _fn0, "matte": (func(): return R(INK)), "purple": (func(tex = null): return R(PURPLE, {"tex": tex})), "spirit": (func(tex = null): return ({"base": SPIRIT[3], "ramp": SPIRIT, "glow": true, "tex": tex})), "amethyst": (func(): return ({"base": PURPLE[3], "ramp": [PURPLE[1], PURPLE[2], PURPLE[3], SPIRIT[3], SPIRIT[4]], "glow": true, "tex": breathe})), "urn": _fn1, "stone": _fn2, "moss": (func(): return R(MOSS, {"tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(x), TX.floor(y)), 0.3), -1, 0)))})), "silver": (func(): return R(SILVER, {"shiny": true, "step": 0.16})), "hair": (func(): return R(HAIR, {"shiny": true, "step": 0.12, "tex": strands}))}
 ##  Purple ghost-fire rising off the gear, a swing trailing lilac into deep purple.
 static var FX = {"fx": {"spark": 0xd8c8ff, "spark2": 0x6a2aa8, "kind": "flame"}, "trail": [0xe6dcff, 0x7a3ac0]}
 ##  Particles the full set sheds in battle: lilac ghost-fire.
@@ -134,27 +134,27 @@ static var UNDERTAKER = {"spirit_wraps.undertaker": TS.merge([{"weapon": grips, 
 # Textures and materials
 # -----------------------------------------------------------------------------
 ##  Leather: long creases and a few glossy flecks.
-static func hide(x: float, y: float, _a2 = null):
+static func hide(x, y, _a2 = null):
 	var _c0 = TX.lt(TX.hash(TX.floor(TX.mul(x, 1.3)), TX.add(TX.floor(TX.mul(y, 1.3)), 7)), 0.06)
 	var _r1 = 1
 	var _r2 = TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.add(TX.mul(x, 0.25), TX.mul(y, 1.1)), TX.mul(TX.sin(TX.mul(x, 0.4)), 0.8)), 4.2), 0.5), -1, 0)
 	return TX.sel(_c0, _r1, _r2)
 
 ##  Speckled granite.
-static func granite(x: float, y: float, _a2 = null):
+static func granite(x, y, _a2 = null):
 	var h = TX.hash(TX.floor(x), TX.add(TX.floor(y), 3))
 	return TX.sel(TX.lt(h, 0.12), -1, TX.sel(TX.gt(h, 0.95), 1, 0))
 
 ##  Hair falling in strands, a sheen across them.
-static func strands(x: float, y: float, _a2 = null):
+static func strands(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 1.15), TX.mul(y, 0.12)), 1.7), 0.55), -1, TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(y, 0.3), 6), 0.6), 1, 0)))
 
 ##  Old gold with a glint sliding across it.
-static func sheen(x: float, y: float, ph: float):
+static func sheen(x, y, ph):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.7), TX.mul(y, 0.5)), TX.mul(ph, 2.5)), 10), 1), 1, TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.2)), TX.floor(TX.mul(y, 1.2))), 0.12), -1, 0)))
 
 ##  A glow breathing over the four-step loop.
-static func breathe(_x: float, _y: float, ph: float):
+static func breathe(_x, _y, ph):
 	return TX.pick([0, 1, 0, -1], TX.mod(ph, 4))
 
 static func R(r, o = null) -> Variant:
@@ -337,7 +337,7 @@ static func phenom_hat() -> Variant:
 			# A glint walking along the brim.
 			var gx: float = ([8, 3, -2, -7])[ph]
 			r.dot(H.x(gx, 4.6 - (gx * 0.1)), H.y(gx, 4.6 - (gx * 0.1)), m.call("h.utConcho"), 4, g + 4)
-		return ({"mats": {"h.utFelt": PixelRaster.material(S["leather"].call((func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.2)), TX.floor(TX.mul(y, 1.2))), 0.05), 1, 0))))), "h.utBand": PixelRaster.material(S["purple"].call()), "h.utConcho": PixelRaster.material(S["silver"].call()), "h.utGem": PixelRaster.material(S["amethyst"].call()), "h.utHair": PixelRaster.material(S["hair"].call()), "h.utBeard": PixelRaster.material(R(HAIR)), "h.utEye": PixelRaster.material({"base": 0xeee6ff, "ramp": [0x8a7aa8, 0xbcb0d6, 0xeee6ff, 0xfaf6ff, 0xffffff], "glow": true})}, "draw": _fn3})
+		return ({"mats": {"h.utFelt": PixelRaster.material(S["leather"].call((func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.2)), TX.floor(TX.mul(y, 1.2))), 0.05), 1, 0))))), "h.utBand": PixelRaster.material(S["purple"].call()), "h.utConcho": PixelRaster.material(S["silver"].call()), "h.utGem": PixelRaster.material(S["amethyst"].call()), "h.utHair": PixelRaster.material(S["hair"].call()), "h.utBeard": PixelRaster.material(R(HAIR)), "h.utEye": PixelRaster.material({"base": 0xeee6ff, "ramp": [0x8a7aa8, 0xbcb0d6, 0xeee6ff, 0xfaf6ff, 0xffffff], "glow": true})}, "draw": _fn3})
 	var head = _fn4
 	return TS.merge([{"head": head}, FX])
 
@@ -380,7 +380,7 @@ static func duster() -> Variant:
 		r_2.fill(T_2.poly(hem), m_2.call("k.utCoat"), {"group": c_2["g"] + 1, "bevel": 1.8, "softLight": true, "local": T_2})
 		r_2.line(T_2.x(b["hipW"] * 0.6, 1.8), T_2.y(b["hipW"] * 0.6, 1.8), T_2.x(b["hipW"] * 0.55, -9.2), T_2.y(b["hipW"] * 0.55, -9.2), m_2.call("k.utLining"), 2, c_2["g"] + 1)
 		r_2.fill(T_2.rect(0, 2.4, b["hipW"] + 0.6, 0.75), m_2.call("k.utBelt"), {"group": c_2["g"] + 1, "bevel": 0.6})
-	return TS.merge([{"mats": {"k.utCoat": S["leather"].call(), "k.utLining": S["purple"].call((func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.4), TX.mul(y, 0.9)), 3), 0.6), -1, 0)))), "k.utShirt": S["matte"].call(), "k.utBelt": S["leather"].call(null), "k.utSilver": S["silver"].call(), "k.utGem": S["amethyst"].call()}, "chest": {"torso": "k.utCoat", "sleeve": "k.utCoat", "sleeveLen": 1, "forearm": "k.utCoat", "hands": "skin", "pauldron": null, "trim": null, "belt": "k.utBelt", "cape": null, "hood": null, "spikes": null, "skirt": 0, "noScarf": true, "back": _fn0, "shoulder": null, "over": _fn1}}, FX])
+	return TS.merge([{"mats": {"k.utCoat": S["leather"].call(), "k.utLining": S["purple"].call((func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.4), TX.mul(y, 0.9)), 3), 0.6), -1, 0)))), "k.utShirt": S["matte"].call(), "k.utBelt": S["leather"].call(null), "k.utSilver": S["silver"].call(), "k.utGem": S["amethyst"].call()}, "chest": {"torso": "k.utCoat", "sleeve": "k.utCoat", "sleeveLen": 1, "forearm": "k.utCoat", "hands": "skin", "pauldron": null, "trim": null, "belt": "k.utBelt", "cape": null, "hood": null, "spikes": null, "skirt": 0, "noScarf": true, "back": _fn0, "shoulder": null, "over": _fn1}}, FX])
 
 # -----------------------------------------------------------------------------
 # Graveyard Leathers (ghoststep leggings)

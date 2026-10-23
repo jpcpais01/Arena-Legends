@@ -25,15 +25,15 @@ static func _init_maat():
 		r.fill(ankh, m.call("p.ankh"), {"group": 2, "bevel": 1.2})
 	var _fn1 = func(r, H, m, g: float, sway: float):
 		maat_feather(r, SpriteXform.Xf.new(H.x(-4.2, 3.6), H.y(-4.2, 3.6), (H.ang + 1.85) + (sway * 0.25), H.sx, H.sy), m, 13, g, 1.7)
-	return {"mats": {"plume": SkinsKit.shiny(LINEN), "plumeTip": SkinsKit.glow(0xffe890), "feather": SkinsKit.shiny(LINEN), "featherTip": SkinsKit.glow(0xffe890), "gold": SkinsKit.shiny(GOLD), "p.vane": {"base": LINEN, "ramp": [0xa89c88, 0xd2c6ae, 0xeee4cc, 0xfff8e8, 0xffffff], "tex": (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, 3)), 12), 1.6), 1, TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(TX.mul(x, 0.9), TX.mul(TX.abs(y), 0.7))), 2), 0), -1, 0))))}, "p.gold": SkinsKit.shiny(GOLD), "p.lapis": SkinsKit.plain(LAPIS), "p.ankh": SkinsKit.shiny(GOLD)}, "glow": [0xfff0b0, 0x3a6ae0], "icon": _fn0, "plume": _fn1}
+	return {"mats": {"plume": SkinsKit.shiny(LINEN), "plumeTip": SkinsKit.glow(0xffe890), "feather": SkinsKit.shiny(LINEN), "featherTip": SkinsKit.glow(0xffe890), "gold": SkinsKit.shiny(GOLD), "p.vane": {"base": LINEN, "ramp": [0xa89c88, 0xd2c6ae, 0xeee4cc, 0xfff8e8, 0xffffff], "tex": (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, 3)), 12), 1.6), 1, TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(TX.mul(x, 0.9), TX.mul(TX.abs(y), 0.7))), 2), 0), -1, 0))))}, "p.gold": SkinsKit.shiny(GOLD), "p.lapis": SkinsKit.plain(LAPIS), "p.ankh": SkinsKit.shiny(GOLD)}, "glow": [0xfff0b0, 0x3a6ae0], "icon": _fn0, "plume": _fn1}
 static var SUNBORN = {"arcane_staff.ra": TS.merge([{"weapon": scepter_of_ra}, FX]), "kite_shield.horus": TS.merge([{"weapon": wings_of_horus}, FX]), "phoenix_feather.maat": maat, "chrono_circlet.nemes": nemes(), "mage_robe.pharaoh": regalia(), "leaping_boots.sunstride": sandals(), "stonehide_tassets.shendyt": shendyt()}
 
 ##  The sun's surface: rings of heat rolling out from (cx, cy), one step per frame.
 static func corona(cx: float, cy: float) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.sub(TX.floor(TX.mul(TX.hypot(TX.sub(x, cx), TX.sub(y, cy)), 1.4)), ph), 4), 0), 1, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.sub(TX.floor(TX.mul(TX.hypot(TX.sub(x, cx), TX.sub(y, cy)), 1.4)), ph), 4), 0), 1, 0)))
 
 ##  Feather rows across a wing (pale between the quills).
-static func quills(x: float, y: float, _a2 = null):
+static func quills(x, y, _a2 = null):
 	return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(TX.mul(TX.abs(y), 1.2), TX.mul(x, 0.25))), 2), 0), -1, 0))
 
 static func scepter_of_ra() -> Variant:
@@ -89,7 +89,7 @@ static func wings_of_horus() -> Variant:
 		# The falcon's cheek mark and the spiral under the eye.
 		r.line(t.x(-4, 0.4), t.y(-4, 0.4), t.x(-2.6, 0.6), t.y(-2.6, 0.6), m.call("quill"), 0, g)
 		r.line(t.x(-4, -0.9), t.y(-4, -0.9), t.x(-3, -1.8), t.y(-3, -1.8), m.call("quill"), 0, g)
-	return {"tip": 10.5, "mats": {"rim": PixelRaster.material({"base": GOLD, "shiny": true, "step": 0.15, "tex": PixelTex.flow(7, 1, 1.5, 1)}), "feather": PixelRaster.material({"base": 0xf4e2a8, "shiny": true, "step": 0.13, "tex": quills}), "lapis": PixelRaster.material({"base": LAPIS, "step": 0.13, "tex": quills}), "turq": PixelRaster.material({"base": TURQ, "tex": quills}), "quill": PixelRaster.material({"base": 0x1a2460}), "eye": PixelRaster.material({"base": 0xf8f4ea}), "pupil": PixelRaster.material({"base": SUN[2], "glow": true, "ramp": SUN, "tex": (func(_x: float, _y: float, ph: float): return (TX.sel(TX.mod(ph, 2), 1, 0)))}), "sun": PixelRaster.material({"base": SUN[2], "glow": true, "ramp": SUN, "tex": corona(-9.4, 0)})}, "draw": _fn0}
+	return {"tip": 10.5, "mats": {"rim": PixelRaster.material({"base": GOLD, "shiny": true, "step": 0.15, "tex": PixelTex.flow(7, 1, 1.5, 1)}), "feather": PixelRaster.material({"base": 0xf4e2a8, "shiny": true, "step": 0.13, "tex": quills}), "lapis": PixelRaster.material({"base": LAPIS, "step": 0.13, "tex": quills}), "turq": PixelRaster.material({"base": TURQ, "tex": quills}), "quill": PixelRaster.material({"base": 0x1a2460}), "eye": PixelRaster.material({"base": 0xf8f4ea}), "pupil": PixelRaster.material({"base": SUN[2], "glow": true, "ramp": SUN, "tex": (func(_x, _y, ph): return (TX.sel(TX.mod(ph, 2), 1, 0)))}), "sun": PixelRaster.material({"base": SUN[2], "glow": true, "ramp": SUN, "tex": corona(-9.4, 0)})}, "draw": _fn0}
 
 ##  The tall feather of Ma'at, curling over at its tip, in frame F (x up the quill).
 static func maat_feather(r, F, m, len_: float, g: float, wide: float = 1.0) -> void:
@@ -116,12 +116,12 @@ static func nemes() -> Variant:
 			r.fill(H.circ(7, 6.8, 1.5), m.call("h.sun"), {"group": g, "local": H})
 			r.fill(H.poly([5.6, 2.6, 6.8, 3.8, 6.2, 5.2, 7, 6.4, 8.2, 5.8, 7.6, 4.6, 8, 3.4, 6.8, 2.4]), m.call("h.cobra"), {"group": g, "bevel": 1})
 			r.dot(H.x(7.6, 5.6), H.y(7.6, 5.6), m.call("h.eye"), 3, g)
-		return ({"mats": {"h.gold": PixelRaster.material({"base": GOLD, "shiny": true, "step": 0.15, "tex": PixelTex.flow(7, 1.2, 1.75, 1)}), "h.lapis": PixelRaster.material({"base": LAPIS, "step": 0.12}), "h.band": PixelRaster.material({"base": GOLD, "shiny": true, "step": 0.16}), "h.cobra": PixelRaster.material({"base": 0xf6d050, "shiny": true, "step": 0.15}), "h.eye": PixelRaster.material({"base": 0xff4a2a, "glow": true, "tex": (func(_x: float, _y: float, ph: float): return (TX.sel(TX.mod(ph, 2), 1, 0)))}), "h.sun": PixelRaster.material({"base": SUN[2], "glow": true, "ramp": SUN, "tex": corona(7, 6.8)})}, "draw": _fn0})
+		return ({"mats": {"h.gold": PixelRaster.material({"base": GOLD, "shiny": true, "step": 0.15, "tex": PixelTex.flow(7, 1.2, 1.75, 1)}), "h.lapis": PixelRaster.material({"base": LAPIS, "step": 0.12}), "h.band": PixelRaster.material({"base": GOLD, "shiny": true, "step": 0.16}), "h.cobra": PixelRaster.material({"base": 0xf6d050, "shiny": true, "step": 0.15}), "h.eye": PixelRaster.material({"base": 0xff4a2a, "glow": true, "tex": (func(_x, _y, ph): return (TX.sel(TX.mod(ph, 2), 1, 0)))}), "h.sun": PixelRaster.material({"base": SUN[2], "glow": true, "ramp": SUN, "tex": corona(7, 6.8)})}, "draw": _fn0})
 	return TS.merge([{"head": _fn1}, FX])
 
 static func regalia() -> Variant:
 	# Pleated white linen, a broad collar of lapis, turquoise and gold, a striped apron and folded wings of Isis.
-	var pleats = (func(x: float, y: float, ph: float): return (TX.sel(TX.and_(TX.lt(y, 2), TX.eq(SkinsKit.wrap___tx(TX.floor(TX.mul(x, 1.2)), 3), 0)), -1, TX.sel(TX.lt(TX.hash(TX.add(TX.floor(TX.mul(x, 2)), TX.mul(ph, 7)), TX.floor(TX.mul(y, 2))), 0.012), 1, 0))))
+	var pleats = (func(x, y, ph): return (TX.sel(TX.and_(TX.lt(y, 2), TX.eq(SkinsKit.wrap___tx(TX.floor(TX.mul(x, 1.2)), 3), 0)), -1, TX.sel(TX.lt(TX.hash(TX.add(TX.floor(TX.mul(x, 2)), TX.mul(ph, 7)), TX.floor(TX.mul(y, 2))), 0.012), 1, 0))))
 	var _fn0 = func(r, T, m, c):
 		# Wings folded down the back, breathing open a little over the idle loop.
 		var open: float = ([0, 0.5, 0.9, 0.5])[fmod(r.phase, 4)]
@@ -172,9 +172,9 @@ static func sandals() -> Variant:
 static func shendyt() -> Variant:
 	# A pleated white-linen kilt over bare legs: gold bands at waist and hem, and a gold-and-lapis
 	# apron down the front with a sun disc at its tip that glints as the hem sways.
-	var pleats = (func(_x: float, y: float, _a2 = null): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.mul(y, 1.15)), 3), 0), -1, 0)))
+	var pleats = (func(_x, y, _a2 = null): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.mul(y, 1.15)), 3), 0), -1, 0)))
 	##  A glint sliding across a band, one step per frame.
-	var sheen = (func(_x_2: float, y_2: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(y_2, TX.mul(ph, 2.5)), 9), 1.4), 1, 0)))
+	var sheen = (func(_x_2, y_2, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(y_2, TX.mul(ph, 2.5)), 9), 1.4), 1, 0)))
 	var _fn0 = func(r, t, m, c):
 		var o = {"group": c["g"], "toneBias": c["bias"]}
 		var L: float = c["len"]

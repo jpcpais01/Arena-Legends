@@ -128,27 +128,27 @@ static var HALLOW = {"soul_scythe.hallow": TS.merge([{"weapon": harvest_scythe},
 # Textures
 # -----------------------------------------------------------------------------
 ##  Candle flicker: steady, dim, steady, flaring.
-static func flick(_x: float, _y: float, ph: float):
+static func flick(_x, _y, ph):
 	return TX.pick([0, -1, 0, 1], TX.mod(ph, 4))
 
 ##  Gnarled wood: wavy grain and a knot now and then.
-static func gnarl(x: float, y: float, _a2 = null):
+static func gnarl(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(y, 1.6), TX.mul(TX.sin(TX.mul(x, 0.55)), 0.9)), 1.7), 0.42), -1, TX.sel(TX.and_(TX.lt(TX.hash(TX.floor(TX.mul(x, 0.5)), 3), 0.1), TX.lt(SkinsKit.wrap___tx(x, 2), 0.6)), -1, 0)))
 
 ##  Twisted twine: diagonal strands.
-static func twist(x: float, y: float, _a2 = null):
+static func twist(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 1.3), TX.mul(y, 0.9)), 1.5), 0.5), -1, 0))
 
 ##  Straw: long strands with a bright one here and there.
-static func strands(x: float, y: float, _a2 = null):
+static func strands(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(y, 2.1), TX.mul(TX.sin(TX.mul(x, 0.6)), 0.4)), 1.7), 0.45), -1, 0))
 
 ##  Burlap: a coarse weave.
-static func weave(x: float, y: float, _a2 = null):
+static func weave(x, y, _a2 = null):
 	return (TX.sel(TX.and_(TX.eq(SkinsKit.wrap___tx(TX.add(TX.floor(x), TX.floor(y)), 2), 0), TX.lt(TX.hash(TX.floor(x), TX.floor(y)), 0.6)), -1, 0))
 
 ##  Plaid flannel: dark crossing bands, darker where they cross, a thin light stripe.
-static func plaid(x: float, y: float, _a2 = null):
+static func plaid(x, y, _a2 = null):
 	var a = TX.lt(SkinsKit.wrap___tx(x, 4.4), 1.3)
 	var b = TX.lt(SkinsKit.wrap___tx(y, 4.4), 1.3)
 	var _c0 = TX.and_(a, b)
@@ -157,19 +157,19 @@ static func plaid(x: float, y: float, _a2 = null):
 	return TX.sel(_c0, _r1, _r2)
 
 ##  Rags: long folds and a few holes worn through.
-static func folds(x: float, y: float, _a2 = null):
+static func folds(x, y, _a2 = null):
 	return (TX.sel(TX.gt(TX.sin(TX.add(TX.mul(x, 0.9), TX.mul(TX.sin(TX.mul(y, 0.35)), 0.9))), 0.78), -1, TX.sel(TX.lt(TX.hash(TX.floor(x), TX.floor(y)), 0.04), -1, 0)))
 
 ##  Ember-thread stitches: dashes that glint in turn, one step per frame.
-static func embers(x: float, y: float, ph: float):
+static func embers(x, y, ph):
 	return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.add(TX.floor(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.8))), ph), 4), 0), 2, 0))
 
 ##  Dark iron with a glint sweeping along it.
 static func sweep(period: float = 10.0, speed: float = 2.5) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.5)), TX.mul(ph, speed)), period), 0.9), 2, TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.4)), TX.floor(TX.mul(y, 1.4))), 0.05), -1, 0))))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.5)), TX.mul(ph, speed)), period), 0.9), 2, TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.4)), TX.floor(TX.mul(y, 1.4))), 0.05), -1, 0))))
 
 ##  Leaf veins.
-static func veins(x: float, y: float, _a2 = null):
+static func veins(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.abs(TX.sub(SkinsKit.wrap___tx(TX.add(y, TX.mul(TX.abs(x), 0.6)), 2.2), 1.1)), 0.25), -1, 0))
 
 # -----------------------------------------------------------------------------
@@ -186,7 +186,7 @@ static func rind_dk() -> Variant:
 	return R(RIND_DK)
 
 static func stem() -> Variant:
-	return R(STEM, {"tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.2), 0.4), -1, 0)))})
+	return R(STEM, {"tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.2), 0.4), -1, 0)))})
 
 static func vine() -> Variant:
 	return R(VINE)
@@ -212,7 +212,7 @@ static func iron(tex = null) -> Variant:
 	return R(IRON, {"shiny": true, "tex": tex})
 
 static func wax() -> Variant:
-	return R(WAX, {"tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.6), 0.5), -1, 0)))})
+	return R(WAX, {"tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.6), 0.5), -1, 0)))})
 
 static func bat(tex = null) -> Variant:
 	return R(BAT, {"tex": tex})
@@ -223,7 +223,7 @@ static func fire(tex = null) -> Variant:
 	return ({"base": FIRE[3], "ramp": FIRE, "glow": true, "tex": tex})
 
 static func deep() -> Variant:
-	return ({"base": FIRE[2], "ramp": FIRE, "glow": true, "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3), 1), -1, 0)))})
+	return ({"base": FIRE[2], "ramp": FIRE, "glow": true, "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3), 1), -1, 0)))})
 
 static func hot() -> Variant:
 	return ({"base": HOT, "glow": true})
@@ -498,7 +498,7 @@ static func pumpkin_head() -> Variant:
 				SkinsKit.flame_tongue(r, H, x_6, y1 + 0.3, 0.85, fh, (0.35 if fmod((ph + i_2), 2) else -0.3) - (s * 0.2), m.call("h.fire"), m.call("h.fire"), 47 + i_2)
 				r.dot(H.x(x_6, y1 + 0.9), H.y(x_6, y1 + 0.9), m.call("h.hot"), 3, 47 + i_2)
 			TS.for_each(CANDLES, _fn2)
-		return ({"mats": {"h.rind": PixelRaster.material(rind((func(x_2: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x_2, 1.3)), TX.floor(TX.mul(y, 1.3))), 0.05), -1, 0))))), "h.rindDk": PixelRaster.material(rind_dk()), "h.stem": PixelRaster.material(stem()), "h.vine": PixelRaster.material(vine()), "h.leaf": PixelRaster.material(leaf_red()), "h.straw": PixelRaster.material(straw()), "h.gold": PixelRaster.material(gold()), "h.wax": PixelRaster.material(wax()), "h.fire": PixelRaster.material(fire()), "h.hot": PixelRaster.material(hot()), "h.gem": PixelRaster.material(amber()), "h.pit": PixelRaster.material(R([0x2a0a02, 0x3e1404, 0x5a2008, 0x7a300c, 0x9a4010]))}, "draw": _fn3})
+		return ({"mats": {"h.rind": PixelRaster.material(rind((func(x_2, y, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x_2, 1.3)), TX.floor(TX.mul(y, 1.3))), 0.05), -1, 0))))), "h.rindDk": PixelRaster.material(rind_dk()), "h.stem": PixelRaster.material(stem()), "h.vine": PixelRaster.material(vine()), "h.leaf": PixelRaster.material(leaf_red()), "h.straw": PixelRaster.material(straw()), "h.gold": PixelRaster.material(gold()), "h.wax": PixelRaster.material(wax()), "h.fire": PixelRaster.material(fire()), "h.hot": PixelRaster.material(hot()), "h.gem": PixelRaster.material(amber()), "h.pit": PixelRaster.material(R([0x2a0a02, 0x3e1404, 0x5a2008, 0x7a300c, 0x9a4010]))}, "draw": _fn3})
 	return TS.merge([{"head": _fn4}, FX])
 
 # -----------------------------------------------------------------------------
@@ -650,7 +650,7 @@ static func hallow_treads() -> Variant:
 			var bx = _e0[2]
 			var by = _e0[3]
 			r.line(W.x(ax, ay), W.y(ax, ay), W.x(bx, by), W.y(bx, by), m.call("b.hw.batHi"), 3, c["g"])
-	return TS.merge([{"mats": {"shadow": R(LEATHER, {"tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.4), 0.4), -1, 0)))}), "shadowGlow": R(PLUM, {"tex": plaid}), "b.hw.leather": R(LEATHER), "b.hw.gold": gold(), "b.hw.gem": amber(), "b.hw.bat": R([0x16101e, 0x2a1c38, 0x44305a, 0x624a7e, 0x8a72a8]), "b.hw.batHi": R(PLUM)}, "boots": {"height": 0.64, "bulk": 0.32, "over": _fn1}}, FX])
+	return TS.merge([{"mats": {"shadow": R(LEATHER, {"tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.4), 0.4), -1, 0)))}), "shadowGlow": R(PLUM, {"tex": plaid}), "b.hw.leather": R(LEATHER), "b.hw.gold": gold(), "b.hw.gem": amber(), "b.hw.bat": R([0x16101e, 0x2a1c38, 0x44305a, 0x624a7e, 0x8a72a8]), "b.hw.batHi": R(PLUM)}, "boots": {"height": 0.64, "bulk": 0.32, "over": _fn1}}, FX])
 
 ##  A small jack-o'-lantern sitting on the ground at (px, py), its face flickering.
 static func ground_jack(g, px: float, py: float, t: float, k: float) -> void:

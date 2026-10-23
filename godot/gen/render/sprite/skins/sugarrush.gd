@@ -102,14 +102,14 @@ static func built(specs) -> Variant:
 
 ##  Pleated paper (cupcake liners): a fold every `p` units across x.
 static func pleats(p: float = 1.6) -> Variant:
-	return (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, p), 0.55), -1, 0)))
+	return (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, p), 0.55), -1, 0)))
 
 ##  Candy stripes: every other band sunk two tones down a ramp that runs from strawberry up to cream, so it reads as two colours (never reaching the glinting top tone).
 static func stripes(p: float = 2.6, lean: float = 0.35) -> Variant:
-	return (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(x, TX.mul(y, lean)), p), TX.div(p, 2)), 0, -2)))
+	return (func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(x, TX.mul(y, lean)), p), TX.div(p, 2)), 0, -2)))
 
 ##  Licorice twist: glossy ridges running round the rope, a gloss glint sliding along one step a frame.
-static func twist(x: float, y: float, ph: float):
+static func twist(x, y, ph):
 	var u = SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.9), TX.mul(y, 1.3)), 2.4)
 	var _c0 = TX.lt(u, 0.55)
 	var _r1 = -1
@@ -117,7 +117,7 @@ static func twist(x: float, y: float, ph: float):
 	return TX.sel(_c0, _r1, _r2)
 
 ##  Baked cookie: a few dark chocolate chips (dropped to the chocolate end of the ramp) and crumbly pits.
-static func cookie_tex(x: float, y: float, _a2 = null):
+static func cookie_tex(x, y, _a2 = null):
 	var cx = TX.floor(TX.div(x, 2.2))
 	var cy = TX.floor(TX.div(y, 2.2))
 	var h = TX.hash(TX.add(TX.mul(cx, 3), 7), TX.add(TX.mul(cy, 5), 1))
@@ -216,7 +216,7 @@ static func lollipop_smasher() -> Variant:
 		var pa: float = ([0.5, 2.3, -0.9, 1.4])[ph]
 		var pr: float = R + 2.2
 		fizz(r, t.x(CX + (cos(pa) * pr), CY + (sin(pa) * pr)), t.y(CX + (cos(pa) * pr), CY + (sin(pa) * pr)), (2 if fmod(ph, 2) else 1), m, "", m.call("fizz"), g, ph)
-	return {"tip": 31.7, "grip2": 10, "mats": built(TS.merge([{"stick": candy(CREAM), "stripe": candy([0x7a1236, 0xc02852, 0xec4a72, 0xff8aa4, 0xffd0dc]), "gum": candy(MINT, (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.6)), TX.floor(TX.mul(y, 1.6))), 0.18), 1, 0)))), "sugar": candy(CREAM), "pink": candy(PINK), "mint": candy(MINT), "lemon": candy(LEMON), "satin": candy(PINK), "knot": candy(GRAPE), "heart": gem(HOT_PINK), "fizz": {"base": WHITE, "glow": true}}, sprinkle_mats("")])), "draw": _fn0}
+	return {"tip": 31.7, "grip2": 10, "mats": built(TS.merge([{"stick": candy(CREAM), "stripe": candy([0x7a1236, 0xc02852, 0xec4a72, 0xff8aa4, 0xffd0dc]), "gum": candy(MINT, (func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.6)), TX.floor(TX.mul(y, 1.6))), 0.18), 1, 0)))), "sugar": candy(CREAM), "pink": candy(PINK), "mint": candy(MINT), "lemon": candy(LEMON), "satin": candy(PINK), "knot": candy(GRAPE), "heart": gem(HOT_PINK), "fizz": {"base": WHITE, "glow": true}}, sprinkle_mats("")])), "draw": _fn0}
 
 # -----------------------------------------------------------------------------
 # Cookie Buckler
@@ -316,7 +316,7 @@ static func cupcake_crown() -> Variant:
 	# A pleated mint cupcake liner cut into crown points, a gumdrop on every point, strawberry frosting piped
 	# up out of it in three swirled tiers sprinkled in every colour, and a glossy cherry on top that jiggles.
 	var _fn7 = func():
-		var _fn6 = func(r, H, m, g: float):
+		var _fn6 = func(r, H, m, g: float, _a4 = null):
 			var ph: float = fmod(r.phase, 4)
 			# The liner: pleated paper flaring up from the brow, cut into points.
 			var pts = [-5, 4.2, 5.3, 4.6]
@@ -410,7 +410,7 @@ static func candy_stripe_vest() -> Variant:
 		r_3.fill(T_2.poly([tx, ty, tx - 1.2, ty + 1.3, tx - 1.4, ty - 1.2]), m_3.call("k.srTie"), {"group": c_3["g"] + 1, "bevel": 0.6})
 		r_3.fill(T_2.poly([tx, ty, tx + 1.3, ty + 1.2, tx + 1.2, ty - 1.3]), m_3.call("k.srTie"), {"group": c_3["g"] + 1, "bevel": 0.6})
 		r_3.fill(T_2.circ(tx, ty, 0.6), m_3.call("k.srKnot"), {"group": c_3["g"] + 1, "bevel": 0.4})
-	return TS.merge([{"mats": TS.merge([{"jerkin": {"base": 0xffe0ee, "ramp": [0xd85496, 0xf684bc, 0xffdcec, 0xfff6fa, WHITE], "tex": stripes(3, 0.04)}, "jerkinDark": candy(MINT), "k.srCream": ramp(CREAM), "k.srMint": candy(MINT), "k.srChoc": ramp(CHOC, (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.2), 0.45), -1, 0))), true), "k.srBow": candy(PINK), "k.srKnot": candy(GRAPE), "k.srTie": candy(GRAPE), "k.srB0": gem(0xff7ab8), "k.srB1": gem(0xffd860), "k.srB2": gem(0x7ac8ff)}, sprinkle_mats("k.sr")]), "chest": {"sleeve": "k.srMint", "sleeveLen": 0.45, "forearm": null, "belt": "k.srChoc", "pauldron": null, "trim": "jerkinDark", "back": _fn0, "shoulder": _fn1, "over": _fn2}}, FX])
+	return TS.merge([{"mats": TS.merge([{"jerkin": {"base": 0xffe0ee, "ramp": [0xd85496, 0xf684bc, 0xffdcec, 0xfff6fa, WHITE], "tex": stripes(3, 0.04)}, "jerkinDark": candy(MINT), "k.srCream": ramp(CREAM), "k.srMint": candy(MINT), "k.srChoc": ramp(CHOC, (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.2), 0.45), -1, 0))), true), "k.srBow": candy(PINK), "k.srKnot": candy(GRAPE), "k.srTie": candy(GRAPE), "k.srB0": gem(0xff7ab8), "k.srB1": gem(0xffd860), "k.srB2": gem(0x7ac8ff)}, sprinkle_mats("k.sr")]), "chest": {"sleeve": "k.srMint", "sleeveLen": 0.45, "forearm": null, "belt": "k.srChoc", "pauldron": null, "trim": "jerkinDark", "back": _fn0, "shoulder": _fn1, "over": _fn2}}, FX])
 
 # -----------------------------------------------------------------------------
 # Licorice Leggings
@@ -437,7 +437,7 @@ static func licorice_leggings() -> Variant:
 		var dx = _d0[0]
 		var dy = _d0[1]
 		r.dot(K.x(dx * s, dy * s), K.y(dx * s, dy * s), m.call("l.srSugar"), 3, c["g"] + 20)
-	return TS.merge([{"mats": {"windLeg": {"base": LICORICE[2], "ramp": LICORICE, "shiny": true, "tex": twist}, "windTrim": candy(PINK, (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(x, 2), 1.4), 0.5), 1, 0)))), "l.srPink": candy(PINK), "l.srLemon": candy(LEMON), "l.srBlack": {"base": LICORICE[2], "ramp": LICORICE, "shiny": true}, "l.srSugar": gem(0xfff0fa)}, "legs": {"mat": "windLeg", "trim": "windTrim", "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.15, "over": _fn1}}, FX])
+	return TS.merge([{"mats": {"windLeg": {"base": LICORICE[2], "ramp": LICORICE, "shiny": true, "tex": twist}, "windTrim": candy(PINK, (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(x, 2), 1.4), 0.5), 1, 0)))), "l.srPink": candy(PINK), "l.srLemon": candy(LEMON), "l.srBlack": {"base": LICORICE[2], "ramp": LICORICE, "shiny": true}, "l.srSugar": gem(0xfff0fa)}, "legs": {"mat": "windLeg", "trim": "windTrim", "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.15, "over": _fn1}}, FX])
 
 # -----------------------------------------------------------------------------
 # Marshmallow Boots
@@ -463,7 +463,7 @@ static func marshmallow_boots() -> Variant:
 		# A candy heart at the ankle.
 		if not c["far"]:
 			r.fill(shin.poly([1.8, (w * 0.5) + 0.2, 2.8, (w * 0.5) - 0.8, 3.4, (w * 0.5) - 0.1, 3.2, (w * 0.5) + 0.4, 3.4, (w * 0.5) + 0.9, 2.8, (w * 0.5) + 1.4]), m.call("k.srHeart"), {"group": c["g"]})
-	return TS.merge([{"mats": {"zephyr": {"base": CREAM[2], "ramp": CREAM}, "zephyrTrim": candy(PINK), "k.srMallow": ramp(CREAM), "k.srMallowP": ramp([0xa05878, 0xe08ab0, 0xffbcd8, 0xffe0ee, 0xfff6fa]), "k.srGraham": ramp(COOKIE, (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.4)), TX.floor(TX.mul(y, 1.4))), 0.16), -1, 0)))), "k.srFloss": ramp([0xa05890, 0xe08ac8, 0xffb8e4, 0xffdcf2, WHITE]), "k.srFlossB": ramp(SKY), "k.srHeart": gem(HOT_PINK)}, "boots": {"wing": null, "height": 0.62, "bulk": 0.55, "over": _fn0}}, FX])
+	return TS.merge([{"mats": {"zephyr": {"base": CREAM[2], "ramp": CREAM}, "zephyrTrim": candy(PINK), "k.srMallow": ramp(CREAM), "k.srMallowP": ramp([0xa05878, 0xe08ab0, 0xffbcd8, 0xffe0ee, 0xfff6fa]), "k.srGraham": ramp(COOKIE, (func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.4)), TX.floor(TX.mul(y, 1.4))), 0.16), -1, 0)))), "k.srFloss": ramp([0xa05890, 0xe08ac8, 0xffb8e4, 0xffdcf2, WHITE]), "k.srFlossB": ramp(SKY), "k.srHeart": gem(HOT_PINK)}, "boots": {"wing": null, "height": 0.62, "bulk": 0.55, "over": _fn0}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
 static func sugarrush_aura(g, x: float, y: float, t: float, layer: String) -> void:

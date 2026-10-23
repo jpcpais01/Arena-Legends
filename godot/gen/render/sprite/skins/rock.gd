@@ -99,20 +99,20 @@ static var runB = 0
 static var ROCK = {"spiked_knuckles.rock": TS.merge([{"weapon": fists}, FX]), "war_horn.rock": TS.merge([{"weapon": mic}, FX]), "meteor_sigil.rock": rockKitchen, "gladiator_helm.rock": TS.merge([{"head": eyebrow}, FX]), "leather_jerkin.rock": physique(), "charger_cuisses.rock": trunks(), "savate_boots.rock": boots()}
 
 ##  Tape wound in turns: a glossy seam every turn.
-static func turns(x: float, y: float, _a2 = null):
+static func turns(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.35)), 1.7), 0.4), 1, 0))
 
 ##  A glint sliding along gold.
 static func sweep(period: float = 9.0, speed: float = 2.25, w: float = 1.0) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.45)), TX.mul(ph, speed)), period), w), 1, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.45)), TX.mul(ph, speed)), period), w), 1, 0)))
 
 ##  Cracks in the hot stone, breathing over the loop.
-static func cracks(x: float, y: float, ph: float):
+static func cracks(x, y, ph):
 	var v = TX.add(TX.sin(TX.add(TX.mul(x, 0.75), TX.mul(TX.sin(TX.mul(y, 1.4)), 2))), TX.mul(TX.sin(TX.sub(TX.mul(y, 1.1), TX.mul(x, 0.3))), 0.6))
 	return TX.sel(TX.lt(TX.abs(v), (TX.sel(TX.mod(ph, 2), 0.3, 0.22))), 2, 0)
 
 ##  Light rolling on the broth.
-static func simmer(x: float, y: float, ph: float):
+static func simmer(x, y, ph):
 	return (TX.sel(TX.gt(TX.add(TX.sin(TX.add(TX.mul(x, 0.9), TX.mul(ph, 1.6))), TX.sin(TX.add(TX.sub(TX.mul(y, 1.3), TX.mul(x, 0.4)), ph))), 1.3), 1, 0))
 
 # -----------------------------------------------------------------------------
@@ -271,7 +271,7 @@ static func kitchen(r, F, s: float, f: float, tilt: float, boil: float, m, g0: f
 static func eyebrow() -> Variant:
 	# No helm at all: a clean-shaven, polished bald dome with the light gleaming on it, an ear, a neat
 	# goatee, the far brow low and level and the near one raised high in the People's Eyebrow.
-	var _fn1 = func(r, H, m, g: float):
+	var _fn1 = func(r, H, m, g: float, _a4 = null):
 		var ph: float = fmod(r.phase, 4)
 		# The bare dome over the crown, a little rounder than the head (no seam where it meets the face).
 		r.fill(SpriteDraw.hair_cap(H, 3.4, -2, 0.3), m.call("flesh.dome"), {"group": g, "bevel": 3, "softLight": true, "noLine": true})
@@ -347,7 +347,7 @@ static func physique() -> Variant:
 		r_2.fill(trunks, m_2.call("k.kTrunk"), {"group": c_2["g"] + 1, "bevel": 2})
 		r_2.fill(PixelSdf.intersect(trunks, T.rect(0, 1.9, 12, 0.55)), m_2.call("k.kGold"), {"group": c_2["g"] + 1, "flat": 3, "noLine": true})
 		bull_emblem(r_2, T, (b["hipW"] * 0.5) + 0.6, -0.4, 0.5, m_2.call("k.kGold"), m_2.call("k.kRuby"), c_2["g"] + 1)
-	return TS.merge([{"mats": {"k.kTrunk": S["onyx"].call(), "k.kGold": S["gold"].call(sweep()), "k.kRuby": S["ruby"].call(), "k.kInk": {"base": 0x1c1418, "ramp": [0x0a0608, 0x140e10, 0x1c1418, 0x2a2024, 0x3a2e32]}, "k.kBelt": S["onyx"].call((func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.8), 0.45), 1, 0)))), "flesh.muscle": SkinsKit.plain(0xc98c62), "flesh.dark": SkinsKit.plain(0x8a5a3a)}, "chest": {"torso": "skin", "sleeve": null, "sleeveLen": 0, "forearm": null, "hands": "skin", "pauldron": null, "trim": null, "belt": "k.kBelt", "cape": null, "hood": null, "spikes": null, "skirt": 0, "noScarf": true, "shoulder": _fn1, "over": _fn3}}, FX])
+	return TS.merge([{"mats": {"k.kTrunk": S["onyx"].call(), "k.kGold": S["gold"].call(sweep()), "k.kRuby": S["ruby"].call(), "k.kInk": {"base": 0x1c1418, "ramp": [0x0a0608, 0x140e10, 0x1c1418, 0x2a2024, 0x3a2e32]}, "k.kBelt": S["onyx"].call((func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.8), 0.45), 1, 0)))), "flesh.muscle": SkinsKit.plain(0xc98c62), "flesh.dark": SkinsKit.plain(0x8a5a3a)}, "chest": {"torso": "skin", "sleeve": null, "sleeveLen": 0, "forearm": null, "hands": "skin", "pauldron": null, "trim": null, "belt": "k.kBelt", "cape": null, "hood": null, "spikes": null, "skirt": 0, "noScarf": true, "shoulder": _fn1, "over": _fn3}}, FX])
 
 # -----------------------------------------------------------------------------
 # People's Champ Trunks (charger cuisses)
@@ -371,7 +371,7 @@ static func trunks() -> Variant:
 		if c["far"]:
 			return
 		bull_emblem(r, SpriteXform.Xf.new(t.x(0.2, 1.4), t.y(0.2, 1.4), 0), 0, 0, 0.5, m.call("l.kGold"), m.call("l.kRuby"), 27)
-	return TS.merge([{"mats": {"l.kTrunk": S["onyx"].call(), "l.kGold": S["gold"].call(), "l.kPad": S["onyx"].call((func(_x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(y, 0.9), 1.6), 0.35), -1, 0)))), "l.kRuby": S["ruby"].call()}, "legs": {"mat": "skin", "trim": null, "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.35, "over": _fn0}}, FX])
+	return TS.merge([{"mats": {"l.kTrunk": S["onyx"].call(), "l.kGold": S["gold"].call(), "l.kPad": S["onyx"].call((func(_x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(y, 0.9), 1.6), 0.35), -1, 0)))), "l.kRuby": S["ruby"].call()}, "legs": {"mat": "skin", "trim": null, "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.35, "over": _fn0}}, FX])
 
 # -----------------------------------------------------------------------------
 # Rock Bottom Boots (savate boots)

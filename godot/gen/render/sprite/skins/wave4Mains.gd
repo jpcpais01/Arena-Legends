@@ -122,7 +122,7 @@ static func trace(r, t, pts, mat: float, tone: float, g: float) -> void:
 
 ##  Overlapping scales (rows of arcs), shading the lower rim of each.
 static func scales(w: float = 2.2, h: float = 1.5) -> Variant:
-	var _fn0 = func(x: float, y: float, _a2 = null):
+	var _fn0 = func(x, y, _a2 = null):
 		var row = TX.floor(TX.div(y, h))
 		var u = TX.sub(SkinsKit.wrap___tx(TX.add(x, TX.mul((TX.mod(row, 2)), (TX.div(w, 2)))), w), TX.div(w, 2))
 		var v = SkinsKit.wrap___tx(y, h)
@@ -155,7 +155,7 @@ static func link_line(r, ax: float, ay: float, cx: float, cy: float, bx: float, 
 # Chain sickle
 # =============================================================================
 ##  Rust: blotchy patches eaten darker, a few raised flakes catching the light.
-static func rust(x: float, y: float, _a2 = null):
+static func rust(x, y, _a2 = null):
 	var _c0 = TX.lt(TX.hash(TX.add(TX.floor(TX.div(x, 1.7)), 3), TX.floor(TX.div(y, 1.7))), 0.32)
 	var _r1 = -1
 	var _r2 = TX.sel(TX.lt(TX.hash(TX.floor(x), TX.add(TX.floor(y), 7)), 0.07), 1, 0)
@@ -165,7 +165,7 @@ static func rust(x: float, y: float, _a2 = null):
 ## the top and the hooked blade a single venom-slick fang out of its jaws.
 ## The chain hangs in green-scale and gold links down to a rattle that shakes.
 static func serpent_coil() -> Variant:
-	var _fn3 = func(x: float, y: float, ph: float):
+	var _fn3 = func(x, y, ph):
 		var _c0 = TX.lt(SkinsKit.wrap___tx(TX.add(x, TX.mul(TX.abs(y), 1.6)), 3), 1)
 		var _r1 = -1
 		var _r2 = TX.sel(TX.and_(TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, 3)), 12), 1.2), TX.lt(TX.hash(TX.floor(TX.mul(x, 2)), TX.floor(TX.mul(y, 2))), 0.5)), 4, 0)
@@ -347,11 +347,11 @@ static func thornrose() -> Variant:
 			var a_2: float = ((((k_2 / 5.0) * PI) * 2) + 0.3) + (PI / 5.0)
 			r.dot(t.x(1.9 + (cos(a_2) * 2.6), sin(a_2) * 2.6), t.y(1.9 + (cos(a_2) * 2.6), sin(a_2) * 2.6), m.call("petalDeep"), 1, g)
 		r.dot(t.x(2.6, 0.2), t.y(2.6, 0.2), m.call(("dewHot" if ph == 1 else "dew")), 3, g)
-	return {"tip": 34, "mats": {"blade": PixelRaster.material({"base": 0xd8dce8, "ramp": [0x4a4e62, 0x8a90a6, 0xc4cad8, 0xeef0f8, 0xffffff], "shiny": true, "tex": PixelTex.flow(11, 1.6, 2.75, 1)}), "etch": PixelRaster.material({"base": 0x3a7a4a}), "petal": PixelRaster.material({"base": 0xc8243a, "ramp": [0x4a0614, 0x82101e, 0xc8243a, 0xf05a6a, 0xffb8c0], "shiny": true, "step": 0.15}), "petalDeep": PixelRaster.material({"base": 0x82101e, "ramp": [0x2a020a, 0x4a0614, 0x82101e, 0xb01c30, 0xe04a5a]}), "vine": PixelRaster.material({"base": 0x3a7a3a, "ramp": [0x0e2a14, 0x1e4a24, 0x3a7a3a, 0x6aa850, 0xb0e080]}), "leaf": PixelRaster.material({"base": 0x4a9a42, "ramp": [0x143a1a, 0x24622a, 0x4a9a42, 0x82c860, 0xd0f0a0], "tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.abs(TX.sub(y, TX.mul(x, 0.1))), 0.25), 1, 0)))}), "thorn": PixelRaster.material(SkinsKit.shiny(0xe8d8a8, null, 0.14)), "grip": PixelRaster.material(SkinsKit.plain(0x1e3a24, PixelTex.bands(1.2, 0.5, 1))), "dew": SpriteWeaponKit.M["glow"].call(0xffd8ea), "dewHot": SpriteWeaponKit.M["glow"].call(0xffffff)}, "draw": _fn1}
+	return {"tip": 34, "mats": {"blade": PixelRaster.material({"base": 0xd8dce8, "ramp": [0x4a4e62, 0x8a90a6, 0xc4cad8, 0xeef0f8, 0xffffff], "shiny": true, "tex": PixelTex.flow(11, 1.6, 2.75, 1)}), "etch": PixelRaster.material({"base": 0x3a7a4a}), "petal": PixelRaster.material({"base": 0xc8243a, "ramp": [0x4a0614, 0x82101e, 0xc8243a, 0xf05a6a, 0xffb8c0], "shiny": true, "step": 0.15}), "petalDeep": PixelRaster.material({"base": 0x82101e, "ramp": [0x2a020a, 0x4a0614, 0x82101e, 0xb01c30, 0xe04a5a]}), "vine": PixelRaster.material({"base": 0x3a7a3a, "ramp": [0x0e2a14, 0x1e4a24, 0x3a7a3a, 0x6aa850, 0xb0e080]}), "leaf": PixelRaster.material({"base": 0x4a9a42, "ramp": [0x143a1a, 0x24622a, 0x4a9a42, 0x82c860, 0xd0f0a0], "tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.abs(TX.sub(y, TX.mul(x, 0.1))), 0.25), 1, 0)))}), "thorn": PixelRaster.material(SkinsKit.shiny(0xe8d8a8, null, 0.14)), "grip": PixelRaster.material(SkinsKit.plain(0x1e3a24, PixelTex.bands(1.2, 0.5, 1))), "dew": SpriteWeaponKit.M["glow"].call(0xffd8ea), "dewHot": SpriteWeaponKit.M["glow"].call(0xffffff)}, "draw": _fn1}
 
 ##  Storm cloud: dark turning arms round a calm centre (local space, centred on (cx, 0)).
 static func vortex(cx: float) -> Variant:
-	var _fn6 = func(x: float, y: float, ph: float):
+	var _fn6 = func(x, y, ph):
 		var dx = TX.sub(x, cx)
 		var d = TX.hypot(dx, y)
 		var a = TX.atan2(y, dx)
@@ -370,7 +370,7 @@ static func vortex(cx: float) -> Variant:
 ## burns white; lightning crawls the cage and forks off its spike.
 static func tempest() -> Variant:
 	var cx: float = 14.2
-	var _fn0 = func(x: float, y: float, ph: float):
+	var _fn0 = func(x, y, ph):
 		var v = TX.sin(TX.sub(TX.add(TX.mul(x, 1.1), TX.mul(TX.sin(TX.add(TX.mul(y, 3), TX.mul(ph, SkinsKit.Q))), 1.6)), TX.mul(ph, SkinsKit.Q)))
 		return TX.sel(TX.lt(TX.abs(v), 0.14), 4, 0)
 	var _fn1 = func(r, t, m, o):
@@ -441,7 +441,7 @@ static func dragoon() -> Variant:
 		r.dot(t.x(28.8, 1.2), t.y(28.8, 1.2), m.call("eye"), 3, g)
 		for x_3 in [29.6, 31, 32.4]:
 			r.dot(t.x(x_3, 0), t.y(x_3, 0), m.call("gold"), 4, g)
-	return {"tip": 42, "grip2": 12, "mats": {"haft": PixelRaster.material({"base": 0x3a1e24, "ramp": [0x120609, 0x240e12, 0x3a1e24, 0x5a3238, 0x8a5a5a], "tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(x, TX.mul(y, 2.2)), 3), 0.8), 1, 0)))}), "gold": PixelRaster.material({"base": 0xe0a830, "ramp": [0x5a3410, 0x9a6418, 0xe0a830, 0xf8d460, 0xfff6c0], "shiny": true}), "wrap": PixelRaster.material(SkinsKit.plain(0x8a1a22, PixelTex.lattice(2, -1))), "membrane": PixelRaster.material({"base": 0x8a1e22, "ramp": [0x3a0a10, 0x5e1218, 0x8a1e22, 0xb0302e, 0xd85a48], "tex": (func(x_2: float, y_2: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(x_2, 0.8), TX.mul(y_2, 0.5)), 2.6), 0.5), -1, 0)))}), "vein": SpriteWeaponKit.M["glow"].call(0xffa040), "steel": PixelRaster.material({"base": 0xd4dcea, "ramp": [0x3e4458, 0x7a8298, 0xb8c2d4, 0xe6ecf6, 0xffffff], "shiny": true, "tex": PixelTex.flow(10, 1.4, 2.5, 1)}), "scale": PixelRaster.material({"base": 0x7a1a20, "ramp": [0x240608, 0x480e12, 0x7a1a20, 0xa83a34, 0xe07a5a], "shiny": true, "tex": scales(1.6, 1.1)}), "talon": PixelRaster.material(SkinsKit.shiny(0x2a2430, null, 0.17)), "eye": SpriteWeaponKit.M["glow"].call(0xffc23a), "pennant": PixelRaster.material({"base": 0xb01c28, "ramp": [0x3a0610, 0x6a0e18, 0xb01c28, 0xe04a4a, 0xff9a8a], "tex": PixelTex.bands(2.2, 0.5, -1)})}, "draw": _fn1}
+	return {"tip": 42, "grip2": 12, "mats": {"haft": PixelRaster.material({"base": 0x3a1e24, "ramp": [0x120609, 0x240e12, 0x3a1e24, 0x5a3238, 0x8a5a5a], "tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(x, TX.mul(y, 2.2)), 3), 0.8), 1, 0)))}), "gold": PixelRaster.material({"base": 0xe0a830, "ramp": [0x5a3410, 0x9a6418, 0xe0a830, 0xf8d460, 0xfff6c0], "shiny": true}), "wrap": PixelRaster.material(SkinsKit.plain(0x8a1a22, PixelTex.lattice(2, -1))), "membrane": PixelRaster.material({"base": 0x8a1e22, "ramp": [0x3a0a10, 0x5e1218, 0x8a1e22, 0xb0302e, 0xd85a48], "tex": (func(x_2, y_2, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(x_2, 0.8), TX.mul(y_2, 0.5)), 2.6), 0.5), -1, 0)))}), "vein": SpriteWeaponKit.M["glow"].call(0xffa040), "steel": PixelRaster.material({"base": 0xd4dcea, "ramp": [0x3e4458, 0x7a8298, 0xb8c2d4, 0xe6ecf6, 0xffffff], "shiny": true, "tex": PixelTex.flow(10, 1.4, 2.5, 1)}), "scale": PixelRaster.material({"base": 0x7a1a20, "ramp": [0x240608, 0x480e12, 0x7a1a20, 0xa83a34, 0xe07a5a], "shiny": true, "tex": scales(1.6, 1.1)}), "talon": PixelRaster.material(SkinsKit.shiny(0x2a2430, null, 0.17)), "eye": SpriteWeaponKit.M["glow"].call(0xffc23a), "pennant": PixelRaster.material({"base": 0xb01c28, "ramp": [0x3a0610, 0x6a0e18, 0xb01c28, 0xe04a4a, 0xff9a8a], "tex": PixelTex.bands(2.2, 0.5, -1)})}, "draw": _fn1}
 
 ## Crown of the Necropolis: a vertebral staff bound in black iron, topped
 ## by the skull of a dead king, crowned, its sockets alight with violet

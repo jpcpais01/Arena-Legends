@@ -82,7 +82,7 @@ class Shelf:
 			return self.owned
 		var raw = null
 		raw = JSON.parse_string((Store.get_item(self.key) if Store.get_item(self.key) != null else "null"))
-		self.owned = (TS.arr(TS.set_of(TS.filter(raw, self.is_))) if (raw is Array) else [])
+		self.owned = (TS.arr(TS.set_of(TS.filter(raw, self.is_))).duplicate() if (raw is Array) else [])
 		return self.owned
 
 	func owns(id) -> bool:

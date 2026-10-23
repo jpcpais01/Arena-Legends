@@ -49,11 +49,11 @@ static func _init_pearl():
 			var y = _e0[1]
 			var s = _e0[2]
 			r.fill(t.circ(x, y, s), m.call("k.bubble"), {"group": 5, "noLine": true})
-	return {"mats": {"ice": SkinsKit.shiny(0x9af0ff, null, 0.16), "iceGlow": SkinsKit.glow(0xe0fff8), "k.shell": SkinsKit.shiny(0xf2dcc0, (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(TX.atan2(y, x), 4), 1), 0.25), -1, 0))), 0.14), "k.inner": SkinsKit.plain(0xffb8b0), "k.pearl": {"base": PEARL, "ramp": PEARL_RAMP, "shiny": true}, "k.bubble": SkinsKit.glow(0x9af0ff), "k.coral": SkinsKit.shiny(CORAL, null, 0.14)}, "glow": [0xe0fff8, 0x2ab8c8], "icon": _fn1, "proj": {"core": coreProj}}
+	return {"mats": {"ice": SkinsKit.shiny(0x9af0ff, null, 0.16), "iceGlow": SkinsKit.glow(0xe0fff8), "k.shell": SkinsKit.shiny(0xf2dcc0, (func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(TX.atan2(y, x), 4), 1), 0.25), -1, 0))), 0.14), "k.inner": SkinsKit.plain(0xffb8b0), "k.pearl": {"base": PEARL, "ramp": PEARL_RAMP, "shiny": true}, "k.bubble": SkinsKit.glow(0x9af0ff), "k.coral": SkinsKit.shiny(CORAL, null, 0.14)}, "glow": [0xe0fff8, 0x2ab8c8], "icon": _fn1, "proj": {"core": coreProj}}
 static var ABYSSAL = {"spear.trident": TS.merge([{"weapon": trident}, FX]), "wind_chakram.nautilus": TS.merge([{"weapon": nautilus_disc, "proj": {"chakram": chakramProj}}, FX]), "frost_core.pearl": pearl, "iron_helm.leviathan": leviathan_helm(), "mirror_mail.abyssal": abyssal_scale(), "shadow_treads.tidewalkers": tidewalkers(), "chain_leggings.coral": coral_scale_leggings()}
 
 ##  Bioluminescent dots blinking through dark scale, out of step with each other.
-static func biolum(x: float, y: float, ph: float):
+static func biolum(x, y, ph):
 	var cx = TX.floor(TX.div(x, 2.4))
 	var cy = TX.floor(TX.div(y, 2.4))
 	var _c0 = TX.gt(TX.hash(TX.add(TX.mul(cx, 3), 1), TX.mul(cy, 5)), 0.16)
@@ -62,7 +62,7 @@ static func biolum(x: float, y: float, ph: float):
 	return TX.sel(_c0, _r1, _r2)
 
 ##  Overlapping scales (rows of arcs).
-static func scales(x: float, y: float, _a2 = null):
+static func scales(x, y, _a2 = null):
 	var row = TX.floor(TX.div(y, 1.6))
 	var u = TX.sub(SkinsKit.wrap___tx(TX.add(x, TX.mul((TX.mod(row, 2)), 1.2)), 2.4), 1.2)
 	var v = SkinsKit.wrap___tx(y, 1.6)
@@ -70,7 +70,7 @@ static func scales(x: float, y: float, _a2 = null):
 
 ##  Light running along a part like a wave, one step per frame.
 static func wave(speed: float = 1.5, period: float = 6.0) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(TX.sin(TX.mul(y, 0.8)), 1.2)), TX.mul(ph, speed)), period), 1.3), 1, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(TX.sin(TX.mul(y, 0.8)), 1.2)), TX.mul(ph, speed)), period), 1.3), 1, 0)))
 
 ##  A strand of kelp from (x, y) in frame F, waving with `ph`; `dir` is its general heading.
 static func kelp(F, x: float, y: float, dir: float, len_: float, ph: float, k: float = 0.0, wd: float = 1.0) -> Variant:
@@ -103,7 +103,7 @@ static func trident() -> Variant:
 		SpriteWeaponKit.fill_all(r, [PixelSdf.union.callv(TS.arr(prongs))], m.call("prong"), o, 1.2)
 		SpriteWeaponKit.fill_all(r, [t.rect(33, 0, 0.9, 2.2, 0.4)], m.call("coral"), o, 1)
 		r.fill(t.circ(33.6, 0, 1.4), m.call("pearl"), {"group": g, "bevel": 1})
-	return {"tip": 44, "grip2": 13, "mats": {"shaft": PixelRaster.material(SkinsKit.veined(DEEP, BIO, wave(1.5, 7))), "prong": PixelRaster.material({"base": 0xc8e8e8, "shiny": true, "step": 0.15, "tex": wave(2, 9)}), "coral": PixelRaster.material({"base": CORAL, "shiny": true, "step": 0.14}), "pearl": PixelRaster.material({"base": PEARL, "ramp": PEARL_RAMP, "shiny": true, "tex": (func(_x: float, _y: float, ph: float): return (TX.sel(TX.mod(ph, 2), 1, 0)))}), "kelp": PixelRaster.material({"base": KELP, "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2), 0.5), -1, 0)))})}, "draw": _fn0}
+	return {"tip": 44, "grip2": 13, "mats": {"shaft": PixelRaster.material(SkinsKit.veined(DEEP, BIO, wave(1.5, 7))), "prong": PixelRaster.material({"base": 0xc8e8e8, "shiny": true, "step": 0.15, "tex": wave(2, 9)}), "coral": PixelRaster.material({"base": CORAL, "shiny": true, "step": 0.14}), "pearl": PixelRaster.material({"base": PEARL, "ramp": PEARL_RAMP, "shiny": true, "tex": (func(_x, _y, ph): return (TX.sel(TX.mod(ph, 2), 1, 0)))}), "kelp": PixelRaster.material({"base": KELP, "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2), 0.5), -1, 0)))})}, "draw": _fn0}
 
 ##  The nautilus shell: a coiled spiral of cream and coral bands, fins on its rim (centre at cx, 0).
 static func nautilus(r, t, cx: float, spin: float, m, g: float, bias: float = 0.0) -> void:
@@ -118,7 +118,7 @@ static func nautilus(r, t, cx: float, spin: float, m, g: float, bias: float = 0.
 
 static func nautilus_disc() -> Variant:
 	# A nautilus shell with fin blades for a chakram, its coil turning frame by frame.
-	var _fn0 = func(x: float, y: float, ph: float):
+	var _fn0 = func(x, y, ph):
 		var a = TX.atan2(y, x)
 		var d = TX.hypot(x, y)
 		return TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(a, 1.9), TX.mul(d, 0.9)), TX.mul(ph, (TX.div(PI, 2)))), PI), 1), -1, 0)
@@ -135,7 +135,7 @@ static func AMK(k: String) -> Variant:
 static func leviathan_helm() -> Variant:
 	# A helm of dark scale shaped like a sea serpent's head, a rippling fin crest, side fins, a pearl at the brow.
 	var _fn1 = func():
-		var _fn0 = func(r, H, m, g: float):
+		var _fn0 = func(r, H, m, g: float, _a4 = null):
 			var rip: float = ([0, 0.5, 0.9, 0.4])[fmod(r.phase, 4)]
 			# The crest: spines with a membrane between them, rippling back.
 			var crest = [5.4, 6]
@@ -156,13 +156,13 @@ static func leviathan_helm() -> Variant:
 			r.fill(H.poly([-1, 1, -5.4, 2.6 + rip, -7.6, 0.4 + rip, -5, -0.6, -2, -1.2]), m.call("h.fin"), {"group": g, "bevel": 1, "local": H})
 			r.line(H.x(2.6, 0.4), H.y(2.6, 0.4), H.x(5, 0.4), H.y(5, 0.4), m.call("h.eye"), 3, g)
 			r.fill(H.circ(6.2, 2.8, 0.9), m.call("h.pearl"), {"group": g, "bevel": 0.8})
-		return ({"mats": {"h.scale": PixelRaster.material({"base": DEEP[2], "ramp": (TS.arr(DEEP) + [BIO]), "tex": (func(x: float, y: float, ph: float): return TX.add(scales(x, y), biolum(x, y, ph)))}), "h.fin": PixelRaster.material({"base": 0xd85ab0, "ramp": [0x5a1a5a, 0x8a2a7a, 0xd85ab0, 0xff9ae0, 0xffe0f8], "tex": (func(x_2: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_2, 1.6), 0.4), 1, 0)))}), "h.spine": PixelRaster.material({"base": 0xe8e0d0, "shiny": true}), "h.pearl": PixelRaster.material({"base": PEARL, "ramp": PEARL_RAMP, "shiny": true}), "h.eye": PixelRaster.material({"base": BIO, "glow": true, "tex": (func(_x: float, _y: float, ph_2: float): return (TX.sel(TX.mod(ph_2, 2), 1, 0)))})}, "draw": _fn0})
+		return ({"mats": {"h.scale": PixelRaster.material({"base": DEEP[2], "ramp": (TS.arr(DEEP) + [BIO]), "tex": (func(x, y, ph): return TX.add(scales(x, y), biolum(x, y, ph)))}), "h.fin": PixelRaster.material({"base": 0xd85ab0, "ramp": [0x5a1a5a, 0x8a2a7a, 0xd85ab0, 0xff9ae0, 0xffe0f8], "tex": (func(x_2, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_2, 1.6), 0.4), 1, 0)))}), "h.spine": PixelRaster.material({"base": 0xe8e0d0, "shiny": true}), "h.pearl": PixelRaster.material({"base": PEARL, "ramp": PEARL_RAMP, "shiny": true}), "h.eye": PixelRaster.material({"base": BIO, "glow": true, "tex": (func(_x, _y, ph_2): return (TX.sel(TX.mod(ph_2, 2), 1, 0)))})}, "draw": _fn0})
 	return TS.merge([{"head": _fn1}, FX])
 
 static func abyssal_scale() -> Variant:
 	# Iridescent scale mail with blinking lights, a scallop-shell breastplate holding a pearl,
 	# coral grown over the shoulders and long kelp streaming behind.
-	var shimmer = (func(x: float, y: float, ph: float): return TX.add(TX.add(scales(x, y), (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.sub(TX.floor(TX.mul((TX.add(x, TX.mul(y, 0.7))), 0.45)), ph), 4), 0), 1, 0))), (TX.sel(TX.eq(biolum(x, y, ph), 4), 2, 0))))
+	var shimmer = (func(x, y, ph): return TX.add(TX.add(scales(x, y), (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.sub(TX.floor(TX.mul((TX.add(x, TX.mul(y, 0.7))), 0.45)), ph), 4), 0), 1, 0))), (TX.sel(TX.eq(biolum(x, y, ph), 4), 2, 0))))
 	var _fn1 = func(r, T, m, c):
 		var top: float = c["top"]
 		var ph_3: float = fmod(r.phase, 4)
@@ -184,7 +184,7 @@ static func abyssal_scale() -> Variant:
 		var fan = PixelSdf.union(T_2.ell(x_4, y_3 + 0.6, 2.6, 2.2), T_2.poly([x_4 - 1, y_3 - 1.2, x_4 + 1, y_3 - 1.2, x_4 + 0.6, y_3 - 2.4, x_4 - 0.6, y_3 - 2.4]))
 		r_3.fill(fan, m_3.call("k.shell"), {"group": c_3["g"], "bevel": 1.2, "local": SpriteXform.Xf.new(T_2.x(x_4, y_3 - 2), T_2.y(x_4, y_3 - 2), T_2.ang)})
 		r_3.fill(T_2.circ(x_4 + 0.2, y_3 + 0.6, 1), m_3.call("k.pearl"), {"group": c_3["g"], "bevel": 0.8})
-	return TS.merge([{"mats": {"mirror": {"base": 0x2a8a9a, "ramp": [0x0e2a3a, 0x1a4a5e, 0x2a8a9a, 0x8a5ab8, BIO], "shiny": true, "tex": shimmer}, "mirrorGlow": SkinsKit.glow(BIO), "k.kelp": SkinsKit.plain(KELP, (func(x_2: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_2, 2), 0.5), -1, 0)))), "k.kelpD": SkinsKit.plain(0x2a6a42), "k.coral": SkinsKit.shiny(CORAL, null, 0.14), "k.shell": SkinsKit.shiny(0xf2dcc0, (func(x_3: float, y_2: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(TX.atan2(x_3, TX.add(y_2, 2)), 5), 1), 0.25), -1, 0))), 0.14), "k.pearl": {"base": PEARL, "ramp": PEARL_RAMP, "shiny": true, "tex": (func(_x: float, _y: float, ph_2: float): return (TX.sel(TX.mod(ph_2, 2), 1, 0)))}}, "chest": {"pauldron": null, "back": _fn1, "shoulder": _fn2, "over": _fn3}}, FX])
+	return TS.merge([{"mats": {"mirror": {"base": 0x2a8a9a, "ramp": [0x0e2a3a, 0x1a4a5e, 0x2a8a9a, 0x8a5ab8, BIO], "shiny": true, "tex": shimmer}, "mirrorGlow": SkinsKit.glow(BIO), "k.kelp": SkinsKit.plain(KELP, (func(x_2, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_2, 2), 0.5), -1, 0)))), "k.kelpD": SkinsKit.plain(0x2a6a42), "k.coral": SkinsKit.shiny(CORAL, null, 0.14), "k.shell": SkinsKit.shiny(0xf2dcc0, (func(x_3, y_2, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(TX.atan2(x_3, TX.add(y_2, 2)), 5), 1), 0.25), -1, 0))), 0.14), "k.pearl": {"base": PEARL, "ramp": PEARL_RAMP, "shiny": true, "tex": (func(_x, _y, ph_2): return (TX.sel(TX.mod(ph_2, 2), 1, 0)))}}, "chest": {"pauldron": null, "back": _fn1, "shoulder": _fn2, "over": _fn3}}, FX])
 
 static func tidewalkers() -> Variant:
 	# Scaled boots lit from within, a fan fin at each ankle that ripples, a coral spur, bubbles rising off the heel.
@@ -200,14 +200,14 @@ static func tidewalkers() -> Variant:
 		for k in range(2):
 			var u: float = SkinsKit.wrap_(r.phase + (k * 2), 4)
 			r.fill(shin.circ(1 + (u * 1.6), ((-w) - 1) - (u * 0.3), 0.75 - (u * 0.12)), m.call("k.bubble"), {"group": c["g"], "noLine": true})
-	return TS.merge([{"mats": {"shadow": SkinsKit.veined(DEEP, BIO, (func(x: float, y: float, ph: float): return TX.add(scales(x, y), biolum(x, y, ph)))), "shadowGlow": SkinsKit.glow(BIO), "k.fin": {"base": 0xd85ab0, "ramp": [0x5a1a5a, 0x8a2a7a, 0xd85ab0, 0xff9ae0, 0xffe0f8], "tex": (func(x_2: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_2, 1.4), 0.4), 1, 0)))}, "k.coral": SkinsKit.shiny(CORAL, null, 0.14), "k.bubble": SkinsKit.glow(0x9af0ff)}, "boots": {"over": _fn0}}, FX])
+	return TS.merge([{"mats": {"shadow": SkinsKit.veined(DEEP, BIO, (func(x, y, ph): return TX.add(scales(x, y), biolum(x, y, ph)))), "shadowGlow": SkinsKit.glow(BIO), "k.fin": {"base": 0xd85ab0, "ramp": [0x5a1a5a, 0x8a2a7a, 0xd85ab0, 0xff9ae0, 0xffe0f8], "tex": (func(x_2, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_2, 1.4), 0.4), 1, 0)))}, "k.coral": SkinsKit.shiny(CORAL, null, 0.14), "k.bubble": SkinsKit.glow(0x9af0ff)}, "boots": {"over": _fn0}}, FX])
 
 static func coral_scale_leggings() -> Variant:
 	# Iridescent dark scale lit by blinking biolights, a scallop shell over the knee, a branch of coral
 	# grown at the hip with a pearl at its root, and kelp hanging from the belt that sways down the thigh.
 	# The biolights are single points here (the thigh is only a few pixels wide).
-	var lights = (func(x: float, y: float, ph: float): return (TX.sel(TX.and_(TX.lt(SkinsKit.wrap___tx(x, 2.4), 1), TX.lt(SkinsKit.wrap___tx(y, 2.4), 1)), biolum(x, y, ph), 0)))
-	var shimmer = (func(x_2: float, y_2: float, ph_2: float): return TX.add(scales(x_2, y_2), (TX.sel(TX.eq(lights.call(x_2, y_2, ph_2), 4), 2, TX.sel(lights.call(x_2, y_2, ph_2), 1, 0)))))
+	var lights = (func(x, y, ph): return (TX.sel(TX.and_(TX.lt(SkinsKit.wrap___tx(x, 2.4), 1), TX.lt(SkinsKit.wrap___tx(y, 2.4), 1)), biolum(x, y, ph), 0)))
+	var shimmer = (func(x_2, y_2, ph_2): return TX.add(scales(x_2, y_2), (TX.sel(TX.eq(lights.call(x_2, y_2, ph_2), 4), 2, TX.sel(lights.call(x_2, y_2, ph_2), 1, 0)))))
 	var _fn1 = func(r, t, m, c):
 		var part = {"group": c["g"] + 20, "toneBias": c["bias"]}
 		var ph_4: float = fmod(r.phase, 4)
@@ -240,4 +240,4 @@ static func coral_scale_leggings() -> Variant:
 		# Ribs fanning out from the hinge.
 		for a_2 in [-0.5, 0, 0.5]:
 			r.line(t.x(hx + 1.2, hy + (a_2 * 1.2)), t.y(hx + 1.2, hy + (a_2 * 1.2)), t.x(hx + (cos(a_2) * (R - 0.9)), hy + (sin(a_2) * (R - 0.9))), t.y(hx + (cos(a_2) * (R - 0.9)), hy + (sin(a_2) * (R - 0.9))), m.call("l.shell"), (0 if c["far"] else 1), c["g"] + 20)
-	return TS.merge([{"mats": {"chain": {"base": 0x1e6a7a, "ramp": [0x0e2a3a, 0x16404e, 0x1e6a7a, 0x3a9aa8, BIO], "shiny": true, "step": 0.14, "tex": shimmer}, "chainDark": {"base": 0x8a5ab8, "ramp": [0x2a1a4a, 0x4a2a7a, 0x8a5ab8, 0xc89ae8, BIO], "shiny": true, "tex": wave(1.5, 5)}, "chainPlate": SkinsKit.shiny(0xf2dcc0, null, 0.14), "l.shell": {"base": 0xf2dcc0, "ramp": [0x8a4a4a, 0xd08a78, 0xf2d0b0, 0xfff0dc, 0xffffff], "shiny": true, "step": 0.14}, "l.coral": SkinsKit.shiny(CORAL, null, 0.14), "l.kelp": SkinsKit.plain(0x4aa86a, (func(x_3: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_3, 2), 0.5), -1, 0)))), "l.kelpD": SkinsKit.plain(KELP, (func(x_4: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_4, 2), 0.5), -1, 0)))), "l.pearl": {"base": PEARL, "ramp": PEARL_RAMP, "shiny": true, "tex": (func(_x: float, _y: float, ph_3: float): return (TX.sel(TX.mod(ph_3, 2), 1, 0)))}}, "legs": {"mat": "chain", "trim": "chainDark", "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.3, "over": _fn1}}, FX])
+	return TS.merge([{"mats": {"chain": {"base": 0x1e6a7a, "ramp": [0x0e2a3a, 0x16404e, 0x1e6a7a, 0x3a9aa8, BIO], "shiny": true, "step": 0.14, "tex": shimmer}, "chainDark": {"base": 0x8a5ab8, "ramp": [0x2a1a4a, 0x4a2a7a, 0x8a5ab8, 0xc89ae8, BIO], "shiny": true, "tex": wave(1.5, 5)}, "chainPlate": SkinsKit.shiny(0xf2dcc0, null, 0.14), "l.shell": {"base": 0xf2dcc0, "ramp": [0x8a4a4a, 0xd08a78, 0xf2d0b0, 0xfff0dc, 0xffffff], "shiny": true, "step": 0.14}, "l.coral": SkinsKit.shiny(CORAL, null, 0.14), "l.kelp": SkinsKit.plain(0x4aa86a, (func(x_3, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_3, 2), 0.5), -1, 0)))), "l.kelpD": SkinsKit.plain(KELP, (func(x_4, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_4, 2), 0.5), -1, 0)))), "l.pearl": {"base": PEARL, "ramp": PEARL_RAMP, "shiny": true, "tex": (func(_x, _y, ph_3): return (TX.sel(TX.mod(ph_3, 2), 1, 0)))}}, "legs": {"mat": "chain", "trim": "chainDark", "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.3, "over": _fn1}}, FX])

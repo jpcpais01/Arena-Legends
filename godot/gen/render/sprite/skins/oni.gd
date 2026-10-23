@@ -34,7 +34,7 @@ static var ONI_FX = {"spark": 0xff7a2a, "spark2": 0xb01418, "kind": "petal"}
 # -----------------------------------------------------------------------------
 # Shogun's Omamori
 # -----------------------------------------------------------------------------
-static var OM_SPECS = {"k.silk": red((func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.add(TX.abs(TX.sub(SkinsKit.wrap___tx(TX.add(x, y), 2.2), 1.1)), TX.abs(TX.sub(SkinsKit.wrap___tx(TX.sub(x, y), 2.2), 1.1))), 0.45), 1, 0)))), "k.black": lacquer(), "k.gold": gold(gleam(6)), "k.cord": silk(), "k.paper": {"base": 0xf4f0e6, "ramp": [0x8a8478, 0xc8c2b4, 0xf0ece2, 0xffffff, 0xffffff]}, "k.leaf": maple(), "k.ember": EMBER, "k.hot": EMBER_HOT}
+static var OM_SPECS = {"k.silk": red((func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.add(TX.abs(TX.sub(SkinsKit.wrap___tx(TX.add(x, y), 2.2), 1.1)), TX.abs(TX.sub(SkinsKit.wrap___tx(TX.sub(x, y), 2.2), 1.1))), 0.45), 1, 0)))), "k.black": lacquer(), "k.gold": gold(gleam(6)), "k.cord": silk(), "k.paper": {"base": 0xf4f0e6, "ramp": [0x8a8478, 0xc8c2b4, 0xf0ece2, 0xffffff, 0xffffff]}, "k.leaf": maple(), "k.ember": EMBER, "k.hot": EMBER_HOT}
 static var OM = SkinsKit.mats(OM_SPECS)
 static var omamoriSkin = _init_omamoriskin()
 static func _init_omamoriskin():
@@ -56,33 +56,33 @@ static var ONI = {"halberd.oni": TS.merge([{"weapon": naginata}, FX]), "parrying
 
 ##  A gleam sliding along gold, one step per frame.
 static func gleam(period: float = 8.0) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1.1), 1, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1.1), 1, 0)))
 
 ## Odoshi: rows of small lacquered scales laced with silk. Each row's top edge
 ## is a dark seam; vertical cord runs between.
 static func odoshi(row: float = 2.4) -> Variant:
-	var _fn0 = func(_x: float, y: float, _a2 = null):
+	var _fn0 = func(_x, y, _a2 = null):
 		var v = SkinsKit.wrap___tx(y, row)
 		return TX.sel(TX.lt(v, 0.55), -2, TX.sel(TX.gt(v, TX.sub(row, 0.6)), 1, 0))
 	return _fn0
 
 ##  Black lacquer lames: a dark seam at the top of each row, a lit lip at its bottom.
 static func lames(row: float = 2.2) -> Variant:
-	var _fn0 = func(_x: float, y: float, _a2 = null):
+	var _fn0 = func(_x, y, _a2 = null):
 		var v = SkinsKit.wrap___tx(y, row)
 		return TX.sel(TX.lt(v, 0.45), -1, TX.sel(TX.gt(v, TX.sub(row, 0.5)), 1, 0))
 	return _fn0
 
 ##  Ribbed lacquer (the helmet bowl's plates, the shin splints).
 static func ribs(p: float = 1.7) -> Variant:
-	return (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, p), 0.4), -1, TX.sel(TX.gt(SkinsKit.wrap___tx(x, p), TX.sub(p, 0.45)), 1, 0))))
+	return (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, p), 0.4), -1, TX.sel(TX.gt(SkinsKit.wrap___tx(x, p), TX.sub(p, 0.45)), 1, 0))))
 
 ##  Silk wrap: a diamond lattice of crossing cords.
-static func ito(x: float, y: float, _a2 = null):
+static func ito(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.add(TX.abs(TX.sub(SkinsKit.wrap___tx(TX.add(x, y), 2), 1)), TX.abs(TX.sub(SkinsKit.wrap___tx(TX.sub(x, y), 2), 1))), 0.5), -2, 0))
 
 ##  Black silk scattered with small gold-touched maple leaves (only a lighter tone).
-static func leaf_print(x: float, y: float, _a2 = null):
+static func leaf_print(x, y, _a2 = null):
 	return (TX.sel(TX.and_(TX.and_(TX.lt(TX.hash(TX.add(TX.floor(TX.mul(x, 0.5)), 7), TX.floor(TX.mul(y, 0.5))), 0.1), TX.lt(SkinsKit.wrap___tx(x, 2), 1)), TX.lt(SkinsKit.wrap___tx(y, 2), 1)), 2, 0))
 
 static func lacquer(tex = null) -> Variant:
@@ -105,7 +105,7 @@ static func steel(tex = null) -> Variant:
 	return ({"base": STEEL[2], "ramp": STEEL, "shiny": true, "step": 0.15, "tex": tex})
 
 static func hamon() -> Variant:
-	return ({"base": HAMON[2], "ramp": HAMON, "shiny": true, "step": 0.15, "tex": (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.sub(TX.mul(x, 0.7), TX.mul(y, 0.4)), TX.mul(ph, 2.4)), 10), 0.9), 1, 0)))})
+	return ({"base": HAMON[2], "ramp": HAMON, "shiny": true, "step": 0.15, "tex": (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.sub(TX.mul(x, 0.7), TX.mul(y, 0.4)), TX.mul(ph, 2.4)), 10), 0.9), 1, 0)))})
 
 static func ivory() -> Variant:
 	return ({"base": IVORY[2], "ramp": IVORY, "shiny": true})
@@ -309,7 +309,7 @@ static func oni_kabuto() -> Variant:
 	# sweeping up from the brow with a red maple leaf between them; under the visor a vermilion oni
 	# mask: scowling black brows, ember eyes, a hooked nose and a snarl of gold fangs.
 	var _fn2 = func():
-		var _fn1 = func(r, H, m, g: float):
+		var _fn1 = func(r, H, m, g: float, _a4 = null):
 			var ph: float = fmod(r.phase, 4)
 			# The far horn, curving up and back behind the bowl.
 			r.fill(chain(H, [[3.4, 3.8, 1.1], [3, 7.4, 1.05], [1.6, 10.8, 0.8], [-0.6, 13.2, 0.45], [-2.8, 14.4, 0.12]]), m.call("h.horn"), {"group": 50, "bevel": 1, "toneBias": -1, "local": H})
@@ -431,7 +431,7 @@ static func o_yoroi() -> Variant:
 		ln(r_3, S, (-a) - 1.2, 2.6, a + 1.6, 2.9, m_3.call("oc.gold"), 3, c_3["g"])
 		if not c_3["far"]:
 			dt(r_3, S, 0.2, 1.8, m_3.call("oc.gold"), 4, c_3["g"])
-	return TS.merge([{"mats": {"oc.odo": silk(odoshi()), "oc.lac": lacquer(), "oc.gold": gold(gleam(7)), "oc.sleeve": cloth(leaf_print), "oc.kote": lacquer(ribs(1.5)), "oc.lame": lacquer(lames(2)), "oc.hand": {"base": BLACK[1], "ramp": BLACK}, "oc.cord": silk(), "oc.flag": {"base": SILK[3], "ramp": [0x4a060e, 0x7a0e18, 0xb41a24, 0xd8302e, 0xff7a5a], "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3.2), 0.5), -1, 0)))}, "oc.ember": EMBER}, "chest": {"torso": "oc.odo", "sleeve": "oc.sleeve", "sleeveLen": 1, "forearm": "oc.kote", "hands": "oc.hand", "pauldron": null, "spikes": null, "cape": null, "trim": null, "belt": "oc.cord", "back": _fn0, "over": _fn1, "shoulder": _fn2}}, FX])
+	return TS.merge([{"mats": {"oc.odo": silk(odoshi()), "oc.lac": lacquer(), "oc.gold": gold(gleam(7)), "oc.sleeve": cloth(leaf_print), "oc.kote": lacquer(ribs(1.5)), "oc.lame": lacquer(lames(2)), "oc.hand": {"base": BLACK[1], "ramp": BLACK}, "oc.cord": silk(), "oc.flag": {"base": SILK[3], "ramp": [0x4a060e, 0x7a0e18, 0xb41a24, 0xd8302e, 0xff7a5a], "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3.2), 0.5), -1, 0)))}, "oc.ember": EMBER}, "chest": {"torso": "oc.odo", "sleeve": "oc.sleeve", "sleeveLen": 1, "forearm": "oc.kote", "hands": "oc.hand", "pauldron": null, "spikes": null, "cape": null, "trim": null, "belt": "oc.cord", "back": _fn0, "over": _fn1, "shoulder": _fn2}}, FX])
 
 # -----------------------------------------------------------------------------
 # Shogun's Kusazuri

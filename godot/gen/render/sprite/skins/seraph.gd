@@ -60,15 +60,15 @@ static var AC = {"gold": PixelColor.css(GOLD[3]), "light": PixelColor.css(0xfff4
 static var SERAPH = {"longsword.judgement": TS.merge([{"weapon": judgement}, FX]), "war_horn.trumpet": TS.merge([{"weapon": trumpet}, FX]), "phoenix_feather.halo": haloSkin, "storm_crown.diadem": diadem(), "mirror_mail.seraph": wingplate(), "chain_leggings.seraph": chausses(), "zephyr_boots.heavenstriders": heavenstriders()}
 
 ##  Barbs across a feather (x along the feather): a rachis down the middle and faint vanes.
-static func barbs(x: float, y: float, _a2 = null):
+static func barbs(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.abs(y), 0.28), -1, TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.sub(TX.mul(x, 0.8), TX.mul(TX.abs(y), 0.9))), 3), 0), -1, 0)))
 
 ##  Feather rows on a small wing (any frame).
-static func quills(x: float, y: float, _a2 = null):
+static func quills(x, y, _a2 = null):
 	return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(TX.mul(TX.abs(y), 1.2), TX.mul(x, 0.3))), 2), 0), -1, 0))
 
 ##  Gold filigree: fine scrolls engraved into the enamel, a slow glint drifting over it.
-static func filigree(x: float, y: float, ph: float):
+static func filigree(x, y, ph):
 	var _c0 = TX.lt(TX.hash(TX.add(TX.floor(TX.mul(x, 1.5)), TX.mul(ph, 13)), TX.sub(TX.floor(TX.mul(y, 1.5)), TX.mul(ph, 7))), 0.012)
 	var _r1 = 1
 	var v = TX.add(TX.sin(TX.add(TX.mul(x, 1.3), TX.mul(TX.sin(TX.mul(y, 1.1)), 1.8))), TX.mul(TX.sin(TX.sub(TX.mul(y, 1.5), TX.mul(x, 0.4))), 0.6))
@@ -77,10 +77,10 @@ static func filigree(x: float, y: float, ph: float):
 
 ##  A glint sliding along a part, one step per frame.
 static func sheen(period: float = 9.0, speed: float = 2.25, w: float = 1.2) -> Variant:
-	return (func(x: float, _y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, speed)), period), w), 1, 0)))
+	return (func(x, _y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, speed)), period), w), 1, 0)))
 
 ##  A gem's heart brightening and dimming over the loop.
-static func breathe(_x: float, _y: float, ph: float):
+static func breathe(_x, _y, ph):
 	return TX.pick([0, 1, 0, -1], TX.mod(ph, 4))
 
 # -----------------------------------------------------------------------------
@@ -103,7 +103,7 @@ static func hoop(F, cx: float, cy: float, rx: float, ry: float, w: float, n: flo
 		var a: float = ((i / n) * PI) * 2
 		out.append_array([cx + (cos(a) * rx), cy + (sin(a) * ry)])
 		inn.append_array([cx + (cos(a) * (rx - w)), cy + (sin(a) * (ry - (w * 0.7)))])
-	var pts = TS.arr(out)
+	var pts = TS.arr(out).duplicate()
 	for i_2 in range(inn.size() - 2, 0 - 1, -2):
 		pts.append_array([inn[i_2], inn[i_2 + 1]])
 	return F.poly(pts)
@@ -136,7 +136,7 @@ static func judgement() -> Variant:
 		if ph_2 == 3:
 			r.dot(t.x(31.6, 0), t.y(31.6, 0), m.call("spark"), 3, g)
 			r.dot(t.x(29.4, 1.6), t.y(29.4, 1.6), m.call("spark"), 3, g)
-	return {"tip": 31, "mats": {"blade": PixelRaster.material({"base": SILVER[3], "ramp": SILVER, "shiny": true, "tex": (func(_x: float, y: float, _a2 = null): return (TX.sel(TX.gt(y, 0.9), 1, TX.sel(TX.lt(y, -1), -1, 0))))}), "fuller": PixelRaster.material({"base": LIGHT[2], "ramp": LIGHT, "glow": true, "tex": (func(x: float, _y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, 6)), 24), 5), 1, TX.sel(TX.gt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, 6)), 24), 15), -1, 0))))}), "wing": PixelRaster.material({"base": FEATHER[2], "ramp": FEATHER, "shiny": true, "tex": quills}), "gold": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true, "tex": sheen(7, 1.75, 1)}), "grip": PixelRaster.material({"base": PEARL[2], "ramp": PEARL, "tex": (func(x_2: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_2, 1.4), 0.45), -1, 0)))}), "gem": PixelRaster.material({"base": SAPPHIRE[2], "ramp": SAPPHIRE, "glow": true, "tex": breathe}), "spark": PixelRaster.material({"base": WHITE, "glow": true})}, "draw": _fn0}
+	return {"tip": 31, "mats": {"blade": PixelRaster.material({"base": SILVER[3], "ramp": SILVER, "shiny": true, "tex": (func(_x, y, _a2 = null): return (TX.sel(TX.gt(y, 0.9), 1, TX.sel(TX.lt(y, -1), -1, 0))))}), "fuller": PixelRaster.material({"base": LIGHT[2], "ramp": LIGHT, "glow": true, "tex": (func(x, _y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, 6)), 24), 5), 1, TX.sel(TX.gt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, 6)), 24), 15), -1, 0))))}), "wing": PixelRaster.material({"base": FEATHER[2], "ramp": FEATHER, "shiny": true, "tex": quills}), "gold": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true, "tex": sheen(7, 1.75, 1)}), "grip": PixelRaster.material({"base": PEARL[2], "ramp": PEARL, "tex": (func(x_2, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_2, 1.4), 0.45), -1, 0)))}), "gem": PixelRaster.material({"base": SAPPHIRE[2], "ramp": SAPPHIRE, "glow": true, "tex": breathe}), "spark": PixelRaster.material({"base": WHITE, "glow": true})}, "draw": _fn0}
 
 # -----------------------------------------------------------------------------
 # Trumpet of the Last Dawn
@@ -171,7 +171,7 @@ static func trumpet() -> Variant:
 		# The flared bell.
 		SpriteWeaponKit.fill_all(r, [t.poly([7, -0.75, 9, -1.3, 10.2, -2.3, 10.9, -3.3, 11.3, -3.4, 11.3, 3.4, 10.9, 3.3, 10.2, 2.3, 9, 1.3, 7, 0.75])], m.call("bell"), o, 1.2)
 		r.fill(t.ell(11.1, 0, 0.5, 2.8), m.call("mouth"), {"group": g, "flat": 1, "noLine": true})
-	return {"tip": 10.5, "mats": {"gold": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true, "tex": sheen(8, 2, 1)}), "bell": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true, "step": 0.15}), "mouth": PixelRaster.material({"base": GOLD[0], "ramp": GOLD}), "cloth": PixelRaster.material({"base": PEARL[3], "ramp": PEARL, "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.2), 0.5), -1, 0)))}), "fringe": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true}), "sun": PixelRaster.material({"base": LIGHT[2], "ramp": LIGHT, "glow": true, "tex": breathe}), "gem": PixelRaster.material({"base": SAPPHIRE[2], "ramp": SAPPHIRE, "glow": true})}, "draw": _fn0}
+	return {"tip": 10.5, "mats": {"gold": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true, "tex": sheen(8, 2, 1)}), "bell": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true, "step": 0.15}), "mouth": PixelRaster.material({"base": GOLD[0], "ramp": GOLD}), "cloth": PixelRaster.material({"base": PEARL[3], "ramp": PEARL, "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.2), 0.5), -1, 0)))}), "fringe": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true}), "sun": PixelRaster.material({"base": LIGHT[2], "ramp": LIGHT, "glow": true, "tex": breathe}), "gem": PixelRaster.material({"base": SAPPHIRE[2], "ramp": SAPPHIRE, "glow": true})}, "draw": _fn0}
 
 # -----------------------------------------------------------------------------
 # Halo of the Seraph
@@ -193,7 +193,7 @@ static func diadem() -> Variant:
 	# A pale gold diadem: slender sunburst rays rising from the band, the longest tipped with light,
 	# a sky sapphire at the brow and small white wings at the temples.
 	var _fn5 = func():
-		var _fn4 = func(r, H, m, g: float):
+		var _fn4 = func(r, H, m, g: float, _a4 = null):
 			var ph_2: float = fmod(r.phase, 4)
 			var beat: float = ([0, 0.5, 0.8, 0.5])[ph_2]
 			var _fn0 = func(dx: float, dy: float, bias: float, gr: float):
@@ -234,7 +234,7 @@ static func diadem() -> Variant:
 			var ty: float = y0_2 + (((y0_2 - cy) / l_2) * (len__3 + 0.6))
 			r.dot(H.x(tx, ty), H.y(tx, ty), m.call("h.light"), 3, g)
 			wing.call(0, 0, 0, g)
-		return ({"mats": {"h.gold": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true, "step": 0.15, "tex": sheen(6, 1.5, 1)}), "h.ray": PixelRaster.material({"base": GOLD[3], "ramp": GOLD, "shiny": true, "tex": (func(_x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(y, TX.mul(ph, 1.5)), 6), 1), 1, 0)))}), "h.wing": PixelRaster.material({"base": FEATHER[2], "ramp": FEATHER, "shiny": true, "tex": quills}), "h.gem": PixelRaster.material({"base": SAPPHIRE[2], "ramp": SAPPHIRE, "glow": true, "tex": breathe}), "h.light": PixelRaster.material({"base": WHITE, "glow": true})}, "draw": _fn4})
+		return ({"mats": {"h.gold": PixelRaster.material({"base": GOLD[2], "ramp": GOLD, "shiny": true, "step": 0.15, "tex": sheen(6, 1.5, 1)}), "h.ray": PixelRaster.material({"base": GOLD[3], "ramp": GOLD, "shiny": true, "tex": (func(_x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(y, TX.mul(ph, 1.5)), 6), 1), 1, 0)))}), "h.wing": PixelRaster.material({"base": FEATHER[2], "ramp": FEATHER, "shiny": true, "tex": quills}), "h.gem": PixelRaster.material({"base": SAPPHIRE[2], "ramp": SAPPHIRE, "glow": true, "tex": breathe}), "h.light": PixelRaster.material({"base": WHITE, "glow": true})}, "draw": _fn4})
 	return TS.merge([{"head": _fn5}, FX])
 
 # -----------------------------------------------------------------------------
@@ -297,7 +297,7 @@ static func wingplate() -> Variant:
 		r_3.fill(T_2.poly([x_2, y_2 + 1.7, x_2 + 1.2, y_2, x_2, y_2 - 1.7, x_2 - 1.2, y_2]), m_3.call("k.gem"), {"group": c_3["g"], "local": T_2})
 		# Gold piping down the front edge of the plate, and a belt of gold.
 		r_3.line(T_2.x(x_2 - 0.4, y_2 - 2.6), T_2.y(x_2 - 0.4, y_2 - 2.6), T_2.x(x_2 - 1.2, 1.6), T_2.y(x_2 - 1.2, 1.6), m_3.call("k.gold"), 2, c_3["g"])
-	return TS.merge([{"mats": {"mirror": {"base": PEARL[2], "ramp": PEARL, "shiny": true, "step": 0.15, "tex": filigree}, "mirrorGlow": {"base": GOLD[2], "ramp": GOLD, "shiny": true}, "k.gold": {"base": GOLD[2], "ramp": GOLD, "shiny": true, "tex": sheen(7, 1.75, 1)}, "k.feather": {"base": FEATHER[2], "ramp": FEATHER, "shiny": true, "tex": barbs}, "k.featherD": {"base": FEATHER[2], "ramp": [0x767ea2, 0xa4acc8, 0xd2d8ea, 0xeef0f8, 0xffffff], "tex": barbs}, "k.covert": {"base": FEATHER[3], "ramp": FEATHER, "shiny": true, "tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.6))), 3), 0), -1, 0)))}, "k.pearl": {"base": PEARL[3], "ramp": PEARL, "shiny": true, "step": 0.15}, "k.gem": {"base": SAPPHIRE[2], "ramp": SAPPHIRE, "glow": true, "tex": breathe}, "k.light": {"base": WHITE, "glow": true}}, "chest": {"pauldron": null, "sleeveLen": 1, "back": _fn0, "shoulder": _fn1, "over": _fn2}}, FX])
+	return TS.merge([{"mats": {"mirror": {"base": PEARL[2], "ramp": PEARL, "shiny": true, "step": 0.15, "tex": filigree}, "mirrorGlow": {"base": GOLD[2], "ramp": GOLD, "shiny": true}, "k.gold": {"base": GOLD[2], "ramp": GOLD, "shiny": true, "tex": sheen(7, 1.75, 1)}, "k.feather": {"base": FEATHER[2], "ramp": FEATHER, "shiny": true, "tex": barbs}, "k.featherD": {"base": FEATHER[2], "ramp": [0x767ea2, 0xa4acc8, 0xd2d8ea, 0xeef0f8, 0xffffff], "tex": barbs}, "k.covert": {"base": FEATHER[3], "ramp": FEATHER, "shiny": true, "tex": (func(x, y, _a2 = null): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.6))), 3), 0), -1, 0)))}, "k.pearl": {"base": PEARL[3], "ramp": PEARL, "shiny": true, "step": 0.15}, "k.gem": {"base": SAPPHIRE[2], "ramp": SAPPHIRE, "glow": true, "tex": breathe}, "k.light": {"base": WHITE, "glow": true}}, "chest": {"pauldron": null, "sleeveLen": 1, "back": _fn0, "shoulder": _fn1, "over": _fn2}}, FX])
 
 # -----------------------------------------------------------------------------
 # Choir Chausses
@@ -322,7 +322,7 @@ static func chausses() -> Variant:
 		if c["far"]:
 			return
 		r.dot(t.x((hem + 1.2) - (fl * 0.4), w * 0.6), t.y((hem + 1.2) - (fl * 0.4), w * 0.6), m.call("l.gem"), 3, c["g"])
-	return TS.merge([{"mats": {"chain": {"base": SILVER[3], "ramp": SILVER, "shiny": true, "step": 0.14, "tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(x, y)), 2), 0), -1, 0)))}, "chainDark": {"base": SILVER[1], "ramp": SILVER, "shiny": true}, "chainPlate": {"base": PEARL[3], "ramp": PEARL, "shiny": true, "step": 0.15}, "l.cloth": {"base": PEARL[3], "ramp": PEARL, "tex": (func(_x: float, y_2: float, _a2 = null): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.mul(y_2, 1.2)), 3), 0), -1, 0)))}, "l.gold": {"base": GOLD[2], "ramp": GOLD, "shiny": true, "tex": sheen(8, 2, 1.2)}, "l.feather": {"base": GOLD[3], "ramp": GOLD, "shiny": true}, "l.gem": {"base": SAPPHIRE[2], "ramp": SAPPHIRE, "glow": true}}, "legs": {"mat": "chain", "trim": null, "knee": "chainPlate", "tasset": null, "rune": null, "wraps": null, "bulk": 0.25, "over": _fn0}}, FX])
+	return TS.merge([{"mats": {"chain": {"base": SILVER[3], "ramp": SILVER, "shiny": true, "step": 0.14, "tex": (func(x, y, _a2 = null): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(x, y)), 2), 0), -1, 0)))}, "chainDark": {"base": SILVER[1], "ramp": SILVER, "shiny": true}, "chainPlate": {"base": PEARL[3], "ramp": PEARL, "shiny": true, "step": 0.15}, "l.cloth": {"base": PEARL[3], "ramp": PEARL, "tex": (func(_x, y_2, _a2 = null): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.mul(y_2, 1.2)), 3), 0), -1, 0)))}, "l.gold": {"base": GOLD[2], "ramp": GOLD, "shiny": true, "tex": sheen(8, 2, 1.2)}, "l.feather": {"base": GOLD[3], "ramp": GOLD, "shiny": true}, "l.gem": {"base": SAPPHIRE[2], "ramp": SAPPHIRE, "glow": true}}, "legs": {"mat": "chain", "trim": null, "knee": "chainPlate", "tasset": null, "rune": null, "wraps": null, "bulk": 0.25, "over": _fn0}}, FX])
 
 # -----------------------------------------------------------------------------
 # Heavenstriders
@@ -351,7 +351,7 @@ static func heavenstriders() -> Variant:
 			var F = sub(shin, x_2, (-w) + 0.2, a + (lift * (1 + (i * 0.4))))
 			r.fill(feather_shape(F, len_, 0.95), m.call("k.wing"), {"group": 30 + i, "bevel": 0.8, "toneBias": c["bias"], "local": F})
 		r.fill(shin.circ(2, (-w) + 0.2, 0.9), m.call("k.gold"), TS.merge([o, {"bevel": 0.6}]))
-	return TS.merge([{"mats": {"zephyr": {"base": PEARL[2], "ramp": PEARL, "shiny": true, "step": 0.15, "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3.2), 0.45), -1, 0)))}, "zephyrTrim": {"base": GOLD[2], "ramp": GOLD, "shiny": true}, "k.gold": {"base": GOLD[2], "ramp": GOLD, "shiny": true, "tex": sheen(6, 1.5, 1)}, "k.wing": {"base": FEATHER[2], "ramp": FEATHER, "shiny": true, "tex": barbs}, "k.gem": {"base": SAPPHIRE[2], "ramp": SAPPHIRE, "glow": true, "tex": breathe}}, "boots": {"wing": null, "height": 0.7, "over": _fn2}}, FX])
+	return TS.merge([{"mats": {"zephyr": {"base": PEARL[2], "ramp": PEARL, "shiny": true, "step": 0.15, "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 3.2), 0.45), -1, 0)))}, "zephyrTrim": {"base": GOLD[2], "ramp": GOLD, "shiny": true}, "k.gold": {"base": GOLD[2], "ramp": GOLD, "shiny": true, "tex": sheen(6, 1.5, 1)}, "k.wing": {"base": FEATHER[2], "ramp": FEATHER, "shiny": true, "tex": barbs}, "k.gem": {"base": SAPPHIRE[2], "ramp": SAPPHIRE, "glow": true, "tex": breathe}}, "boots": {"wing": null, "height": 0.7, "over": _fn2}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
 static func seraph_aura(g, x: float, y: float, t: float, layer: String) -> void:

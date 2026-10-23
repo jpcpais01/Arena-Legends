@@ -84,7 +84,7 @@ static func _init_fang():
 		r.dot(t.x(-0.7, 3.2), t.y(-0.7, 3.2), m.call("k.hi"), 3, 5)
 		# A drop falling from the point.
 		r.fill(PixelSdf.union(t.circ(-1.2, -13, 1.1), t.poly([-2.1, -12.6, -1.2, -11.2, -0.3, -12.6])), m.call("k.blood"), {"group": 6, "bevel": 0.8})
-	return {"mats": {"fangTooth": {"base": IVORY[3], "ramp": IVORY}, "fangBlood": {"base": CRIMSON, "ramp": RUBY, "shiny": true}, "k.moon": {"base": MOON_RAMP[2], "ramp": MOON_RAMP, "shiny": true, "tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.div(x, 2)), TX.floor(TX.div(y, 2))), 0.07), -1, 0)))}, "k.bat": {"base": PLUM[1], "ramp": PLUM}, "k.fang": {"base": IVORY[2], "ramp": IVORY, "shiny": true}, "k.silver": {"base": SILVER[2], "ramp": SILVER, "shiny": true}, "k.ruby": {"base": RUBY[2], "glow": true, "ramp": RUBY}, "k.hi": {"base": MOON_HI, "glow": true}, "k.blood": {"base": CRIMSON, "ramp": RUBY, "shiny": true}}, "glow": [MOON_HI, CRIMSON], "icon": _fn0, "proj": {"core": batProj}}
+	return {"mats": {"fangTooth": {"base": IVORY[3], "ramp": IVORY}, "fangBlood": {"base": CRIMSON, "ramp": RUBY, "shiny": true}, "k.moon": {"base": MOON_RAMP[2], "ramp": MOON_RAMP, "shiny": true, "tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(TX.div(x, 2)), TX.floor(TX.div(y, 2))), 0.07), -1, 0)))}, "k.bat": {"base": PLUM[1], "ramp": PLUM}, "k.fang": {"base": IVORY[2], "ramp": IVORY, "shiny": true}, "k.silver": {"base": SILVER[2], "ramp": SILVER, "shiny": true}, "k.ruby": {"base": RUBY[2], "glow": true, "ramp": RUBY}, "k.hi": {"base": MOON_HI, "glow": true}, "k.blood": {"base": CRIMSON, "ramp": RUBY, "shiny": true}}, "glow": [MOON_HI, CRIMSON], "icon": _fn0, "proj": {"core": batProj}}
 # -----------------------------------------------------------------------------
 # The aura
 # -----------------------------------------------------------------------------
@@ -93,20 +93,20 @@ static var BLOODMOON = {"dagger.sanguine": TS.merge([{"weapon": sanguine_kiss}, 
 
 ##  Moonlight sliding along polished silver, one step per frame.
 static func gleam(period: float = 8.0) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1.1), 1, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1.1), 1, 0)))
 
 ##  A heartbeat: bright, softer, bright, dim.
-static func beat(_x: float, _y: float, ph: float):
+static func beat(_x, _y, ph):
 	return TX.pick([1, 0, 1, -1], TX.mod(ph, 4))
 
 ##  Damask: a faint diamond brocade woven into crimson silk.
-static func damask(x: float, y: float, _a2 = null):
+static func damask(x, y, _a2 = null):
 	var u = SkinsKit.wrap___tx(TX.add(x, y), 4)
 	var v = SkinsKit.wrap___tx(TX.sub(x, y), 4)
 	return TX.sel(TX.or_((TX.and_(TX.and_(TX.lt(u, 0.6), TX.gt(v, 1.6)), TX.lt(v, 2.4))), (TX.and_(TX.and_(TX.lt(v, 0.6), TX.gt(u, 1.6)), TX.lt(u, 2.4)))), 1, 0)
 
 ##  Velvet: a soft sheen in long diagonal folds.
-static func velvet(x: float, y: float, _a2 = null):
+static func velvet(x, y, _a2 = null):
 	return (TX.sel(TX.gt(TX.sin(TX.sub(TX.mul(x, 0.5), TX.mul(y, 0.25))), 0.82), 1, 0))
 
 static func silver(tex = null) -> Variant:
@@ -177,7 +177,7 @@ static func sanguine_kiss() -> Variant:
 		var x = _e0[0]
 		var y = _e0[1]
 		blade.append_array([x, y])
-	for _e1 in TS.reverse(TS.arr(BOT)):
+	for _e1 in TS.reverse(TS.arr(BOT).duplicate()):
 		var x_2 = _e1[0]
 		var y_2 = _e1[1]
 		blade.append_array([x_2, y_2])
@@ -197,7 +197,7 @@ static func sanguine_kiss() -> Variant:
 			var x_4 = _e2[0]
 			var y_3 = _e2[1]
 			edge.append_array([x_4, y_3 - 0.4])
-		for _e3 in TS.reverse(TS.arr(BOT)):
+		for _e3 in TS.reverse(TS.arr(BOT).duplicate()):
 			var x_5 = _e3[0]
 			var y_4 = _e3[1]
 			edge.append_array([x_5, y_4 + (0 if x_5 > 15 else 0.55)])
@@ -212,7 +212,7 @@ static func sanguine_kiss() -> Variant:
 		# A bat-wing crossguard, the wings swept toward the blade, a ruby boss between them.
 		SpriteWeaponKit.fill_all(r, [PixelSdf.union(wing(t, 0.8, 0.6, (PI / 2.0) - 0.3, 0.82, -0.82), wing(t, 0.8, -0.6, ((-PI) / 2.0) + 0.3, 0.82, 0.82), t.circ(0.9, 0, 1.15))], m.call("guard"), o, 1)
 		r.dot(t.x(0.9, 0), t.y(0.9, 0), m.call("ruby"), 3, g)
-	return {"tip": 15.4, "mats": {"blade": PixelRaster.material({"base": RED_STEEL[2], "ramp": RED_STEEL, "shiny": true, "tex": gleam(9)}), "edge": silver(null), "groove": PixelRaster.material({"base": RUBY[2], "glow": true, "ramp": [0x3a0610, 0x7a0a1a, 0xc0182a, 0xff6a6a, MOON_HI]}), "guard": silver(), "grip": PixelRaster.material({"base": PLUM[2], "ramp": PLUM, "tex": (func(x_3: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_3, 1.4), 0.45), -1, 0)))}), "pommel": silver(null), "ruby": ruby()}, "draw": _fn4}
+	return {"tip": 15.4, "mats": {"blade": PixelRaster.material({"base": RED_STEEL[2], "ramp": RED_STEEL, "shiny": true, "tex": gleam(9)}), "edge": silver(null), "groove": PixelRaster.material({"base": RUBY[2], "glow": true, "ramp": [0x3a0610, 0x7a0a1a, 0xc0182a, 0xff6a6a, MOON_HI]}), "guard": silver(), "grip": PixelRaster.material({"base": PLUM[2], "ramp": PLUM, "tex": (func(x_3, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_3, 1.4), 0.45), -1, 0)))}), "pommel": silver(null), "ruby": ruby()}, "draw": _fn4}
 
 static func nightwing() -> Variant:
 	# A blackened parrying dagger, silver-edged, whose guard is a bat with its wings spread wide
@@ -238,7 +238,7 @@ static func nightwing() -> Variant:
 		SpriteWeaponKit.fill_all(r, [PixelSdf.union(t.ell(0.6, 0, 1.4, 1.05), t.circ(2.2, 0, 0.95), t.poly([2.4, 0.5, 3.6, 1.2, 2.9, 0.1, 2.9, -0.1, 3.6, -1.2, 2.4, -0.5]))], m.call("body"), o, 0.9)
 		r.dot(t.x(2.5, 0.35), t.y(2.5, 0.35), m.call("eye"), 3, g)
 		r.dot(t.x(2.5, -0.35), t.y(2.5, -0.35), m.call("eye"), 3, g)
-	return {"tip": 14, "mats": {"blade": PixelRaster.material({"base": BLACK[2], "ramp": BLACK, "shiny": true, "tex": gleam(8)}), "edge": silver(null), "fuller": PixelRaster.material({"base": CRIMSON, "ramp": RUBY}), "wing": PixelRaster.material({"base": VELVET[3], "ramp": VELVET}), "bone": silver(null), "body": silver(), "grip": PixelRaster.material({"base": VELVET[2], "ramp": VELVET, "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.4), 0.45), -1, 0)))}), "eye": ruby()}, "draw": _fn0}
+	return {"tip": 14, "mats": {"blade": PixelRaster.material({"base": BLACK[2], "ramp": BLACK, "shiny": true, "tex": gleam(8)}), "edge": silver(null), "fuller": PixelRaster.material({"base": CRIMSON, "ramp": RUBY}), "wing": PixelRaster.material({"base": VELVET[3], "ramp": VELVET}), "bone": silver(null), "body": silver(), "grip": PixelRaster.material({"base": VELVET[2], "ramp": VELVET, "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 1.4), 0.45), -1, 0)))}), "eye": ruby()}, "draw": _fn0}
 
 # -----------------------------------------------------------------------------
 # The tricorn
@@ -246,7 +246,7 @@ static func nightwing() -> Variant:
 static func counts_tricorn() -> Variant:
 	# A black velvet tricorn edged in silver lace, its two points cocked up fore and aft, a crimson ostrich plume
 	# curling back and swaying, and a silver bat brooch with a ruby on a crimson cockade.
-	var barbs = (func(x: float, y: float, _a2 = null): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.sub(TX.mul(x, 1.4), TX.mul(y, 0.7))), 2), 0), -1, 0)))
+	var barbs = (func(x, y, _a2 = null): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.sub(TX.mul(x, 1.4), TX.mul(y, 0.7))), 2), 0), -1, 0)))
 	var _fn2 = func():
 		var _fn1 = func(r, H, m, g: float, sway: float):
 			var s: float = sway * 2.4
@@ -276,7 +276,7 @@ static func counts_tricorn() -> Variant:
 			r.fill(H.circ(0.4, 6.2, 1.7), m.call("h.cockade"), {"group": g, "bevel": 1, "local": H})
 			r.fill(bat_badge(H, 0.4, 6.2, 1.15), m.call("h.brooch"), {"group": g, "bevel": 0.8})
 			r.dot(H.x(0.4, 6.2), H.y(0.4, 6.2), m.call("h.ruby"), 3, g)
-		return ({"face": true, "mats": {"h.felt": PixelRaster.material({"base": 0x5a2a46, "ramp": [0x22101c, 0x3a1a2e, 0x5a2a46, 0x7e3e62, 0xa86088], "tex": velvet}), "h.lace": silver(), "h.plume": PixelRaster.material({"base": 0xc0182a, "ramp": [0x4a0612, 0x7a0a1c, 0xb0162a, 0xe0404a, 0xff9a90], "tex": barbs}), "h.plume2": PixelRaster.material({"base": 0x7a0a1c, "ramp": VELVET, "tex": barbs}), "h.cockade": PixelRaster.material({"base": VELVET[3], "ramp": VELVET, "tex": (func(x_2: float, y_2: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(TX.atan2(y_2, x_2), 2.5), 1), 0.3), -1, 0)))}), "h.brooch": silver(null), "h.ruby": ruby()}, "draw": _fn1})
+		return ({"face": true, "mats": {"h.felt": PixelRaster.material({"base": 0x5a2a46, "ramp": [0x22101c, 0x3a1a2e, 0x5a2a46, 0x7e3e62, 0xa86088], "tex": velvet}), "h.lace": silver(), "h.plume": PixelRaster.material({"base": 0xc0182a, "ramp": [0x4a0612, 0x7a0a1c, 0xb0162a, 0xe0404a, 0xff9a90], "tex": barbs}), "h.plume2": PixelRaster.material({"base": 0x7a0a1c, "ramp": VELVET, "tex": barbs}), "h.cockade": PixelRaster.material({"base": VELVET[3], "ramp": VELVET, "tex": (func(x_2, y_2, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(TX.atan2(y_2, x_2), 2.5), 1), 0.3), -1, 0)))}), "h.brooch": silver(null), "h.ruby": ruby()}, "draw": _fn1})
 	return TS.merge([{"head": _fn2}, FX])
 
 # -----------------------------------------------------------------------------

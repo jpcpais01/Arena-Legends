@@ -92,18 +92,18 @@ static var LIONHEART = {"longsword.lionheart": TS.merge([{"weapon": pride_of_the
 
 ##  Sunlight running along an edge: a bright band sliding one step per frame.
 static func blaze(period: float = 10.0, speed: float = 2.5, w: float = 1.1) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.45)), TX.mul(ph, speed)), period), w), 1, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.45)), TX.mul(ph, speed)), period), w), 1, 0)))
 
 ##  A sunstone swelling and dimming over the loop.
-static func breathe(_x: float, _y: float, ph: float):
+static func breathe(_x, _y, ph):
 	return TX.pick([0, 1, 0, -1], TX.mod(ph, 4))
 
 ##  A mane's locks: strands radiating from the frame origin.
-static func locks(x: float, y: float, _a2 = null):
+static func locks(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(TX.atan2(y, x), 2.6), TX.mul(TX.hypot(x, y), 0.35)), 1), 0.3), -1, 0))
 
 ##  Velvet: a soft nap with a few folds.
-static func velvet(x: float, y: float, _a2 = null):
+static func velvet(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.55), TX.mul(TX.sin(TX.mul(y, 0.7)), 0.6)), 2.6), 0.5), -1, 0))
 
 # -----------------------------------------------------------------------------
@@ -180,7 +180,7 @@ static func pride_of_the_lion() -> Variant:
 			r.dot(t.x(32.2, 0), t.y(32.2, 0), m.call("spark"), 3, g)
 			r.dot(t.x(30.4, 1.4), t.y(30.4, 1.4), m.call("spark"), 3, g)
 			r.dot(t.x(30.4, -1.4), t.y(30.4, -1.4), m.call("spark"), 3, g)
-	return {"tip": 31, "mats": {"blade": PixelRaster.material({"base": STEEL[3], "ramp": STEEL, "shiny": true, "step": 0.15, "tex": (func(x: float, y: float, ph: float): return (TX.sel(TX.gt(TX.abs(y), 1.05), 1, TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, 6.5)), 26), 2.2), 1, 0))))}), "fuller": PixelRaster.material(S["blue"].call((func(x_2: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_2, 3), 0.5), 1, 0))))), "gold": PixelRaster.material(S["gold"].call()), "mane": PixelRaster.material(S["mane"].call()), "face": PixelRaster.material(S["face"].call()), "grip": PixelRaster.material({"base": BLUE[2], "ramp": BLUE, "tex": (func(x_3: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_3, 1.3), 0.4), -1, 0)))}), "wire": PixelRaster.material(S["gold"].call(null)), "sun": PixelRaster.material(S["sun"].call()), "ink": PixelRaster.material(S["ink"].call()), "spark": PixelRaster.material({"base": WHITE, "glow": true})}, "draw": _fn0}
+	return {"tip": 31, "mats": {"blade": PixelRaster.material({"base": STEEL[3], "ramp": STEEL, "shiny": true, "step": 0.15, "tex": (func(x, y, ph): return (TX.sel(TX.gt(TX.abs(y), 1.05), 1, TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, 6.5)), 26), 2.2), 1, 0))))}), "fuller": PixelRaster.material(S["blue"].call((func(x_2, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_2, 3), 0.5), 1, 0))))), "gold": PixelRaster.material(S["gold"].call()), "mane": PixelRaster.material(S["mane"].call()), "face": PixelRaster.material(S["face"].call()), "grip": PixelRaster.material({"base": BLUE[2], "ramp": BLUE, "tex": (func(x_3, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_3, 1.3), 0.4), -1, 0)))}), "wire": PixelRaster.material(S["gold"].call(null)), "sun": PixelRaster.material(S["sun"].call()), "ink": PixelRaster.material(S["ink"].call()), "spark": PixelRaster.material({"base": WHITE, "glow": true})}, "draw": _fn0}
 
 # -----------------------------------------------------------------------------
 # Lion Rampant Pavise
@@ -383,7 +383,7 @@ static func lionheart_plate() -> Variant:
 		var by: float = top_2 - 4.2
 		r_3.fill(star(T_2, bx, by, 2.2, 1.4, 8, PI / 8.0), m_3.call("k.gold"), {"group": c_3["g"], "bevel": 0.7})
 		r_3.fill(T_2.circ(bx, by, 0.95), m_3.call("k.sun"), {"group": c_3["g"]})
-	return TS.merge([{"mats": {"plate": {"base": STEEL[2], "ramp": STEEL, "shiny": true, "step": 0.15, "tex": blaze(11, 2.75, 1)}, "plateDark": S["gold"].call(null), "k.gold": K["gold"], "k.steel": K["steel"], "k.sun": K["sun"], "k.cape": S["velvet"].call(), "k.sash": S["blue"].call((func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.4), 0.4), -1, 0))))}, "chest": {"pauldron": null, "noScarf": true, "trim": "plateDark", "back": _fn0, "shoulder": _fn1, "over": _fn2}}, FX])
+	return TS.merge([{"mats": {"plate": {"base": STEEL[2], "ramp": STEEL, "shiny": true, "step": 0.15, "tex": blaze(11, 2.75, 1)}, "plateDark": S["gold"].call(null), "k.gold": K["gold"], "k.steel": K["steel"], "k.sun": K["sun"], "k.cape": S["velvet"].call(), "k.sash": S["blue"].call((func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.4), 0.4), -1, 0))))}, "chest": {"pauldron": null, "noScarf": true, "trim": "plateDark", "back": _fn0, "shoulder": _fn1, "over": _fn2}}, FX])
 
 # -----------------------------------------------------------------------------
 # Lionheart Cuisses
@@ -414,7 +414,7 @@ static func lionheart_cuisses() -> Variant:
 		var kr: float = c["body"]["kneeR"]
 		r.fill(star(t, 0, kr * 0.35, 1.7, 0.95, 8, ph * (PI / 32.0)), m.call("l.gold"), {"group": (25 if c["far"] else 27), "bevel": 0.5, "toneBias": c["bias"]})
 		r.dot(t.x(0, kr * 0.35), t.y(0, kr * 0.35), m.call("l.sun"), 3, (25 if c["far"] else 27))
-	return TS.merge([{"mats": {"chain": {"base": STEEL[3], "ramp": STEEL, "shiny": true, "step": 0.14, "tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(x, y)), 2), 0), -1, 0)))}, "chainDark": S["gold"].call(null), "chainPlate": S["steel"].call(), "l.plate": S["steel"].call(), "l.gold": S["gold"].call(), "l.blue": S["blue"].call(blaze(9, 2, 1)), "l.sun": S["sun"].call()}, "legs": {"mat": "chain", "trim": null, "knee": "chainPlate", "tasset": null, "rune": null, "wraps": null, "bulk": 0.3, "over": _fn2}}, FX])
+	return TS.merge([{"mats": {"chain": {"base": STEEL[3], "ramp": STEEL, "shiny": true, "step": 0.14, "tex": (func(x, y, _a2 = null): return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.floor(TX.add(x, y)), 2), 0), -1, 0)))}, "chainDark": S["gold"].call(null), "chainPlate": S["steel"].call(), "l.plate": S["steel"].call(), "l.gold": S["gold"].call(), "l.blue": S["blue"].call(blaze(9, 2, 1)), "l.sun": S["sun"].call()}, "legs": {"mat": "chain", "trim": null, "knee": "chainPlate", "tasset": null, "rune": null, "wraps": null, "bulk": 0.3, "over": _fn2}}, FX])
 
 # -----------------------------------------------------------------------------
 # Lionheart Sabatons

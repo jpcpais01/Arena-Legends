@@ -75,15 +75,15 @@ static var AC = {"storm": PixelColor.css(STORM), "hot": PixelColor.css(STORM_HOT
 static var STORMCROW = {"bloodletter.stormcrow": TS.merge([{"weapon": crowbeak_cleaver}, FX]), "grapnel.stormcrow": TS.merge([{"weapon": raven_talon}, FX]), "storm_cloud.stormcrow": murderOfCrows, "magpie_mask.stormcrow": stormcrow_visage(), "grudge_mail.stormcrow": raven_mantle(), "springheel_leggings.stormcrow": corvid_breeches(), "mirage_boots.stormcrow": talon_greaves()}
 
 ##  Barbs down a feather (any space): a darker line now and then.
-static func barbs(x: float, y: float, _a2 = null):
+static func barbs(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(x, 0.8), TX.mul(y, 1.1)), 1.5), 0.35), -1, 0))
 
 ##  A sheen sliding across the feathers.
-static func sheen(x: float, y: float, ph: float):
+static func sheen(x, y, ph):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.6), TX.mul(y, 0.4)), TX.mul(ph, 1.5)), 9), 1), 1, barbs(x, y)))
 
 ##  Small glints on polished silver.
-static func glint(x: float, y: float, _a2 = null):
+static func glint(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.3)), TX.floor(TX.mul(y, 1.3))), 0.05), 1, 0))
 
 ##  A feather in frame F: quill at (x, y), pointing along angle `a`, `len` long, `w` wide, a notch near the tip.
@@ -121,7 +121,7 @@ static func crowbeak_cleaver() -> Variant:
 		var fan = [feather(t, 1, 0.8, 1.9, 4.6, 0.9), feather(t, 1, 0.8, 1.4, 4, 0.8), feather(t, 1, -0.8, -1.9, 4.6, 0.9), feather(t, 1, -0.8, -1.4, 4, 0.8)]
 		SpriteWeaponKit.fill_all(r, fan, m.call("guard"), o, 0.8)
 		SpriteWeaponKit.fill_all(r, [t.rect(1, 0, 0.9, 1.7, 0.4)], m.call("edge"), o, 0.8)
-	return {"tip": 30, "mats": {"blade": PixelRaster.material(S["feather"].call((func(x: float, _y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(x, 0.5), TX.mul(ph, 1.6)), 10), 0.9), 1, 0))))), "edge": PixelRaster.material(S["silver"].call(null)), "bolt": PixelRaster.material(S["storm"].call()), "guard": PixelRaster.material(S["silver"].call()), "grip": PixelRaster.material(S["leather"].call((func(x_2: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(x_2, 1.2), 1.4), 0.4), -1, 0))))), "gem": PixelRaster.material(S["hot"].call())}, "draw": _fn0}
+	return {"tip": 30, "mats": {"blade": PixelRaster.material(S["feather"].call((func(x, _y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(x, 0.5), TX.mul(ph, 1.6)), 10), 0.9), 1, 0))))), "edge": PixelRaster.material(S["silver"].call(null)), "bolt": PixelRaster.material(S["storm"].call()), "guard": PixelRaster.material(S["silver"].call()), "grip": PixelRaster.material(S["leather"].call((func(x_2, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(x_2, 1.2), 1.4), 0.4), -1, 0))))), "gem": PixelRaster.material(S["hot"].call())}, "draw": _fn0}
 
 # -----------------------------------------------------------------------------
 # Raven Talon (grapnel)
@@ -148,7 +148,7 @@ static func raven_talon() -> Variant:
 		SpriteWeaponKit.fill_all(r, toes.map(_fn1), m.call("foot"), o, 0.9)
 		SpriteWeaponKit.fill_all(r, [t.poly([6.4, -0.5, 9.2, -0.6, 8, 0.6]), t.poly([5.4, 2.2, 7.4, 3.8, 6.4, 1.8]), t.poly([5.4, -2.2, 7.4, -3.8, 6.4, -1.8]), t.poly([-0.6, 0.6, -2, 2.6, -0.4, 1.4])], m.call("claw"), o, 0.6)
 		dt(r, t, 3, 0, m.call("gem"), 4, g)
-	return {"tip": 9, "mats": {"foot": PixelRaster.material(S["feather"].call((func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(x, 1.4), 1.3), 0.35), -1, 0))))), "claw": PixelRaster.material(S["silver"].call(null)), "chain": PixelRaster.material(S["silver"].call(null)), "gem": PixelRaster.material(S["storm"].call())}, "draw": _fn2}
+	return {"tip": 9, "mats": {"foot": PixelRaster.material(S["feather"].call((func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(x, 1.4), 1.3), 0.35), -1, 0))))), "claw": PixelRaster.material(S["silver"].call(null)), "chain": PixelRaster.material(S["silver"].call(null)), "gem": PixelRaster.material(S["storm"].call())}, "draw": _fn2}
 
 ##  A crow in flight at (x, y) of F (s its size), wings `flap` up (1) or down (-1), heading +x.
 static func crow(r, F, x: float, y: float, s: float, flap: float, m, g: float, eye: bool = true) -> void:
@@ -205,7 +205,7 @@ static func stormcrow_visage() -> Variant:
 			# Eyes of storm light.
 			var blink: float = (3 if ph_2 == 3 else 4)
 			r.fill(H.poly([1.4, 0.2, 3.6, 0.6, 3.6, -0.4, 1.8, -0.6]), m.call("h.scEye"), {"group": GA, "flat": blink, "noLine": true})
-		return ({"mats": {"h.scFeather": PixelRaster.material(S["feather"].call()), "h.scMask": PixelRaster.material(S["feather"].call((func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.5), TX.mul(y, 0.3)), TX.mul(ph, 1.2)), 8), 0.8), 1, 0))))), "h.scSilver": PixelRaster.material(S["silver"].call()), "h.scEye": PixelRaster.material(S["hot"].call()), "h.scGem": PixelRaster.material(S["storm"].call())}, "hair": true, "draw": _fn1})
+		return ({"mats": {"h.scFeather": PixelRaster.material(S["feather"].call()), "h.scMask": PixelRaster.material(S["feather"].call((func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.5), TX.mul(y, 0.3)), TX.mul(ph, 1.2)), 8), 0.8), 1, 0))))), "h.scSilver": PixelRaster.material(S["silver"].call()), "h.scEye": PixelRaster.material(S["hot"].call()), "h.scGem": PixelRaster.material(S["storm"].call())}, "hair": true, "draw": _fn1})
 	return TS.merge([{"head": _fn2}, FX])
 
 # -----------------------------------------------------------------------------
@@ -263,7 +263,7 @@ static func raven_mantle() -> Variant:
 		if not c_3["far"]:
 			for x_3 in [-1.8, 0, 1.8]:
 				dt(r_3, S2, x_3, (-3.6) + (absf(x_3) * 0.25), m_3.call("k.scSilver"), 4, c_3["g"])
-	return TS.merge([{"mats": {"k.scLeather": S["leather"].call((func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(y, 1.1), TX.mul(x, 0.4)), 2.4), 0.5), -1, 0)))), "k.scFeather": S["feather"].call(), "k.scSilver": S["silver"].call(), "k.scGem": S["storm"].call(), "k.scStrap": S["leather"].call(null)}, "chest": {"torso": "k.scLeather", "sleeve": "k.scLeather", "sleeveLen": 1, "forearm": "k.scSilver", "hands": "k.scStrap", "pauldron": null, "trim": null, "belt": "k.scStrap", "cape": null, "hood": null, "spikes": null, "skirt": 0, "noScarf": true, "back": _fn0, "over": _fn1, "shoulder": _fn2}}, FX])
+	return TS.merge([{"mats": {"k.scLeather": S["leather"].call((func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(y, 1.1), TX.mul(x, 0.4)), 2.4), 0.5), -1, 0)))), "k.scFeather": S["feather"].call(), "k.scSilver": S["silver"].call(), "k.scGem": S["storm"].call(), "k.scStrap": S["leather"].call(null)}, "chest": {"torso": "k.scLeather", "sleeve": "k.scLeather", "sleeveLen": 1, "forearm": "k.scSilver", "hands": "k.scStrap", "pauldron": null, "trim": null, "belt": "k.scStrap", "cape": null, "hood": null, "spikes": null, "skirt": 0, "noScarf": true, "back": _fn0, "over": _fn1, "shoulder": _fn2}}, FX])
 
 # -----------------------------------------------------------------------------
 # Corvid Breeches (springheel leggings)
@@ -295,7 +295,7 @@ static func corvid_breeches() -> Variant:
 		while x_3 < (c_2["len"] - 1.4):
 			r_2.fill(shin.cap(x_3 + 0.5, -w_2, x_3 - 0.5, w_2, 0.4), m_2.call("l.scStrap"), {"group": c_2["g"], "bevel": 0.4, "toneBias": c_2["bias"]})
 			x_3 += 2.2
-	return TS.merge([{"mats": {"l.scCloth": {"base": STORMCLOTH[2], "ramp": STORMCLOTH, "tex": (func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(x, 1.1), 2), 0.4), -1, 0)))}, "l.scFeather": S["feather"].call(), "l.scSilver": S["silver"].call(), "l.scStrap": S["leather"].call(null), "l.scGem": S["storm"].call()}, "legs": {"mat": "l.scCloth", "trim": null, "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.3, "over": _fn0, "shin": _fn1}}, FX])
+	return TS.merge([{"mats": {"l.scCloth": {"base": STORMCLOTH[2], "ramp": STORMCLOTH, "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(x, 1.1), 2), 0.4), -1, 0)))}, "l.scFeather": S["feather"].call(), "l.scSilver": S["silver"].call(), "l.scStrap": S["leather"].call(null), "l.scGem": S["storm"].call()}, "legs": {"mat": "l.scCloth", "trim": null, "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.3, "over": _fn0, "shin": _fn1}}, FX])
 
 # -----------------------------------------------------------------------------
 # Talon Greaves (mirage boots)
@@ -319,7 +319,7 @@ static func talon_greaves() -> Variant:
 		r.fill(PixelSdf.union.callv(TS.arr(f)), m.call("k.scCuff"), TS.merge([o, {"bevel": 0.8}]))
 		if not c["far"]:
 			dt(r, shin, 2.4, w * 0.3, m.call("k.scGem"), 4, c["g"])
-	return TS.merge([{"mats": {"k.scScale": {"base": FEATHER[2], "ramp": FEATHER, "shiny": true, "step": 0.13, "tex": (func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 1.1), TX.mul((TX.band(TX.floor(TX.mul(y, 1.1)), 1)), 0.5)), 1.2), 0.3), -1, 0)))}, "k.scClaw": S["silver"].call(null), "k.scCuff": S["feather"].call(), "k.scGem": S["storm"].call()}, "boots": {"mat": "k.scScale", "height": 0.78, "bulk": 0.35, "trim": null, "wing": null, "knee": null, "over": _fn1}}, FX])
+	return TS.merge([{"mats": {"k.scScale": {"base": FEATHER[2], "ramp": FEATHER, "shiny": true, "step": 0.13, "tex": (func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 1.1), TX.mul((TX.band(TX.floor(TX.mul(y, 1.1)), 1)), 0.5)), 1.2), 0.3), -1, 0)))}, "k.scClaw": S["silver"].call(null), "k.scCuff": S["feather"].call(), "k.scGem": S["storm"].call()}, "boots": {"mat": "k.scScale", "height": 0.78, "bulk": 0.35, "trim": null, "wing": null, "knee": null, "over": _fn1}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
 static func stormcrow_aura(g, x: float, y: float, t: float, layer: String) -> void:

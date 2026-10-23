@@ -73,7 +73,7 @@ static var JADEDRAGON = {"spear.guandao": TS.merge([{"weapon": guandao}, FX]), "
 
 ##  Lamellar: small lacquered scales in staggered rows, dark seams between.
 static func lamellar(px: float = 2.4, py: float = 2.0) -> Variant:
-	var _fn3 = func(x: float, y: float, _a2 = null):
+	var _fn3 = func(x, y, _a2 = null):
 		var row = TX.floor(TX.div(y, py))
 		var _c0 = TX.lt(SkinsKit.wrap___tx(y, py), 0.45)
 		var _r1 = -1
@@ -83,17 +83,17 @@ static func lamellar(px: float = 2.4, py: float = 2.0) -> Variant:
 
 ##  A gleam sliding along gold, one step per frame.
 static func gleam(period: float = 8.0) -> Variant:
-	return (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1.1), 1, 0)))
+	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1.1), 1, 0)))
 
 ##  Dragon scale on lacquer: arcs in rows.
-static func scales(x: float, y: float, _a2 = null):
+static func scales(x, y, _a2 = null):
 	var row = TX.floor(TX.div(y, 1.8))
 	var u = TX.sub(SkinsKit.wrap___tx(TX.add(x, TX.mul((TX.mod(row, 2)), 1.3)), 2.6), 1.3)
 	var v = SkinsKit.wrap___tx(y, 1.8)
 	return TX.sel(TX.lt(TX.add(TX.mul(TX.mul(u, u), 0.5), TX.mul((TX.sub(v, 1.8)), (TX.sub(v, 1.8)))), 0.55), 0, -1)
 
 ##  Jade light breathing over the loop.
-static func breathe(_x: float, _y: float, ph: float):
+static func breathe(_x, _y, ph):
 	return TX.pick([0, 1, 0, -1], TX.mod(ph, 4))
 
 static func lacquer(tex = null) -> Variant:
@@ -164,7 +164,7 @@ static func guandao() -> Variant:
 			var cy = _e0[5]
 			r.line(t.x(ax, ay), t.y(ax, ay), t.x(bx, by), t.y(bx, by), m.call("band"), 3, g)
 			r.line(t.x(bx, by), t.y(bx, by), t.x(cx, cy), t.y(cx, cy), m.call("band"), 2, g)
-	return {"tip": 46, "grip2": 13, "mats": {"shaft": PixelRaster.material(lacquer()), "band": PixelRaster.material(gold()), "head": PixelRaster.material(gold(gleam(7))), "blade": PixelRaster.material({"base": STEEL[2], "ramp": STEEL, "shiny": true, "step": 0.15, "tex": (func(x: float, y: float, ph: float): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.sub(TX.mul(x, 0.8), TX.mul(y, 0.6)), TX.mul(ph, 2.2)), 9), 1), 1, 0)))}), "mane": PixelRaster.material(crimson((func(x_2: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_2, 1.6), 0.4), -1, 0))))), "jade": PixelRaster.material(jade()), "eye": PixelRaster.material(jade_lit())}, "draw": _fn1}
+	return {"tip": 46, "grip2": 13, "mats": {"shaft": PixelRaster.material(lacquer()), "band": PixelRaster.material(gold()), "head": PixelRaster.material(gold(gleam(7))), "blade": PixelRaster.material({"base": STEEL[2], "ramp": STEEL, "shiny": true, "step": 0.15, "tex": (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.sub(TX.mul(x, 0.8), TX.mul(y, 0.6)), TX.mul(ph, 2.2)), 9), 1), 1, 0)))}), "mane": PixelRaster.material(crimson((func(x_2, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x_2, 1.6), 0.4), -1, 0))))), "jade": PixelRaster.material(jade()), "eye": PixelRaster.material(jade_lit())}, "draw": _fn1}
 
 # -----------------------------------------------------------------------------
 # Cloudpiercer Repeater
@@ -283,7 +283,7 @@ static func dragon_emperor_helm() -> Variant:
 			# Near horn, sweeping back from the temple.
 			horn.call([[0, 6, 1.1], [-3.6, 8, 0.9], [-7.4, 9.2, 0.65], [-10.6, 11.4, 0.4], [-12, 13.2, 0.2]], [-6.6, 9, -7.2, 12.2], 0, 53)
 			r.fill(H.rect(-1.2, 6.6, 0.5, 1.2, 0.2), m.call("h.gold"), {"group": 53, "bevel": 0.6})
-		return ({"mats": {"h.lacquer": PixelRaster.material(lacquer(scales)), "h.gold": PixelRaster.material(gold(gleam(7))), "h.jade": PixelRaster.material(jade()), "h.eye": PixelRaster.material(jade_lit()), "h.mane": PixelRaster.material(crimson((func(x: float, y: float, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.6), TX.mul(y, 0.9)), 1.8), 0.45), -1, 0))))), "h.tooth": PixelRaster.material({"base": 0xf4ecd8})}, "draw": _fn2})
+		return ({"mats": {"h.lacquer": PixelRaster.material(lacquer(scales)), "h.gold": PixelRaster.material(gold(gleam(7))), "h.jade": PixelRaster.material(jade()), "h.eye": PixelRaster.material(jade_lit()), "h.mane": PixelRaster.material(crimson((func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.6), TX.mul(y, 0.9)), 1.8), 0.45), -1, 0))))), "h.tooth": PixelRaster.material({"base": 0xf4ecd8})}, "draw": _fn2})
 	return TS.merge([{"head": _fn3}, FX])
 
 # -----------------------------------------------------------------------------
@@ -331,7 +331,7 @@ static func jade_lamellar() -> Variant:
 		r_3.dot(T_2.x(x_2 - 0.6, y_2 + 0.8), T_2.y(x_2 - 0.6, y_2 + 0.8), m_3.call("k.eye"), 4, c_3["g"])
 		# A gold lacing cord across the waist.
 		r_3.line(T_2.x(-3, 1.6), T_2.y(-3, 1.6), T_2.x(x_2 + 1.6, 1.6), T_2.y(x_2 + 1.6, 1.6), m_3.call("k.gold"), 2, c_3["g"])
-	return TS.merge([{"mats": {"plate": lacquer(lamellar()), "plateDark": gold(), "k.gold": gold(gleam(6)), "k.lam": lacquer(lamellar(2.2, 1.8)), "k.jade": jade(), "k.eye": jade_lit(), "k.cape": crimson((func(x: float, y: float, _a2 = null): return (TX.sel(TX.gt(TX.sin(TX.add(TX.mul(x, 0.7), TX.mul(y, 0.2))), 0.75), -1, 0)))), "k.hem": gold(null), "k.mane": crimson()}, "chest": {"pauldron": null, "spikes": null, "back": _fn0, "shoulder": _fn1, "over": _fn2}}, FX])
+	return TS.merge([{"mats": {"plate": lacquer(lamellar()), "plateDark": gold(), "k.gold": gold(gleam(6)), "k.lam": lacquer(lamellar(2.2, 1.8)), "k.jade": jade(), "k.eye": jade_lit(), "k.cape": crimson((func(x, y, _a2 = null): return (TX.sel(TX.gt(TX.sin(TX.add(TX.mul(x, 0.7), TX.mul(y, 0.2))), 0.75), -1, 0)))), "k.hem": gold(null), "k.mane": crimson()}, "chest": {"pauldron": null, "spikes": null, "back": _fn0, "shoulder": _fn1, "over": _fn2}}, FX])
 
 # -----------------------------------------------------------------------------
 # Jade Dragon Tassets
@@ -392,7 +392,7 @@ static func cloudstep() -> Variant:
 			r.fill(back.circ(2.6 + (u * 2), 0.8 + (u * 0.4), 0.5 + (u * 0.4)), m.call("k.cloud"), {"group": c["g"], "bevel": 0.6, "noLine": true})
 		if ph == 3:
 			r.dot(back.x(5, 2.2), back.y(5, 2.2), m.call("k.cloud"), 2, c["g"])
-	return TS.merge([{"mats": {"boot": silk((func(x: float, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.6), 0.4), -1, 0)))), "bootDark": gold(), "k.gold": gold(gleam(6)), "k.cloud": {"base": CLOUD[2], "ramp": CLOUD}, "k.jade": jade_lit()}, "boots": {"height": 0.72, "bulk": 0.32, "trim": "bootDark", "over": _fn0}}, FX])
+	return TS.merge([{"mats": {"boot": silk((func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2.6), 0.4), -1, 0)))), "bootDark": gold(), "k.gold": gold(gleam(6)), "k.cloud": {"base": CLOUD[2], "ramp": CLOUD}, "k.jade": jade_lit()}, "boots": {"height": 0.72, "bulk": 0.32, "trim": "bootDark", "over": _fn0}}, FX])
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
 static func jadedragon_aura(g, x: float, y: float, t: float, layer: String) -> void:

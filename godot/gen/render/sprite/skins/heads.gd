@@ -2,7 +2,7 @@
 class_name SkinsHeads
 
 static func horned_warhelm() -> Variant:
-	var _fn0 = func(r, H, m, g: float):
+	var _fn0 = func(r, H, m, g: float, _a4 = null):
 		# Far horn first, then the dome, then the near horn sweeping up and back.
 		r.fill(H.poly([3, 4.8, 4.8, 9.4, 3, 12.8, 2.8, 8.8, 1.6, 5.2]), m.call("h.horn"), {"group": g, "bevel": 1.2, "toneBias": -1})
 		var dome = SpriteDraw.hair_cap(H, 1.2, -3.6, 1.3)
@@ -16,7 +16,7 @@ static func horned_warhelm() -> Variant:
 	return {"mats": {"h.helm": PixelRaster.material({"base": 0x5a6274, "shiny": true, "step": 0.15}), "h.dark": PixelRaster.material({"base": 0x23262f}), "h.trim": PixelRaster.material({"base": 0xe0b040, "shiny": true}), "h.horn": PixelRaster.material({"base": 0xece0c4, "shiny": true, "step": 0.13})}, "draw": _fn0}
 
 static func celestial_crown() -> Variant:
-	var _fn1 = func(r, H, m, g: float):
+	var _fn1 = func(r, H, m, g: float, _a4 = null):
 		# A halo floating over the head, a band with star points, stars circling the halo.
 		var halo = PixelSdf.subtract(H.ell(0, 12.4, 6.6, 1.9), H.ell(0, 12.4, 5.2, 1))
 		r.fill(halo, m.call("h.halo"), {"group": g})
@@ -37,7 +37,7 @@ static func celestial_crown() -> Variant:
 
 static func oni_mask() -> Variant:
 	# A blue oni: long gold horns, heavy brows, burning eyes and fangs.
-	var _fn0 = func(r, H, m, g: float):
+	var _fn0 = func(r, H, m, g: float, _a4 = null):
 		r.fill(H.poly([5.6, 3, 7.4, 8, 5.8, 11.6, 6, 7.6, 4.4, 3.2]), m.call("h.horn"), {"group": g, "bevel": 1.2, "toneBias": -1})
 		r.fill(H.poly([0.6, 3.8, 7.4, 3.2, 8, -1.4, 6.6, -5.6, 1.2, -5.2, 0.4, -1]), m.call("h.mask"), {"group": g, "bevel": 2})
 		r.fill(H.poly([1.6, 2.2, 4.4, 2.8, 7.4, 1.6, 7.2, 0.8, 4.2, 1.6, 1.8, 1.2]), m.call("h.brow"), {"group": g, "flat": 1, "noLine": true})
@@ -51,7 +51,7 @@ static func oni_mask() -> Variant:
 
 static func raven_hood() -> Variant:
 	# A feathered black hood with a long raven beak and violet eyes.
-	var _fn0 = func(r, H, m, g: float):
+	var _fn0 = func(r, H, m, g: float, _a4 = null):
 		var feathers = []
 		for k in range(4):
 			var y: float = 6 - (k * 3.2)
@@ -68,7 +68,7 @@ static func raven_hood() -> Variant:
 
 static func eternity_circlet() -> Variant:
 	# A gold circlet with a clock-face jewel, and a floating dial behind the head whose hands turn.
-	var _fn0 = func(r, H, m, g: float):
+	var _fn0 = func(r, H, m, g: float, _a4 = null):
 		# The dial floats behind and above the head; it is drawn first so the head covers its lower part.
 		var cx: float = -4.4
 		var cy: float = 7.6
@@ -105,7 +105,7 @@ static func phoenix_band() -> Variant:
 # -----------------------------------------------------------------------------
 static func hourglass_crown() -> Variant:
 	# A gold circlet carrying a little hourglass on the brow, with a cog turning behind.
-	var _fn0 = func(r, H, m, g: float):
+	var _fn0 = func(r, H, m, g: float, _a4 = null):
 		# Cog behind the head.
 		var teeth = [H.circ(-4.2, 6.2, 2.2)]
 		for k in range(8):
@@ -124,7 +124,7 @@ static func hourglass_crown() -> Variant:
 
 static func thunderbird_crest() -> Variant:
 	# A storm-blue thunderbird spreading its wings over the head, a lightning bolt down each wing.
-	var _fn0 = func(r, H, m, g: float):
+	var _fn0 = func(r, H, m, g: float, _a4 = null):
 		# Far wing, then the band, the bird's head over the brow, and the near wing sweeping back.
 		r.fill(H.poly([-0.4, 6, 1.6, 10.4, -1.6, 13.4, -3.2, 11.4, -6, 12.8, -5.6, 10, -2.8, 7]), m.call("h.wing"), {"group": g, "bevel": 1.2, "toneBias": -1, "local": H})
 		r.fill(H.cap(-5.6, 4.2, 5.4, 5, 0.9), m.call("h.trim"), {"group": g, "bevel": 1})
@@ -141,7 +141,7 @@ static func thunderbird_crest() -> Variant:
 
 static func musketeer_hat() -> Variant:
 	# A wide-brimmed felt hat with a gold band and a long plume that streams behind.
-	var barbs = (func(x: float, y: float, _a2 = null): return (TX.sel(TX.eq(TX.mod((TX.add((TX.mod(TX.floor(TX.sub(TX.mul(x, 1.3), TX.mul(y, 0.6))), 2)), 2)), 2), 0), -1, 0)))
+	var barbs = (func(x, y, _a2 = null): return (TX.sel(TX.eq(TX.mod((TX.add((TX.mod(TX.floor(TX.sub(TX.mul(x, 1.3), TX.mul(y, 0.6))), 2)), 2)), 2), 0), -1, 0)))
 	var _fn1 = func(r, H, m, g: float, sway: float):
 		var s: float = sway * 2.4
 		var _fn0 = func(pts, mat: float, bias: float = 0.0):
@@ -161,14 +161,14 @@ static func musketeer_hat() -> Variant:
 
 static func bloodfury_visage() -> Variant:
 	# A black-and-crimson demon mask: ram horns, a fanged maw, and blood-red veins pulsing outward.
-	var _fn3 = func(x: float, y: float, ph: float):
+	var _fn3 = func(x, y, ph):
 		var v = TX.add(TX.sin(TX.add(TX.mul(x, 0.9), TX.mul(TX.sin(TX.mul(y, 1.2)), 2))), TX.mul(TX.sin(TX.sub(TX.mul(y, 0.8), TX.mul(x, 0.3))), 0.6))
 		var _c0 = TX.ge(TX.abs(v), 0.28)
 		var _r1 = 0
 		var _r2 = TX.sel(TX.lt(TX.mod((TX.add((TX.mod(TX.floor(TX.sub(TX.hypot(TX.sub(x, 4), y), TX.mul(ph, 1.5))), 6)), 6)), 6), 3), 4, 1)
 		return TX.sel(_c0, _r1, _r2)
 	var pulse = _fn3
-	var _fn4 = func(r, H, m, g: float):
+	var _fn4 = func(r, H, m, g: float, _a4 = null):
 		var lick: float = ([0, 1, 0.4, 1.4])[fmod(r.phase, 4)]
 		# Far horn, mask, then the near horn curling back over the head, with flames at the tips.
 		r.fill(H.poly([5.2, 3, 7.6, 6.8, 6.4, 10.4, 5.4, 8.4, 5.8, 6, 4, 3.2]), m.call("h.horn"), {"group": g, "bevel": 1.2, "toneBias": -1, "local": H})
@@ -183,12 +183,12 @@ static func bloodfury_visage() -> Variant:
 		r.fill(H.poly([1.2, 3.6, -1, 7.4, -4.4, 9.2, -7.4, 8, -8.4, 5.4, -6.2, 6.6, -3.8, 6.8, -1.4, 5.4, -0.4, 3.4]), m.call("h.horn"), {"group": g, "bevel": 1.4, "local": H})
 		r.fill(H.poly([-7.6, 8, (-9.8) - (lick * 0.4), 10.6 + lick, -9.4, 8, -10.6, 7.4 + (lick * 0.3), -8.4, 5.6]), m.call("h.flame"), {"group": g})
 		r.fill(H.poly([6.4, 10.2, 6.8 + (lick * 0.3), 12.6 + lick, 7.6, 10.4]), m.call("h.flame"), {"group": g})
-	return {"mats": {"h.mask": PixelRaster.material({"base": 0x2a1418, "ramp": [0x120608, 0x1e0a0e, 0x2e1218, 0x4a1c24, 0xff3a3a], "tex": pulse}), "h.horn": PixelRaster.material({"base": 0x3a2a2e, "shiny": true, "tex": (func(x_2: float, _a1 = null, _a2 = null): return (TX.sel(TX.eq(TX.mod((TX.add((TX.mod(TX.floor(TX.mul(x_2, 1.2)), 2)), 2)), 2), 0), 1, 0)))}), "h.fang": PixelRaster.material({"base": 0xf2ead8, "shiny": true}), "h.eye": PixelRaster.material({"base": 0xff4030, "glow": true}), "h.flame": PixelRaster.material({"base": 0xff5a2a, "glow": true})}, "draw": _fn4}
+	return {"mats": {"h.mask": PixelRaster.material({"base": 0x2a1418, "ramp": [0x120608, 0x1e0a0e, 0x2e1218, 0x4a1c24, 0xff3a3a], "tex": pulse}), "h.horn": PixelRaster.material({"base": 0x3a2a2e, "shiny": true, "tex": (func(x_2, _a1 = null, _a2 = null): return (TX.sel(TX.eq(TX.mod((TX.add((TX.mod(TX.floor(TX.mul(x_2, 1.2)), 2)), 2)), 2), 0), 1, 0)))}), "h.fang": PixelRaster.material({"base": 0xf2ead8, "shiny": true}), "h.eye": PixelRaster.material({"base": 0xff4030, "glow": true}), "h.flame": PixelRaster.material({"base": 0xff5a2a, "glow": true})}, "draw": _fn4}
 
 static func seraph_helm() -> Variant:
 	# A white-gold great helm with a burning visor, two feathered wings that beat slowly, and a halo.
-	var feathers = (func(x: float, y: float, _a2 = null): return (TX.sel(TX.eq(TX.mod((TX.add((TX.mod(TX.floor(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.5))), 2)), 2)), 2), 0), -1, 0)))
-	var _fn1 = func(r, H, m, g: float):
+	var feathers = (func(x, y, _a2 = null): return (TX.sel(TX.eq(TX.mod((TX.add((TX.mod(TX.floor(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.5))), 2)), 2)), 2), 0), -1, 0)))
+	var _fn1 = func(r, H, m, g: float, _a4 = null):
 		var beat: float = ([0, 0.7, 1.2, 0.7])[fmod(r.phase, 4)]
 		var _fn0 = func(bias: float, dx: float):
 			r.fill(H.poly([(-2) + dx, 3, (-6) + dx, 6 + (beat * 0.5), (-11.4) + dx, 10.4 + beat, (-10.4) + dx, 8.2 + beat, (-12.6) + dx, 7.6 + (beat * 0.8), (-10.2) + dx, 6 + (beat * 0.6), (-11.6) + dx, 4.8 + (beat * 0.4), (-8) + dx, 3.8, (-4) + dx, 1.4]), m.call("h.wing"), {"group": g, "bevel": 1.4, "toneBias": bias, "local": H})

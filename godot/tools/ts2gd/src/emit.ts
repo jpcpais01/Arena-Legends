@@ -549,7 +549,7 @@ export class Converter {
         optionalSeen = true;
         const init = unwrap(p.initializer);
         if (isLiteralPrimitive(init) && !blank) {
-          const h = this.hint(t);
+          const h = this.scope.builder ? "" : this.hint(t);
           let v = this.expr(init);
           if (h === 'float' && /^-?\d+$/.test(v)) v += '.0';
           if (h === 'float' && sym) this.floats.add(sym);
@@ -564,7 +564,7 @@ export class Converter {
         optionalSeen = true;
         out.push(`${name} = null`);
       } else {
-        const h = this.hint(t);
+        const h = this.scope.builder ? "" : this.hint(t);
         if (h === 'float' && sym) this.floats.add(sym);
         out.push(`${name}${h ? ': ' + h : ''}`);
       }
@@ -610,14 +610,14 @@ export class Converter {
 
   /** Arrow function or function expression as a GDScript lambda (hoisted when multi-line). */
   private lambda(fn: ts.ArrowFunction | ts.FunctionExpression | ts.MethodDeclaration): string {
-    const builder = this.texFns.has(fn) || (this.scope.builder && false);
+    const builder = this.texFns.has(fn) || this.scope.builder;
     const outer = this.scope;
     const sc = this.scope = new Scope(outer, builder, outer.cls, outer.isStatic, true);
     const outerDeclared = this.declared;
     if (!this.declared) this.declared = new Set();
     const prelude: Lines = [];
     let params = this.params(fn.parameters, TAB, prelude);
-    const want = Math.max(builder ? 3 : 0, ts.isMethodDeclaration(fn) ? 0 : this.contextArity(fn));
+    const want = Math.max(builder ? 3 : 0, ts.isMethodDeclaration(fn) ? this.methodArity(fn) : this.contextArity(fn));
     for (let k = fn.parameters.length; k < want; k++) params += (params ? ', ' : '') + `_a${k} = null`;
     let body: Lines;
     if (fn.body && ts.isBlock(fn.body)) body = [...prelude, ...this.block(fn.body.statements, TAB)];
@@ -894,6 +894,21 @@ export class Converter {
     const callee = unwrap(e.expression);
     const chain = ts.isOptionalChain(e) || (ts.isPropertyAccessExpression(callee) && ts.isOptionalChain(callee));
     if (!chain) return null;
+    if (ts.isOptionalChain(e) && this.deepestLink(e) !== e && this.deepestLink(e) !== callee) {
+      // a?.b.c(): every `?.` link becomes a guard, the call runs on plain reads.
+      const guards: string[] = [];
+      const undo: ts.Node[] = [];
+      for (let l = this.deepestLink(e); l; l = this.deepestLink(e)) {
+        const o = this.expr(l.expression);
+        guards.push(`${o} != null`);
+        this.noOpt.add(l);
+        this.subst.set(l.expression, o);
+        undo.push(l);
+      }
+      const call = this.expr(e);
+      for (const l of undo) { this.noOpt.delete(l); this.subst.delete(l.expression); }
+      return { guard: guards.join(' and '), call };
+    }
     if (e.questionDotToken) {
       const f = this.expr(callee);
       return { guard: `${f} != null`, call: this.callWith(e, f) };
@@ -1277,7 +1292,52 @@ export class Converter {
     return `${paren(v)} != null`;
   }
 
+  /** Links of an optional chain already guarded by an enclosing `(null if o == null else ...)`. */
+  private noOpt = new Set<ts.Node>();
+  /** Sub-expressions already emitted (chain roots), by node. */
+  private subst = new Map<ts.Node, string>();
+
+  /** The innermost `?.` link of the chain ending at `e` that is still unguarded. */
+  private deepestLink(e: ts.Expression): (ts.PropertyAccessExpression | ts.ElementAccessExpression | ts.CallExpression) | null {
+    let n: ts.Expression = e;
+    let deepest: (ts.PropertyAccessExpression | ts.ElementAccessExpression | ts.CallExpression) | null = null;
+    while (ts.isOptionalChain(n) || ts.isNonNullExpression(n)) {
+      if (ts.isNonNullExpression(n)) { n = n.expression; continue; }
+      const l = n as ts.PropertyAccessExpression | ts.ElementAccessExpression | ts.CallExpression;
+      if (l.questionDotToken && !this.noOpt.has(l)) deepest = l;
+      n = l.expression;
+    }
+    return deepest;
+  }
+
+  /**
+   * `a?.b.c`: JS short-circuits the whole chain when `a` is nullish, so the
+   * guard wraps every link after the `?.`, not just the next one.
+   */
+  private chainExpr(e: ts.Expression): string | null {
+    const l = this.deepestLink(e);
+    if (!l || l === e) return null;
+    let o = this.expr(l.expression);
+    if (!/^[\w.]+$/.test(o)) {
+      const t = this.scope.tmp('q');
+      this.scope.pre.push(`var ${t} = ${o}`);
+      o = t;
+    }
+    this.noOpt.add(l);
+    this.subst.set(l.expression, o);
+    const inner = this.expr(e);
+    this.noOpt.delete(l);
+    this.subst.delete(l.expression);
+    return `(null if ${o} == null else ${inner})`;
+  }
+
   expr(e: ts.Expression): string {
+    const sub = this.subst.get(e);
+    if (sub !== undefined) return sub;
+    if (ts.isOptionalChain(e) && !(ts.isOptionalChain(e.parent) && (e.parent as ts.PropertyAccessExpression).expression === e)) {
+      const c = this.chainExpr(e);
+      if (c !== null) return c;
+    }
     const k = e.kind;
     const B = this.scope.builder;
     switch (k) {
@@ -1320,6 +1380,8 @@ export class Converter {
         else cur.push(this.expr(el));
       }
       if (cur.length || !segs.length) segs.push(`[${cur.join(', ')}]`);
+      // [...xs] is a copy (TS.arr hands back the array itself).
+      if (segs.length === 1 && segs[0].startsWith('TS.arr(')) return `${segs[0]}.duplicate()`;
       return segs.length === 1 ? segs[0] : `(${segs.join(' + ')})`;
     }
     if (ts.isObjectLiteralExpression(e)) return this.objectLit(e);
@@ -1698,7 +1760,7 @@ export class Converter {
     }
     const objT = this.typeOf(obj);
     const o = this.expr(obj);
-    const optional = !!e.questionDotToken;
+    const optional = !!e.questionDotToken && !this.noOpt.has(e);
     let read: string;
     if (name === 'length' && (this.isArrayType(objT) || this.isString(objT))) read = this.isString(objT) ? `${paren(o)}.length()` : `${paren(o)}.size()`;
     else if (name === 'size' && (this.isMapType(objT) || this.isSetType(objT))) read = `${paren(o)}.size()`;
@@ -1758,7 +1820,7 @@ export class Converter {
     else read = `${paren(o)}.get(${k})`;
     // Plain array reads by an int index don't need the bounds-safe helper.
     if (this.isArrayType(objT) && this.isTupleOrSafe(e)) read = `${paren(o)}[${k}]`;
-    if (e.questionDotToken) return `(null if ${o} == null else ${read})`;
+    if (e.questionDotToken && !this.noOpt.has(e)) return `(null if ${o} == null else ${read})`;
     return read;
   }
 
@@ -1825,8 +1887,10 @@ export class Converter {
     const callee = unwrap(e.expression);
     const args = e.arguments;
     // Optional call or member: guard.
-    if (!ignoreOptional && (e.questionDotToken || (ts.isPropertyAccessExpression(callee) && callee.questionDotToken))) {
-      if (e.questionDotToken) {
+    const optCall = !!e.questionDotToken && !this.noOpt.has(e);
+    const optMember = ts.isPropertyAccessExpression(callee) && !!callee.questionDotToken && !this.noOpt.has(callee);
+    if (!ignoreOptional && (optCall || optMember)) {
+      if (optCall) {
         const f = this.expr(callee);
         return `(null if ${f} == null else ${this.callWith(e, f)})`;
       }
@@ -1899,6 +1963,22 @@ export class Converter {
       return `${name}(${args.slice(0, d.parameters.length).map((a) => this.expr(a)).join(', ')})`;
     }
     return `${name}(${this.argList(args)})`;
+  }
+
+  /** contextArity for an object literal method (`draw(r, H) { ... }` in a typed literal). */
+  private methodArity(fn: ts.MethodDeclaration): number {
+    if (!ts.isObjectLiteralExpression(fn.parent)) return 0;
+    let t: ts.Type | undefined;
+    try { t = this.checker.getContextualType(fn.parent); } catch { t = undefined; }
+    if (!t) return 0;
+    let max = 0;
+    for (const part of t.isUnion() ? t.types : [t]) {
+      const prop = part.getProperty(propName(fn.name));
+      if (!prop) continue;
+      const pt = this.checker.getNonNullableType(this.checker.getTypeOfSymbolAtLocation(prop, fn));
+      for (const sig of pt.getCallSignatures()) max = Math.max(max, sig.parameters.length);
+    }
+    return max;
   }
 
   /** Parameter count a function value must accept where it is passed (JS callers may pass more than it declares). */
