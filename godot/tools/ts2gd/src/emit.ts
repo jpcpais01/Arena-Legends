@@ -1248,6 +1248,16 @@ export class Converter {
     const init = s.initializer;
     const decl = ts.isVariableDeclarationList(init) ? init.declarations[0] : null;
     const pat = decl?.name;
+    // Identity-keyed maps and sets keep [key, value] pairs (TS.id_set): sets iterate their keys, maps the pairs.
+    if ((this.isSetType(t) || this.isMapType(t)) && this.objectKeyed(t)) {
+      const iter = this.isSetType(t) ? `TS.id_keys(${this.expr(src)})` : `${this.expr(src)}.values()`;
+      if (pat && !ts.isIdentifier(pat)) {
+        const tv = this.scope.tmp('e');
+        return [`${ind}for ${tv} in ${iter}:`, ...this.destructure(pat, tv, ind + TAB), ...this.body(s.statement, ind + TAB)];
+      }
+      const v = pat ? this.declName(pat as ts.Identifier) : this.expr(init as ts.Expression);
+      return [`${ind}for ${v} in ${iter}:`, ...this.body(s.statement, ind + TAB)];
+    }
     // for (const [k, v] of Object.entries(o)) / of map
     const entries = ts.isCallExpression(src) && ts.isPropertyAccessExpression(src.expression) && ts.isIdentifier(src.expression.expression) &&
       src.expression.expression.text === 'Object' && src.expression.name.text === 'entries';
@@ -2435,6 +2445,7 @@ export class Converter {
         case 'replace': return `TS.replace(${o()}, ${a(0)}, ${a(1)})`;
         case 'replaceAll': return `${o()}.replace(${a(0)}, ${a(1)})`;
         case 'toString': return o();
+        case 'localeCompare': return `${o()}.naturalnocasecmp_to(${a(0)})`;
       }
     }
     if ((this.isMapType(t) || this.isSetType(t)) && this.objectKeyed(t)) {

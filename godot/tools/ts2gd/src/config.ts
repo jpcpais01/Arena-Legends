@@ -52,6 +52,10 @@ export const CONFIG: Config = {
     'ui/heroLines',
     'ui/entranceUi',
     'ui/finaleUi',
+    'character/shop',
+    'character/promo',
+    'ui/chestFx',
+    'ui/forgeFx',
   ],
   manual: {
     'render/pixel/raster': { cls: 'PixelRaster' },
@@ -59,6 +63,8 @@ export const CONFIG: Config = {
     'render/sprite/bank': { cls: 'SpriteBankLib' },
     'render/glfx': { cls: 'GlFxLib' },
     'audio/sfx': { cls: 'Sfx' },
+    'ui/sceneGl': { cls: 'SceneGlLib' },
+    'account/account': { cls: 'AccountLib' },
   },
   skip: {
     'render/sprite/draw': ['blendShapes', 'drawSmear', 'drawRing', 'hairCap', 'above'],
@@ -68,6 +74,9 @@ export const CONFIG: Config = {
     'render/sprite/skins/corsair': ['along'],
     'render/arena': ['ArenaView.castShafts'],
     'character/profile': ['cleanName'],
+    // Local time and base 36 by hand (src/patches/character).
+    'character/shop': ['shopDay', 'msToRotation'],
+    'character/promo': ['hash'],
     // Hand-tuned in src/patches (per-pixel hot paths).
     'render/pixel/paint': ['bayer', 'Pix.set', 'Pix.get', 'Pix.has'],
     'render/pixel/color': ['rgbOf', 'pack', 'unpackHex', 'mix'],
@@ -83,6 +92,9 @@ export const CONFIG: Config = {
     'render/backdrops': ['backdropURL', 'applyBackdrop'],
     // Glyph grids only; the UI draws them (src/ui/glyphs.gd).
     'ui/icons': ['path', 'icon'],
+    // The shop scenes: laid out from Godot rects and run by the screen's frame (src/patches/ui).
+    'ui/chestFx': ['ChestFx.resize', 'ChestFx.anchor', 'ChestFx.pointOf', 'ChestFx.start', 'ChestFx.stop', 'ChestFx.drawGlint', 'ChestFx.setHalo', 'ChestFx.glowAt'],
+    'ui/forgeFx': ['ForgeFx.resize', 'ForgeFx.anchor', 'ForgeFx.pointOf', 'ForgeFx.start', 'ForgeFx.stop', 'ForgeFx.setHalo'],
   },
   rename: {
     'render/arena': { 'ArenaView.light': 'light__web' },

@@ -11,6 +11,8 @@ class_name UI
 static var dp := 1.0
 static var rem := 14.0
 static var px := 3
+## The screen's height in CSS pixels (for the web's height media queries).
+static var css_h := 393.0
 
 const BG := Color("#0f0b18")
 const PANEL := Color("#1d1630")
@@ -49,6 +51,12 @@ static func setup(screen: Vector2) -> void:
 	dp = clampf(minf(screen.x / 873.0, screen.y / 393.0), 1.0, 8.0)
 	rem = 14.0 * dp
 	px = maxi(1, roundi(rem / 6.0))
+	css_h = screen.y / dp
+
+
+## The web's short landscape query (max-height: 400px), true on phones held sideways.
+static func short() -> bool:
+	return css_h <= 400.0
 
 
 ## `n` rem in device pixels.

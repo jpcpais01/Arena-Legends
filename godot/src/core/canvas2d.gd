@@ -9,6 +9,9 @@ class_name Canvas2D
 
 ## CSS colour → Color, parsed once per distinct string.
 static var _css := {}
+## Big gradient fills sampled coarsely (Cpu._grad_fast) while true: set around one-off
+## backdrops (the shop scenes), never for the pixel-exact arena art.
+static var fast_gradients := false
 
 
 static func color(v) -> Color:
@@ -220,6 +223,9 @@ class Cpu:
 		if not r.has_area(): return
 		if fill_style is Gradient2D:
 			var gr: Gradient2D = fill_style
+			if Canvas2D.fast_gradients and global_composite_operation == "source-over":
+				_grad_fast(img, gr, r)
+				return
 			for yy in range(r.position.y, r.end.y):
 				for xx in range(r.position.x, r.end.x):
 					_blend(img, xx, yy, _grad_at(gr, xx + 0.5, yy + 0.5))
@@ -232,6 +238,32 @@ class Cpu:
 		for yy in range(r.position.y, r.end.y):
 			for xx in range(r.position.x, r.end.x):
 				_blend(img, xx, yy, c)
+
+	## A gradient fill over a large area (backdrops painted once): sampled on a coarse
+	## grid (exactly per row or column for straight gradients), stretched, and blended natively.
+	func _grad_fast(img: Image, gr: Gradient2D, r: Rect2i) -> void:
+		var rw := r.size.x
+		var rh := r.size.y
+		var vertical := not gr.radial and absf(gr.x1 - gr.x0) < 0.0001
+		var horizontal := not gr.radial and absf(gr.y1 - gr.y0) < 0.0001
+		var g: Image
+		if vertical or horizontal:
+			var n := rh if vertical else rw
+			g = Image.create_empty(1 if vertical else n, n if vertical else 1, false, Image.FORMAT_RGBA8)
+			for i in n:
+				var c := _grad_at(gr, r.position.x + 0.5, r.position.y + i + 0.5) if vertical else _grad_at(gr, r.position.x + i + 0.5, r.position.y + 0.5)
+				g.set_pixel(0 if vertical else i, i if vertical else 0, c)
+			g.resize(rw, rh, Image.INTERPOLATE_NEAREST)
+		else:
+			var st := maxi(1, ceili(maxf(rw, rh) / 160.0))
+			var gw := ceili(float(rw) / st) + 1
+			var gh := ceili(float(rh) / st) + 1
+			g = Image.create_empty(gw, gh, false, Image.FORMAT_RGBA8)
+			for j in gh:
+				for i in gw:
+					g.set_pixel(i, j, _grad_at(gr, r.position.x + i * st + 0.5, r.position.y + j * st + 0.5))
+			if st > 1: g.resize((gw - 1) * st, (gh - 1) * st, Image.INTERPOLATE_BILINEAR)
+		img.blend_rect(g, Rect2i(0, 0, rw, rh), r.position)
 
 	func _grad_at(gr: Gradient2D, x: float, y: float) -> Color:
 		var p := _xf.affine_inverse() * Vector2(x, y)

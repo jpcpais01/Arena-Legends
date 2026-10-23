@@ -9,10 +9,10 @@ const _U32 := 0xffffffff
 const BLANK := &"__ts_blank__"
 
 
-## A JS regex literal: {"test": Callable(String) -> bool}. Flags: only "i".
+## A JS regex literal: {"test": Callable(String) -> bool, "re", "g"}. Flags: "i" and "g".
 static func regex(body: String, flags := "") -> Dictionary:
 	var re := RegEx.create_from_string(("(?i)" if flags.contains("i") else "") + body)
-	return {"test": func(s) -> bool: return re.search(str(s)) != null}
+	return {"test": func(s) -> bool: return re.search(str(s)) != null, "re": re, "g": flags.contains("g")}
 
 
 static func random() -> float:
@@ -388,7 +388,10 @@ static func split(s: String, sep: String) -> Array:
 	return Array(s.split(sep))
 
 
-static func replace(s: String, what: String, with: String) -> String:
+static func replace(s: String, what, with: String) -> String:
+	if what is Dictionary:
+		var re: RegEx = what["re"]
+		return re.sub(s, with, what["g"])
 	var i := s.find(what)
 	if i < 0: return s
 	return s.substr(0, i) + with + s.substr(i + what.length())
@@ -580,6 +583,9 @@ static var _next_oid := 1
 ## carry the stamp along, so lookups also check the stored object is the same.
 static func _oid(d) -> int:
 	if d is Object: return d.get_instance_id()
+	# Callables are values: equal ones (same object and method, or the same
+	# lambda) share a hash, so an unsubscribe finds the listener it added.
+	if d is Callable: return (1 << 40) + d.hash()
 	var id = d.get("__oid") if d is Dictionary else null
 	if id == null:
 		id = _next_oid
@@ -591,13 +597,17 @@ static func _oid(d) -> int:
 static func id_get(m: Dictionary, k):
 	if k == null: return null
 	var e = m.get(_oid(k))
-	return e[1] if e != null and is_same(e[0], k) else null
+	return e[1] if e != null and _same(e[0], k) else null
 
 
 static func id_has(m: Dictionary, k) -> bool:
 	if k == null: return false
 	var e = m.get(_oid(k))
-	return e != null and is_same(e[0], k)
+	return e != null and _same(e[0], k)
+
+
+static func _same(a, b) -> bool:
+	return a == b if b is Callable and a is Callable else is_same(a, b)
 
 
 static func id_set(m: Dictionary, k, v) -> Dictionary:
@@ -610,6 +620,13 @@ static func id_set(m: Dictionary, k, v) -> Dictionary:
 		k["__oid"] = id
 	m[id] = [k, v]
 	return m
+
+
+## The keys of an identity-keyed set or map (in insertion order).
+static func id_keys(m: Dictionary) -> Array:
+	var out := []
+	for e in m.values(): out.append(e[0])
+	return out
 
 
 static func id_delete(m: Dictionary, k) -> bool:

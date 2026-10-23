@@ -10,6 +10,8 @@ signal tapped(pos: Vector2)
 
 var painter: Callable
 var horizontal := false
+## The thin gold scrollbar (off for the strips the web shows bare).
+var show_bar := true
 ## Content length along the scroll axis (its height, or its width when horizontal).
 var content_h := 0.0
 var offset := 0.0
@@ -114,7 +116,7 @@ func _process(dt: float) -> void:
 
 func _draw() -> void:
 	painter.call(self, size, offset)
-	if content_h > _len() + 1.0:
+	if show_bar and content_h > _len() + 1.0:
 		var w := maxf(2.0, UI.c(3))
 		var n := _len()
 		var h := maxf(UI.r(2), n * n / content_h)

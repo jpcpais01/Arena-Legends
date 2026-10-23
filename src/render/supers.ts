@@ -82,7 +82,7 @@ export function skinColours(skin: SkinArt | null | undefined): [number, number] 
   const mats = Object.values(skin.mats ?? {});
   const glow = mats.find((m) => m.glow);
   if (glow) return [mix(glow.base, 0xffffff, 0.3), mix(glow.base, 0x101020, 0.25)];
-  const shiny = mats.filter((m) => m.shiny).sort((a, b) => luma(b.base) - luma(a.base))[0];
+  const shiny = mats.filter((m) => m.shiny).sort((a, b) => luma(b.base) - luma(a.base)).at(0);
   return shiny ? [mix(shiny.base, 0xffffff, 0.45), mix(shiny.base, 0x101020, 0.2)] : undefined;
 }
 

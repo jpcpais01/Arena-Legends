@@ -30,6 +30,8 @@ var gem := -1
 var tag_col := UI.TEXT
 ## Colour overrides (face, hi, lo, fg); null keeps the style's.
 var colors = null
+## The glyph's colour (null: the label's).
+var glyph_col = null
 ## Size overrides in rem (0 keeps the size kind's): label size, least height and width.
 var font_rem := 0.0
 var min_h := 0.0
@@ -135,7 +137,7 @@ func _fit() -> void:
 	var w := 0.0
 	if text != "": w += UI.text_w(_font(), text.to_upper(), fs)
 	if sub != "": w += roundf(fs * 0.5) + UI.text_w(_sub_font(), sub.to_upper(), _sub_size())
-	if gem >= 0: w += UI.r(0.5) + _tag_w()
+	if gem >= 0: w += (UI.r(0.5) if text != "" else 0.0) + _tag_w()
 	if glyph != "":
 		w += _glyph_px()
 		if text != "": w += roundf(fs * 0.5)
@@ -199,17 +201,7 @@ func _draw() -> void:
 	else:
 		if held: face = face.darkened(0.05)
 		UI.bevel(ci, r, face, pal[1], pal[2], 2 if size_kind == "sm" else 3, held)
-	if glint:
-		# A light sweeping across now and then (steps, like the web's CSS animation).
-		var cyc := fmod(_t, 3.4) / 3.4
-		if cyc > 0.62:
-			var k := floorf((cyc - 0.62) / 0.38 * 18.0) / 18.0
-			var x := lerpf(-0.3, 1.2, k) * r.size.x
-			var bw := r.size.x * 0.18
-			var sk := r.size.y * 0.36
-			var poly := PackedVector2Array([Vector2(x + sk, r.position.y + p), Vector2(x + sk + bw, r.position.y + p), Vector2(x + bw, r.end.y - p), Vector2(x, r.end.y - p)])
-			var clipped := Geometry2D.intersect_polygons(poly, PackedVector2Array([r.position + Vector2(p, p), Vector2(r.end.x - p, r.position.y + p), r.end - Vector2(p, p), Vector2(r.position.x + p, r.end.y - p)]))
-			for cp in clipped: draw_colored_polygon(cp, Color(1, 1, 1, 0.45))
+	if glint: _draw_glint(r, p)
 	# Content: glyph then label, centred; the bottom bevel is thicker, so the middle sits a pixel up.
 	var fs := _font_size()
 	var f := _font()
@@ -220,7 +212,7 @@ func _draw() -> void:
 	var sfs := _sub_size()
 	var sf := _sub_font()
 	var sw := roundf(fs * 0.5) + UI.text_w(sf, sub.to_upper(), sfs) if sub != "" else 0.0
-	var gw := UI.r(0.5) + _tag_w() if gem >= 0 else 0.0
+	var gw := (UI.r(0.5) if text != "" else 0.0) + _tag_w() if gem >= 0 else 0.0
 	var total := gs + gap + tw + sw + gw
 	var x0 := roundf(r.position.x + (r.size.x - total) / 2.0)
 	var mid := r.position.y + (r.size.y - p * (2.0 if size_kind == "sm" else 3.0) + p) / 2.0
@@ -229,7 +221,7 @@ func _draw() -> void:
 	var tx := x0 if glyph_after else x0 + gs + gap
 	if glyph != "":
 		var gp := Vector2(x0 + tw + sw + gap if glyph_after else x0, roundf(mid - gs / 2.0))
-		UI.draw_glyph(self, glyph, gp, gs, fg, shade, flip_glyph)
+		UI.draw_glyph(self, glyph, gp, gs, glyph_col if glyph_col != null else fg, shade, flip_glyph)
 	if text != "":
 		var asc := f.get_ascent(fs)
 		var desc := f.get_descent(fs)
@@ -239,7 +231,7 @@ func _draw() -> void:
 		if sub != "":
 			draw_string(sf, Vector2(tx + tw + roundf(fs * 0.5), base), sub.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, sfs, Color(fg, 0.7))
 		if gem >= 0:
-			var tr := Rect2(tx + tw + sw + UI.r(0.5), roundf(mid - fs / 2.0 - UI.c(2.5)), _tag_w(), fs + UI.c(5))
+			var tr := Rect2(tx + tw + sw + (UI.r(0.5) if text != "" else 0.0), roundf(mid - fs / 2.0 - UI.c(2.5)), _tag_w(), fs + UI.c(5))
 			draw_rect(tr, Color(0, 0, 0, 0.35))
 			var gsz := UI.glyph_size(fs * 1.05)
 			UI.draw_glyph(self, "gem", Vector2(tr.position.x + UI.c(6), roundf(mid - gsz / 2.0)), gsz, Color("#6fe8ff"), UI.INK)
@@ -249,6 +241,19 @@ func _draw() -> void:
 		var d := Rect2(r.end.x - p * 5, r.position.y + p * 2, p * 3, p * 3)
 		draw_rect(d.grow(p), UI.INK)
 		draw_rect(d, UI.RED)
+
+
+## A light sweeping across now and then (steps, like the web's CSS animation).
+func _draw_glint(r: Rect2, p: float) -> void:
+	var cyc := fmod(_t, 3.4) / 3.4
+	if cyc <= 0.62: return
+	var k := floorf((cyc - 0.62) / 0.38 * 18.0) / 18.0
+	var x := r.position.x + lerpf(-0.3, 1.2, k) * r.size.x
+	var bw := r.size.x * 0.18
+	var sk := r.size.y * 0.36
+	var poly := PackedVector2Array([Vector2(x + sk, r.position.y + p), Vector2(x + sk + bw, r.position.y + p), Vector2(x + bw, r.end.y - p), Vector2(x, r.end.y - p)])
+	var clipped := Geometry2D.intersect_polygons(poly, PackedVector2Array([r.position + Vector2(p, p), Vector2(r.end.x - p, r.position.y + p), r.end - Vector2(p, p), Vector2(r.position.x + p, r.end.y - p)]))
+	for cp in clipped: draw_colored_polygon(cp, Color(1, 1, 1, 0.45))
 
 
 func _outline(ci: RID, r: Rect2, col: Color, p: float) -> void:

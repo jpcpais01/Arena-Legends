@@ -50,7 +50,7 @@ static func hero_level() -> float:
 
 static func persist() -> void:
 	Store.set_item(KEY, JSON.stringify(prog))
-	for f in listeners:
+	for f in TS.id_keys(listeners):
 		f.call(prog)
 
 ##  Gives XP; returns the level before and after.

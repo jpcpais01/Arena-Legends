@@ -58,7 +58,7 @@ static func get_() -> Variant:
 
 static func persist() -> void:
 	Store.set_item(KEY, JSON.stringify(col))
-	for f in listeners:
+	for f in TS.id_keys(listeners):
 		f.call()
 
 ##  Called after every change (gems or skins).
@@ -71,7 +71,7 @@ static func gems() -> float:
 
 static func set_all_skins(f) -> void:
 	allSkins = f
-	for l in listeners:
+	for l in TS.id_keys(listeners):
 		l.call()
 
 static func owns(id: String) -> bool:
@@ -180,7 +180,7 @@ static func spares() -> Variant:
 		var s = CharacterSkins.SKIN_BY_ID.get(id)
 		if (s != null) and (n > 0):
 			out.append([s, n])
-	return TS.sort(out, (func(a, b): return (TS.or_f(CharacterSkins.SKIN_RARITIES.find(b[0]["rarity"]) - CharacterSkins.SKIN_RARITIES.find(a[0]["rarity"]), func(): return b[1] - a[1]) if TS.or_f(CharacterSkins.SKIN_RARITIES.find(b[0]["rarity"]) - CharacterSkins.SKIN_RARITIES.find(a[0]["rarity"]), func(): return b[1] - a[1]) else a[0]["name"]["localeCompare"].call(b[0]["name"]))))
+	return TS.sort(out, (func(a, b): return (TS.or_f(CharacterSkins.SKIN_RARITIES.find(b[0]["rarity"]) - CharacterSkins.SKIN_RARITIES.find(a[0]["rarity"]), func(): return b[1] - a[1]) if TS.or_f(CharacterSkins.SKIN_RARITIES.find(b[0]["rarity"]) - CharacterSkins.SKIN_RARITIES.find(a[0]["rarity"]), func(): return b[1] - a[1]) else a[0]["name"].naturalnocasecmp_to(b[0]["name"]))))
 
 ##  Spare copies per rarity.
 static func spare_count(tier: String) -> float:
