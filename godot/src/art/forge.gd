@@ -22,6 +22,23 @@ static var _compose_pipe: RID
 ## Jobs baked for one sprite at a time (projectiles, bottles, skinned specials): their
 ## callers cache the sprites for the whole game, so the atlases stay.
 static var _kept: Array[Job] = []
+## Every baked job still alive (instance id → weakref), for shutdown().
+static var _live := {}
+
+
+## Lets go of the GPU before the engine shuts down (the game is quitting):
+## frees the kept atlases and the pipelines, then forgets the device, so a job
+## freed later (with the scripts' statics, after the device is gone) frees nothing.
+static func shutdown() -> void:
+	if _rd == null: return
+	_kept.clear()
+	for w in _live.values():
+		var j = w.get_ref()
+		if j != null: j.close()
+	_live.clear()
+	for rid in [_raster_pipe, _compose_pipe, _raster_shader, _compose_shader]:
+		if rid.is_valid(): _rd.free_rid(rid)
+	_rd = null
 
 
 ## Bakes the frame drawn so far on a raster with no job, right away: a sprite
@@ -98,6 +115,7 @@ class Job extends RefCounted:
 	var baked := false
 	var _color_rid: RID
 	var _glow_rid: RID
+	var _id := 0
 
 	## Points a raster at this job: its materials and composed frames land here.
 	func attach(r: PixelRaster.Raster) -> void:
@@ -228,6 +246,8 @@ class Job extends RefCounted:
 		color.texture_rd_rid = _color_rid
 		glow = Texture2DRD.new()
 		glow.texture_rd_rid = _glow_rid
+		_id = get_instance_id()
+		Forge._live[_id] = weakref(self)
 		# Exact crops, as Raster.compose: drawn pixels, plus the outline ring.
 		for i in n:
 			var f := live[i]
@@ -304,9 +324,17 @@ class Job extends RefCounted:
 
 	func _notification(what: int) -> void:
 		# (No method calls while being freed: the RIDs go directly.)
+		if what == NOTIFICATION_PREDELETE: Forge._live.erase(_id)
 		if what == NOTIFICATION_PREDELETE and Forge._rd != null:
 			if _color_rid.is_valid(): Forge._rd.free_rid(_color_rid)
 			if _glow_rid.is_valid(): Forge._rd.free_rid(_glow_rid)
+
+	## shutdown(): unhooks the textures (sprite regions may still hold them) from
+	## the atlases and frees those, while the renderer is still there.
+	func close() -> void:
+		for t in [color, glow]:
+			if t != null: t.texture_rd_rid = RID()
+		release()
 
 	func release() -> void:
 		if Forge._rd == null: return

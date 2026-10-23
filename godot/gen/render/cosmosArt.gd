@@ -558,62 +558,66 @@ static func paint_underside(p, rng, hw: float, lift: float) -> Variant:
 	# faint violet bounce from the nebula along its lower edge.
 	var tip: float = cx + rng.range_(-24, 24)
 	var bottom = TS.typed_array(p.w)
-	var x_2: float = floor(cx - hw)
-	while x_2 < (cx + hw):
-		var u: float = (((x_2 + 0.5) - tip) / ((tip - cx) + hw) if (x_2 + 0.5) < tip else ((x_2 + 0.5) - tip) / ((cx + hw) - tip))
+	# Off the canvas the underside is unknown (NaN, as reading past a typed array gives).
+	var under = (func(x_2: float): return (bottom[x_2] if (x_2 >= 0) and (x_2 < p.w) else NAN))
+	var x_3: float = floor(cx - hw)
+	while x_3 < (cx + hw):
+		var u: float = (((x_3 + 0.5) - tip) / ((tip - cx) + hw) if (x_3 + 0.5) < tip else ((x_3 + 0.5) - tip) / ((cx + hw) - tip))
 		var a: float = absf(u)
-		var spurs: float = (RenderScenery.noise(x_2, 0, 22, 0, 1441) * 0.7) + (RenderScenery.noise(x_2, 0, 8, 0, 1442) * 0.3)
+		var spurs: float = (RenderScenery.noise(x_3, 0, 22, 0, 1441) * 0.7) + (RenderScenery.noise(x_3, 0, 8, 0, 1442) * 0.3)
 		var depth: float = ((cone * pow((1 - pow(a, 1.1)), 1.5)) * (0.7 + (0.42 * spurs))) + 4
 		var yb: float = y0 + depth
-		bottom[int(x_2)] = yb
+		# The island can run past the canvas on narrow screens (writes there are dropped).
+		if (x_3 >= 0) and (x_3 < p.w):
+			bottom[int(x_3)] = yb
 		var y_2: float = y0
 		while y_2 < minf(p.h, yb):
 			var v: float = (y_2 - y0) / cone
-			var strata: float = RenderScenery.noise(x_2 * 0.25, y_2, 10, 3, 1443)
+			var strata: float = RenderScenery.noise(x_3 * 0.25, y_2, 10, 3, 1443)
 			var l: float = ((0.5 - (v * 0.45)) - (u * 0.22)) + ((strata - 0.5) * 0.28)
 			if y_2 < (y0 + 3):
 				l -= 0.25
-			var c_2: float = RenderScenery.tone(STONE, l, x_2, y_2, 0.14)
+			var c_2: float = RenderScenery.tone(STONE, l, x_3, y_2, 0.14)
 			if (yb - y_2) < 2.5:
 				c_2 = PixelColor.mix(c_2, VIOLET[1], (0.6 if (yb - y_2) < 1.5 else 0.3))
-			p.set_(x_2, y_2, c_2)
+			p.set_(x_3, y_2, c_2)
 			y_2 += 1
-		x_2 += 1
+		x_3 += 1
 	# A few crystal seams glinting in the rock.
 	for i in range(7):
-		var x_3: float = TS.round(cx + rng.range_((-hw) * 0.75, hw * 0.75))
-		var y_3: float = TS.round((y0 + 6) + rng.range_(0, maxf(4, (bottom[x_3] - y0) - 14)))
-		if (not p.has(x_3, y_3)) or (not p.has(x_3 + 2, y_3 + 3)):
+		var x_4: float = TS.round(cx + rng.range_((-hw) * 0.75, hw * 0.75))
+		var y_3: float = TS.round((y0 + 6) + rng.range_(0, maxf(4, (under.call(x_4) - y0) - 14)))
+		if (not p.has(x_4, y_3)) or (not p.has(x_4 + 2, y_3 + 3)):
 			continue
 		var pal = (TEAL if i % 2 else VIOLET)
-		p.set_(x_3, y_3, pal[3])
-		p.set_(x_3 + 1, y_3 + 1, pal[2])
-		p.set_(x_3 + 1, y_3 + 2, pal[2])
-		p.set_(x_3 + 2, y_3 + 3, pal[1])
-		glows.append([x_3 + 1, y_3 + 1, pal[2]])
+		p.set_(x_4, y_3, pal[3])
+		p.set_(x_4 + 1, y_3 + 1, pal[2])
+		p.set_(x_4 + 1, y_3 + 2, pal[2])
+		p.set_(x_4 + 2, y_3 + 3, pal[1])
+		glows.append([x_4 + 1, y_3 + 1, pal[2]])
 	# Crystals hanging from the underside, the biggest from the lowest point.
-	var _fn0 = func(x_4: float, len_: float, pal_2):
-		var xi: float = TS.round(x_4)
-		var y_4: float = TS.round((TS.at(bottom, xi) if TS.at(bottom, xi) != null else y0)) - 2
+	var _fn0 = func(x_5: float, len_: float, pal_2):
+		var xi: float = TS.round(x_5)
+		var y_4: float = TS.round((bottom[xi] if (xi >= 0) and (xi < p.w) else y0)) - 2
 		var w: float = 1.5 + (len_ * 0.13)
-		p.poly([x_4 - w, y_4, x_4 + w, y_4, x_4 + 0.5, y_4 + len_], pal_2[2])
-		p.poly([x_4 + 0.3, y_4, x_4 + w, y_4, x_4 + 0.5, y_4 + len_], pal_2[1])
-		p.line(TS.round((x_4 - w) + 1), y_4 + 1, TS.round(x_4), TS.round((y_4 + len_) - 2), pal_2[3])
-		glows.append([x_4, y_4 + (len_ * 0.4), pal_2[2]])
+		p.poly([x_5 - w, y_4, x_5 + w, y_4, x_5 + 0.5, y_4 + len_], pal_2[2])
+		p.poly([x_5 + 0.3, y_4, x_5 + w, y_4, x_5 + 0.5, y_4 + len_], pal_2[1])
+		p.line(TS.round((x_5 - w) + 1), y_4 + 1, TS.round(x_5), TS.round((y_4 + len_) - 2), pal_2[3])
+		glows.append([x_5, y_4 + (len_ * 0.4), pal_2[2]])
 	var drip = _fn0
 	var low: float = TS.round(tip)
-	var x_5: float = TS.round(cx - (hw * 0.3))
-	while x_5 < (cx + (hw * 0.3)):
-		if bottom[x_5] > bottom[low]:
-			low = x_5
-		x_5 += 1
+	var x_6: float = TS.round(cx - (hw * 0.3))
+	while x_6 < (cx + (hw * 0.3)):
+		if under.call(x_6) > under.call(low):
+			low = x_6
+		x_6 += 1
 	drip.call(low + 0.5, 24, VIOLET)
 	drip.call(low - 6.5, 11, TEAL)
 	for i_2 in range(5):
-		var x_6: float = cx + rng.range_((-hw) * 0.8, hw * 0.8)
-		if absf(x_6 - low) < 14:
+		var x_7: float = cx + rng.range_((-hw) * 0.8, hw * 0.8)
+		if absf(x_7 - low) < 14:
 			continue
-		drip.call(x_6, rng.range_(6, 13) * (1 - ((absf(x_6 - cx) / hw) * 0.5)), (TEAL if i_2 % 2 else VIOLET))
+		drip.call(x_7, rng.range_(6, 13) * (1 - ((absf(x_7 - cx) / hw) * 0.5)), (TEAL if i_2 % 2 else VIOLET))
 	p.outline(INK)
 	# No ink along the top: the floor's lip meets the rim there.
 	TS.fill(p.data, 0, (lift - 1) * p.w, lift * p.w)

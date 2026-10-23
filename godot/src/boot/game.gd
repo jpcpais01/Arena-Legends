@@ -424,15 +424,17 @@ func _soon() -> void:
 	_toast.show_text("Coming to Android in the next update")
 
 
-## Leaving for good (quitting): the shared stores' listeners are lambdas made by
-## this game and its screens. Left in those static stores, they would outlive
-## their scripts and corrupt memory as the engine shuts down (a crash on quit).
+## Leaving for good (quitting). Statics outlive the engine's servers and the
+## scripts, so what they hold is dropped here, while everything still exists:
+## the shared stores' listeners (lambdas made by this game and its screens)
+## and the GPU atlases. Left in place they crash the app on quit.
 func _exit_tree() -> void:
 	CharacterCollection.listeners.clear()
 	CharacterProgress.listeners.clear()
 	CharacterPromo.listeners.clear()
 	CharacterCollection.allSkins = Callable()
-	GearIcons.drop_waiting()
+	GearIcons.shutdown()
+	Forge.shutdown()
 
 
 ## Back (Android) closes a sheet, leaves a fight, or quits from the home screen.
@@ -445,7 +447,17 @@ func _notification(what: int) -> void:
 		if _sheet.dismissable: _close_sheet()
 		elif state == "results": to_menu()
 	elif state == "fight": to_menu()
-	elif state == "menu": get_tree().quit()
+	elif state == "menu": _quit_app()
+
+
+## Back on the home screen closes the app. On Android the process just ends,
+## saved first: the engine's own shutdown frees the generated code's statics
+## (lambdas that hold their objects, registries of other scripts' lambdas) in
+## an order that can crash, and a closing app has nothing left to tidy.
+func _quit_app() -> void:
+	Store.save()
+	if OS.has_feature("android"): OS.kill(OS.get_process_id())
+	else: get_tree().quit()
 
 
 ## A short line in a plate over the middle of the screen, fading out.

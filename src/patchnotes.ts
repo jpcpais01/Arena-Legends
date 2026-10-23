@@ -12,6 +12,15 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.104.1',
+    date: '2026-10-23',
+    title: 'Android: closing the app',
+    notes: [
+      'Fixed: closing the Android version with Back on the home screen could crash it on the way out.',
+      'Fixed: on some screen sizes the Astral Sanctum arena failed to paint in the Android version.',
+    ],
+  },
+  {
     version: '0.104.0',
     date: '2026-10-23',
     title: 'Android: the Shop, chests and Forge',

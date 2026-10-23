@@ -483,13 +483,16 @@ function paintUnderside(p: Pix, rng: Rng, hw: number, lift: number): [number, nu
   // faint violet bounce from the nebula along its lower edge.
   const tip = cx + rng.range(-24, 24);
   const bottom = new Float32Array(p.w);
+  // Off the canvas the underside is unknown (NaN, as reading past a typed array gives).
+  const under = (x: number) => (x >= 0 && x < p.w ? bottom[x] : NaN);
   for (let x = Math.floor(cx - hw); x < cx + hw; x++) {
     const u = x + 0.5 < tip ? (x + 0.5 - tip) / (tip - cx + hw) : (x + 0.5 - tip) / (cx + hw - tip);
     const a = Math.abs(u);
     const spurs = noise(x, 0, 22, 0, 1441) * 0.7 + noise(x, 0, 8, 0, 1442) * 0.3;
     const depth = cone * (1 - a ** 1.1) ** 1.5 * (0.7 + 0.42 * spurs) + 4;
     const yb = y0 + depth;
-    bottom[x] = yb;
+    // The island can run past the canvas on narrow screens (writes there are dropped).
+    if (x >= 0 && x < p.w) bottom[x] = yb;
     for (let y = y0; y < Math.min(p.h, yb); y++) {
       const v = (y - y0) / cone;
       const strata = noise(x * 0.25, y, 10, 3, 1443);
@@ -503,7 +506,7 @@ function paintUnderside(p: Pix, rng: Rng, hw: number, lift: number): [number, nu
   // A few crystal seams glinting in the rock.
   for (let i = 0; i < 7; i++) {
     const x = Math.round(cx + rng.range(-hw * 0.75, hw * 0.75));
-    const y = Math.round(y0 + 6 + rng.range(0, Math.max(4, bottom[x] - y0 - 14)));
+    const y = Math.round(y0 + 6 + rng.range(0, Math.max(4, under(x) - y0 - 14)));
     if (!p.has(x, y) || !p.has(x + 2, y + 3)) continue;
     const pal = i % 2 ? TEAL : VIOLET;
     p.set(x, y, pal[3]); p.set(x + 1, y + 1, pal[2]); p.set(x + 1, y + 2, pal[2]); p.set(x + 2, y + 3, pal[1]);
@@ -512,7 +515,7 @@ function paintUnderside(p: Pix, rng: Rng, hw: number, lift: number): [number, nu
   // Crystals hanging from the underside, the biggest from the lowest point.
   const drip = (x: number, len: number, pal: number[]) => {
     const xi = Math.round(x);
-    const y = Math.round(bottom[xi] ?? y0) - 2;
+    const y = Math.round(xi >= 0 && xi < p.w ? bottom[xi] : y0) - 2;
     const w = 1.5 + len * 0.13;
     p.poly([x - w, y, x + w, y, x + 0.5, y + len], pal[2]);
     p.poly([x + 0.3, y, x + w, y, x + 0.5, y + len], pal[1]);
@@ -520,7 +523,7 @@ function paintUnderside(p: Pix, rng: Rng, hw: number, lift: number): [number, nu
     glows.push([x, y + len * 0.4, pal[2]]);
   };
   let low = Math.round(tip);
-  for (let x = Math.round(cx - hw * 0.3); x < cx + hw * 0.3; x++) if (bottom[x] > bottom[low]) low = x;
+  for (let x = Math.round(cx - hw * 0.3); x < cx + hw * 0.3; x++) if (under(x) > under(low)) low = x;
   drip(low + 0.5, 24, VIOLET);
   drip(low - 6.5, 11, TEAL);
   for (let i = 0; i < 5; i++) {

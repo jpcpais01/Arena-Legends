@@ -66,9 +66,14 @@ static func _flush() -> void:
 		if c.is_valid(): c.call()
 
 
-## Forgets the redraw callbacks still waiting on a bake (the game is closing).
-static func drop_waiting() -> void:
+## Drops every icon and its atlas (the game is quitting; see Forge.shutdown).
+static func shutdown() -> void:
 	_waiting.clear()
+	_pending.clear()
+	_icons.clear()
+	_job = null
+	for j in _jobs: j.release()
+	_jobs.clear()
 
 
 ## Draws an icon into `r` the way the web shows it in a slot: the piece at a whole
