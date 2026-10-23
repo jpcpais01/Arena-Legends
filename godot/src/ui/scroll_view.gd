@@ -1,7 +1,7 @@
 class_name ScrollView
 extends Control
-## A custom-drawn vertical scroller: drag (with a fling), the mouse wheel, and
-## a thin gold scrollbar. What it shows is drawn by `painter(ci, size, offset)`,
+## A custom-drawn scroller (vertical, or sideways with `horizontal`): drag
+## (with a fling), the mouse wheel, and a thin gold scrollbar. What it shows is drawn by `painter(ci, size, offset)`,
 ## so a long list costs one canvas item and draws only what's on screen. A tap
 ## that didn't scroll comes out as `tapped` in content coordinates.
 
@@ -9,6 +9,8 @@ signal scrolled(offset: float)
 signal tapped(pos: Vector2)
 
 var painter: Callable
+var horizontal := false
+## Content length along the scroll axis (its height, or its width when horizontal).
 var content_h := 0.0
 var offset := 0.0
 var _press := false
@@ -28,8 +30,16 @@ func _init(f: Callable) -> void:
 	set_process(false)
 
 
+func _len() -> float:
+	return size.x if horizontal else size.y
+
+
+func _along(v: Vector2) -> float:
+	return v.x if horizontal else v.y
+
+
 func max_offset() -> float:
-	return maxf(0.0, content_h - size.y)
+	return maxf(0.0, content_h - _len())
 
 
 func set_content_h(h: float) -> void:
@@ -47,10 +57,10 @@ func scroll_to(y: float) -> void:
 	scrolled.emit(offset)
 
 
-## Scrolls just enough to show content rows y0..y1.
+## Scrolls just enough to show content y0..y1 (x0..x1 sideways).
 func reveal(y0: float, y1: float) -> void:
 	if y0 < offset: scroll_to(y0)
-	elif y1 > offset + size.y: scroll_to(y1 - size.y)
+	elif y1 > offset + _len(): scroll_to(y1 - _len())
 
 
 func _gui_input(e: InputEvent) -> void:
@@ -67,7 +77,7 @@ func _gui_input(e: InputEvent) -> void:
 				_start = e.position
 				_start_off = offset
 				_vel = 0.0
-				_last_y = e.position.y
+				_last_y = _along(e.position)
 				_last_t = Time.get_ticks_usec()
 			elif _press:
 				_press = false
@@ -76,18 +86,19 @@ func _gui_input(e: InputEvent) -> void:
 						_flinging = true
 						set_process(true)
 				else:
-					tapped.emit(e.position + Vector2(0, offset))
+					tapped.emit(e.position + (Vector2(offset, 0) if horizontal else Vector2(0, offset)))
 		accept_event()
 	elif e is InputEventMouseMotion and _press:
-		if not _dragging and absf(e.position.y - _start.y) > UI.c(8): _dragging = true
+		var d := _along(e.position) - _along(_start)
+		if not _dragging and absf(d) > UI.c(8): _dragging = true
 		if _dragging:
 			var now := Time.get_ticks_usec()
 			var dt := maxf(0.001, (now - _last_t) / 1e6)
-			var v: float = -(e.position.y - _last_y) / dt
+			var v: float = -(_along(e.position) - _last_y) / dt
 			_vel = lerpf(_vel, v, 0.4)
-			_last_y = e.position.y
+			_last_y = _along(e.position)
 			_last_t = now
-			scroll_to(_start_off - (e.position.y - _start.y))
+			scroll_to(_start_off - d)
 		accept_event()
 
 
@@ -103,8 +114,10 @@ func _process(dt: float) -> void:
 
 func _draw() -> void:
 	painter.call(self, size, offset)
-	if content_h > size.y + 1.0:
+	if content_h > _len() + 1.0:
 		var w := maxf(2.0, UI.c(3))
-		var h := maxf(UI.r(2), size.y * size.y / content_h)
-		var y := (size.y - h) * offset / max_offset()
-		draw_rect(Rect2(size.x - w - UI.c(1), y, w, h), Color(UI.GOLD_LO, 0.85))
+		var n := _len()
+		var h := maxf(UI.r(2), n * n / content_h)
+		var y := (n - h) * offset / max_offset()
+		var bar := Rect2(y, size.y - w, h, w) if horizontal else Rect2(size.x - w - UI.c(1), y, w, h)
+		draw_rect(bar, Color(UI.GOLD_LO, 0.85))

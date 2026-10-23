@@ -136,7 +136,6 @@ func _start() -> void:
 		for f in view.fighters: f["bank"].release()
 	view.start(feed.live, m["theme"])
 	ArenaCache.trim([m["theme"]["id"]])
-	frozen = false
 	if _fight:
 		hud.setup(feed.live, m["theme"]["name"])
 		var a = fs[0]
@@ -156,6 +155,13 @@ func _start() -> void:
 
 
 ## Pauses or resumes the fight.
+## Freezes the arena on its last frame while a full screen covers it: nothing
+## simulates, draws or renders until it thaws.
+func freeze(on: bool) -> void:
+	frozen = on
+	screen.hold(on)
+
+
 func set_paused(on: bool) -> void:
 	view.paused = on
 
@@ -176,6 +182,7 @@ func in_fight() -> bool:
 
 
 func _process(dt: float) -> void:
+	if frozen: return
 	if _state == "loading":
 		_wait_t += dt
 		if ArenaCache.is_ready(_match["theme"], screen.w, screen.h): _start()
@@ -189,7 +196,6 @@ func _process(dt: float) -> void:
 		if _demo_wait < 0.0:
 			demo()
 			return
-	if frozen: return
 	var t0 := Time.get_ticks_usec()
 	# A fresh frame: the last one's draw lists go (the web canvas is simply drawn over).
 	screen.g.begin()
