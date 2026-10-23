@@ -1,0 +1,8 @@
+{
+  "name": "ts2gd",
+  "private": true,
+  "type": "module",
+  "description": "Converts the web game's TypeScript (art library, sim) into GDScript for the Godot port.",
+  "scripts": { "convert": "tsx src/main.ts" },
+  "devDependencies": { "typescript": "5.9.3", "tsx": "4.20.6" }
+}
