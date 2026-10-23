@@ -303,7 +303,10 @@ class Job extends RefCounted:
 		return image(night).get_region(f.region)
 
 	func _notification(what: int) -> void:
-		if what == NOTIFICATION_PREDELETE: release()
+		# (No method calls while being freed: the RIDs go directly.)
+		if what == NOTIFICATION_PREDELETE and Forge._rd != null:
+			if _color_rid.is_valid(): Forge._rd.free_rid(_color_rid)
+			if _glow_rid.is_valid(): Forge._rd.free_rid(_glow_rid)
 
 	func release() -> void:
 		if Forge._rd == null: return

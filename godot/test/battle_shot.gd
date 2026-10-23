@@ -44,7 +44,7 @@ func _process(dt: float) -> bool:
 			RenderingServer.canvas_item_set_visible(sc._composite, false)
 			_noover = path
 		var fd = _scene.feed
-		print("shot %s (frame %d, %d slow frames, %d stalls, %d ticks ahead, %s)" % [path, _frames, _slow, fd.stalls if fd else 0, fd.ahead() if fd else 0, _scene._state])
+		print("shot %s (frame %d, %d slow frames, %d stalls, %d ticks ahead, %s, cpu %.1f ms)" % [path, _frames, _slow, fd.stalls if fd else 0, fd.ahead() if fd else 0, _scene._state, _scene.cpu_ms])
 	elif _noover != "":
 		_scene.screen._final.get_texture().get_image().save_png(_noover.replace(".png", "_nocomp.png"))
 		RenderingServer.canvas_item_set_visible(_scene.screen._composite, true)

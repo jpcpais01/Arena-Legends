@@ -17,6 +17,8 @@ var _count := -1
 var _state := "idle"
 var _end_wait := -1.0
 var _wait_t := 0.0
+## Main-thread milliseconds per frame (smoothed): the view and HUD, not the GPU.
+var cpu_ms := 0.0
 ## This match and the next one (picked early so its arena can paint ahead).
 var _match := {}
 var _next := {}
@@ -109,11 +111,15 @@ func _process(dt: float) -> void:
 	if _state == "intro": _intro(dt)
 	if _end_wait >= 0.0:
 		_end_wait += dt
-		if _end_wait > 3.0: begin()
+		if _end_wait > 3.0:
+			begin()
+			return
+	var t0 := Time.get_ticks_usec()
 	# A fresh frame: the last one's draw lists go (the web canvas is simply drawn over).
 	screen.g.begin()
 	view.frame(dt)
 	hud.update_from(view, feed.live, dt)
+	cpu_ms += ((Time.get_ticks_usec() - t0) / 1000.0 - cpu_ms) * 0.1
 
 
 ## Names and entrances, sprite warm-up, then 3-2-1. The sim holds until FIGHT.
