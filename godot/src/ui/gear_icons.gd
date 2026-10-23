@@ -66,6 +66,11 @@ static func _flush() -> void:
 		if c.is_valid(): c.call()
 
 
+## Forgets the redraw callbacks still waiting on a bake (the game is closing).
+static func drop_waiting() -> void:
+	_waiting.clear()
+
+
 ## Draws an icon into `r` the way the web shows it in a slot: the piece at a whole
 ## scale, about as large as the web's 48px icon canvas stretched to the slot.
 static func draw(ci: CanvasItem, ic: Dictionary, r: Rect2, modulate := Color.WHITE) -> void:

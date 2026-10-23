@@ -28,6 +28,7 @@ var cam_mode := "classic"
 var arena_pick := "random"
 ## "title", "menu", "fight", "results".
 var state := "title"
+var _admin := false
 
 
 func _init() -> void:
@@ -62,7 +63,8 @@ func _ready() -> void:
 	home.settings.connect(open_settings)
 	home.notes.connect(open_notes)
 	home.armory.connect(open_armory)
-	for sig in [home.online, home.world, home.shop]:
+	home.shop.connect(open_shop)
+	for sig in [home.online, home.world]:
 		sig.connect(func(): _soon())
 	controls = FightControls.new()
 	controls.visible = false
@@ -106,6 +108,12 @@ func _load() -> void:
 	# Null until the first hero is made (the title opens the creator).
 	player = CharacterProfile.load_character()
 	CharacterCollection.load_collection(player.get("skins") if player != null else null)
+	# Admin saves own every skin, entrance, finisher and pose (checked once, not per skin).
+	_admin = CharacterPromo.is_admin()
+	CharacterCollection.set_all_skins(func(): return _admin)
+	CharacterPromo.on_promo(func():
+		_admin = CharacterPromo.is_admin()
+		CharacterCollection.set_all_skins(func(): return _admin))
 	var r = _saved("al.record", {})
 	if r is Dictionary: record = {"w": int(r.get("w", 0)), "l": int(r.get("l", 0))}
 	var sp := int(_saved("al.speed", 1))
@@ -321,8 +329,68 @@ func open_armory() -> void:
 		player = c
 		CharacterProfile.save_character(c))
 	a.closed.connect(_close_screen)
-	a.shop.connect(_soon)
+	a.shop.connect(open_shop)
 	_open_screen(a)
+
+
+# --- The Shop: offers, chests and the forge ------------------------------------------------------
+
+func open_shop() -> void:
+	_close_sheet()
+	var s := ShopScreen.new(func(): return player)
+	s.closed.connect(_close_screen)
+	s.tab.connect(_shop_tab)
+	s.equip.connect(wear_pulled)
+	s.equip_set.connect(func(id: String):
+		for p in CharacterSkins.set_pieces(id): wear_pulled(p))
+	s.entrance.connect(func(id: String): _set_look("entrance", id))
+	s.finisher.connect(func(id: String): _set_look("finisher", id))
+	s.pose.connect(func(id: String): _set_look("pose", id))
+	_open_screen(s)
+
+
+func open_chests() -> void:
+	_close_sheet()
+	var s := ChestScreen.new(func(): return player)
+	_wire_gacha(s)
+
+
+func open_forge() -> void:
+	_close_sheet()
+	var s := ForgeScreen.new(func(): return player)
+	_wire_gacha(s)
+
+
+func _wire_gacha(s: GachaScreen) -> void:
+	s.closed.connect(_close_screen)
+	s.tab.connect(_shop_tab)
+	s.equip.connect(wear_pulled)
+	_open_screen(s)
+
+
+func _shop_tab(id: String) -> void:
+	match id:
+		"offers": open_shop()
+		"chests": open_chests()
+		"forge": open_forge()
+
+
+## Wears a skin fresh out of the shop, equipping its item in its slot.
+func wear_pulled(s) -> void:
+	if player == null: return
+	var next: Dictionary = SimLoadout.with_gear(player, SimGear.gear_of(s["gear"])["slot"], s["gear"])
+	var skins: Dictionary = (player.get("skins") if player.get("skins") is Dictionary else {}).duplicate()
+	skins[s["gear"]] = s["id"]
+	player = TS.merge([next, {"skins": skins}])
+	CharacterProfile.save_character(player)
+
+
+func _set_look(key: String, id: String) -> void:
+	if player == null: return
+	var look: Dictionary = (player["look"] as Dictionary).duplicate()
+	look[key] = id
+	player = TS.merge([player, {"look": look}])
+	CharacterProfile.save_character(player)
 
 
 ## A full screen covers the arena (frozen on its last frame) and the home screen.
@@ -354,6 +422,17 @@ func open_notes() -> void:
 
 func _soon() -> void:
 	_toast.show_text("Coming to Android in the next update")
+
+
+## Leaving for good (quitting): the shared stores' listeners are lambdas made by
+## this game and its screens. Left in those static stores, they would outlive
+## their scripts and corrupt memory as the engine shuts down (a crash on quit).
+func _exit_tree() -> void:
+	CharacterCollection.listeners.clear()
+	CharacterProgress.listeners.clear()
+	CharacterPromo.listeners.clear()
+	CharacterCollection.allSkins = Callable()
+	GearIcons.drop_waiting()
 
 
 ## Back (Android) closes a sheet, leaves a fight, or quits from the home screen.

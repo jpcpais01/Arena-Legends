@@ -12,6 +12,18 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.104.0',
+    date: '2026-10-23',
+    title: 'Android: the Shop, chests and Forge',
+    notes: [
+      'The Shop is in the Android version: the featured Mythic set on its turning stage, the six daily skins, entrances, finishers and poses you can watch before buying, and every Mythic set at its bundle price.',
+      'Chests open the same way as on the web: the charge, the omen for the big pulls, the burst, the tier banner, and the card rising next to your hero wearing it. Open 10 deals the whole hand and flips them one by one.',
+      'The Forge melts three spares into one of the next rarity, with the pour, the hammer strikes and the quench.',
+      'Promo codes work on Android too, with an on-screen keyboard so the phone keyboard never covers the popup.',
+      'Fixed: a weapon skin with no shiny parts could stop an Android fight when its super started.',
+    ],
+  },
+  {
     version: '0.103.0',
     date: '2026-10-23',
     title: 'Android: the hero creator',

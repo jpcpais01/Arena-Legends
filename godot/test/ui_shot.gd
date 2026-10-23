@@ -5,7 +5,9 @@ extends SceneTree
 ## Title, home, settings, patch notes, the Armory (and its loadouts), a fight,
 ## and its results (at 4x). With a second argument `creator` it instead starts
 ## with no hero and walks the hero creator: every step, the reveal, then the
-## Stats step of the editor.
+## Stats step of the editor. With `shop` it walks the Shop: offers (armed, the
+## shelves, an entrance on the stage, a buy, the promo code), a chest opened to a
+## Mythic and ten at once, and the forge smithing three spares.
 
 var _out := "/tmp/ui"
 var _game: Game
@@ -15,6 +17,7 @@ var _wait := 0.0
 var _shot := ""
 var _ended_at := -1.0
 var _creator := false
+var _shop := false
 
 
 func _initialize() -> void:
@@ -22,6 +25,7 @@ func _initialize() -> void:
 	_out = a[0] if a.size() > 0 else _out
 	DirAccess.make_dir_recursive_absolute(_out)
 	_creator = a.size() > 1 and a[1] == "creator"
+	_shop = a.size() > 1 and a[1] == "shop"
 	if _creator:
 		Store.remove_item("al.character")
 		Store.set_item("al.progress", JSON.stringify({"xp": 900}))
@@ -44,6 +48,10 @@ func _process(dt: float) -> bool:
 	if _wait > 0.0: return false
 	if _creator:
 		_creator_step()
+		_step += 1
+		return false
+	if _shop:
+		_shop_step()
 		_step += 1
 		return false
 	match _step:
@@ -170,3 +178,107 @@ func _creator_step() -> void:
 			_wait = 2.0
 		26: _snap("c13_edit_species")
 		27: quit()
+
+
+func _shop_step() -> void:
+	match _step:
+		0: _wait = 2.5
+		1:
+			var t := _game._title
+			t.start.emit()
+			t.queue_free()
+			CharacterCollection.add_gems(9000 - CharacterCollection.gems())
+			_wait = 1.0
+		2:
+			_game.open_shop()
+			_wait = 2.5
+		3: _snap("s01_offers")
+		4:
+			var sh: ShopScreen = _game._screen
+			sh._on_feat_buy()
+			_wait = 0.4
+		5: _snap("s02_armed")
+		6:
+			var sh: ShopScreen = _game._screen
+			sh._disarm()
+			sh.shelf = "ent"
+			sh._render()
+			sh._watch("ent", "thunder")
+			_wait = 1.2
+		7: _snap("s03_entrances")
+		8:
+			var sh: ShopScreen = _game._screen
+			sh.shelf = "fin"
+			sh._render()
+			sh._watch("fin", "frost")
+			_wait = 2.2
+		9: _snap("s04_finishers")
+		10:
+			var sh: ShopScreen = _game._screen
+			sh.shelf = "sets"
+			sh._render()
+			_wait = 0.6
+		11: _snap("s05_sets")
+		12:
+			var sh: ShopScreen = _game._screen
+			sh.shelf = "daily"
+			sh._render()
+			sh._buy_one(CharacterShop.daily_picks(sh.day)[0])
+			_wait = 1.0
+		13: _snap("s06_got")
+		14:
+			var sh: ShopScreen = _game._screen
+			sh.back()
+			sh._open_promo()
+			_wait = 0.5
+		15:
+			var pr: PromoSheet = (_game._screen as ShopScreen)._sheets[-1]
+			pr._edit("KELK")
+			_wait = 0.3
+		16: _snap("s07_promo")
+		17:
+			_game._shop_tab("chests")
+			_wait = 1.5
+		18: _snap("s08_chests")
+		19:
+			# The next chest is a Mythic (the pity counter is one short).
+			CharacterCollection.get_()["pity"] = CharacterCollection.EPIC_PITY - 1
+			(_game._screen as ChestScreen).open(1)
+			_wait = 1.6
+		20: _snap("s09_charge")
+		21: _wait = 2.4
+		22: _snap("s10_omen")
+		23: _wait = 1.0
+		24: _snap("s11_slam")
+		25: _wait = 3.0
+		26: _snap("s12_reveal_one")
+		27:
+			var cs: ChestScreen = _game._screen
+			cs._back_to_shop()
+			cs.open(10)
+			_wait = 3.4
+		28: _snap("s13_ten_deal")
+		29:
+			(_game._screen as ChestScreen).skip()
+			_wait = 2.0
+		30: _snap("s14_ten")
+		31:
+			var c = CharacterCollection.get_()
+			var rare: Array = CharacterSkins.SKINS.filter(func(x): return x["rarity"] == "rare")
+			c["spare"][rare[0]["id"]] = 2
+			c["spare"][rare[1]["id"]] = 2
+			CharacterCollection.persist()
+			_game._shop_tab("forge")
+			_wait = 1.5
+		32: _snap("s15_forge")
+		33:
+			(_game._screen as ForgeScreen).smith("rare")
+			_wait = 0.9
+		34: _snap("s16_fly")
+		35: _wait = 1.6
+		36: _snap("s17_pour")
+		37: _wait = 1.0
+		38: _snap("s18_strike")
+		39: _wait = 3.0
+		40: _snap("s19_forged")
+		41: quit()

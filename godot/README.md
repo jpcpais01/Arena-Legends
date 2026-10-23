@@ -43,6 +43,15 @@ release `android-v<version>` on every push to main.
     entrances, finishers and victory poses; `portraits.gd` the still hero
     portraits on pick cards (a few drawn per frame, one forge job each);
     `gear_icons.gd` bakes item icons on the GPU, batched per frame.
+    The Shop: `shop_screen.gd` (featured set, shelves), `gacha_screen.gd` the
+    base of `chest_screen.gd` and `forge_screen.gd` (the scene, the panel, the
+    reveal and its cards), `shop_kit.gd` the shared pieces (Shop header, price
+    buttons, cards, tier banner), `promo_sheet.gd` the code popup with its own
+    keyboard. `UI.short()` is the web's short landscape query (a phone held
+    sideways), which tightens a few panels.
+  - `fx/scene_gl.gd`: the chest and Forge scenes' display (the web's GlFx for
+    those canvases: light, bloom and grade in one shader pass).
+  - `core/account.gd`: accounts stand-in until online play is ported.
   - `patches/`: hand-written replacements and additions merged into generated
     modules (ignored by Godot itself, see below).
 - `assets/`: fonts (OFL) and the baked logo (`tools/ref/logo.mjs`).
@@ -78,6 +87,9 @@ function or `Class.method` in the config and write it in a patch to replace it
     # ...or a first start through the hero creator (clears the saved hero)
     xvfb-run $G --path godot --rendering-driver vulkan --rendering-method mobile \
       --resolution 1600x720 -s res://test/ui_shot.gd -- OUT creator
+    # ...or the Shop: offers, promo code, a Mythic chest pull, Open 10, the Forge
+    xvfb-run $G --path godot --rendering-driver vulkan --rendering-method mobile \
+      --resolution 1600x720 -s res://test/ui_shot.gd -- OUT shop
 
 The simulation must stay identical to the web's (every reference battle replays
 tick for tick), and arenas paint pixel for pixel the same.

@@ -44,7 +44,7 @@ static func skin_colours(skin) -> Variant:
 	var glow = TS.find(mats, (func(m, _a1 = null, _a2 = null): return m.get("glow")))
 	if glow != null:
 		return [PixelColor.mix(glow["base"], 0xffffff, 0.3), PixelColor.mix(glow["base"], 0x101020, 0.25)]
-	var shiny = TS.sort(TS.filter(mats, (func(m_2, _a1 = null, _a2 = null): return m_2.get("shiny"))), (func(a, b): return luma(b["base"]) - luma(a["base"])))[0]
+	var shiny = TS.at(TS.sort(TS.filter(mats, (func(m_2, _a1 = null, _a2 = null): return m_2.get("shiny"))), (func(a, b): return luma(b["base"]) - luma(a["base"]))), 0)
 	return ([PixelColor.mix(shiny["base"], 0xffffff, 0.45), PixelColor.mix(shiny["base"], 0x101020, 0.2)] if shiny != null else null)
 
 static func luma(c: float) -> float:
