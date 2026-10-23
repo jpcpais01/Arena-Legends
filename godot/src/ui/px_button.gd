@@ -20,6 +20,14 @@ var disabled := false:
 		queue_redraw()
 ## Glyph mirrored (a left arrow from "play").
 var flip_glyph := false
+## A small second label after the main one (the creator's "Next  BODY"), and the
+## glyph after the labels instead of before them.
+var sub := ""
+var glyph_after := false
+## A price after the label (the web's gem tag): a dark chip with a gem and the
+## number (-1: none); `tag_col` colours the number.
+var gem := -1
+var tag_col := UI.TEXT
 ## Colour overrides (face, hi, lo, fg); null keeps the style's.
 var colors = null
 ## Size overrides in rem (0 keeps the size kind's): label size, least height and width.
@@ -96,6 +104,19 @@ func _font() -> Font:
 	return UI.spaced("700", _font_size(), 0.06)
 
 
+func _tag_w() -> float:
+	var fs := _font_size()
+	return UI.c(6) * 2 + UI.glyph_size(fs * 1.05) + roundf(fs * 0.25) + UI.text_w(UI.font("700"), str(gem), fs)
+
+
+func _sub_size() -> int:
+	return roundi(0.6875 * UI.rem)
+
+
+func _sub_font() -> Font:
+	return UI.spaced("600", _sub_size(), 0.06)
+
+
 func _glyph_px() -> float:
 	return UI.glyph_size(_font_size() * (1.0 if size_kind == "big" else 1.15))
 
@@ -113,6 +134,8 @@ func _fit() -> void:
 			pad = UI.r(1.6)
 	var w := 0.0
 	if text != "": w += UI.text_w(_font(), text.to_upper(), fs)
+	if sub != "": w += roundf(fs * 0.5) + UI.text_w(_sub_font(), sub.to_upper(), _sub_size())
+	if gem >= 0: w += UI.r(0.5) + _tag_w()
 	if glyph != "":
 		w += _glyph_px()
 		if text != "": w += roundf(fs * 0.5)
@@ -194,20 +217,34 @@ func _draw() -> void:
 	var tw := UI.text_w(f, up, fs) if text != "" else 0.0
 	var gs := _glyph_px() if glyph != "" else 0.0
 	var gap := roundf(fs * 0.5) if (glyph != "" and text != "") else 0.0
-	var total := gs + gap + tw
+	var sfs := _sub_size()
+	var sf := _sub_font()
+	var sw := roundf(fs * 0.5) + UI.text_w(sf, sub.to_upper(), sfs) if sub != "" else 0.0
+	var gw := UI.r(0.5) + _tag_w() if gem >= 0 else 0.0
+	var total := gs + gap + tw + sw + gw
 	var x0 := roundf(r.position.x + (r.size.x - total) / 2.0)
 	var mid := r.position.y + (r.size.y - p * (2.0 if size_kind == "sm" else 3.0) + p) / 2.0
 	var fg: Color = pal[3]
 	var shade := Color(1, 0.94, 0.75, 0.6) if style == "primary" else Color(0.04, 0.02, 0.07, 0.55)
+	var tx := x0 if glyph_after else x0 + gs + gap
 	if glyph != "":
-		var gp := Vector2(x0, roundf(mid - gs / 2.0))
+		var gp := Vector2(x0 + tw + sw + gap if glyph_after else x0, roundf(mid - gs / 2.0))
 		UI.draw_glyph(self, glyph, gp, gs, fg, shade, flip_glyph)
 	if text != "":
 		var asc := f.get_ascent(fs)
 		var desc := f.get_descent(fs)
 		var base := roundf(mid + (asc - desc) / 2.0)
-		draw_string(f, Vector2(x0 + gs + gap, base + p), up, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, shade)
-		draw_string(f, Vector2(x0 + gs + gap, base), up, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, fg)
+		draw_string(f, Vector2(tx, base + p), up, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, shade)
+		draw_string(f, Vector2(tx, base), up, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, fg)
+		if sub != "":
+			draw_string(sf, Vector2(tx + tw + roundf(fs * 0.5), base), sub.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, sfs, Color(fg, 0.7))
+		if gem >= 0:
+			var tr := Rect2(tx + tw + sw + UI.r(0.5), roundf(mid - fs / 2.0 - UI.c(2.5)), _tag_w(), fs + UI.c(5))
+			draw_rect(tr, Color(0, 0, 0, 0.35))
+			var gsz := UI.glyph_size(fs * 1.05)
+			UI.draw_glyph(self, "gem", Vector2(tr.position.x + UI.c(6), roundf(mid - gsz / 2.0)), gsz, Color("#6fe8ff"), UI.INK)
+			var bf := UI.font("700")
+			UI.draw_text(self, bf, Vector2(tr.position.x + UI.c(6) + gsz + roundf(fs * 0.25), base), str(gem), fs, tag_col)
 	if unseen:
 		var d := Rect2(r.end.x - p * 5, r.position.y + p * 2, p * 3, p * 3)
 		draw_rect(d.grow(p), UI.INK)

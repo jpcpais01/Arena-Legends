@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.103.0',
+    date: '2026-10-23',
+    title: 'Android: the hero creator',
+    notes: [
+      'The hero creator is in the Android version: species, body, fighting style, look, name, scene, entrance and finale, each step on the lit stage with your hero reacting to every pick.',
+      'Pick cards show your own hero as each species and body, the Look step leans the camera in on the face, and the Scene, Entrance and Finale steps play the real thing on the stage (Watch again, Unlock with gems).',
+      'A brand new player now makes their hero after the title, with the "A new legend rises" reveal. The Hero tile on the home screen opens the editor, and opens straight on Stats when you have points to spend.',
+      'Fixed: finishers in Android fights could stop the knockout scene early, and totem skins with their own shape could break the fight scene when they struck.',
+    ],
+  },
+  {
     version: '0.102.0',
     date: '2026-10-23',
     title: 'Android: the Armory',

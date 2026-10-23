@@ -67,7 +67,7 @@ var _redo_btn: PxButton
 var _done_btn: PxButton
 var _stats_btn: PxButton
 var _preview: FighterPreview
-var _rail: Pad
+var _rail: UI.Pad
 var _stats: UI.Paint
 var _try: UI.Paint
 var _trying := false
@@ -104,7 +104,7 @@ func _init(hero: Dictionary) -> void:
 
 	_preview = FighterPreview.new(null, 76, 82, {"pedestal": true})
 	add_child(_preview)
-	_rail = Pad.new(_paint_rail)
+	_rail = UI.Pad.new(_paint_rail)
 	_rail.tapped.connect(_on_rail_tap)
 	add_child(_rail)
 	_stats_btn = PxButton.new("Stats", "body", "", "sm")
@@ -1268,21 +1268,3 @@ func _paint_cells(ci: CanvasItem, s: Vector2, off: float) -> void:
 				ci.draw_rect(Rect2(d.position.x, yy, p, minf(dash, d.end.y - yy)), UI.GOLD)
 				ci.draw_rect(Rect2(d.end.x - p, yy, p, minf(dash, d.end.y - yy)), UI.GOLD)
 				yy += dash * 2
-
-
-## A custom-drawn area that reports taps (not drags) in its own coordinates.
-class Pad extends UI.Paint:
-	signal tapped(pos: Vector2)
-	var _at = null
-
-	func _init(f: Callable) -> void:
-		super(f)
-		mouse_filter = Control.MOUSE_FILTER_STOP
-
-	func _gui_input(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
-			if e.pressed: _at = e.position
-			elif _at != null:
-				if (e.position - _at).length() < UI.c(10): tapped.emit(e.position)
-				_at = null
-			accept_event()

@@ -37,9 +37,12 @@ release `android-v<version>` on every push to main.
     `sheet.gd` the modal sheet the settings, notes, results, loadouts and
     confirm popups build on; `armory.gd` the Armory (a full screen over the
     arena, which `BattleScene.freeze` stops rendering while it's covered);
-    `scroll_view.gd` a custom-drawn scroller; `fighter_preview.gd` a hero in a
-    little stage (a `Canvas2D.Gpu` inside a Control); `gear_icons.gd` bakes
-    item icons on the GPU, batched per frame.
+    `creator.gd` the hero creator (new hero or editing, its reveal, the Stats
+    step); `scroll_view.gd` a custom-drawn scroller; `fighter_preview.gd` a
+    hero in a little stage (a `Canvas2D.Gpu` inside a Control) that also plays
+    entrances, finishers and victory poses; `portraits.gd` the still hero
+    portraits on pick cards (a few drawn per frame, one forge job each);
+    `gear_icons.gd` bakes item icons on the GPU, batched per frame.
   - `patches/`: hand-written replacements and additions merged into generated
     modules (ignored by Godot itself, see below).
 - `assets/`: fonts (OFL) and the baked logo (`tools/ref/logo.mjs`).
@@ -72,6 +75,9 @@ function or `Class.method` in the config and write it in a patch to replace it
     # Screenshots of the menus: title, home, settings, notes, Armory, loadouts, a fight, results
     xvfb-run $G --path godot --rendering-driver vulkan --rendering-method mobile \
       --resolution 1600x720 -s res://test/ui_shot.gd -- OUT
+    # ...or a first start through the hero creator (clears the saved hero)
+    xvfb-run $G --path godot --rendering-driver vulkan --rendering-method mobile \
+      --resolution 1600x720 -s res://test/ui_shot.gd -- OUT creator
 
 The simulation must stay identical to the web's (every reference battle replays
 tick for tick), and arenas paint pixel for pixel the same.

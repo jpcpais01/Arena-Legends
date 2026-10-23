@@ -37,3 +37,22 @@ static func skin_frame(art, frame: float) -> Variant:
 		return k
 	art["draw"].call(r, SpriteXform.Xf.new(56, 72, 0), fmod((fmod(frame, art["frames"])) + art["frames"], art["frames"]), h)
 	return r.compose(56, 72, (art.get("outline") if art.get("outline") != null else true), true)
+
+##  Where a skin's totem strikes from, in px above the base: its highest self-lit pixel (the stock crystal for plain ones).
+##  A skin's glow layer lives on the GPU, so it is read back once per skin.
+static func totem_top(skin = null) -> float:
+	if not (reshaped("totem", skin) != null):
+		return TOTEM_TOP
+	var top = tops.get(skin)
+	if top == null:
+		var f = totem_frame(false, skin)
+		var row: float = 0
+		var g = f.get("glow")
+		if g is Canvas2D.Region and g.tex != null and g.rect.has_area():
+			var img: Image = g.tex.get_image().get_region(Rect2i(g.rect))
+			if img.is_compressed(): img.decompress()
+			var used := img.get_used_rect()
+			if used.has_area(): row = used.position.y
+		top = (f["oy"] - row) - 1
+		TS.map_set(tops, skin, top)
+	return top

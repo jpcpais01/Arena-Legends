@@ -865,6 +865,18 @@ export class Converter {
     return out;
   }
 
+  /** Whether element `i` of what `p` destructures can be read directly: false only for a
+   *  union with a shorter side (`skinColours(s) ?? []`); plain arrays read directly. */
+  private tupleHas(p: ts.ArrayBindingPattern, i: number): boolean {
+    const t = this.checker.getTypeAtLocation(p);
+    if (!t.isUnion()) return true;
+    return t.types.every((u) => {
+      if (!this.checker.isTupleType(u)) return false;
+      const target = (u as ts.TypeReference).target as ts.TupleType;
+      return i < target.minLength;
+    });
+  }
+
   /** Destructuring patterns into plain reads. */
   private destructure(p: ts.BindingName, src: string, ind: string): Lines {
     const out: Lines = [];
@@ -896,7 +908,8 @@ export class Converter {
           out.push(`${ind}var ${this.declName(el.name as ts.Identifier)} = ${src}.slice(${i})`);
           return;
         }
-        const read = `${src}[${i}]`;
+        // Past the end of a shorter side (`f() ?? []`) reads as JS does: null.
+        const read = this.tupleHas(p, i) ? `${src}[${i}]` : `TS.at(${src}, ${i})`;
         if (ts.isIdentifier(el.name)) {
           const name = this.declName(el.name);
           if (el.initializer) {
@@ -1530,6 +1543,12 @@ export class Converter {
       case ts.SyntaxKind.NullKeyword: return 'null';
       case ts.SyntaxKind.ThisKeyword: return 'self';
       case ts.SyntaxKind.SuperKeyword: return 'super';
+      case ts.SyntaxKind.RegularExpressionLiteral: {
+        // /body/flags: a dictionary with test() (all the game uses).
+        const t = e.getText();
+        const end = t.lastIndexOf('/');
+        return `TS.regex(${JSON.stringify(t.slice(1, end))}, ${JSON.stringify(t.slice(end + 1))})`;
+      }
     }
     if (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isNonNullExpression(e) || ts.isTypeAssertionExpression(e) || ts.isSatisfiesExpression(e)) {
       const inner = this.expr(unwrap(e));
