@@ -80,7 +80,10 @@ static var STORMCALLER = {"longbow.thunderstring": TS.merge([{"weapon": thunders
 
 ## Lightning crawling through a material: thin forked veins that take a new
 ## path every frame (and nearly die out on the last), so the surface flickers.
-static func crackle(period: float = 7.0, density: float = 0.45, along: bool = false) -> Variant:
+static func crackle(period = null, density = null, along = null) -> Variant:
+	if period == null: period = 7
+	if density == null: density = 0.45
+	if along == null: along = false
 	var _fn6 = func(x0, y0, ph):
 		# Bolts run along y (or along x for long parts): one per column of `period`, jagging every 2.6 units.
 		var x = TX.sel(along, y0, x0)
@@ -135,7 +138,8 @@ static func bolt_pts(ax: float, ay: float, bx: float, by: float, n: float, amp: 
 	return pts
 
 ##  Draws a bolt's legs as one-pixel lines.
-static func strike(r, pts, m: float, g: float, tone: float = 3.0) -> void:
+static func strike(r, pts, m: float, g: float, tone = null) -> void:
+	if tone == null: tone = 3
 	var i: float = 0
 	while (i + 3) < pts.size():
 		r.line(pts[i], pts[i + 1], pts[i + 2], pts[i + 3], m, tone, g)
@@ -148,7 +152,9 @@ static func zap(r, F, ax: float, ay: float, bx: float, by: float, n: float, amp:
 	return pts
 
 ##  The lightning-bolt glyph standing on (x, y) in frame F, `h` tall, its tip leaning by `lean`.
-static func bolt_glyph(F, x: float, y: float, h: float, w: float = 1.0, lean: float = 0.0) -> Variant:
+static func bolt_glyph(F, x: float, y: float, h: float, w = null, lean = null) -> Variant:
+	if w == null: w = 1
+	if lean == null: lean = 0
 	# A slanted lower stroke, and offset back over it, a blade tapering to the tip.
 	var k: float = h / 7.0
 	return PixelSdf.union(F.poly([x - (1.1 * w), y, x + (0.7 * w), y, (x + (1.5 * w)) + (lean * 0.4), y + (3.9 * k), (x - (0.3 * w)) + (lean * 0.4), y + (3.9 * k)]), F.poly([(x - (1.4 * w)) + (lean * 0.4), y + (3.1 * k), (x + (0.6 * w)) + (lean * 0.4), y + (3.1 * k), (x + (0.2 * w)) + lean, y + (7 * k)]))
@@ -239,7 +245,10 @@ static func thunderstring() -> Variant:
 # -----------------------------------------------------------------------------
 ##  The thunderbird spread on the shield (local x down the shield, y across), head at the top.
 static func thunderbird(F, x: float, s: float) -> Variant:
-	var P = (func(pts, flip: float = 1.0): return F.poly(TS.map(pts, (func(v: float, i: float, _a2 = null): return ((v * s) * flip if fmod(i, 2) else x + (v * s))))))
+	var _fn0 = func(pts, flip = null):
+		if flip == null: flip = 1
+		return F.poly(TS.map(pts, (func(v: float, i: float, _a2 = null): return ((v * s) * flip if fmod(i, 2) else x + (v * s)))))
+	var P = _fn0
 	var wing = [-2.8, 0.6, -4.6, 2, -6.8, 4.4, -5.2, 4.9, -4.8, 4, -3.4, 5, -3, 3.9, -1.5, 4.6, -1.2, 3.2, 0.2, 1]
 	return PixelSdf.union(P.call(wing), P.call(wing, -1), P.call([-3.8, 0, -3, -1.1, 0.8, -1.1, 1.8, 0, 0.8, 1.1, -3, 1.1]), P.call([0.6, -0.8, 3.8, -2.2, 3, 0, 3.8, 2.2, 0.6, 0.8]), F.circ(x - (4.6 * s), 0, 1.25 * s), P.call([-4.9, 0.6, -4.5, 2.1, -3.8, 1]), P.call([-5.2, -0.7, -6.8, -1.8, -5.6, 0.2]))
 
@@ -273,12 +282,14 @@ static func tempest_aegis() -> Variant:
 # Stormheart
 # -----------------------------------------------------------------------------
 ##  A ring as a polygon (stays round in squashed frames).
-static func hoop(F, cx: float, cy: float, rx: float, ry: float, w: float, a0: float = 0.0, a1 = null, n: float = 20.0) -> Variant:
+static func hoop(F, cx: float, cy: float, rx: float, ry: float, w: float, a0 = null, a1 = null, n = null) -> Variant:
+	if a0 == null: a0 = 0
 	if a1 == null: a1 = PI * 2
+	if n == null: n = 20
 	var out = []
 	var inn = []
 	for i in range(floori(n) + 1):
-		var a: float = a0 + (((a1 - a0) * i) / n)
+		var a: float = a0 + (((a1 - a0) * i) / float(n))
 		out.append_array([cx + (cos(a) * rx), cy + (sin(a) * ry)])
 		inn.append_array([cx + (cos(a) * (rx - w)), cy + (sin(a) * (ry - w))])
 	var pts = TS.arr(out).duplicate()
@@ -534,7 +545,10 @@ static func stormcaller_aura(g, x: float, y: float, t: float, layer: String) -> 
 		g["fillRect"].call(px_3, py_3, 1, 1)
 
 ## Builder-mode twin of crackle (called from surface textures).
-static func crackle__tx(period = 7, density = 0.45, along = false):
+static func crackle__tx(period = null, density = null, along = null):
+	if period == null: period = 7
+	if density == null: density = 0.45
+	if along == null: along = false
 	var _fn6 = func(x0, y0, ph):
 		# Bolts run along y (or along x for long parts): one per column of `period`, jagging every 2.6 units.
 		var x = TX.sel(along, y0, x0)

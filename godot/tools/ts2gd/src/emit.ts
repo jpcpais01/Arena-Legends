@@ -548,7 +548,9 @@ export class Converter {
       if (p.initializer) {
         optionalSeen = true;
         const init = unwrap(p.initializer);
-        if (isLiteralPrimitive(init) && !blank) {
+        // JS applies a default for `undefined` arguments too (an absent optional
+        // field passed along), so defaults resolve in the body, not the signature.
+        if (isLiteralPrimitive(init) && !blank && false) {
           const h = this.scope.builder ? "" : this.hint(t);
           let v = this.expr(init);
           if (h === 'float' && /^-?\d+$/.test(v)) v += '.0';
@@ -924,6 +926,10 @@ export class Converter {
   private assign(e: ts.BinaryExpression, ind: string): Lines {
     const op = e.operatorToken.kind;
     const left = unwrap(e.left);
+    if (ts.isPropertyAccessExpression(left) && left.name.text === 'length' && op === ts.SyntaxKind.EqualsToken && this.isArrayType(this.typeOf(left.expression))) {
+      const v = this.expr(e.right);
+      return [...this.scope.pre.splice(0).map((l) => ind + l), `${ind}${paren(this.expr(left.expression))}.resize(int(${v}))`];
+    }
     if (ts.isArrayLiteralExpression(left) && op === ts.SyntaxKind.EqualsToken) {
       const t = this.scope.tmp('a');
       const out = [`${ind}var ${t} = ${this.expr(e.right)}`];
@@ -979,16 +985,55 @@ export class Converter {
     return this.expr(e);
   }
 
+  /**
+   * `a && (x -= d) <= 0`: the right side has side effects that must only run
+   * when the left passes, so the condition becomes statements into a flag.
+   */
+  private needsSequencing(e: ts.Expression): boolean {
+    e = unwrap(e);
+    if (ts.isBinaryExpression(e) && (e.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken || e.operatorToken.kind === ts.SyntaxKind.BarBarToken)) {
+      return hasSideEffect(e.right) || this.needsSequencing(e.left);
+    }
+    return false;
+  }
+
+  private seqCond(e: ts.Expression, flag: string, ind: string): Lines {
+    e = unwrap(e);
+    if (ts.isBinaryExpression(e) && (e.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken || e.operatorToken.kind === ts.SyntaxKind.BarBarToken)) {
+      const and = e.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken;
+      return [...this.seqCond(e.left, flag, ind), `${ind}if ${and ? '' : 'not '}${flag}:`, ...this.seqCond(e.right, flag, ind + TAB)];
+    }
+    const sc = this.scope;
+    const saved = sc.pre; sc.pre = [];
+    const c = this.cond(e);
+    const pre = sc.pre;
+    sc.pre = saved;
+    return [...pre.map((l) => ind + l), `${ind}${flag} = ${c}`];
+  }
+
+  /** A condition as (statements, expression), sequencing side effects when needed. */
+  private condParts(e: ts.Expression, ind: string): { pre: Lines; c: string } {
+    if (this.needsSequencing(e)) {
+      const flag = this.scope.tmp('c');
+      return { pre: [`${ind}var ${flag} = false`, ...this.seqCond(e, flag, ind)], c: flag };
+    }
+    const sc = this.scope;
+    const saved = sc.pre; sc.pre = [];
+    const c = this.cond(e);
+    const pre = sc.pre.map((l) => ind + l);
+    sc.pre = saved;
+    return { pre, c };
+  }
+
   private ifStmt(s: ts.IfStatement, ind: string): Lines {
-    const out: Lines = [`${ind}if ${this.cond(s.expression)}:`, ...this.body(s.thenStatement, ind + TAB)];
+    const first = this.condParts(s.expression, ind);
+    const out: Lines = [...first.pre, `${ind}if ${first.c}:`, ...this.body(s.thenStatement, ind + TAB)];
     let el = s.elseStatement;
     while (el) {
       if (ts.isIfStatement(el)) {
-        const sc = this.scope;
-        const saved = sc.pre; sc.pre = [];
-        const c = this.cond(el.expression);
-        const pre = sc.pre;
-        sc.pre = saved;
+        const parts = this.condParts(el.expression, '');
+        const c = parts.c;
+        const pre = parts.pre;
         if (pre.length) {
           // The condition needs statements: nest instead of elif.
           out.push(`${ind}else:`, ...pre.map((l) => ind + TAB + l), `${ind}${TAB}if ${c}:`, ...this.body(el.thenStatement, ind + TAB + TAB));
@@ -1450,9 +1495,10 @@ export class Converter {
     if (op === ts.SyntaxKind.InstanceOfKeyword) return `(${this.expr(e.left)} is ${this.typeRef(e.right)})`;
     if (op === ts.SyntaxKind.QuestionQuestionToken) {
       const a = this.expr(e.left);
-      const b = this.expr(e.right);
-      if (simpleExpr(a)) return `(${a} if ${a} != null else ${b})`;
-      return `TS.nn(${a}, ${b})`;
+      // The right side only runs when the left is nullish.
+      const b = this.lazyRight(e.right);
+      if (simpleExpr(a) || !hasCall(e.left)) return `(${a} if ${a} != null else ${b.v})`;
+      return b.lazy ? `TS.nn_f(${a}, func(): return ${b.v})` : `TS.nn(${a}, ${b.v})`;
     }
     if (op === ts.SyntaxKind.AmpersandAmpersandToken || op === ts.SyntaxKind.BarBarToken) {
       if (B) return `TX.${op === ts.SyntaxKind.AmpersandAmpersandToken ? 'and_' : 'or_'}(${this.expr(e.left)}, ${this.expr(e.right)})`;
@@ -1461,9 +1507,16 @@ export class Converter {
         return `(${paren(this.cond(e.left))} ${op === ts.SyntaxKind.AmpersandAmpersandToken ? 'and' : 'or'} ${paren(this.cond(e.right))})`;
       }
       const a = this.expr(e.left);
-      const b = this.expr(e.right);
+      const rb = this.lazyRight(e.right);
+      const b = rb.v;
       const ta = this.truthy(a, lt);
-      if (!simpleExpr(a)) return `TS.${op === ts.SyntaxKind.AmpersandAmpersandToken ? 'and_' : 'or_'}(${a}, ${b})`;
+      // JS evaluates the right side only when needed: a GDScript ternary does too
+      // (the left is repeated when it's cheap; calls go through a thunk).
+      if (!simpleExpr(a) && hasCall(e.left)) {
+        const and = op === ts.SyntaxKind.AmpersandAmpersandToken;
+        if (rb.lazy) return `TS.${and ? 'and_f' : 'or_f'}(${a}, func(): return ${b})`;
+        return `TS.${and ? 'and_' : 'or_'}(${a}, ${b})`;
+      }
       return op === ts.SyntaxKind.BarBarToken ? `(${a} if ${ta} else ${b})` : `(${b} if ${ta} else ${a})`;
     }
     const opText = ts.tokenToString(op)!;
@@ -1651,7 +1704,9 @@ export class Converter {
       this.problem(p, 'object member ' + ts.SyntaxKind[p.kind]);
     }
     if (cur.length || !segs.length) segs.push(`{${cur.join(', ')}}`);
-    const dict = segs.length === 1 ? segs[0] : `TS.merge([${segs.join(', ')}])`;
+    // `{ ...x }` alone is still a copy.
+    const onlySpread = segs.length === 1 && e.properties.length === 1 && ts.isSpreadAssignment(e.properties[0]);
+    const dict = segs.length === 1 && !onlySpread ? segs[0] : `TS.merge([${segs.join(', ')}])`;
     if (cls) return `${cls}.from_dict(${dict})`;
     return dict;
   }
@@ -2032,6 +2087,22 @@ export class Converter {
     return null;
   }
 
+  /**
+   * Right operand of &&, ||, ??: `lazy` when evaluating it eagerly could
+   * differ from JS (it calls, reads properties, or needs hoisted statements).
+   */
+  private lazyRight(n: ts.Expression): { v: string; lazy: boolean } {
+    const sc = this.scope;
+    const before = sc.pre.length;
+    const v = this.expr(n);
+    if (sc.pre.length !== before) return { v, lazy: true };
+    const u = unwrap(n);
+    const trivial = ts.isLiteralExpression(u) || ts.isIdentifier(u) || u.kind === ts.SyntaxKind.TrueKeyword ||
+      u.kind === ts.SyntaxKind.FalseKeyword || u.kind === ts.SyntaxKind.NullKeyword ||
+      (ts.isPrefixUnaryExpression(u) && ts.isLiteralExpression(u.operand));
+    return { v, lazy: !trivial };
+  }
+
   /** Calls on built-ins: Math, Object, Array/String/Map/Set methods. */
   private builtinCall(e: ts.CallExpression, callee: ts.PropertyAccessExpression): string | null {
     const obj = unwrap(callee.expression);
@@ -2376,4 +2447,32 @@ function alwaysReturns(stmts: ts.Statement[]): boolean {
 
 function leadingDoc(_sf: ts.SourceFile, _st: ts.Statement | undefined): string {
   return '';
+}
+
+/** Does evaluating `n` call anything (so it must not run twice)? */
+function hasCall(n: ts.Node): boolean {
+  let found = false;
+  const visit = (x: ts.Node): void => {
+    if (found) return;
+    if (ts.isCallExpression(x) || ts.isNewExpression(x) || ts.isTaggedTemplateExpression(x)) { found = true; return; }
+    if (ts.isArrowFunction(x) || ts.isFunctionExpression(x)) return;
+    ts.forEachChild(x, visit);
+  };
+  visit(n);
+  return found;
+}
+
+/** Does evaluating `n` assign anything (so it must not run early)? */
+function hasSideEffect(n: ts.Node): boolean {
+  let found = false;
+  const visit = (x: ts.Node): void => {
+    if (found) return;
+    if (ts.isBinaryExpression(x) && isAssignOp(x.operatorToken.kind)) { found = true; return; }
+    if ((ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) &&
+      (x.operator === ts.SyntaxKind.PlusPlusToken || x.operator === ts.SyntaxKind.MinusMinusToken)) { found = true; return; }
+    if (ts.isArrowFunction(x) || ts.isFunctionExpression(x)) return;
+    ts.forEachChild(x, visit);
+  };
+  visit(n);
+  return found;
 }

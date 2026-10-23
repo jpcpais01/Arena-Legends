@@ -31,7 +31,7 @@ static func next_point_worth(n: float) -> float:
 static func spent_points(t) -> float:
 	var s: float = 0
 	for id in TRAIN_IDS:
-		s += TS.nn((null if t == null else t.get(id)), 0)
+		s += ((null if t == null else t.get(id)) if (null if t == null else t.get(id)) != null else 0)
 	return s
 
 ##  Adds the training to a copy of `s`.

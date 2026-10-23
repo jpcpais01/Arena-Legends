@@ -58,7 +58,9 @@ static func bark(x, y, _a2 = null):
 	return (TX.sel(TX.gt(TX.sin(TX.add(TX.mul(y, 2.6), TX.mul(TX.sin(TX.mul(x, 0.45)), 1.6))), 0.55), -1, 0))
 
 ##  Sap rising through a part, one step per frame.
-static func sap(speed: float = 1.5, period: float = 7.0) -> Variant:
+static func sap(speed = null, period = null) -> Variant:
+	if speed == null: speed = 1.5
+	if period == null: period = 7
 	return (func(x, _y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, speed)), period), 1.6), 1, 0)))
 
 ##  Leaf veins: a midrib and side veins (in a leaf's own frame, x along it).
@@ -66,7 +68,8 @@ static func veins(x, y, _a2 = null):
 	return (TX.sel(TX.or_(TX.lt(TX.abs(y), 0.35), TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(TX.abs(y), 1.2)), 2.2), 0.45)), -1, 0))
 
 ##  A leaf from (x, y) in frame F pointing along angle `a`, `l` long.
-static func leaf(F, x: float, y: float, a: float, l: float, w: float = 0.42) -> Variant:
+static func leaf(F, x: float, y: float, a: float, l: float, w = null) -> Variant:
+	if w == null: w = 0.42
 	var c: float = cos(a)
 	var s: float = sin(a)
 	var p = (func(u: float, v: float): return [(x + (c * u)) - (s * v), (y + (s * u)) + (c * v)])

@@ -21,7 +21,7 @@ static func reach_of(f, ab) -> Variant:
 	elif _sw0 == "blade":
 		return [0, r]
 	elif _sw0 == "totem":
-		return [0, (TS.nn((null if ab.get("totem") == null else ab.get("totem")["radius"]), 0)) + 0.5]
+		return [0, ((null if ab.get("totem") == null else ab.get("totem")["radius"]) if (null if ab.get("totem") == null else ab.get("totem")["radius"]) != null else 0) + 0.5]
 	elif _sw0 == "repel":
 		return [0, ab["range"]]
 	else:
@@ -35,10 +35,10 @@ static func defense_of(ab) -> Variant:
 		return "parry"
 	if ab["kind"] == "blink":
 		return "blink"
-	if (ab["slot"] == "evade") or (((ab["kind"] == "dash") and (not (null if ab.get("dash") == null else ab.get("dash").get("strike")))) and ((TS.nn((null if ab.get("dash") == null else ab.get("dash")["iframes"]), 0)) > 0)):
+	if (ab["slot"] == "evade") or (((ab["kind"] == "dash") and (not (null if ab.get("dash") == null else ab.get("dash").get("strike")))) and (((null if ab.get("dash") == null else ab.get("dash")["iframes"]) if (null if ab.get("dash") == null else ab.get("dash")["iframes"]) != null else 0) > 0)):
 		return "evade"
 	var _q0 = ab.get("buff")
-	if (ab["kind"] == "buff") and (null if _q0 == null else TS.some(_q0, (func(s, _a1 = null, _a2 = null): return (TS.nn((null if STATUS_FX.get(s["status"]) == null else STATUS_FX.get(s["status"]).get("taken")), 0)) < 0))):
+	if (ab["kind"] == "buff") and (null if _q0 == null else TS.some(_q0, (func(s, _a1 = null, _a2 = null): return ((null if STATUS_FX.get(s["status"]) == null else STATUS_FX.get(s["status"]).get("taken")) if (null if STATUS_FX.get(s["status"]) == null else STATUS_FX.get(s["status"]).get("taken")) != null else 0) < 0))):
 		return "armor"
 	if ab.get("shieldGain") and (ab["power"] <= 0):
 		return "shield"
@@ -100,7 +100,8 @@ static func next_swing(src, ab) -> Variant:
 
 ## Damage of `ab` from `src` to `dst` if it lands, including DoTs and on-hit
 ## passives. Combo strings count the swing that would come next.
-static func est_damage(src, ab, dst, with_passives: bool = true) -> float:
+static func est_damage(src, ab, dst, with_passives = null) -> float:
+	if with_passives == null: with_passives = true
 	return swing_damage(src, next_swing(src, ab), dst, with_passives)
 
 static func swing_damage(src, ab, dst, with_passives: bool) -> float:

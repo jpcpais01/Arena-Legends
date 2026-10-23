@@ -42,10 +42,12 @@ static func buy_finisher(id: String) -> bool:
 static func buy_pose(id: String) -> bool:
 	return pose.buy(id)
 
-static func finisher_of(look, mine: bool = false) -> String:
+static func finisher_of(look, mine = null) -> String:
+	if mine == null: mine = false
 	return fin.of((null if look == null else look.get("finisher")), mine)
 
-static func pose_of(look, mine: bool = false) -> String:
+static func pose_of(look, mine = null) -> String:
+	if mine == null: mine = false
 	return pose.of((null if look == null else look.get("pose")), mine)
 
 static func random_finisher(r = null) -> String:

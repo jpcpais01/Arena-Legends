@@ -119,7 +119,9 @@ static func rime_soft(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.hash(TX.floor(x), TX.add(TX.floor(y), 7)), 0.035), 1, 0))
 
 ##  A glint sweeping across ice, one step per frame.
-static func sweep(period: float = 9.0, speed: float = 2.4) -> Variant:
+static func sweep(period = null, speed = null) -> Variant:
+	if period == null: period = 9
+	if speed == null: speed = 2.4
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.6)), TX.mul(ph, speed)), period), 1.1), 2, 0)))
 
 ##  Fur: soft tufts combed in one direction.
@@ -173,11 +175,12 @@ static func fur_roll(F, ax: float, ay: float, bx: float, by: float, rad: float, 
 	return PixelSdf.union.callv(TS.arr(parts))
 
 ##  A round disc as a polygon (stays round in squashed frames).
-static func disc(F, cx: float, cy: float, rx: float, ry = null, n: float = 16.0) -> Variant:
+static func disc(F, cx: float, cy: float, rx: float, ry = null, n = null) -> Variant:
 	if ry == null: ry = rx
+	if n == null: n = 16
 	var pts = []
 	for i in range(ceili(n)):
-		pts.append_array([cx + (cos(((i / n) * PI) * 2) * rx), cy + (sin(((i / n) * PI) * 2) * ry)])
+		pts.append_array([cx + (cos(((i / float(n)) * PI) * 2) * rx), cy + (sin(((i / float(n)) * PI) * 2) * ry)])
 	return F.poly(pts)
 
 # -----------------------------------------------------------------------------

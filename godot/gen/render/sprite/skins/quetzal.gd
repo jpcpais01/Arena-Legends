@@ -92,7 +92,9 @@ static var QUETZAL = {"mace.macuahuitl": TS.merge([{"weapon": macuahuitl}, FX]),
 # Textures
 # -----------------------------------------------------------------------------
 ##  Turquoise mosaic: tiles of slightly different stones, a few catching the light each frame.
-static func mosaic(size: float = 1.4, glints: float = 0.05) -> Variant:
+static func mosaic(size = null, glints = null) -> Variant:
+	if size == null: size = 1.4
+	if glints == null: glints = 0.05
 	var _fn3 = func(x, y, ph):
 		var tx = TX.floor(TX.div(x, size))
 		var ty = TX.floor(TX.add(TX.div(y, size), TX.mul((TX.band(tx, 1)), 0.5)))
@@ -104,7 +106,8 @@ static func mosaic(size: float = 1.4, glints: float = 0.05) -> Variant:
 	return _fn3
 
 ##  Feather barbs combed along a plume, a sheen of iridescence sliding down it.
-static func barbs(sheen: bool = true) -> Variant:
+static func barbs(sheen = null) -> Variant:
+	if sheen == null: sheen = true
 	var _fn0 = func(x, y, ph):
 		var b = TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.5)), 3), 0.5), -1, 0)
 		return TX.sel(TX.and_(sheen, TX.lt(SkinsKit.wrap___tx(TX.add(TX.sub(TX.mul(x, 0.5), TX.mul(y, 0.7)), TX.mul(ph, 2.2)), 9), 0.9)), TX.add(b, 1), b)
@@ -128,7 +131,9 @@ static func greca(x, y, _a2 = null):
 	return TX.sel(TX.or_(TX.or_((TX.and_(TX.eq(j, 0), TX.lt(i, 2))), (TX.and_(TX.eq(j, 1), (TX.or_(TX.eq(i, 1), TX.eq(i, 2)))))), (TX.and_(TX.eq(j, 2), TX.ge(i, 2)))), -2, 0)
 
 ##  A glint sweeping along polished obsidian, one step per frame.
-static func sweep(period: float = 9.0, speed: float = 2.6) -> Variant:
+static func sweep(period = null, speed = null) -> Variant:
+	if period == null: period = 9
+	if speed == null: speed = 2.6
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.4)), TX.mul(ph, speed)), period), 1), 2, 0)))
 
 ##  Jaguar pelt: broken rosettes with darker hearts.
@@ -192,7 +197,8 @@ static func spirit(tex = null) -> Variant:
 # Shapes
 # -----------------------------------------------------------------------------
 ##  A plume from (x, y) toward angle `a`: a narrow quill widening to `w`, then a soft point; `curl` bends it.
-static func feather(F, x: float, y: float, a: float, len_: float, w: float, curl: float = 0.0) -> Variant:
+static func feather(F, x: float, y: float, a: float, len_: float, w: float, curl = null) -> Variant:
+	if curl == null: curl = 0
 	var c: float = cos(a)
 	var s: float = sin(a)
 	var nx: float = -s
@@ -204,7 +210,8 @@ static func feather(F, x: float, y: float, a: float, len_: float, w: float, curl
 	return F.poly((TS.arr(p.call(0, (-w) * 0.3)) + TS.arr(p.call(0.3, (-w) * 0.8)) + TS.arr(p.call(0.66, -w)) + TS.arr(p.call(0.9, (-w) * 0.62)) + TS.arr(p.call(1, 0)) + TS.arr(p.call(0.9, w * 0.62)) + TS.arr(p.call(0.66, w)) + TS.arr(p.call(0.3, w * 0.8)) + TS.arr(p.call(0, w * 0.3))))
 
 ##  The point at fraction `u` along a feather (for its quill line and tip).
-static func along(x: float, y: float, a: float, len_: float, u: float, curl: float = 0.0) -> Variant:
+static func along(x: float, y: float, a: float, len_: float, u: float, curl = null) -> Variant:
+	if curl == null: curl = 0
 	var c: float = cos(a)
 	var s: float = sin(a)
 	var b: float = ((curl * u) * u) * len_
@@ -221,18 +228,21 @@ static func wing(F, x: float, y: float, a: float, len_: float) -> Variant:
 	return F.poly((TS.arr(p.call(0, 0.14)) + TS.arr(p.call(0.5, 0.17)) + TS.arr(p.call(1, 0.04)) + TS.arr(p.call(0.8, -0.06)) + TS.arr(p.call(0.86, -0.18)) + TS.arr(p.call(0.62, -0.17)) + TS.arr(p.call(0.64, -0.32)) + TS.arr(p.call(0.42, -0.27)) + TS.arr(p.call(0.1, -0.16))))
 
 ##  A round disc as a polygon (stays round in squashed frames).
-static func disc(F, cx: float, cy: float, rx: float, ry = null, n: float = 16.0) -> Variant:
+static func disc(F, cx: float, cy: float, rx: float, ry = null, n = null) -> Variant:
 	if ry == null: ry = rx
+	if n == null: n = 16
 	var pts = []
 	for i in range(ceili(n)):
-		pts.append_array([cx + (cos(((i / n) * PI) * 2) * rx), cy + (sin(((i / n) * PI) * 2) * ry)])
+		pts.append_array([cx + (cos(((i / float(n)) * PI) * 2) * rx), cy + (sin(((i / float(n)) * PI) * 2) * ry)])
 	return F.poly(pts)
 
 ##  A sun disc: a gold disc with `n` stepped rays round it (as one shape).
-static func sun_disc(F, cx: float, cy: float, rad: float, n: float = 8.0, spin: float = 0.0) -> Variant:
+static func sun_disc(F, cx: float, cy: float, rad: float, n = null, spin = null) -> Variant:
+	if n == null: n = 8
+	if spin == null: spin = 0
 	var parts = [disc(F, cx, cy, rad, rad, 14)]
 	for i in range(ceili(n)):
-		var a: float = spin + (((i / n) * PI) * 2)
+		var a: float = spin + (((i / float(n)) * PI) * 2)
 		var c: float = cos(a)
 		var s: float = sin(a)
 		var w: float = rad * 0.32
@@ -302,7 +312,8 @@ static func plume_dart() -> Variant:
 ## The feathered serpent at (0, 0) in frame t, flying toward +x: a body of turquoise mosaic banded in gold
 ## rippling in a wave, feathered wings beating over its back, a crest of quetzal plumes on the raised head
 ## and a plume tuft at the tail; `f` steps the four-frame loop.
-static func serpent(r, t, f: float, h, s: float = 1.0) -> void:
+static func serpent(r, t, f: float, h, s = null) -> void:
+	if s == null: s = 1
 	var S = (func(v: float): return v * s)
 	var ph: float = fmod(f, 4)
 	var wv: float = f * SkinsKit.Q

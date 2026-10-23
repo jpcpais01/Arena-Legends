@@ -14,13 +14,15 @@ static func clamp255(v: float) -> float:
 	return (0 if v < 0 else (255 if v > 255 else v))
 
 ##  Packs a 0xRRGGBB colour with alpha into ImageData's little-endian Uint32 layout.
-static func pack(hex: float, a: float = 255.0) -> float:
+static func pack(hex: float, a = null) -> float:
+	if a == null: a = 255
 	return TS.ushr((TS.i32(TS.i32(TS.i32((TS.shl(int(a), 24)) | (TS.shl((TS.i32(int(hex) & 255)), 16))) | (TS.i32(int(hex) & 0xff00))) | (TS.i32((int(hex) >> 16) & 255)))), 0)
 
 static func unpack_hex(c: float) -> float:
 	return TS.i32(TS.i32((TS.shl((TS.i32(int(c) & 255)), 16)) | (TS.i32(int(c) & 0xff00))) | (TS.i32((int(c) >> 16) & 255)))
 
-static func css(hex: float, a: float = 1.0, _a2 = null) -> String:
+static func css(hex: float, a = null, _a2 = null) -> String:
+	if a == null: a = 1
 	var _d0 = rgb_of(hex)
 	var r = _d0[0]
 	var g = _d0[1]
@@ -128,7 +130,9 @@ static func ramp(base: float, o = null) -> Variant:
 	return [from_hsl(deep_hue, minf(1, (s * 1.05) + (tint * 2)), maxf(0.06, l - (step * 2.1))), from_hsl(shadow_hue, minf(1, (s * 1.08) + tint), maxf(0.1, l - step)), base, from_hsl(light_hue, s * 0.94, minf(0.93, l + (step * 0.85))), from_hsl(hi_hue, s * 0.8, minf(0.97, l + (step * 1.75)))]
 
 ##  Dark outline colour that still carries a hint of the colour it borders.
-static func ink_for(hex: float, ink: float = 0x1a1220, keep: float = 0.28) -> float:
+static func ink_for(hex: float, ink = null, keep = null) -> float:
+	if ink == null: ink = 0x1a1220
+	if keep == null: keep = 0.28
 	var _d0 = to_hsl(hex)
 	var h = _d0[0]
 	var s = _d0[1]

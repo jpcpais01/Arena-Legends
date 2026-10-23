@@ -230,14 +230,15 @@ class Brain:
 			m.init_(b, self.f)
 			self.mirror = m
 		var m_2 = self.mirror
-		m_2.plan = TS.nn((b.brains[e["id"]]).get("plan"), "pressure")
+		m_2.plan = ((b.brains[e["id"]]).get("plan") if (b.brains[e["id"]]).get("plan") != null else "pressure")
 		# Shape the imagined enemy after the real one's habits.
 		m_2.defend_bias = CoreMath.clamp_(0.9 + (self.opp.get_defends() * 1.6), 0.8, 2)
 		var mp = m_2.p
 		mp["aggression"] = CoreMath.clamp_((0.3 + (self.opp.aggro * 0.6)) + (self.opp.trade * 0.3), 0.1, 0.95)
 		return self.mirror
 
-	func thought(b, text: String, force: bool = false) -> void:
+	func thought(b, text: String, force = null) -> void:
+		if force == null: force = false
 		if (self.thought_cd > 0) and (not force):
 			return
 		self.thought_cd = 1.6
@@ -375,7 +376,7 @@ class Brain:
 			elif _sw1 == "aoe":
 				reach = dist <= (info["maxReach"] + 0.3)
 			elif _sw1 == "dash":
-				reach = dist <= ((TS.nn((null if ab_2.get("dash") == null else ab_2.get("dash")["distance"]), 0)) + 0.2)
+				reach = dist <= (((null if ab_2.get("dash") == null else ab_2.get("dash")["distance"]) if (null if ab_2.get("dash") == null else ab_2.get("dash")["distance"]) != null else 0) + 0.2)
 				tti_3 += 0.06
 			elif _sw1 == "projectile":
 				reach = true
@@ -820,7 +821,7 @@ class Brain:
 				val = (((t["danger"] * 0.55) + (0.03 if c["cornered"] else 0)) + (0.02 if t["heavy"] else 0)) + self.cleanse_value(ab)
 				why = (ab["name"] + " to tank it.")
 			else:
-				var iframes: float = (TS.nn((null if ab.get("dash") == null else ab.get("dash")["iframes"]), ab.get("iframes")) if TS.nn((null if ab.get("dash") == null else ab.get("dash")["iframes"]), ab.get("iframes")) != null else 0.2)
+				var iframes: float = (((null if ab.get("dash") == null else ab.get("dash")["iframes"]) if (null if ab.get("dash") == null else ab.get("dash")["iframes"]) != null else ab.get("iframes")) if ((null if ab.get("dash") == null else ab.get("dash")["iframes"]) if (null if ab.get("dash") == null else ab.get("dash")["iframes"]) != null else ab.get("iframes")) != null else 0.2)
 				var lo: float = startup + 0.01
 				var hi: float = (startup + iframes) + (0.05 if t["projectile"] else 0.18)
 				if t["tti"] < lo:
@@ -1356,7 +1357,7 @@ class Brain:
 		var ab = info["ab"]
 		var dist: float = absf(e["x"] - f["x"])
 		# Where they'll be when it rings.
-		var closing: float = (e["vx"] * (-signf(TS.or_(e["x"] - f["x"], 1)))) * ab["windup"]
+		var closing: float = (e["vx"] * (-signf((e["x"] - f["x"] if e["x"] - f["x"] else 1)))) * ab["windup"]
 		var reach: float = ab["range"] - 0.15
 		if (((not e["alive"]) or (e["y"] > 1.6)) or ((dist - closing) > reach)) or (dist > (ab["range"] + 0.4)):
 			self.bell_near = maxf(0, self.bell_near - (SimConstants.DT * 2))

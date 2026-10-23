@@ -10,7 +10,7 @@ static func derive_personality(f, kit, temper: float, temper2: float) -> Variant
 	var base = f["profile"]["personality"]
 	var s = f["base"]
 	var counters: bool = TS.some(kit["defenses"], (func(d, _a1 = null, _a2 = null): return (not (not (null if d["ab"].get("guard") == null else d["ab"].get("guard").get("counterPower"))))))
-	var heavy_hitters: float = TS.filter(kit["info"], (func(a, _a1 = null, _a2 = null): return ((not a["item"]) if TS.and_((a["ab"].get("heavy") if a["offensive"] else a["offensive"]), (not a["ultimate"])) else TS.and_((a["ab"].get("heavy") if a["offensive"] else a["offensive"]), (not a["ultimate"]))))).size()
+	var heavy_hitters: float = TS.filter(kit["info"], (func(a, _a1 = null, _a2 = null): return ((not a["item"]) if ((not a["ultimate"]) if (a["ab"].get("heavy") if a["offensive"] else a["offensive"]) else (a["ab"].get("heavy") if a["offensive"] else a["offensive"])) else ((not a["ultimate"]) if (a["ab"].get("heavy") if a["offensive"] else a["offensive"]) else (a["ab"].get("heavy") if a["offensive"] else a["offensive"]))))).size()
 	var aggression: float = ((base["aggression"] + (s["lifesteal"] * 0.5)) + (s["thorns"] * 0.3)) + (-0.08 if kit["ranged"] and (not f["profile"]["ranged"]) else 0)
 	var caution: float = (base["caution"] - (s["lifesteal"] * 0.2)) + (0.05 if kit["ranged"] else 0)
 	var cunning: float = (base["cunning"] + (0.08 if counters else 0)) + (heavy_hitters * 0.03)

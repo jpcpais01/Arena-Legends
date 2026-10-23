@@ -95,19 +95,22 @@ static func mix_rgb(a: float, b: float, t: float) -> float:
 	return TS.i32(TS.i32(int(c.call(16)) | int(c.call(8))) | int(c.call(0)))
 
 ##  A star of `n` points round (cx, cy).
-static func star(F, cx: float, cy: float, R: float, ri: float, n: float = 4.0, rot: float = 0.0) -> Variant:
+static func star(F, cx: float, cy: float, R: float, ri: float, n = null, rot = null) -> Variant:
+	if n == null: n = 4
+	if rot == null: rot = 0
 	var pts = []
 	for i in range(ceili(n * 2)):
-		var a: float = (rot + (PI / 2.0)) + ((i * PI) / n)
+		var a: float = (rot + (PI / 2.0)) + ((i * PI) / float(n))
 		var d: float = (ri if i % 2 else R)
 		pts.append_array([cx + (cos(a) * d), cy + (sin(a) * d)])
 	return F.poly(pts)
 
 ##  A round disc as a polygon (stays round when the frame is squashed).
-static func disc(F, cx: float, cy: float, r: float, n: float = 14.0) -> Variant:
+static func disc(F, cx: float, cy: float, r: float, n = null) -> Variant:
+	if n == null: n = 14
 	var pts = []
 	for i in range(ceili(n)):
-		pts.append_array([cx + (cos(((i / n) * PI) * 2) * r), cy + (sin(((i / n) * PI) * 2) * r)])
+		pts.append_array([cx + (cos(((i / float(n)) * PI) * 2) * r), cy + (sin(((i / float(n)) * PI) * 2) * r)])
 	return F.poly(pts)
 
 ##  Caps through a list of points (x, y, radius).
@@ -120,7 +123,8 @@ static func bend(t, pts) -> Variant:
 	return PixelSdf.union.callv(TS.arr(out))
 
 ##  Flat fill with no contour against what it covers (inlays, faces).
-static func inlay(r, s, mat: float, o, bevel: float = 1.0, local = null) -> void:
+static func inlay(r, s, mat: float, o, bevel = null, local = null) -> void:
+	if bevel == null: bevel = 1
 	r.fill(s, mat, {"group": (o.get("group") if o.get("group") != null else 6), "bevel": bevel, "toneBias": o.get("toneBias"), "noLine": true, "local": (local if local != null else o.get("local"))})
 
 # =============================================================================
@@ -211,7 +215,7 @@ static func comet_bolas() -> Variant:
 		SpriteWeaponKit.fill_all(r, [H.circ(0.6, 0, 0.9)], m.call("cap"), o, 1)
 		r.fill(star(H, 0.2, 0, s, 0.55), m.call("star"), {"group": g, "noLine": true})
 		r.dot(H.x(0.6, 0), H.y(0.6, 0), m.call("hot"), 3, g)
-	return {"tip": 7, "mats": comet_mats(), "draw": _fn5}
+	return {"tip": 7, "mats": TS.merge([comet_mats()]), "draw": _fn5}
 
 static func mirror(pts) -> Variant:
 	return TS.map(pts, (func(v: float, i: float, _a2 = null): return (v if fmod(i, 2) else -v)))
@@ -372,7 +376,7 @@ static func sunspear() -> Variant:
 		# A long leaf point thrust out through the sun.
 		SpriteWeaponKit.fill_all(r, [t.poly([18.2, -1.0, 20, -1.7, 24.4, 0, 20, 1.7, 18.2, 1.0])], m.call("head"), o, 1.2)
 		r.line(t.x(19.2, 0), t.y(19.2, 0), t.x(23.2, 0), t.y(23.2, 0), m.call("head"), 4, g)
-	return {"tip": 23, "mats": sun_mats(), "draw": _fn0}
+	return {"tip": 23, "mats": TS.merge([sun_mats()]), "draw": _fn0}
 
 ##  Runes cut into the plate: their strokes pulse up the arm over the loop.
 static func rune_cut(x, y, ph):

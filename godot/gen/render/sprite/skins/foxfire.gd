@@ -67,7 +67,9 @@ static func _init_lantern():
 static var FOXFIRE = {"katana.kitsunebi": TS.merge([{"weapon": kitsunebi}, FX]), "frost_wand.gohei": TS.merge([{"weapon": gohei}, FX]), "wisp_lantern.foxfire": lantern, "duelist_band.kitsune": kitsune_mask(), "phase_cloak.ninetails": nine_tails(), "leather_boots.geta": geta(), "leather_leggings.hakama": hakama()}
 
 ##  Foxfire: blue flame with a bright band running through it, one step per frame.
-static func foxfire(speed: float = 1.5, period: float = 6.0) -> Variant:
+static func foxfire(speed = null, period = null) -> Variant:
+	if speed == null: speed = 1.5
+	if period == null: period = 6
 	return PixelRaster.material({"base": FOX[2], "glow": true, "ramp": FOX, "tex": (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, speed)), period), 1.4), 1, 0)))})
 
 ##  Piecewise-linear lookup through (x, y) points.

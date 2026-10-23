@@ -12,7 +12,8 @@ static func veined(dark, hot: float, tex) -> Variant:
 	return PixelRaster.material({"base": dark[2], "ramp": (TS.arr(dark) + [hot]), "tex": tex})
 
 ##  Spikes radiating from a ball at (cx, 0), skipping those that point back down the haft.
-static func spikes(t, cx: float, r0: float, r1: float, n: float, rot: float = 0.0) -> Variant:
+static func spikes(t, cx: float, r0: float, r1: float, n: float, rot = null) -> Variant:
+	if rot == null: rot = 0
 	var out = []
 	for k in range(ceili(n)):
 		var a: float = rot + (((k / n) * PI) * 2)

@@ -75,7 +75,9 @@ static var C = {"rift": PixelColor.css(0x0a0612), "deep": PixelColor.css(0x5a1aa
 static var VOIDBORN = {"greataxe.voidreaver": TS.merge([{"weapon": voidreaver}, FX]), "hand_crossbow.eldritch": TS.merge([{"weapon": eldritch_repeater, "proj": {"bolt": boltProj}}, FX]), "wisp_lantern.watcher": watcherSkin, "executioner_hood.thousandeyes": thousand_eyes(), "thornmail.tendril": tendril_carapace(), "shadow_treads.voidwalkers": voidwalkers(), "leather_leggings.chitin": chitin_cuisses()}
 
 ##  Organic veins through chitin; light pulses along them one step per frame.
-static func veins(scale: float = 1.0, w: float = 0.13) -> Variant:
+static func veins(scale = null, w = null) -> Variant:
+	if scale == null: scale = 1
+	if w == null: w = 0.13
 	var _fn3 = func(x, y, ph):
 		var v = TX.add(TX.sin(TX.add(TX.mul(TX.mul(x, 0.7), scale), TX.mul(TX.sin(TX.mul(TX.mul(y, 1.1), scale)), 2.4))), TX.mul(TX.sin(TX.add(TX.mul(TX.mul(y, 0.9), scale), TX.mul(TX.mul(x, 0.35), scale))), 0.7))
 		var _c0 = TX.ge(TX.abs(v), w)
@@ -85,15 +87,20 @@ static func veins(scale: float = 1.0, w: float = 0.13) -> Variant:
 	return _fn3
 
 ##  Segment seams across a part (insect-leg joints), plus veins.
-static func segments(p: float = 3.0, scale: float = 1.3) -> Variant:
+static func segments(p = null, scale = null) -> Variant:
+	if p == null: p = 3
+	if scale == null: scale = 1.3
 	return (func(x, y, ph): return TX.add((TX.sel(TX.lt(SkinsKit.wrap___tx(x, p), 0.45), -1, 0)), veins__tx(scale, 0.1).call(x, y, ph)))
 
 ##  Leg-like segments whose joints light up in turn, a pulse climbing toward the head.
-static func joints(p: float = 3.2) -> Variant:
+static func joints(p = null) -> Variant:
+	if p == null: p = 3.2
 	return (func(x, _y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, p), 0.55), (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.sub(TX.floor(TX.div(x, p)), ph), 4), 0), 4, -1)), 0)))
 
 ##  Light running along void-light, one step per frame.
-static func run(speed: float = 1.5, period: float = 6.0) -> Variant:
+static func run(speed = null, period = null) -> Variant:
+	if speed == null: speed = 1.5
+	if period == null: period = 6
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.4)), TX.mul(ph, speed)), period), 1.3), 1, 0)))
 
 static func chitin(tex = null) -> Variant:
@@ -115,11 +122,13 @@ static func iris() -> Variant:
 static func flesh() -> Variant:
 	return ({"base": FLESH[2], "ramp": FLESH})
 
-static func look_at(ph: float, k: float = 0.0) -> Variant:
+static func look_at(ph: float, k = null) -> Variant:
+	if k == null: k = 0
 	return LOOKS[SkinsKit.wrap_(ph + k, 4)]
 
 ##  An eyeball of radius `rad` at (x, y) in frame F: sclera, a glowing iris with a slit pupil, or a shut lid.
-static func eyeball(r, F, x: float, y: float, rad: float, look, e, g: float, local = null, bias: float = 0.0) -> void:
+static func eyeball(r, F, x: float, y: float, rad: float, look, e, g: float, local = null, bias = null) -> void:
+	if bias == null: bias = 0
 	var ball = F.circ(x, y, rad)
 	if look == null:
 		r.fill(ball, e["lid"], {"group": g, "bevel": rad * 0.9, "toneBias": bias, "local": local})
@@ -132,7 +141,8 @@ static func eyeball(r, F, x: float, y: float, rad: float, look, e, g: float, loc
 	r.fill(PixelSdf.intersect(F.ell(ix, iy, rad * 0.17, rad * 0.44), ball), e["pupil"], {"group": g, "flat": 0, "noLine": true})
 
 ##  A tiny eye (a few pixels): a sclera bead with one bright iris pixel that looks around, or a shut slit.
-static func bead(r, F, x: float, y: float, rx: float, ry: float, look, white: float, iris_m: float, lid: float, g: float, bias: float = 0.0) -> void:
+static func bead(r, F, x: float, y: float, rx: float, ry: float, look, white: float, iris_m: float, lid: float, g: float, bias = null) -> void:
+	if bias == null: bias = 0
 	if look == null:
 		r.line(F.x(x - (rx * 0.8), y), F.y(x - (rx * 0.8), y), F.x(x + (rx * 0.8), y), F.y(x + (rx * 0.8), y), lid, 1, g)
 		return
@@ -141,7 +151,11 @@ static func bead(r, F, x: float, y: float, rx: float, ry: float, look, white: fl
 
 ## A tendril from (x, y) in frame F heading along `dir`, writhing with the frame and
 ## curling harder toward its tip. Returns the shape and where the tip ends up.
-static func tendril(F, x: float, y: float, dir: float, len_: float, ph: float, k: float = 0.0, w0: float = 0.8, curl: float = 1.2, wave: float = 0.5) -> Variant:
+static func tendril(F, x: float, y: float, dir: float, len_: float, ph: float, k = null, w0 = null, curl = null, wave = null) -> Variant:
+	if k == null: k = 0
+	if w0 == null: w0 = 0.8
+	if curl == null: curl = 1.2
+	if wave == null: wave = 0.5
 	var parts = []
 	var px: float = x
 	var py: float = y
@@ -239,7 +253,8 @@ static func eldritch_repeater() -> Variant:
 	return {"tip": 9.4, "mats": {"stock": PixelRaster.material(chitin(segments(2.4, 1.6))), "prod": PixelRaster.material(shell()), "string": PixelRaster.material(void_light()), "bolt": PixelRaster.material(void_light()), "white": PixelRaster.material(sclera()), "iris": PixelRaster.material(iris()), "pupil": PixelRaster.material({"base": 0x0a0610}), "tendril": PixelRaster.material(flesh()), "tip": PixelRaster.material(void_light()), "vein": PixelRaster.material(void_light())}, "draw": _fn1}
 
 ##  The watcher: a floating eyeball in a chitin shell, at (0, 0) in frame t; `look` steers the iris, `open` the lids (0..1).
-static func watcher(r, t, f: float, look, open: float, h, s: float = 1.0) -> void:
+static func watcher(r, t, f: float, look, open: float, h, s = null) -> void:
+	if s == null: s = 1
 	var S = (func(v: float): return v * s)
 	# Tendrils hanging beneath, each writhing out of step.
 	for _e0 in [[-2.4, 6.4, 0], [-0.6, 8, 1.6], [1.2, 7, 3.1], [2.8, 5.4, 4.4]]:
@@ -515,7 +530,9 @@ static func voidborn_aura(g, x: float, y: float, t: float, layer: String) -> voi
 		g["fillRect"].call(px_3 + look, py_3, 1, 1)
 
 ## Builder-mode twin of veins (called from surface textures).
-static func veins__tx(scale = 1, w = 0.13, _a2 = null):
+static func veins__tx(scale = null, w = null, _a2 = null):
+	if scale == null: scale = 1
+	if w == null: w = 0.13
 	var _fn3 = func(x, y, ph):
 		var v = TX.add(TX.sin(TX.add(TX.mul(TX.mul(x, 0.7), scale), TX.mul(TX.sin(TX.mul(TX.mul(y, 1.1), scale)), 2.4))), TX.mul(TX.sin(TX.add(TX.mul(TX.mul(y, 0.9), scale), TX.mul(TX.mul(x, 0.35), scale))), 0.7))
 		var _c0 = TX.ge(TX.abs(v), w)

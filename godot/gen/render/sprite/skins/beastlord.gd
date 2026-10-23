@@ -214,7 +214,8 @@ static func chain(F, pts) -> Variant:
 	return PixelSdf.union.callv(TS.arr(s))
 
 ##  A curved fang from its root (x, y) toward angle `a`, `len` long and `w` wide at the root, bending by `curl`.
-static func fang(F, x: float, y: float, a: float, len_: float, w: float, curl: float = 0.25) -> Variant:
+static func fang(F, x: float, y: float, a: float, len_: float, w: float, curl = null) -> Variant:
+	if curl == null: curl = 0.25
 	var c: float = cos(a)
 	var s: float = sin(a)
 	var nx: float = -s
@@ -297,7 +298,9 @@ static func mammoth_club() -> Variant:
 	return {"tip": 30.4, "grip2": 10, "mats": {"bone": PixelRaster.material({"base": OLDBONE[2], "ramp": OLDBONE, "shiny": true, "step": 0.13, "tex": aged}), "ivory": PixelRaster.material(ivory()), "fang": PixelRaster.material(ivory(null)), "wrap": PixelRaster.material(hide((func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(x, 1.4), 1.1), 0.4), -1, 0))))), "cord": PixelRaster.material(strap()), "paint": PixelRaster.material(ochre()), "crack": PixelRaster.material(pit()), "ember": PixelRaster.material(ember()), "hot": PixelRaster.material(hot()), "feather": PixelRaster.material({"base": FUR[3], "ramp": [FUR[0], FUR[1], FUR[3], FUR[4], 0xb08a62]})}, "draw": _fn0}
 
 ##  A small beast skull upright at (x, y) of frame F (x right, y up), `s` its size: cranium, ember sockets, snout and two fangs.
-static func beast_skull(r, F, x: float, y: float, s: float, h, g: float, eye_tone: float = 3.0, paint: bool = true) -> void:
+static func beast_skull(r, F, x: float, y: float, s: float, h, g: float, eye_tone = null, paint = null) -> void:
+	if eye_tone == null: eye_tone = 3
+	if paint == null: paint = true
 	r.fill(PixelSdf.union(F.ell(x, y + (0.3 * s), 1.75 * s, 1.5 * s), F.rect(x, y - (0.9 * s), 1.05 * s, 0.85 * s, 0.4 * s)), h["skull"], {"group": g, "bevel": 1.1 * s})
 	for k in [-1, 1]:
 		r.fill(F.ell(x + ((k * 0.72) * s), y + (0.15 * s), 0.55 * s, 0.5 * s), h["pit"], {"group": g, "flat": 0, "noLine": true})
@@ -338,7 +341,9 @@ static func skull_bolas() -> Variant:
 	return {"tip": 7.2, "mats": {"skull": PixelRaster.material(bone()), "pit": PixelRaster.material(pit()), "eye": PixelRaster.material(ember(flick)), "fang": PixelRaster.material(ivory(null)), "paint": PixelRaster.material(ochre()), "cord": PixelRaster.material(strap()), "knot": PixelRaster.material(bone(null)), "feather": PixelRaster.material({"base": OCHRE[3], "ramp": [OCHRE[0], OCHRE[1], OCHRE[2], OCHRE[3], OCHRE[4]]}), "bead": PixelRaster.material(ember())}, "draw": _fn3}
 
 ##  Paints a pixel map with (ax, ay) on the frame origin, `S` raster pixels per letter.
-static func pix(r, t, m, rows, ax: float, ay: float, S: float = 1.0, group: float = 1.0) -> void:
+static func pix(r, t, m, rows, ax: float, ay: float, S = null, group = null) -> void:
+	if S == null: S = 1
+	if group == null: group = 1
 	for y in range(rows.size()):
 		for x in range(rows[y].length()):
 			var e = RAPTOR_INK.get(rows[y][x])
@@ -574,7 +579,8 @@ static func mastodon_stompers() -> Variant:
 	return TS.merge([{"mats": {"bb.hide": {"base": MASTO[2], "ramp": MASTO, "tex": wrinkles}, "bb.fur": fur(shag_x), "bb.nail": ivory(null), "bb.tusk": ivory(), "bb.paint": ochre(), "bb.pad": {"base": MASTO[1], "ramp": [0x120c08, 0x241a14, 0x3a2e26, 0x524236, 0x6a5848]}, "bb.crack": pit(), "bb.ember": ember(), "bb.hot": hot()}, "boots": {"mat": "bb.hide", "height": 0.64, "bulk": 0.95, "trim": null, "wing": null, "knee": null, "over": _fn1}}, FX])
 
 ##  Screen x of a span `w` wide at `dx` along a sprite facing `d` (1 right, -1 left) from `px`.
-static func cx(px: float, d: float, dx: float, w: float = 1.0) -> float:
+static func cx(px: float, d: float, dx: float, w = null) -> float:
+	if w == null: w = 1
 	return (px + dx if d > 0 else ((px - dx) - w) + 1)
 
 ##  A dot of packed earth on the ring (a gap every few).

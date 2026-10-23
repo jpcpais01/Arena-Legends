@@ -76,7 +76,10 @@ static func filigree(x, y, ph):
 	return TX.sel(_c0, _r1, _r2)
 
 ##  A glint sliding along a part, one step per frame.
-static func sheen(period: float = 9.0, speed: float = 2.25, w: float = 1.2) -> Variant:
+static func sheen(period = null, speed = null, w = null) -> Variant:
+	if period == null: period = 9
+	if speed == null: speed = 2.25
+	if w == null: w = 1.2
 	return (func(x, _y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, speed)), period), w), 1, 0)))
 
 ##  A gem's heart brightening and dimming over the loop.
@@ -96,11 +99,12 @@ static func sub(P, x: float, y: float, a: float) -> Variant:
 	return SpriteXform.Xf.new(P.x(x, y), P.y(x, y), P.ang + (a * flip), absf(P.sx), absf(P.sy) * flip)
 
 ##  A ring as a polygon (stays round in squashed frames).
-static func hoop(F, cx: float, cy: float, rx: float, ry: float, w: float, n: float = 24.0) -> Variant:
+static func hoop(F, cx: float, cy: float, rx: float, ry: float, w: float, n = null) -> Variant:
+	if n == null: n = 24
 	var out = []
 	var inn = []
 	for i in range(floori(n) + 1):
-		var a: float = ((i / n) * PI) * 2
+		var a: float = ((i / float(n)) * PI) * 2
 		out.append_array([cx + (cos(a) * rx), cy + (sin(a) * ry)])
 		inn.append_array([cx + (cos(a) * (rx - w)), cy + (sin(a) * (ry - (w * 0.7)))])
 	var pts = TS.arr(out).duplicate()

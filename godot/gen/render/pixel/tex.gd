@@ -15,41 +15,59 @@ static func wrap_(v: float, p: float) -> float:
 	return fmod((fmod(v, p)) + p, p)
 
 ##  Random flecks (patina, stone, starlight).
-static func speckle(density: float = 0.12, d: float = -1.0) -> Variant:
+static func speckle(density = null, d = null) -> Variant:
+	if density == null: density = 0.12
+	if d == null: d = -1
 	return (func(x, y, _a2 = null): return (TX.sel(TX.lt(TX.hash(TX.floor(x), TX.floor(y)), density), d, 0)))
 
 ##  Folded-steel bands rippling along the part.
-static func damascus(period: float = 3.0, amp: float = 1.2) -> Variant:
+static func damascus(period = null, amp = null) -> Variant:
+	if period == null: period = 3
+	if amp == null: amp = 1.2
 	var _fn0 = func(x, y, _a2 = null):
 		var v = TX.sin(TX.mul((TX.add(y, TX.mul(TX.sin(TX.mul(x, 0.55)), amp))), (TX.div((TX.mul(PI, 2)), period))))
 		return TX.sel(TX.gt(v, 0.6), 1, TX.sel(TX.lt(v, -0.8), -1, 0))
 	return _fn0
 
 ##  Wood or bone grain: thin dark streaks along the part.
-static func grain(d: float = -1.0) -> Variant:
+static func grain(d = null) -> Variant:
+	if d == null: d = -1
 	return (func(x, y, _a2 = null): return (TX.sel(TX.gt(TX.sin(TX.add(TX.mul(y, 2.9), TX.mul(TX.sin(TX.add(TX.mul(x, 0.3), TX.mul(TX.hash(TX.floor(TX.mul(y, 2)), 3), 4))), 1.4))), 0.72), d, 0)))
 
 ##  Bands across the part (wraps, lacquer rings).
-static func bands(period: float = 3.0, width: float = 1.0, d: float = 1.0) -> Variant:
+static func bands(period = null, width = null, d = null) -> Variant:
+	if period == null: period = 3
+	if width == null: width = 1
+	if d == null: d = 1
 	return (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(wrap___tx(x, period), width), d, 0)))
 
 ##  Diamond lattice (scales, quilting).
-static func lattice(size: float = 3.0, d: float = -1.0) -> Variant:
+static func lattice(size = null, d = null) -> Variant:
+	if size == null: size = 3
+	if d == null: d = -1
 	return (func(x, y, _a2 = null): return (TX.sel(TX.or_(TX.eq(wrap___tx(TX.floor(TX.add(x, y)), size), 0), TX.eq(wrap___tx(TX.floor(TX.sub(x, y)), size), 0)), d, 0)))
 
 ##  Branching cracks (lava, lightning, roots).
-static func veins(scale: float = 1.0, d: float = 1.0) -> Variant:
+static func veins(scale = null, d = null) -> Variant:
+	if scale == null: scale = 1
+	if d == null: d = 1
 	var _fn0 = func(x, y, _a2 = null):
 		var v = TX.add(TX.sin(TX.add(TX.mul(TX.mul(x, 0.7), scale), TX.mul(TX.sin(TX.mul(TX.mul(y, 1.3), scale)), 2.2))), TX.mul(TX.sin(TX.sub(TX.mul(TX.mul(y, 0.9), scale), TX.mul(TX.mul(x, 0.25), scale))), 0.6))
 		return TX.sel(TX.lt(TX.abs(v), 0.24), d, 0)
 	return _fn0
 
 ##  A band of light running along the part, one step per animation frame.
-static func flow(period: float = 8.0, width: float = 2.0, speed: float = 2.0, d: float = 1.0) -> Variant:
+static func flow(period = null, width = null, speed = null, d = null) -> Variant:
+	if period == null: period = 8
+	if width == null: width = 2
+	if speed == null: speed = 2
+	if d == null: d = 1
 	return (func(x, _y, ph): return (TX.sel(TX.lt(wrap___tx(TX.sub(x, TX.mul(ph, speed)), period), width), d, 0)))
 
 ##  Twinkling points that move every frame.
-static func glint(density: float = 0.05, d: float = 2.0) -> Variant:
+static func glint(density = null, d = null) -> Variant:
+	if density == null: density = 0.05
+	if d == null: d = 2
 	return (func(x, y, ph): return (TX.sel(TX.lt(TX.hash(TX.add(TX.floor(x), TX.mul(ph, 31)), TX.sub(TX.floor(y), TX.mul(ph, 17))), density), d, 0)))
 
 ##  Several patterns stacked.

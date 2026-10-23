@@ -151,7 +151,8 @@ static func raven_talon() -> Variant:
 	return {"tip": 9, "mats": {"foot": PixelRaster.material(S["feather"].call((func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.mul(x, 1.4), 1.3), 0.35), -1, 0))))), "claw": PixelRaster.material(S["silver"].call(null)), "chain": PixelRaster.material(S["silver"].call(null)), "gem": PixelRaster.material(S["storm"].call())}, "draw": _fn2}
 
 ##  A crow in flight at (x, y) of F (s its size), wings `flap` up (1) or down (-1), heading +x.
-static func crow(r, F, x: float, y: float, s: float, flap: float, m, g: float, eye: bool = true) -> void:
+static func crow(r, F, x: float, y: float, s: float, flap: float, m, g: float, eye = null) -> void:
+	if eye == null: eye = true
 	r.fill(PixelSdf.union(F.ell(x, y, 2.2 * s, 0.9 * s), F.poly([x + (1.8 * s), y + (0.3 * s), x + (3.2 * s), y - (0.1 * s), x + (1.8 * s), y - (0.5 * s)]), F.poly([x - (1.6 * s), y, x - (3.4 * s), y + (0.8 * s), x - (3.4 * s), y - (0.8 * s)]), F.poly([x - (0.6 * s), y, x + (0.8 * s), y, x - (1.2 * s), y + ((flap * 3) * s), x - (2.2 * s), y + ((flap * 2.6) * s)])), m.call("k.scCrow"), {"group": g, "bevel": 0.6})
 	if eye:
 		r.dot(TS.round(F.x(x + (1.4 * s), y + (0.3 * s))), TS.round(F.y(x + (1.4 * s), y + (0.3 * s))), m.call("k.scEye"), 4, g)

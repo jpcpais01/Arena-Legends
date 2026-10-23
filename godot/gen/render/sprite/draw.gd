@@ -324,7 +324,11 @@ static func draw_leg_armour(r, art, t, len_: float, far: bool, g: float, bias: f
 	var L = art.get("legs")
 	var w: float = body["thighR"] + L["bulk"]
 	var o = {"group": g, "toneBias": bias}
-	var band = (func(at: float, mat: String, slant: float = 0.0, rad: float = 0.65): r.fill(t.cap(at - slant, (-w) - 0.2, at + slant, w + 0.2, rad), m.call(mat), TS.merge([o, {"bevel": 0.8}])))
+	var _fn0 = func(at: float, mat: String, slant = null, rad = null):
+		if slant == null: slant = 0
+		if rad == null: rad = 0.65
+		r.fill(t.cap(at - slant, (-w) - 0.2, at + slant, w + 0.2, rad), m.call(mat), TS.merge([o, {"bevel": 0.8}]))
+	var band = _fn0
 	if L["wraps"]:
 		for k in [0.3, 0.52, 0.74]:
 			band.call(len_ * k, L["wraps"], 0.9, 0.5)
@@ -677,7 +681,7 @@ static func draw_crown(r, art, H, m) -> void:
 	if hides_hair(art):
 		return
 	var sp: String = art["look"]["species"]
-	var style: float = fmod(art["look"]["hair"], (TS.nn((null if CharacterAppearance.SPECIES.get(sp).get("styles") == null else CharacterAppearance.SPECIES.get(sp).get("styles").size()), 1)))
+	var style: float = fmod(art["look"]["hair"], ((null if CharacterAppearance.SPECIES.get(sp).get("styles") == null else CharacterAppearance.SPECIES.get(sp).get("styles").size()) if (null if CharacterAppearance.SPECIES.get(sp).get("styles") == null else CharacterAppearance.SPECIES.get(sp).get("styles").size()) != null else 1))
 	if sp == "myco":
 		draw_cap(r, H, m, style)
 	else:

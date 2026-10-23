@@ -121,7 +121,9 @@ static func trace(r, t, pts, mat: float, tone: float, g: float) -> void:
 		i += 2
 
 ##  Overlapping scales (rows of arcs), shading the lower rim of each.
-static func scales(w: float = 2.2, h: float = 1.5) -> Variant:
+static func scales(w = null, h = null) -> Variant:
+	if w == null: w = 2.2
+	if h == null: h = 1.5
 	var _fn0 = func(x, y, _a2 = null):
 		var row = TX.floor(TX.div(y, h))
 		var u = TX.sub(SkinsKit.wrap___tx(TX.add(x, TX.mul((TX.mod(row, 2)), (TX.div(w, 2)))), w), TX.div(w, 2))

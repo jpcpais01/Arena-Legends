@@ -122,7 +122,8 @@ static func tar_cloth(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.1)), TX.add(TX.floor(TX.mul(y, 1.1)), 5)), 0.07), -1, TX.sel(TX.eq(SkinsKit.wrap___tx(TX.add(TX.floor(x), TX.floor(y)), 3), 0), -1, 0)))
 
 ##  Tarnished gold: dark pits, and a glint wandering over it frame by frame.
-static func tarnish(glints: float = 0.05) -> Variant:
+static func tarnish(glints = null) -> Variant:
+	if glints == null: glints = 0.05
 	var _fn3 = func(x, y, ph):
 		var _c0 = TX.lt(TX.hash(TX.add(TX.floor(x), TX.mul(ph, 31)), TX.sub(TX.floor(y), TX.mul(ph, 17))), glints)
 		var _r1 = 2
@@ -189,7 +190,8 @@ static func bend(F, pts) -> Variant:
 	return PixelSdf.union.callv(TS.arr(out))
 
 ##  A feather from (x, y) toward angle `a`: a narrow quill widening to `w`, then a soft point; `curl` bends it.
-static func feather(F, x: float, y: float, a: float, len_: float, w: float, curl: float = 0.0) -> Variant:
+static func feather(F, x: float, y: float, a: float, len_: float, w: float, curl = null) -> Variant:
+	if curl == null: curl = 0
 	var c: float = cos(a)
 	var s: float = sin(a)
 	var nx: float = -s
@@ -300,7 +302,8 @@ static func flintlock_repeater() -> Variant:
 			r.dot(t.x(wx - 0.6, v.call(wy - 0.8)), t.y(wx - 0.6, v.call(wy - 0.8)), m.call("ghost"), 3, g)
 	return {"tip": 9.2, "mats": {"stock": PixelRaster.material(R(EBONY, {"tex": wood_grain})), "iron": PixelRaster.material(R(IRON, {"shiny": true})), "brass": PixelRaster.material(gold()), "bone": PixelRaster.material(bone()), "ghost": PixelRaster.material(ghost()), "flint": PixelRaster.material(R(SLATE))}, "draw": _fn0}
 
-static func pix(r, t, m, rows, pal, ax: float, ay: float, group: float = 1.0) -> void:
+static func pix(r, t, m, rows, pal, ax: float, ay: float, group = null) -> void:
+	if group == null: group = 1
 	for y in range(rows.size()):
 		var row: String = rows[y]
 		for x in range(row.length()):

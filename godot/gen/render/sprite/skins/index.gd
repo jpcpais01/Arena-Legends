@@ -10,14 +10,15 @@ static func skin_materials(id: String) -> Variant:
 	var out = built.get(id)
 	if out == null:
 		out = {}
-		var _o0 = TS.nn((null if SKIN_ART.get(id) == null else SKIN_ART.get(id).get("mats")), {})
+		var _o0 = ((null if SKIN_ART.get(id) == null else SKIN_ART.get(id).get("mats")) if (null if SKIN_ART.get(id) == null else SKIN_ART.get(id).get("mats")) != null else {})
 		for k in _o0:
 			var spec = _o0[k]
 			out[k] = PixelRaster.material(spec)
 		TS.map_set(built, id, out)
 	return out
 
-static func shiny(base: float, tex = null, step: float = 0.15) -> Variant:
+static func shiny(base: float, tex = null, step = null) -> Variant:
+	if step == null: step = 0.15
 	return ({"base": base, "shiny": true, "step": step, "tex": tex})
 
 static func plain(base: float, tex = null) -> Variant:

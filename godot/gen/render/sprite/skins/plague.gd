@@ -91,7 +91,8 @@ static func crease(x, y, _a2 = null):
 	return (TX.sel(TX.or_(TX.gt(TX.sin(TX.add(TX.mul(x, 0.7), TX.mul(TX.sin(TX.mul(y, 0.45)), 1.2))), 0.86), TX.lt(TX.hash(TX.floor(x), TX.add(TX.floor(y), 5)), 0.04)), -1, 0))
 
 ##  A brass gleam sliding along, one step per frame.
-static func gleam(period: float = 7.0) -> Variant:
+static func gleam(period = null) -> Variant:
+	if period == null: period = 7
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1), 1, 0)))
 
 ##  Bubbles rising through the draught.
@@ -152,7 +153,9 @@ static func rising(F, x: float, y: float) -> Variant:
 
 ## A wisp of miasma curling up from (0, 0) of an upright frame U: three puffs
 ## that climb and drift one step per frame, the top one thinning away.
-static func wisp(r, U, ph: float, mat: float, g: float, size: float = 1.0, start: float = 0.6) -> void:
+static func wisp(r, U, ph: float, mat: float, g: float, size = null, start = null) -> void:
+	if size == null: size = 1
+	if start == null: start = 0.6
 	for k in range(3):
 		var u: float = k + (ph / 4.0)
 		var x: float = start + ((u * 1.9) * size)
@@ -163,7 +166,8 @@ static func wisp(r, U, ph: float, mat: float, g: float, size: float = 1.0, start
 		r.fill(U.circ(x, y, rad), mat, {"group": g, "bevel": rad, "softLight": true, "toneBias": (-1 if k == 2 else 0)})
 
 ##  A small corked glass vial standing upright in frame F at (x, y), `h` tall: glass, the green draught and the cork.
-static func vial(r, F, x: float, y: float, h: float, w: float, glass_m: float, liquid: float, cork: float, g: float, fill: float = 0.65) -> void:
+static func vial(r, F, x: float, y: float, h: float, w: float, glass_m: float, liquid: float, cork: float, g: float, fill = null) -> void:
+	if fill == null: fill = 0.65
 	r.fill(F.cap(x, (y - (h * 0.5)) + w, x, (y + (h * 0.5)) - (w * 0.6), w), glass_m, {"group": g, "bevel": w})
 	r.fill(PixelSdf.intersect(F.cap(x, (y - (h * 0.5)) + w, x, (y + (h * 0.5)) - (w * 0.6), w * 0.7), F.rect(x, y - (h * 0.5), w * 2, h * fill)), liquid, {"group": g, "noLine": true})
 	r.fill(F.rect(x, (y + (h * 0.5)) - (w * 0.2), w * 0.6, w * 0.5), cork, {"group": g, "bevel": 0.4, "noLine": true})
@@ -262,7 +266,8 @@ static func syringe_crossbow() -> Variant:
 ## A glass jar upright at frame F's origin (about 7 wide, 13 tall, the base at y -6.4): the green draught,
 ## a leech writhing in it (`f` of 4), bubbles rising, a parchment label sealed in red wax, a brass lid
 ## and a wire bail. `label` is left off at small sizes.
-static func leech_jar(r, F, f: float, M, label: bool = true) -> void:
+static func leech_jar(r, F, f: float, M, label = null) -> void:
+	if label == null: label = true
 	var body = F.rect(0, -1.2, 3.6, 5.2, 1.6)
 	var neck = F.rect(0, 4.4, 2.7, 0.9, 0.4)
 	# Glass behind, the draught filling it, then the leech and bubbles inside.

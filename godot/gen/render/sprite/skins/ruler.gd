@@ -71,7 +71,10 @@ static var ringShift = 0
 static var RULER = {"boxing_gloves.ruler": TS.merge([{"weapon": gloves}, FX]), "mace.ruler": TS.merge([{"weapon": sceptre}, FX]), "iron_cestus.ruler": TS.merge([{"weapon": knuckles}, FX]), "echo_stone.ruler": undisputedTitle, "storm_crown.ruler": ruler_crown(), "juggernaut_plate.ruler": ring_mantle(), "warlord_faulds.ruler": ring_tights(), "earthshaker_boots.ruler": stompers()}
 
 ##  A glint sliding along polished gold, one step a frame.
-static func sweep(period: float = 10.0, speed: float = 2.5, w: float = 1.1) -> Variant:
+static func sweep(period = null, speed = null, w = null) -> Variant:
+	if period == null: period = 10
+	if speed == null: speed = 2.5
+	if w == null: w = 1.1
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.45)), TX.mul(ph, speed)), period), w), 1, 0)))
 
 ##  Leather grain: a few glossy flecks.
@@ -101,7 +104,9 @@ static func diamond(F, x: float, y: float, rx: float, ry = null) -> Variant:
 ## A kente strip along a band: blocks `step` long between a and b (along the band's x), each filled
 ## where it meets `clip`, cycling gold, green, gold, red with a thin black weft through the gold.
 ## `slice(x0, x1)` gives the block's shape.
-static func kente(r, a: float, b: float, step: float, clip, slice, m, keys, g: float, bias: float = 0.0, off: float = 0.0) -> void:
+static func kente(r, a: float, b: float, step: float, clip, slice, m, keys, g: float, bias = null, off = null) -> void:
+	if bias == null: bias = 0
+	if off == null: off = 0
 	var order = [keys["gold"], keys["green"], keys["gold"], keys["red"]]
 	var i: float = off
 	var x: float = a

@@ -72,7 +72,8 @@ static func boots_for(b) -> Variant:
 	else:
 		return TS.merge([{"mat": "shoe", "height": 0.18, "bulk": 0.15, "trim": null, "wing": null, "knee": null}, ((null if SpriteArmour2.ARMOUR2.get(b) == null else SpriteArmour2.ARMOUR2.get(b).get("boots")) if b else b)])
 
-static func shade(hex: float, dl: float, ds: float = 0.0) -> float:
+static func shade(hex: float, dl: float, ds = null) -> float:
+	if ds == null: ds = 0
 	var _d0 = PixelColor.to_hsl(hex)
 	var h = _d0[0]
 	var s = _d0[1]
@@ -88,7 +89,7 @@ static func stock_mat(k: String, spec) -> Variant:
 
 ##  A slot's material keys: the stock piece's, plus whatever its skin brings.
 static func keys_of(stock, skin, id = null) -> Variant:
-	var set_ = TS.set_of((TS.arr(TS.filter(stock, (func(k, _a1 = null, _a2 = null): return (not (not k))))) + TS.arr(TS.keys(TS.nn((null if skin == null else skin.get("mats")), {}))) + TS.arr(TS.keys(TS.nn(((null if SpriteArmour2.ARMOUR2.get(id) == null else SpriteArmour2.ARMOUR2.get(id)["mats"]) if id else id), {})))))
+	var set_ = TS.set_of((TS.arr(TS.filter(stock, (func(k, _a1 = null, _a2 = null): return (not (not k))))) + TS.arr(TS.keys(((null if skin == null else skin.get("mats")) if (null if skin == null else skin.get("mats")) != null else {}))) + TS.arr(TS.keys((((null if SpriteArmour2.ARMOUR2.get(id) == null else SpriteArmour2.ARMOUR2.get(id)["mats"]) if id else id) if ((null if SpriteArmour2.ARMOUR2.get(id) == null else SpriteArmour2.ARMOUR2.get(id)["mats"]) if id else id) != null else {})))))
 	return (func(k_2: String): return set_.has(k_2))
 
 ## Gives every gear material its night accents by the tier of the item it

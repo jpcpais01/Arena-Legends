@@ -233,7 +233,7 @@ static func weapon_art(id: String, skin_id = null) -> Variant:
 	var a = cache.get(key)
 	if a == null:
 		var base = (skin.get("weapon").call() if (null if skin == null else skin.get("weapon")) != null else b.call())
-		var mats = base["mats"]
+		var mats = TS.merge([base["mats"]])
 		if (null if skin == null else skin.get("mats")) != null:
 			var _o0 = skin.get("mats")
 			for k in _o0:

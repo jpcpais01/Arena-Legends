@@ -103,7 +103,10 @@ static func turns(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 0.9), TX.mul(y, 0.35)), 1.7), 0.4), 1, 0))
 
 ##  A glint sliding along gold.
-static func sweep(period: float = 9.0, speed: float = 2.25, w: float = 1.0) -> Variant:
+static func sweep(period = null, speed = null, w = null) -> Variant:
+	if period == null: period = 9
+	if speed == null: speed = 2.25
+	if w == null: w = 1
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.45)), TX.mul(ph, speed)), period), w), 1, 0)))
 
 ##  Cracks in the hot stone, breathing over the loop.
@@ -130,7 +133,8 @@ static func bull_eyes(F, x: float, y: float, s: float) -> Variant:
 	return ([-1, 1]).map((func(k: float, _a1 = null, _a2 = null): return [TS.round(F.x(x + ((k * 0.55) * s), y + (0.2 * s))), TS.round(F.y(x + ((k * 0.55) * s), y + (0.2 * s)))]))
 
 ##  A gold bull emblem with ruby eyes (small ones get one eye pixel each, or none when tiny).
-static func bull_emblem(r, F, x: float, y: float, s: float, gold: float, ruby: float, g: float, bias: float = 0.0) -> void:
+static func bull_emblem(r, F, x: float, y: float, s: float, gold: float, ruby: float, g: float, bias = null) -> void:
+	if bias == null: bias = 0
 	r.fill(bull(F, x, y, s), gold, {"group": g, "bevel": 0.5, "toneBias": bias})
 	if s >= 0.5:
 		for _e0 in bull_eyes(F, x, y, s):

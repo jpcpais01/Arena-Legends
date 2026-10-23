@@ -90,7 +90,8 @@ static func idle_frames(stance) -> Variant:
 		out.append({"p": {"hipY": stance["hipY"] - (0.045 * b), "hipX": 0.025 * sin(ph), "lean": stance["lean"] + (0.02 * b), "head": ((-0.045) * b) + 0.015, "hNy": stance["hNy"] - (0.04 * b), "hFy": stance["hFy"] - (0.04 * b), "wAng": stance["wAng"] + (0.05 * sin(ph)), "sAng": stance["sAng"] + (0.04 * sin(ph)), "sway": 0.2 * sin(ph - 1.1)}, "face": "calm"})
 	return out
 
-static func F(p, face: String = "fierce", extra = null) -> Variant:
+static func F(p, face = null, extra = null) -> Variant:
+	if face == null: face = "fierce"
 	if extra == null: extra = {}
 	return (TS.merge([{"p": p, "face": face}, extra]))
 
@@ -103,7 +104,8 @@ static func sword_clips() -> Variant:
 ## into a deep lunge, held a beat, and the blade flicked clean (chiburi).
 static func katana_combo() -> Variant:
 	var both = {"grip": -4.4}
-	var _fn0 = func(p, face: String = "fierce", extra = null):
+	var _fn0 = func(p, face = null, extra = null):
+		if face == null: face = "fierce"
 		if extra == null: extra = {}
 		return (TS.merge([{"p": p, "face": face, "hold": both}, extra]))
 	var B = _fn0
@@ -154,7 +156,8 @@ static func secondary_clip(art, anim: String) -> Variant:
 	if not fam:
 		return null
 	var front: bool = (((fam == "shield") or (fam == "buckler")) or (fam == "fist"))
-	var _fn0 = func(p, face: String = "fierce", hold = null):
+	var _fn0 = func(p, face = null, hold = null):
+		if face == null: face = "fierce"
 		if hold == null: hold = {}
 		return F(p, face, {"hold": TS.merge([{"sec": "hand", "secFront": front}, hold])})
 	var S = _fn0
@@ -196,7 +199,7 @@ static func draw_frames(art) -> Variant:
 		out.append(F(TS.merge([FREE_NEAR, {"hNx": 0.05, "hNy": 0.3, "lean": 0.08}]), "calm", {"hold": {"main": "back"}}))
 	# A cestus is already on the fist: just bring it up.
 	if art["secFamily"] != "fist":
-		out.append(F(reach, "calm", {"hold": {"sec": "stowed"}}))
+		out.append(F(TS.merge([reach]), "calm", {"hold": {"sec": "stowed"}}))
 	out.append(F({"hFx": 0.25, "hFy": -0.45, "sAng": (-1.2 if shield else 0.3)}, "calm", {"hold": {"sec": "hand", "secFront": ((shield or (art["secFamily"] == "buckler")) or (art["secFamily"] == "fist"))}}))
 	return out
 
@@ -206,7 +209,7 @@ static func stow_frames(art, gone: bool) -> Variant:
 	var shield: bool = art["secFamily"] == "shield"
 	var reach = ({"hFx": -0.15, "hFy": 0.15, "elF": -1} if shield else {"hFx": -0.28, "hFy": -0.72})
 	out.append(F({"hFx": 0.2, "hFy": -0.5, "sAng": (-1.2 if shield else 0.3)}, "calm", {"hold": {"sec": ("gone" if gone else "hand"), "secFront": ((shield or (art["secFamily"] == "buckler")) or (art["secFamily"] == "fist"))}}))
-	out.append(F(({"hFx": 0.3, "hFy": -0.42} if art["secFamily"] == "fist" else reach), "calm", {"hold": {"sec": "stowed"}}))
+	out.append(F(({"hFx": 0.3, "hFy": -0.42} if art["secFamily"] == "fist" else TS.merge([reach])), "calm", {"hold": {"sec": "stowed"}}))
 	if art["hands"] == 2:
 		out.append(F(TS.merge([FREE_NEAR, {"hNx": 0.05, "hNy": 0.3, "lean": 0.08}]), "calm", {"hold": {"main": "back"}}))
 		out.append(F({"hNx": 0.12, "hNy": 0.32, "wAng": 2.4, "lean": 0.06}, "calm", {"hold": {"main": "hand"}}))
@@ -227,11 +230,15 @@ static func usable_clip(art, stance, anim: String, sec_out: String) -> Variant:
 	var lowered = ({"hNx": 0.3, "hNy": -0.74, "elN": 1, "wAng": -1.0} if two_hand else {})
 	var base = (TS.merge([stance, FREE_NEAR]) if bow else TS.merge([stance, lowered]))
 	var hold = {"main": ("back" if bow else "hand"), "sec": sec_out, "use": "belt", "oneHand": two_hand}
-	var _fn0 = func(p, face: String = "fierce", h = null):
+	var _fn0 = func(p, face = null, h = null):
+		if face == null: face = "fierce"
 		if h == null: h = {}
 		return F(p, face, {"hold": TS.merge([{"use": "hand"}, h])})
 	var U = _fn0
-	var done = (func(p_2, face_2: String = "fierce"): return F(p_2, face_2, {"hold": {"use": "none"}}))
+	var _fn1 = func(p_2, face_2 = null):
+		if face_2 == null: face_2 = "fierce"
+		return F(p_2, face_2, {"hold": {"use": "none"}})
+	var done = _fn1
 	var draw = []
 	if bow:
 		draw.append(F({"hFx": 0.05, "hFy": 0.3, "elF": 1}, "calm", {"hold": {"main": "hand"}}))
@@ -245,8 +252,8 @@ static func usable_clip(art, stance, anim: String, sec_out: String) -> Variant:
 	elif two_hand:
 		stow.append(F({}, "calm", {"hold": {"use": "none", "oneHand": false}}))
 	var ph
-	var _q1 = SimGear.gear_of(art["useId"]).get("abilities")
-	if (anim == "toss") and ((null if _q1 == null else (null if TS.at(_q1, 0) == null else TS.at(_q1, 0)["kind"])) == "buff"):
+	var _q2 = SimGear.gear_of(art["useId"]).get("abilities")
+	if (anim == "toss") and ((null if _q2 == null else (null if TS.at(_q2, 0) == null else TS.at(_q2, 0)["kind"])) == "buff"):
 		# Smashed at your own feet (smoke bomb): raised high, then dashed down hard in a crouch.
 		ph = {"w": [U.call({"hFx": 0.32, "hFy": 0.32, "sAng": 2.2, "lean": stance["lean"] - 0.06, "head": 0.06}, "fierce"), U.call({"hFx": 0.22, "hFy": 0.56, "sAng": 2.7, "lean": -0.08, "head": 0.1, "hipY": -0.02, "toeF": 0.15}, "fierce")], "a": [done.call({"hFx": 0.56, "hFy": -0.72, "elF": 1, "lean": 0.4, "hipY": -0.17, "head": -0.12, "fNx": -0.38, "fFx": 0.4}, "shout")], "r": [done.call({"hFx": 0.48, "hFy": -0.6, "lean": 0.32, "hipY": -0.15, "fNx": -0.38, "fFx": 0.4}), done.call({"hFx": 0.42, "hFy": -0.36, "lean": 0.16, "hipY": -0.06}, "calm")]}
 	elif anim == "toss":
@@ -294,7 +301,7 @@ static func inbetween(base, frames, from) -> Variant:
 	var prev = from
 	for f in frames:
 		# Whole-body turns (rolls) wrap around; tweening them would spin the wrong way.
-		var turn: bool = absf((f["p"].get("rot") if f["p"].get("rot") != null else 0) - (TS.nn((null if prev == null else prev["p"].get("rot")), 0))) > 1
+		var turn: bool = absf((f["p"].get("rot") if f["p"].get("rot") != null else 0) - ((null if prev == null else prev["p"].get("rot")) if (null if prev == null else prev["p"].get("rot")) != null else 0)) > 1
 		if ((((prev != null) and (not (prev.get("smear") != null))) and (not turn)) and same_hold(prev.get("hold"), f.get("hold"))) and (gap(base, prev["p"], f["p"]) >= 1):
 			out.append(between(base, prev, f, 0.5))
 		out.append(f)
@@ -303,7 +310,7 @@ static func inbetween(base, frames, from) -> Variant:
 
 static func polish(c) -> Variant:
 	var base = c["base"]
-	var rest = {"p": {}, "face": "calm", "hold": TS.nn((null if TS.at(c["w"], 0) == null else TS.at(c["w"], 0).get("hold")), (null if TS.at(c["r"], 0) == null else TS.at(c["r"], 0).get("hold")))}
+	var rest = {"p": {}, "face": "calm", "hold": ((null if TS.at(c["w"], 0) == null else TS.at(c["w"], 0).get("hold")) if (null if TS.at(c["w"], 0) == null else TS.at(c["w"], 0).get("hold")) != null else (null if TS.at(c["r"], 0) == null else TS.at(c["r"], 0).get("hold")))}
 	var w = inbetween(base, c["w"], (c["draw"][c["draw"].size() - 1] if c["draw"].size() else rest))
 	var r = inbetween(base, c["r"], (c["a"][c["a"].size() - 1] if c["a"].size() else null))
 	var last = r[r.size() - 1]
@@ -391,7 +398,7 @@ static func clips_for(art) -> Variant:
 	var hurt = {"lean": -0.22, "head": -0.28, "hipX": -0.06, "hipY": -0.1, "hNx": stance["hNx"] - 0.15, "hNy": stance["hNy"] + 0.2, "wAng": stance["wAng"] + 0.35, "hFx": 0.1, "hFy": -0.2, "sway": 1}
 	TS.map_set(clips, "hurt", loop(stance, hold, [{"p": hurt, "face": "hurt"}, {"p": {"lean": -0.06, "head": -0.12, "hipX": -0.03, "hipY": -0.09, "sway": 0.5}, "face": "hurt"}]))
 	var stun_base = {"hipY": -0.13, "lean": 0.24, "head": -0.32, "hNx": 0.18, "hNy": -0.85, "wAng": stance["wAng"] - 1.6, "hFx": 0.15, "hFy": -0.85}
-	TS.map_set(clips, "stun", loop(stance, hold, [{"p": stun_base, "face": "hurt"}, {"p": TS.merge([stun_base, {"lean": 0.3, "hipX": 0.03, "head": -0.22}]), "face": "hurt"}, {"p": TS.merge([stun_base, {"lean": 0.2, "head": -0.38}]), "face": "hurt"}, {"p": TS.merge([stun_base, {"lean": 0.16, "hipX": -0.03, "head": -0.26}]), "face": "hurt"}]))
+	TS.map_set(clips, "stun", loop(stance, hold, [{"p": TS.merge([stun_base]), "face": "hurt"}, {"p": TS.merge([stun_base, {"lean": 0.3, "hipX": 0.03, "head": -0.22}]), "face": "hurt"}, {"p": TS.merge([stun_base, {"lean": 0.2, "head": -0.38}]), "face": "hurt"}, {"p": TS.merge([stun_base, {"lean": 0.16, "hipX": -0.03, "head": -0.26}]), "face": "hurt"}]))
 	TS.map_set(clips, "air", loop(stance, hold, [{"p": {"lean": -0.35, "head": -0.2, "fNx": -0.12, "fNy": -0.62, "fFx": 0.22, "fFy": -0.66, "toeN": -0.3, "hNx": 0.3, "hNy": 0.15, "wAng": stance["wAng"] + 0.6, "hFx": 0.25, "hFy": 0.3, "sway": -1}, "face": "hurt"}, {"p": {"lean": -0.12, "fNx": -0.24, "fNy": -0.92, "fFx": 0.3, "fFy": -0.86, "hNx": 0.32, "hNy": -0.3, "hFx": 0.4, "hFy": -0.1, "sway": 1}, "face": "hurt"}]))
 	var lying = {"rot": PI / 2.0, "hipY": -0.78, "lean": 0, "head": 0.25, "fNx": 0.02, "fNy": -0.98, "fFx": 0.12, "fFy": -0.95, "toeN": 0.9, "toeF": 0.8, "hNx": 0.25, "hNy": -0.9, "elN": 1, "wAng": stance["wAng"] - 1.6, "hFx": 0.5, "hFy": -0.85, "sway": 0}
 	TS.map_set(clips, "ko", loop(stance, hold, [{"p": TS.merge([hurt, {"lean": -0.3}]), "face": "hurt"}, {"p": TS.merge([hurt, {"rot": 0.5, "hipY": -0.28, "lean": -0.15, "fNx": -0.1, "fFx": 0.35, "fFy": -0.9}]), "face": "hurt"}, {"p": TS.merge([lying, {"rot": 1.15, "hipY": -0.6, "head": 0.1, "fNy": -0.85, "fFy": -0.8}]), "face": "ko"}, {"p": lying, "face": "ko"}, {"p": TS.merge([lying, {"rot": (PI / 2.0) - 0.12, "hipY": -0.7, "head": 0.38, "hFy": -0.72, "toeN": 0.7}]), "face": "ko"}]))
@@ -415,11 +422,12 @@ static func clip_length(c) -> float:
 	return (((c["draw"].size() + c["w"].size()) + c["a"].size()) + c["r"].size()) + c["stow"].size()
 
 ##  Resolves a frame of a clip into everything `drawFigure` needs.
-static func frame_spec(c, i: float, face, sec_out: bool, use_out: bool = false) -> Variant:
+static func frame_spec(c, i: float, face, sec_out: bool, use_out = null) -> Variant:
+	if use_out == null: use_out = false
 	var d = clip_frame(c, i)
 	var hold = TS.merge([c["hold"], d.get("hold")])
 	if sec_out and (hold["sec"] != "gone"):
 		hold["sec"] = "gone"
 	if use_out and ((hold.get("use") if hold.get("use") != null else "belt") == "belt"):
 		hold["use"] = "none"
-	return {"pose": TS.merge([c["base"], d["p"]]), "hold": hold, "face": TS.nn((face if face != null else d.get("face")), "calm"), "smear": d.get("smear")}
+	return {"pose": TS.merge([c["base"], d["p"]]), "hold": hold, "face": ((face if face != null else d.get("face")) if (face if face != null else d.get("face")) != null else "calm"), "smear": d.get("smear")}

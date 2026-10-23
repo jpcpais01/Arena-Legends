@@ -6,7 +6,7 @@ static var KEYS = TS.keys(STAND)
 static var ease_ = {"linear": (func(t: float): return t), "inOut": (func(t: float): return (t * t) * (3 - (2 * t))), "out": (func(t: float): return 1 - ((1 - t) * (1 - t))), "in": (func(t: float): return t * t), "snap": (func(t: float): return 1 - pow(1 - t, 4))}
 
 static func lerp_pose(a, b, t: float) -> Variant:
-	var out = a
+	var out = TS.merge([a])
 	for k in KEYS:
 		if (k == "elN") or (k == "elF"):
 			out[k] = (a.get(k) if t < 0.5 else b.get(k))
@@ -94,8 +94,8 @@ static func solve(body, p, arm_override = null) -> Variant:
 	var sh_n = v((chest["x"] - (side["x"] * body["shoulderSpread"])) - (up["x"] * 1.2), sh_y - (side["y"] * body["shoulderSpread"]))
 	var sh_f = v((chest["x"] + (side["x"] * body["shoulderSpread"])) - (up["x"] * 1.2), sh_y + (side["y"] * body["shoulderSpread"]))
 	var wrist_target = (func(sh, x_2: float, y_2: float): return v(sh["x"] + (x_2 * arm), sh["y"] + (y_2 * arm)))
-	var tn = TS.nn((null if arm_override == null else arm_override.get("near")), wrist_target.call(sh_n, p["hNx"], p["hNy"]))
-	var tf = TS.nn((null if arm_override == null else arm_override.get("far")), wrist_target.call(sh_f, p["hFx"], p["hFy"]))
+	var tn = ((null if arm_override == null else arm_override.get("near")) if (null if arm_override == null else arm_override.get("near")) != null else wrist_target.call(sh_n, p["hNx"], p["hNy"]))
+	var tf = ((null if arm_override == null else arm_override.get("far")) if (null if arm_override == null else arm_override.get("far")) != null else wrist_target.call(sh_f, p["hFx"], p["hFy"]))
 	# Elbows: +1 keeps the elbow below/behind the line shoulder→wrist.
 	var arm_n = ik(sh_n, tn, body["upperArm"], body["forearm"], arm_bend(sh_n, tn, p["elN"]))
 	var arm_f = ik(sh_f, tf, body["upperArm"], body["forearm"], arm_bend(sh_f, tf, p["elF"]))

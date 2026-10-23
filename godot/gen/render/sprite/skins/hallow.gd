@@ -165,7 +165,9 @@ static func embers(x, y, ph):
 	return (TX.sel(TX.eq(SkinsKit.wrap___tx(TX.add(TX.floor(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.8))), ph), 4), 0), 2, 0))
 
 ##  Dark iron with a glint sweeping along it.
-static func sweep(period: float = 10.0, speed: float = 2.5) -> Variant:
+static func sweep(period = null, speed = null) -> Variant:
+	if period == null: period = 10
+	if speed == null: speed = 2.5
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.5)), TX.mul(ph, speed)), period), 0.9), 2, TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.4)), TX.floor(TX.mul(y, 1.4))), 0.05), -1, 0))))
 
 ##  Leaf veins.
@@ -253,7 +255,9 @@ static func leaf(F, x: float, y: float, a: float, s: float) -> Variant:
 	return F.poly((TS.arr(p.call(0, 0)) + TS.arr(p.call(0.22, -0.5)) + TS.arr(p.call(0.42, -0.34)) + TS.arr(p.call(0.62, -0.56)) + TS.arr(p.call(0.66, -0.2)) + TS.arr(p.call(1, 0)) + TS.arr(p.call(0.66, 0.2)) + TS.arr(p.call(0.62, 0.56)) + TS.arr(p.call(0.42, 0.34)) + TS.arr(p.call(0.22, 0.5))))
 
 ##  A tuft of straw strands fanning from (x, y) toward angle `a`: `n` thin spikes `len` long over `spread` radians.
-static func tuft(F, x: float, y: float, a: float, len_: float, spread: float, n: float, w: float = 0.42, seed_: float = 0.0) -> Variant:
+static func tuft(F, x: float, y: float, a: float, len_: float, spread: float, n: float, w = null, seed_ = null) -> Variant:
+	if w == null: w = 0.42
+	if seed_ == null: seed_ = 0
 	var parts = []
 	for i in range(ceili(n)):
 		var u: float = ((i / (n - 1)) - 0.5 if n > 1 else 0)
@@ -267,7 +271,8 @@ static func tuft(F, x: float, y: float, a: float, len_: float, spread: float, n:
 	return PixelSdf.union.callv(TS.arr(parts))
 
 ##  A carved hole: a dark cut of flesh round the edge, candle light glowing in the middle (`k` of its size).
-static func carve(r, F, pts, pit: float, glow_m: float, g: float, k: float = 0.55) -> void:
+static func carve(r, F, pts, pit: float, glow_m: float, g: float, k = null) -> void:
+	if k == null: k = 0.55
 	var cx = [0]
 	var cy = [0]
 	var n: float = pts.size() / 2.0
@@ -280,7 +285,10 @@ static func carve(r, F, pts, pit: float, glow_m: float, g: float, k: float = 0.5
 ## A carved jack-o'-lantern facing out, upright in F at (cx, cy), `s` its half width: two shaded side lobes
 ## and a round middle one (the contour between them makes the ribs), a crooked stem, and its eyes, nose and
 ## jagged grin glowing with the candle inside. `lit` is the eyes' tone (flicker).
-static func jack(r, F, cx: float, cy: float, s: float, k, g: float, bias: float = 0.0, lit: float = 3.0, lean: float = 0.0) -> void:
+static func jack(r, F, cx: float, cy: float, s: float, k, g: float, bias = null, lit = null, lean = null) -> void:
+	if bias == null: bias = 0
+	if lit == null: lit = 3
+	if lean == null: lean = 0
 	var ry: float = s * 0.84
 	r.fill(PixelSdf.union(F.ell(cx - (s * 0.46), cy, s * 0.54, ry * 0.93), F.ell(cx + (s * 0.46), cy, s * 0.54, ry * 0.93)), k["rindDk"], {"group": g, "bevel": s * 0.45, "toneBias": bias})
 	r.fill(F.ell(cx, cy + (s * 0.02), s * 0.58, ry), k["rind"], {"group": g + 1, "bevel": s * 0.5, "toneBias": bias})
@@ -414,7 +422,10 @@ static func pumpkin_bolas() -> Variant:
 
 ## The bat-winged jack-o'-lantern at (0, 0) of t: wings beating either side of a carved pumpkin, a curled vine
 ## off its stem with a leaf; `f` steps the four-frame loop, `s` scales the pumpkin, `ws` the wings.
-static func bat_jack(r, t, f: float, h, s: float = 1.0, ws: float = 1.0, g: float = 1.0) -> void:
+static func bat_jack(r, t, f: float, h, s = null, ws = null, g = null) -> void:
+	if s == null: s = 1
+	if ws == null: ws = 1
+	if g == null: g = 1
 	var lift: float = ([-0.55, 0.05, 0.5, 0.05])[fmod(f, 4)]
 	var R0: float = 3.8 * s
 	for side in [-1, 1]:

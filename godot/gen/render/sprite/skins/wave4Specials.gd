@@ -145,7 +145,8 @@ static var WAVE4_SPECIALS = {"thunder_totem.oak": oakTotem, "thunder_totem.thund
 
 ## Paints a character map with (ax, ay) on the frame origin. Maps are drawn
 ## facing +x; `.` and space are empty.
-static func pix(r, t, m, rows, pal, ax: float, ay: float, group: float = 1.0) -> void:
+static func pix(r, t, m, rows, pal, ax: float, ay: float, group = null) -> void:
+	if group == null: group = 1
 	for y in range(rows.size()):
 		var row: String = rows[y]
 		for x in range(row.length()):
@@ -162,14 +163,19 @@ static func pix(r, t, m, rows, pal, ax: float, ay: float, group: float = 1.0) ->
 ## the skin's own mats), and battle sprites (materials built once here).
 static func kit(specs) -> Variant:
 	var M = SkinsKit.mats(specs)
-	return {"mats": specs, "sprite": (func(frames: float, draw, outline: bool = true): return ({"frames": frames, "outline": outline, "draw": (func(r, t, f: float, h): draw.call(r, t, (func(k: String): return h.call(M.get(k))), f))}))}
+	var _fn0 = func(frames: float, draw, outline = null):
+		if outline == null: outline = true
+		return ({"frames": frames, "outline": outline, "draw": (func(r, t, f: float, h): draw.call(r, t, (func(k: String): return h.call(M.get(k))), f))})
+	return {"mats": specs, "sprite": _fn0}
 
 ##  A pixel at local (x, y).
 static func px(r, t, x: float, y: float, m: float, tone: float, g = null) -> void:
 	r.dot(t.x(x, y), t.y(x, y), m, tone, g)
 
 ##  The frame scaled by `s` around local point (dx, dy).
-static func scaled(t, s: float, dx: float = 0.0, dy: float = 0.0) -> Variant:
+static func scaled(t, s: float, dx = null, dy = null) -> Variant:
+	if dx == null: dx = 0
+	if dy == null: dy = 0
 	return SpriteXform.Xf.new(t.x(dx, dy), t.y(dx, dy), 0, s, s)
 
 ##  A four-point star: a hot centre and four arms.

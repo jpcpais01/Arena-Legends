@@ -41,14 +41,18 @@ static var JOG = [0, 1, -1, 1, 0, -1, -1, 1, 0, 1]
 static var OLYMPIAN = {"spear.olympian": TS.merge([{"weapon": dory}, FX]), "kite_shield.olympian": TS.merge([{"weapon": aspis}, FX]), "thunder_totem.olympian": pillarSkin, "gladiator_helm.olympian": corinthian(), "plate_armor.olympian": cuirass(), "warlord_faulds.olympian": pteruges(), "leaping_boots.olympian": sandals()}
 
 ##  Grey veins wandering through marble (any space), sparse.
-static func veins(seed_: float = 0.0) -> Variant:
+static func veins(seed_ = null) -> Variant:
+	if seed_ == null: seed_ = 0
 	var _fn0 = func(x, y, _a2 = null):
 		var v = TX.add(TX.sin(TX.add(TX.add(TX.mul(x, 0.42), TX.mul(TX.sin(TX.add(TX.mul(y, 0.55), seed_)), 1.9)), TX.mul(y, 0.28))), TX.mul(TX.sin(TX.add(TX.sub(TX.mul(y, 0.31), TX.mul(x, 0.17)), TX.mul(seed_, 2))), 0.5))
 		return TX.sel(TX.lt(TX.abs(v), 0.075), -1, 0)
 	return _fn0
 
 ##  A glint sliding along polished metal, one step per frame.
-static func sheen(period: float = 8.0, speed: float = 2.0, w: float = 1.1) -> Variant:
+static func sheen(period = null, speed = null, w = null) -> Variant:
+	if period == null: period = 8
+	if speed == null: speed = 2
+	if w == null: w = 1.1
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.4)), TX.mul(ph, speed)), period), w), 1, 0)))
 
 ##  A light breathing over the four-frame loop.
@@ -63,7 +67,8 @@ static func crackle(x, y, ph):
 static func strands(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(TX.mul(x, 1.3), TX.mul(y, 0.25)), 1.5), 0.5), -1, 0))
 
-static func marble(seed_: float = 0.0, o = null) -> Variant:
+static func marble(seed_ = null, o = null) -> Variant:
+	if seed_ == null: seed_ = 0
 	if o == null: o = {}
 	return (TS.merge([{"base": MARBLE[2], "ramp": MARBLE, "shiny": true, "step": 0.14, "tex": veins(seed_)}, o]))
 
@@ -85,16 +90,18 @@ static func bolt(tex = null) -> Variant:
 # Shared shapes
 # -----------------------------------------------------------------------------
 ##  A frame at (x, y) of frame P pointing along local angle `a` (P's own handedness kept).
-static func sub(P, x: float, y: float, a: float, s: float = 1.0) -> Variant:
+static func sub(P, x: float, y: float, a: float, s = null) -> Variant:
+	if s == null: s = 1
 	var flip: float = (signf(P.sx * P.sy) if signf(P.sx * P.sy) else 1)
 	return SpriteXform.Xf.new(P.x(x, y), P.y(x, y), P.ang + (a * flip), absf(P.sx) * s, (absf(P.sy) * flip) * s)
 
 ##  A ring as a polygon (stays round in squashed frames).
-static func hoop(F, cx: float, cy: float, rx: float, ry: float, w: float, n: float = 28.0) -> Variant:
+static func hoop(F, cx: float, cy: float, rx: float, ry: float, w: float, n = null) -> Variant:
+	if n == null: n = 28
 	var out = []
 	var inn = []
 	for i in range(floori(n) + 1):
-		var a: float = ((i / n) * PI) * 2
+		var a: float = ((i / float(n)) * PI) * 2
 		out.append_array([cx + (cos(a) * rx), cy + (sin(a) * ry)])
 		inn.append_array([cx + (cos(a) * (rx - w)), cy + (sin(a) * (ry - w))])
 	var pts = TS.arr(out).duplicate()
@@ -532,7 +539,7 @@ static func olympian_aura(g, x: float, y: float, t: float, layer: String) -> voi
 				var d: float = JOG[fmod((n + j), 10)]
 				g["fillRect"].call(cx, cy, 1, 3)
 				g["globalAlpha"] = (0.5 + (0.5 * fade)) * 0.45
-				g["fillRect"].call(TS.or_(cx - d, cx + 1), cy + 1, 1, 2)
+				g["fillRect"].call((cx - d if cx - d else cx + 1), cy + 1, 1, 2)
 				g["globalAlpha"] = 0.5 + (0.5 * fade)
 				cx += d
 				cy += 3

@@ -92,7 +92,8 @@ static var AC = {"mist": PixelColor.css(0xa0142a), "mistDk": PixelColor.css(0x5a
 static var BLOODMOON = {"dagger.sanguine": TS.merge([{"weapon": sanguine_kiss}, FX]), "parrying_dagger.nightwing": TS.merge([{"weapon": nightwing}, FX]), "vampiric_fang.bloodmoon": fang, "duelist_band.count": counts_tricorn(), "phase_cloak.vampire": vampire_mantle(), "leather_boots.bloodmoon": bloodmoon_riders(), "bloodrite_wraps.bloodmoon": bloodmoon_breeches()}
 
 ##  Moonlight sliding along polished silver, one step per frame.
-static func gleam(period: float = 8.0) -> Variant:
+static func gleam(period = null) -> Variant:
+	if period == null: period = 8
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1.1), 1, 0)))
 
 ##  A heartbeat: bright, softer, bright, dim.
@@ -117,7 +118,8 @@ static func ruby() -> Variant:
 	return PixelRaster.material({"base": RUBY[2], "glow": true, "ramp": RUBY, "tex": beat})
 
 ##  Points placed into a parent frame's local space: scaled, rotated by `ang`, moved to (ox, oy).
-static func place(pts, ox: float, oy: float, ang: float, sx: float = 1.0, sy = null) -> Variant:
+static func place(pts, ox: float, oy: float, ang: float, sx = null, sy = null) -> Variant:
+	if sx == null: sx = 1
 	if sy == null: sy = sx
 	var c: float = cos(ang)
 	var s: float = sin(ang)
@@ -134,7 +136,8 @@ static func wing(F, ox: float, oy: float, ang: float, sx: float, sy = null) -> V
 	return F.poly(place(WING, ox, oy, ang, sx, sy))
 
 ##  A wing's finger bones as one-pixel lines.
-static func bones(r, F, ox: float, oy: float, ang: float, sx: float, sy: float, mat: float, tone: float, g: float, lead: bool = false) -> void:
+static func bones(r, F, ox: float, oy: float, ang: float, sx: float, sy: float, mat: float, tone: float, g: float, lead = null) -> void:
+	if lead == null: lead = false
 	for _e0 in TS.array_entries(BONES):
 		var i = _e0[0]
 		var b = _e0[1]
@@ -252,7 +255,8 @@ static func counts_tricorn() -> Variant:
 			var s: float = sway * 2.4
 			var ph: float = fmod(r.phase, 4)
 			var fl: float = ([0, 0.5, 0.9, 0.4])[ph]
-			var _fn0 = func(pts, mat: float, bias: float = 0.0):
+			var _fn0 = func(pts, mat: float, bias = null):
+				if bias == null: bias = 0
 				var segs = []
 				for i in range(1, pts.size()):
 					segs.append(H.cap(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1], pts[i - 1][2], pts[i][2]))

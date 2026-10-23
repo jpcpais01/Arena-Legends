@@ -92,7 +92,8 @@ static func wings_of_horus() -> Variant:
 	return {"tip": 10.5, "mats": {"rim": PixelRaster.material({"base": GOLD, "shiny": true, "step": 0.15, "tex": PixelTex.flow(7, 1, 1.5, 1)}), "feather": PixelRaster.material({"base": 0xf4e2a8, "shiny": true, "step": 0.13, "tex": quills}), "lapis": PixelRaster.material({"base": LAPIS, "step": 0.13, "tex": quills}), "turq": PixelRaster.material({"base": TURQ, "tex": quills}), "quill": PixelRaster.material({"base": 0x1a2460}), "eye": PixelRaster.material({"base": 0xf8f4ea}), "pupil": PixelRaster.material({"base": SUN[2], "glow": true, "ramp": SUN, "tex": (func(_x, _y, ph): return (TX.sel(TX.mod(ph, 2), 1, 0)))}), "sun": PixelRaster.material({"base": SUN[2], "glow": true, "ramp": SUN, "tex": corona(-9.4, 0)})}, "draw": _fn0}
 
 ##  The tall feather of Ma'at, curling over at its tip, in frame F (x up the quill).
-static func maat_feather(r, F, m, len_: float, g: float, wide: float = 1.0) -> void:
+static func maat_feather(r, F, m, len_: float, g: float, wide = null) -> void:
+	if wide == null: wide = 1
 	var k: float = len_ / 23.0
 	var kw: float = k * wide
 	var vane = F.poly([1 * k, 0.6 * kw, 6 * k, 3.1 * kw, 13 * k, 4.2 * kw, 18.6 * k, 4.4 * kw, 22.2 * k, 3.4 * kw, 23.6 * k, 1 * kw, 22.6 * k, (-1.4) * kw, 20.8 * k, (-0.6) * kw, 19.4 * k, (-2.4) * kw, 12 * k, (-3.2) * kw, 5 * k, (-2.4) * kw, 1 * k, (-0.8) * kw])

@@ -141,7 +141,10 @@ static func lacquer(_x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(y, 4.4), 0.55), 1, 0))
 
 ##  Bronze catching the light in a band that slides along it.
-static func sheen(period: float = 9.0, speed: float = 2.2, w: float = 1.0) -> Variant:
+static func sheen(period = null, speed = null, w = null) -> Variant:
+	if period == null: period = 9
+	if speed == null: speed = 2.2
+	if w == null: w = 1
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.4)), TX.mul(ph, speed)), period), w), 1, 0)))
 
 ##  Cloth wound in strips.
@@ -186,7 +189,9 @@ static func curl(r, F, cx: float, cy: float, R: float, turns: float, a0: float, 
 		py = y
 
 ##  A ribbon streaming from (x, y) toward −x of F, `len` long, `w` wide, waving with `ph`.
-static func ribbon(F, x: float, y: float, len_: float, w: float, ph: float, amp: float = 0.8, droop: float = 0.0) -> Variant:
+static func ribbon(F, x: float, y: float, len_: float, w: float, ph: float, amp = null, droop = null) -> Variant:
+	if amp == null: amp = 0.8
+	if droop == null: droop = 0
 	var top = []
 	var bot = []
 	for i in range(5 + 1):
@@ -203,7 +208,8 @@ static func ribbon(F, x: float, y: float, len_: float, w: float, ph: float, amp:
 	return F.poly((TS.arr(top) + [ex - 0.8, ey + (w * 0.6), ex - 0.2, ey, ex - 0.8, ey - (w * 0.6)] + TS.arr(bot)))
 
 ##  A small temple bell hanging from (x, y) of F (its axis along −y of F), `k` its scale.
-static func tiny_bell(r, F, x: float, y: float, k: float, bronze: float, dark: float, g: float, bias: float = 0.0) -> void:
+static func tiny_bell(r, F, x: float, y: float, k: float, bronze: float, dark: float, g: float, bias = null) -> void:
+	if bias == null: bias = 0
 	r.fill(F.poly([x - (0.7 * k), y - (0.3 * k), x + (0.7 * k), y - (0.3 * k), x + (1.1 * k), y - (1.9 * k), x + (1.4 * k), y - (2.6 * k), x - (1.4 * k), y - (2.6 * k), x - (1.1 * k), y - (1.9 * k)], 0.2), bronze, {"group": g, "bevel": 0.8, "toneBias": bias})
 	r.dot(F.x(x, y - (2.9 * k)), F.y(x, y - (2.9 * k)), dark, 1, g)
 
@@ -230,7 +236,7 @@ static func windsong_bow() -> Variant:
 		var _d1 = path.call(0.97, 1)
 		var tx = _d1[0]
 		var ty = _d1[1]
-		var R = SpriteXform.Xf.new(t.x(tx, ty), t.y(tx, ty), t.ang + (0.35 * signf(TS.or_(t.sx * t.sy, 1))), t.sx, t.sy)
+		var R = SpriteXform.Xf.new(t.x(tx, ty), t.y(tx, ty), t.ang + (0.35 * signf((t.sx * t.sy if t.sx * t.sy else 1))), t.sx, t.sy)
 		r.fill(ribbon(R, -0.2, 0.4, 7.4, 0.55, ph, 0.9, 0.6), m.call("ribbon2"), {"group": g, "bevel": 0.5, "toneBias": (o.get("toneBias") if o.get("toneBias") != null else 0) - 1, "local": L})
 		r.fill(ribbon(R, -0.2, -0.3, 8.6, 0.6, ph + 1, 1.1, 1.4), m.call("ribbon"), {"group": g, "bevel": 0.5, "toneBias": o.get("toneBias"), "local": L})
 		# Cloud scrolls curling off the back of each limb.
@@ -276,7 +282,7 @@ static func windsong_bow() -> Variant:
 		var lx = _d8[0]
 		var ly = _d8[1]
 		var sw: float = (([0, 0.5, 0.8, 0.5])[ph]) - 0.4
-		var B = SpriteXform.Xf.new(t.x(lx - 0.2, ly - 0.4), t.y(lx - 0.2, ly - 0.4), t.ang + ((sw * 0.4) * signf(TS.or_(t.sx * t.sy, 1))), t.sx, t.sy)
+		var B = SpriteXform.Xf.new(t.x(lx - 0.2, ly - 0.4), t.y(lx - 0.2, ly - 0.4), t.ang + ((sw * 0.4) * signf((t.sx * t.sy if t.sx * t.sy else 1))), t.sx, t.sy)
 		r.line(B.x(0, 0), B.y(0, 0), B.x(0, -1.4), B.y(0, -1.4), m.call("ribbon2"), 2, g)
 		tiny_bell(r, B, 0, -1.3, 0.9, m.call("bell"), m.call("bellDark"), g, (o.get("toneBias") if o.get("toneBias") != null else 0))
 		# The string, and a nocked arrow with saffron fletching.
@@ -300,7 +306,8 @@ static func windsong_bow() -> Variant:
 	return {"tip": 22, "mats": {"limb": PixelRaster.material({"base": MAROON[2], "ramp": MAROON, "shiny": true, "step": 0.14, "tex": lacquer}), "scroll": PixelRaster.material(S["bronze"].call(sheen(8, 2, 1))), "cap": PixelRaster.material(S["bronze"].call(null)), "bell": PixelRaster.material(S["bronze"].call(null)), "bellDark": PixelRaster.material(SkinsKit.plain(BRONZE[0])), "grip": PixelRaster.material(S["saffron"].call(wound)), "setting": PixelRaster.material(S["bronze"].call(null)), "jade": PixelRaster.material(S["jade"].call()), "ribbon": PixelRaster.material(S["saffron"].call()), "ribbon2": PixelRaster.material(S["maroon"].call()), "string": PixelRaster.material(SkinsKit.plain(0xf2e8d0)), "arrow": PixelRaster.material(S["wood"].call()), "head": PixelRaster.material(S["bronze"].call(null)), "fletch": PixelRaster.material(S["saffron"].call())}, "draw": _fn11}
 
 ##  The wheel at (cx, 0) of t, turned by `rot`, `k` its scale: six hooked wind blades on a sea-green ring, six spokes to a jade hub.
-static func wheel(r, t, cx: float, rot: float, k: float, m, g: float, bias: float = 0.0, L = null) -> void:
+static func wheel(r, t, cx: float, rot: float, k: float, m, g: float, bias = null, L = null) -> void:
+	if bias == null: bias = 0
 	var P = (func(rr: float, a: float): return [cx + ((cos(a) * rr) * k), (sin(a) * rr) * k])
 	var blades = []
 	for i in range(6):
@@ -348,7 +355,8 @@ static func prayer_wheel() -> Variant:
 ## The temple bell hanging from the origin of B (its axis down −y): a hanger loop, a domed crown, two rows of
 ## bosses, sea-green bands, the jade rune band (dark while it recharges, blazing as it tolls), a flared lip,
 ## and a maroon cord with a saffron tassel hanging from the clapper, swung by `sway` (radians, world).
-static func bell_body(r, B, m, state: String, ph: float, sway: float, g: float = 2.0) -> void:
+static func bell_body(r, B, m, state: String, ph: float, sway: float, g = null) -> void:
+	if g == null: g = 2
 	var lit: bool = state != "spent"
 	var toll: bool = state == "toll"
 	# The tassel first, under the lip.
@@ -415,7 +423,7 @@ static func pilgrims_windhat() -> Variant:
 			# The chin cord, down the cheek from under the brim.
 			r.line(H.x(1.6, 4.6), H.y(1.6, 4.6), H.x(3.6, -5.2), H.y(3.6, -5.2), m.call("h.band"), 1, g)
 			# Ribbons streaming back from the band, under the hat.
-			var R = SpriteXform.Xf.new(H.x(-5.4, 6.6), H.y(-5.4, 6.6), H.ang - (0.25 * signf(TS.or_(H.sx * H.sy, 1))), H.sx, H.sy)
+			var R = SpriteXform.Xf.new(H.x(-5.4, 6.6), H.y(-5.4, 6.6), H.ang - (0.25 * signf((H.sx * H.sy if H.sx * H.sy else 1))), H.sx, H.sy)
 			r.fill(ribbon(R, 0, 0.2, 7.6 + (s * 0.6), 0.6, ph, 0.9, 1.2), m.call("h.band"), {"group": 70, "bevel": 0.5, "toneBias": -1, "local": R})
 			r.fill(ribbon(R, 0, -0.4, 9 + (s * 0.8), 0.65, ph + 1, 1.1, 2.4), m.call("h.saffron"), {"group": 71, "bevel": 0.5, "local": R})
 			# The hat: a broad shallow cone, its underside showing a little at the brim.
@@ -430,7 +438,7 @@ static func pilgrims_windhat() -> Variant:
 			# The finial at the peak, a tiny bell hanging from it, swinging.
 			r.fill(PixelSdf.union(H.circ(0.6, brim + 7.8, 0.75), H.cap(0.6, brim + 7.4, 0.6, brim + 9.4, 0.32)), m.call("h.bronze"), {"group": 73, "bevel": 0.5})
 			var bs: float = (([0, 0.4, 0.6, 0.3])[ph]) + (s * 0.06)
-			var B = SpriteXform.Xf.new(H.x(0.6, brim + 9.4), H.y(0.6, brim + 9.4), H.ang - ((0.9 + bs) * signf(TS.or_(H.sx * H.sy, 1))), H.sx, H.sy)
+			var B = SpriteXform.Xf.new(H.x(0.6, brim + 9.4), H.y(0.6, brim + 9.4), H.ang - ((0.9 + bs) * signf((H.sx * H.sy if H.sx * H.sy else 1))), H.sx, H.sy)
 			tiny_bell(r, B, 0, -0.4, 0.75, m.call("h.bronze"), m.call("h.dark"), 74)
 		return ({"mats": {"h.cowl": PixelRaster.material(S["maroon"].call(wound)), "h.straw": PixelRaster.material(S["straw"].call()), "h.under": PixelRaster.material({"base": STRAW[1], "ramp": STRAW, "tex": weave}), "h.band": PixelRaster.material(S["maroon"].call()), "h.saffron": PixelRaster.material(S["saffron"].call()), "h.bronze": PixelRaster.material(S["bronze"].call(null)), "h.dark": PixelRaster.material(SkinsKit.plain(BRONZE[0])), "h.jade": PixelRaster.material(S["jade"].call())}, "draw": _fn0})
 	return TS.merge([{"head": _fn1}, FX])
@@ -483,7 +491,7 @@ static func windward_robes() -> Variant:
 		var bx: float = (b["waistW"] * 0.55) + 0.4
 		r_3.fill(T_2.circ(bx, 2.2, 0.8), m_3.call("k.shawlEdge"), {"group": c_3["g"], "bevel": 0.5})
 		var sw: float = (([0, 0.2, 0.35, 0.15])[ph_2]) - (c_3["sway"] * 0.3)
-		var B = SpriteXform.Xf.new(T_2.x(bx + 0.2, 1.6), T_2.y(bx + 0.2, 1.6), T_2.ang + (sw * signf(TS.or_(T_2.sx * T_2.sy, 1))), T_2.sx, T_2.sy)
+		var B = SpriteXform.Xf.new(T_2.x(bx + 0.2, 1.6), T_2.y(bx + 0.2, 1.6), T_2.ang + (sw * signf((T_2.sx * T_2.sy if T_2.sx * T_2.sy else 1))), T_2.sx, T_2.sy)
 		r_3.line(B.x(0, 0), B.y(0, 0), B.x(0, -1.2), B.y(0, -1.2), m_3.call("k.shawlEdge"), 2, c_3["g"])
 		tiny_bell(r_3, B, 0, -1.1, 0.75, m_3.call("k.bronze"), m_3.call("k.dark"), c_3["g"])
 		# The hem: a maroon band with bronze wind curls, swaying with the skirt.

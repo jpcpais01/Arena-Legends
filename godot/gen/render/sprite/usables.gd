@@ -194,13 +194,16 @@ static func cork() -> Variant:
 static func filler(r, o) -> Variant:
 	var group: float = (o.get("group") if o.get("group") != null else 7)
 	var tone_bias: float = (o.get("toneBias") if o.get("toneBias") != null else 0)
-	var _fn0 = func(s, mat: float, bevel: float = 1.4, extra = null):
+	var _fn0 = func(s, mat: float, bevel = null, extra = null):
+		if bevel == null: bevel = 1.4
 		if extra == null: extra = {}
 		r.fill(s, mat, TS.merge([{"group": group, "toneBias": tone_bias, "bevel": bevel}, extra]))
 	return _fn0
 
 ##  Neck, lip and (unless drinking) cork, from `x0` up to `x1`.
-static func neck(r, t, m, o, x0: float, x1: float, w: float = 0.95, cork_key: String = "cork") -> void:
+static func neck(r, t, m, o, x0: float, x1: float, w = null, cork_key = null) -> void:
+	if w == null: w = 0.95
+	if cork_key == null: cork_key = "cork"
 	var fill = filler(r, o)
 	fill.call(t.cap(x0, 0, x1, 0, w + 0.15, w), m.call("glass"), 1)
 	fill.call(t.cap(x1, 0, x1 + 0.2, 0, w + 0.45), m.call("glass"), 0.8)
@@ -239,7 +242,7 @@ static func usable_art(id: String, skin_id = null) -> Variant:
 			a = ART.get(id).call()
 		else:
 			var base = (skin.get("usable").call() if skin.get("usable") != null else ART.get(id).call())
-			var mats = base["mats"]
+			var mats = TS.merge([base["mats"]])
 			if skin.get("mats") != null:
 				var _o0 = skin.get("mats")
 				for k in _o0:

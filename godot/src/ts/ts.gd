@@ -119,6 +119,19 @@ static func or_(a, b):
 	return a if truthy(a) else b
 
 
+## a && b / a || b / a ?? b with the right side as a thunk (runs only when needed).
+static func and_f(a, b: Callable):
+	return b.call() if truthy(a) else a
+
+
+static func or_f(a, b: Callable):
+	return a if truthy(a) else b.call()
+
+
+static func nn_f(a, b: Callable):
+	return a if a != null else b.call()
+
+
 static func nn(a, b):
 	return a if a != null else b
 

@@ -14,7 +14,8 @@ static func drift(spark: float, spark2: float, kind: String) -> Variant:
 	return ({"fx": {"spark": spark, "spark2": spark2, "kind": kind}, "trail": [spark, PixelColor.mix(spark, spark2, 0.55)]})
 
 ##  A ramp that steps from dark to a bright fifth tone (lacquer with a highlight).
-static func ramped(ramp, tex = null, shine: bool = true) -> Variant:
+static func ramped(ramp, tex = null, shine = null) -> Variant:
+	if shine == null: shine = true
 	return ({"base": ramp[2], "ramp": ramp, "shiny": shine, "tex": tex})
 
 # --- Textures (item-local units, about one pixel each) ------------------------------------

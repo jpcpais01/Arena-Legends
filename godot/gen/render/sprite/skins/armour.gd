@@ -4,7 +4,8 @@ class_name SkinsArmour
 static func wrap_(v: float, p: float) -> float:
 	return fmod((fmod(v, p)) + p, p)
 
-static func shiny(base: float, tex = null, step: float = 0.15) -> Variant:
+static func shiny(base: float, tex = null, step = null) -> Variant:
+	if step == null: step = 0.15
 	return ({"base": base, "shiny": true, "step": step, "tex": tex})
 
 static func plain(base: float, tex = null) -> Variant:

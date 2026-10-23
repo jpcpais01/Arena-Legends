@@ -172,7 +172,10 @@ static var STARWEAVER = {"ember_wand.starfall": TS.merge([{"weapon": starfall, "
 ## A starfield: a star in some cells of a grid. Each frame a quarter of them
 ## flare to full starlight while the rest glow dim, so the sky glitters
 ## without turning to noise. `seed` gives another sky.
-static func starfield(cell: float = 3.0, density: float = 0.32, seed_: float = 0.0) -> Variant:
+static func starfield(cell = null, density = null, seed_ = null) -> Variant:
+	if cell == null: cell = 3
+	if density == null: density = 0.32
+	if seed_ == null: seed_ = 0
 	var _fn6 = func(x, y, ph):
 		var cx = TX.floor(TX.div(x, cell))
 		var cy = TX.floor(TX.div(y, cell))
@@ -189,39 +192,47 @@ static func starfield(cell: float = 3.0, density: float = 0.32, seed_: float = 0
 	return _fn6
 
 ##  A gleam sliding along polished silver, one step per frame.
-static func gleam(period: float = 9.0) -> Variant:
+static func gleam(period = null) -> Variant:
+	if period == null: period = 9
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.4)), TX.mul(ph, 2.25)), period), 1.1), 1, 0)))
 
 ##  Twinkle: bright on the downbeat.
 static func twinkle(_x, _y, ph):
 	return TX.pick([1, 0, 1, -1], TX.mod(ph, 4))
 
-static func silver(tex = null, step: float = 0.15) -> Variant:
+static func silver(tex = null, step = null) -> Variant:
 	if tex == null: tex = gleam()
+	if step == null: step = 0.15
 	return PixelRaster.material({"base": SILVER[2], "ramp": SILVER, "shiny": true, "step": step, "tex": tex})
 
 ##  A star of `n` points round (cx, cy): outer radius `R`, inner `ri`, turned by `rot`.
-static func star(F, cx: float, cy: float, R: float, ri: float, n: float = 5.0, rot: float = 0.0) -> Variant:
+static func star(F, cx: float, cy: float, R: float, ri: float, n = null, rot = null) -> Variant:
+	if n == null: n = 5
+	if rot == null: rot = 0
 	var pts = []
 	for i in range(ceili(n * 2)):
-		var a: float = (rot + (PI / 2.0)) + ((i * PI) / n)
+		var a: float = (rot + (PI / 2.0)) + ((i * PI) / float(n))
 		var d: float = (ri if i % 2 else R)
 		pts.append_array([cx + (cos(a) * d), cy + (sin(a) * d)])
 	return F.poly(pts)
 
 ##  A round disc as a polygon (stays round in squashed frames, unlike `circ`).
-static func disc(F, cx: float, cy: float, r: float, n: float = 14.0) -> Variant:
+static func disc(F, cx: float, cy: float, r: float, n = null) -> Variant:
+	if n == null: n = 14
 	var pts = []
 	for i in range(ceili(n)):
-		pts.append_array([cx + (cos(((i / n) * PI) * 2) * r), cy + (sin(((i / n) * PI) * 2) * r)])
+		pts.append_array([cx + (cos(((i / float(n)) * PI) * 2) * r), cy + (sin(((i / float(n)) * PI) * 2) * r)])
 	return F.poly(pts)
 
 ##  A crescent moon: a disc at (cx, cy) with a bite taken out toward `dir`.
-static func crescent(F, cx: float, cy: float, r: float, dir: float, bite: float = 0.42, inner: float = 0.82) -> Variant:
+static func crescent(F, cx: float, cy: float, r: float, dir: float, bite = null, inner = null) -> Variant:
+	if bite == null: bite = 0.42
+	if inner == null: inner = 0.82
 	return PixelSdf.subtract(disc(F, cx, cy, r, 18), disc(F, cx + ((cos(dir) * r) * bite), cy + ((sin(dir) * r) * bite), r * inner, 18))
 
 ##  A twinkling sparkle: a four-point star whose rays stretch and shrink over the loop.
-static func sparkle(F, cx: float, cy: float, s: float, ph: float, k: float = 0.0) -> Variant:
+static func sparkle(F, cx: float, cy: float, s: float, ph: float, k = null) -> Variant:
+	if k == null: k = 0
 	var L: float = (([1, 0.7, 0.9, 0.6])[fmod((ph + k), 4)]) * s
 	return star(F, cx, cy, L, s * 0.24, 4)
 
@@ -469,7 +480,8 @@ static func starweaver_aura(g, x: float, y: float, t: float, layer: String) -> v
 	var spin: float = t * 0.35
 	var RX: float = 17
 	var RY: float = 4.4
-	var _fn3 = func(k: float, u: float = 0.0):
+	var _fn3 = func(k: float, u = null):
+		if u == null: u = 0
 		var _d1 = RING_STARS[k]
 		var a0 = _d1[0]
 		var s0 = _d1[1]

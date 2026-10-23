@@ -8,7 +8,8 @@ static var Q = PI / 2.0
 static func wrap_(v: float, p: float) -> float:
 	return fmod((fmod(v, p)) + p, p)
 
-static func shiny(base: float, tex = null, step: float = 0.15) -> Variant:
+static func shiny(base: float, tex = null, step = null) -> Variant:
+	if step == null: step = 0.15
 	return ({"base": base, "shiny": true, "step": step, "tex": tex})
 
 static func plain(base: float, tex = null) -> Variant:
@@ -22,7 +23,8 @@ static func veined(dark, hot: float, tex) -> Variant:
 	return ({"base": dark[2], "ramp": (TS.arr(dark) + [hot]), "tex": tex})
 
 ##  Epic effects: sparkles or flames in one colour family, and the swing trail.
-static func epic_fx(spark: float, spark2: float, kind: String = "twinkle", trail = null) -> Variant:
+static func epic_fx(spark: float, spark2: float, kind = null, trail = null) -> Variant:
+	if kind == null: kind = "twinkle"
 	if trail == null: trail = spark
 	return ({"fx": {"spark": spark, "spark2": spark2, "kind": kind}, "trail": [trail, PixelColor.mix(trail, spark2, 0.55)]})
 

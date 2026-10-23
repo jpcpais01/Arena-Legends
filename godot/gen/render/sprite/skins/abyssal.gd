@@ -69,11 +69,15 @@ static func scales(x, y, _a2 = null):
 	return TX.sel(TX.lt(TX.add(TX.mul(TX.mul(u, u), 0.6), TX.mul((TX.sub(v, 1.6)), (TX.sub(v, 1.6)))), 0.5), 0, -1)
 
 ##  Light running along a part like a wave, one step per frame.
-static func wave(speed: float = 1.5, period: float = 6.0) -> Variant:
+static func wave(speed = null, period = null) -> Variant:
+	if speed == null: speed = 1.5
+	if period == null: period = 6
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(TX.sin(TX.mul(y, 0.8)), 1.2)), TX.mul(ph, speed)), period), 1.3), 1, 0)))
 
 ##  A strand of kelp from (x, y) in frame F, waving with `ph`; `dir` is its general heading.
-static func kelp(F, x: float, y: float, dir: float, len_: float, ph: float, k: float = 0.0, wd: float = 1.0) -> Variant:
+static func kelp(F, x: float, y: float, dir: float, len_: float, ph: float, k = null, wd = null) -> Variant:
+	if k == null: k = 0
+	if wd == null: wd = 1
 	var parts = []
 	var px: float = x
 	var py: float = y
@@ -106,7 +110,8 @@ static func trident() -> Variant:
 	return {"tip": 44, "grip2": 13, "mats": {"shaft": PixelRaster.material(SkinsKit.veined(DEEP, BIO, wave(1.5, 7))), "prong": PixelRaster.material({"base": 0xc8e8e8, "shiny": true, "step": 0.15, "tex": wave(2, 9)}), "coral": PixelRaster.material({"base": CORAL, "shiny": true, "step": 0.14}), "pearl": PixelRaster.material({"base": PEARL, "ramp": PEARL_RAMP, "shiny": true, "tex": (func(_x, _y, ph): return (TX.sel(TX.mod(ph, 2), 1, 0)))}), "kelp": PixelRaster.material({"base": KELP, "tex": (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, 2), 0.5), -1, 0)))})}, "draw": _fn0}
 
 ##  The nautilus shell: a coiled spiral of cream and coral bands, fins on its rim (centre at cx, 0).
-static func nautilus(r, t, cx: float, spin: float, m, g: float, bias: float = 0.0) -> void:
+static func nautilus(r, t, cx: float, spin: float, m, g: float, bias = null) -> void:
+	if bias == null: bias = 0
 	var fins = [t.circ(cx, 0, 4.4)]
 	for k in range(3):
 		var a: float = (((k / 3.0) * PI) * 2) + spin

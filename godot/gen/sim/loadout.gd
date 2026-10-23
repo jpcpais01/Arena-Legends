@@ -41,7 +41,7 @@ static func build_abilities(gear) -> Variant:
 					def["combo"] = TS.merge([ab.get("combo"), {"finisher": TS.merge([ab.get("combo")["finisher"], {"from": slot}])}])
 				out.append(def)
 	var boots = (SimGear.GEAR["boots"].get(gear.get("boots")) if gear.get("boots") else null)
-	var evade = TS.nn((null if boots == null else boots.get("evade")), SimAbilities.EVADE)
+	var evade = ((null if boots == null else boots.get("evade")) if (null if boots == null else boots.get("evade")) != null else SimAbilities.EVADE)
 	# Acrobat Trousers: the evade recharges faster.
 	var evade_cd: float = (evade["cooldown"] * 0.72 if gear.get("legs") == "acrobat_trousers" else evade["cooldown"])
 	out.append(TS.merge([evade, {"cooldown": evade_cd, "from": "boots"}]))
@@ -49,7 +49,7 @@ static func build_abilities(gear) -> Variant:
 
 ##  Form base stats + trained points + gear additions, then gear multipliers.
 static func compute_base_stats(form: String, gear, train = null) -> Variant:
-	var s = SimForms.FORMS.get(form)["base"]
+	var s = TS.merge([SimForms.FORMS.get(form)["base"]])
 	SimTraining.apply_training(s, train)
 	var pieces = equipped(gear)
 	var w = s
@@ -73,8 +73,9 @@ static func clamp01(v: float) -> float:
 	return minf(0.95, maxf(0.05, v))
 
 ##  Temperament and spacing for the AI, from the body and what it carries.
-static func build_profile(form: String, gear, style: String = "balanced") -> Variant:
-	var p = SimForms.FORMS.get(form)["personality"]
+static func build_profile(form: String, gear, style = null) -> Variant:
+	if style == null: style = "balanced"
+	var p = TS.merge([SimForms.FORMS.get(form)["personality"]])
 	var t = SimStyles.FIGHT_STYLES.get(style)["temper"]
 	p["aggression"] += (t.get("aggression") if t.get("aggression") != null else 0)
 	p["caution"] += (t.get("caution") if t.get("caution") != null else 0)
@@ -135,7 +136,7 @@ static func sanitize_build(raw, fallback) -> Variant:
 
 ##  Replaces one slot, keeping the rest. Passing null empties it (not allowed for `main`).
 static func with_gear(build, slot: String, id) -> Variant:
-	var gear = build["gear"]
+	var gear = TS.merge([build["gear"]])
 	if id:
 		if SimGear.gear_of(id)["slot"] != slot:
 			push_error(str((id + " does not go in " + slot)))

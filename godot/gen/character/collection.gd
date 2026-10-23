@@ -180,7 +180,7 @@ static func spares() -> Variant:
 		var s = CharacterSkins.SKIN_BY_ID.get(id)
 		if (s != null) and (n > 0):
 			out.append([s, n])
-	return TS.sort(out, (func(a, b): return (TS.or_(CharacterSkins.SKIN_RARITIES.find(b[0]["rarity"]) - CharacterSkins.SKIN_RARITIES.find(a[0]["rarity"]), b[1] - a[1]) if TS.or_(CharacterSkins.SKIN_RARITIES.find(b[0]["rarity"]) - CharacterSkins.SKIN_RARITIES.find(a[0]["rarity"]), b[1] - a[1]) else a[0]["name"]["localeCompare"].call(b[0]["name"]))))
+	return TS.sort(out, (func(a, b): return (TS.or_f(CharacterSkins.SKIN_RARITIES.find(b[0]["rarity"]) - CharacterSkins.SKIN_RARITIES.find(a[0]["rarity"]), func(): return b[1] - a[1]) if TS.or_f(CharacterSkins.SKIN_RARITIES.find(b[0]["rarity"]) - CharacterSkins.SKIN_RARITIES.find(a[0]["rarity"]), func(): return b[1] - a[1]) else a[0]["name"]["localeCompare"].call(b[0]["name"]))))
 
 ##  Spare copies per rarity.
 static func spare_count(tier: String) -> float:

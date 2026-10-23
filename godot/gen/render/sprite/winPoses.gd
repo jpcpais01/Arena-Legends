@@ -48,7 +48,7 @@ static func _init_specs():
 			var a: float = 1.2 - ((i + 1) * (PI / 3.0))
 			var from: float = a + (PI / 3.0)
 			var p = ({"hFx": 0.62, "hFy": -0.1, "elF": 1, "wAng": a, "hNx": 0.25, "hNy": -0.5, "lean": 0.08} if bow else {"hNx": 0.55, "hNy": -0.15, "elN": 1, "wAng": a, "hFx": 0.2, "hFy": -0.6, "lean": 0.08})
-			spin.append([F(TS.merge([p, {"hipY": (-0.06) - (0.02 * (TS.i32(i & 1)))}]), ("fierce" if i < 10 else "shout"), (null if bow else ({"oneHand": true} if k["two"] else {}))), (0.045 if i < 10 else 0.06)])
+			spin.append([F(TS.merge([p, {"hipY": (-0.06) - (0.02 * (TS.i32(i & 1)))}]), ("fierce" if i < 10 else "shout"), (null if bow else TS.merge([({"oneHand": true} if k["two"] else {})]))), (0.045 if i < 10 else 0.06)])
 			# Every other frame smears, so the spin reads as a whirl rather than a fan.
 			if (not bow) and TS.i32(i & 1):
 				spin[i][0]["smear"] = {"from": from + (PI / 3.0), "to": a}
@@ -86,7 +86,8 @@ static func _init_specs():
 		return {"hold": ({"oneHand": true} if k["two"] else null), "intro": [[F(TS.merge([TALL, arms, {"hipY": -0.14, "lean": 0.25}]), "fierce"), 0.12], [F(TS.merge([pose, {"hipY": -0.04}]), "shout"), 0.14], [F(pose, "fierce"), 0.25]], "loop": [[F(TS.merge([pose, {"sway": -1}]), "fierce"), 0.22], [F(TS.merge([pose, {"sway": -0.55, "head": 0.14}]), "fierce"), 0.22], [F(TS.merge([pose, {"sway": -0.85, "hipY": -0.115}]), "fierce"), 0.22], [F(TS.merge([pose, {"sway": -0.4, "head": 0.1}]), "fierce"), 0.22]]}
 	return {"cheer": _fn0, "salute": _fn1, "flex": _fn2, "bow": _fn3, "twirl": _fn4, "hips": _fn5, "meditate": _fn6, "skyward": _fn7, "champion": _fn8}
 
-static func F(p, face: String = "calm", hold = null) -> Variant:
+static func F(p, face = null, hold = null) -> Variant:
+	if face == null: face = "calm"
 	return (TS.merge([{"p": p, "face": face}, ({"hold": hold} if hold != null else {})]))
 
 static func key(id: String) -> String:
@@ -143,7 +144,7 @@ static func pose_frame(c, t: float) -> float:
 static func pose_intro(c) -> float:
 	var s: float = 0
 	for i in range(ceili((c.get("loopFrom") if c.get("loopFrom") != null else 0))):
-		s += TS.nn((null if c.get("beats") == null else TS.at(c.get("beats"), i)), 0)
+		s += ((null if c.get("beats") == null else TS.at(c.get("beats"), i)) if (null if c.get("beats") == null else TS.at(c.get("beats"), i)) != null else 0)
 	return s
 
 ## Stances the finishers put the winner in while they play: `fin.lower` (the

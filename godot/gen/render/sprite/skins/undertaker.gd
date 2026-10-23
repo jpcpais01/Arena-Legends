@@ -199,11 +199,14 @@ static func tombstone() -> Variant:
 	# A granite headstone: an arched top, a carved border, a cross cut deep into it over lines of a worn
 	# epitaph, a chipped corner, moss creeping up from the plinth, and a crack down its face where purple
 	# light seeps through, pulsing.
-	var _fn1 = func(r, t, m, o):
+	var _fn2 = func(r, t, m, o):
 		var g: float = (o.get("group") if o.get("group") != null else 6)
 		var b: float = (o.get("toneBias") if o.get("toneBias") != null else 0)
 		var L = o.get("local")
-		var flat = (func(s, k: String, bevel: float, tone: float = 0.0): r.fill(s, m.call(k), {"group": g, "bevel": bevel, "toneBias": b + tone, "noLine": true, "local": L}))
+		var _fn0 = func(s, k: String, bevel: float, tone = null):
+			if tone == null: tone = 0
+			r.fill(s, m.call(k), {"group": g, "bevel": bevel, "toneBias": b + tone, "noLine": true, "local": L})
+		var flat = _fn0
 		# The arched slab, a chip out of one shoulder of the arch.
 		var arch = []
 		for i in range(12 + 1):
@@ -224,9 +227,9 @@ static func tombstone() -> Variant:
 		# The cross, cut deep.
 		flat.call(PixelSdf.union(t.rect(-6.6, 0, 5.2, 0.85), t.rect(-8.6, 0, 0.85, 3)), "carve", 0.6, -2)
 		# The worn epitaph: short carved strokes, no letter left legible.
-		for _e0 in [[1.4, 3], [3.4, 3.6], [5.4, 2.6], [7.6, 3.2]]:
-			var x = _e0[0]
-			var w = _e0[1]
+		for _e1 in [[1.4, 3], [3.4, 3.6], [5.4, 2.6], [7.6, 3.2]]:
+			var x = _e1[0]
+			var w = _e1[1]
 			var y: float = -w
 			while y < w:
 				if PixelTex.hash_(x * 7, y * 3) > 0.25:
@@ -239,12 +242,13 @@ static func tombstone() -> Variant:
 		r.dot(t.x(-7, -2.2), t.y(-7, -2.2), m.call("crack"), 4, g)
 		# Moss creeping up from the plinth at both corners.
 		flat.call(PixelSdf.union(t.ell(11.6, -5.6, 2, 1.4), t.ell(12, 5, 1.4, 1.8), t.ell(9.6, -6.2, 1.1, 0.7)), "moss", 0.6)
-	return {"tip": 14, "mats": {"stone": PixelRaster.material(S["stone"].call()), "carve": PixelRaster.material(R(STONE, {"step": 0.12})), "plinth": PixelRaster.material(S["stone"].call()), "moss": PixelRaster.material(S["moss"].call()), "crack": PixelRaster.material(S["spirit"].call(breathe)), "soil": PixelRaster.material(R([0x140e0a, 0x241a12, 0x3a2a1c, 0x54402c, 0x6e5640]))}, "draw": _fn1}
+	return {"tip": 14, "mats": {"stone": PixelRaster.material(S["stone"].call()), "carve": PixelRaster.material(R(STONE, {"step": 0.12})), "plinth": PixelRaster.material(S["stone"].call()), "moss": PixelRaster.material(S["moss"].call()), "crack": PixelRaster.material(S["spirit"].call(breathe)), "soil": PixelRaster.material(R([0x140e0a, 0x241a12, 0x3a2a1c, 0x54402c, 0x6e5640]))}, "draw": _fn2}
 
 ## The urn at (0, 0) of F, about 14 units tall at s = 1 (y up): a round gold body on a footed stem, a purple
 ## band round its belly set with an amethyst, handles at the shoulders, a narrow neck and a domed lid with a
 ## knob, raised by `lift`. Light seeps from under the lid; `glint` -1..1 runs a shine down the gold.
-static func urn(r, F, s: float, lift: float, glint: float, h, g: float = 1.0) -> void:
+static func urn(r, F, s: float, lift: float, glint: float, h, g = null) -> void:
+	if g == null: g = 1
 	var k = (func(v: float): return v * s)
 	var gold: float = h.call("gold")
 	# The foot and stem.
@@ -276,7 +280,8 @@ static func urn(r, F, s: float, lift: float, glint: float, h, g: float = 1.0) ->
 		r.fill(PixelSdf.intersect(body, F.poly([k.call(-5), y + k.call(1.6), k.call(5), y - k.call(0.4), k.call(5), y - k.call(1.4), k.call(-5), y + k.call(0.6)])), gold, {"group": g + 1, "flat": 4, "noLine": true})
 
 ##  A ghost's face at (x, y) of F: hollow eyes and a wailing mouth (y up, facing +x).
-static func ghost_face(r, F, x: float, y: float, s: float, v: float, g: float, wail: float = 1.0) -> void:
+static func ghost_face(r, F, x: float, y: float, s: float, v: float, g: float, wail = null) -> void:
+	if wail == null: wail = 1
 	r.fill(F.ell(x + (0.2 * s), y + (0.9 * s), 0.55 * s, 0.75 * s), v, {"group": g, "noLine": true})
 	r.fill(F.ell(x + (1.6 * s), y + (0.8 * s), 0.45 * s, 0.7 * s), v, {"group": g, "noLine": true})
 	r.fill(F.ell(x + (1.1 * s), y - (1.3 * s), 0.6 * s, (0.6 + (wail * 0.5)) * s), v, {"group": g, "noLine": true})

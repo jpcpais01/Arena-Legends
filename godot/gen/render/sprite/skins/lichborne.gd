@@ -70,7 +70,9 @@ static var A = {"rune": PixelColor.css(0x3ad888), "runeHi": PixelColor.css(0xb8f
 static var LICHBORNE = {"arcane_staff.phylactery": TS.merge([{"weapon": phylactery_staff, "proj": {"arcane": soulBolt, "hex": graveOrb}}, FX]), "frost_wand.gravecaller": TS.merge([{"weapon": gravecaller}, FX]), "phantom_blade.wailing": wailing, "berserker_mask.lich": lich_visage(), "mage_robe.gravecloth": gravecloth(), "bloodrite_wraps.ossuary": ossuary_wraps(), "shadow_treads.gravewalkers": gravewalkers()}
 
 ##  Soulfire with a bright band running through it, one step per frame.
-static func burn(speed: float = 1.5, period: float = 5.0) -> Variant:
+static func burn(speed = null, period = null) -> Variant:
+	if speed == null: speed = 1.5
+	if period == null: period = 5
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, speed)), period), 1.2), 1, 0)))
 
 ##  Flicker: bright, dim, bright, brighter.
@@ -82,11 +84,13 @@ static func aged(x, y, _a2 = null):
 	return (TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 1.3)), TX.floor(TX.mul(y, 1.3))), 0.06), -1, 0))
 
 ##  Knuckled black bone: a joint every few units.
-static func knuckles(p: float = 3.4) -> Variant:
+static func knuckles(p = null) -> Variant:
+	if p == null: p = 3.4
 	return (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, p), 0.5), -1, 0)))
 
 ##  Tarnish with a dull gleam sliding along.
-static func tarnish(period: float = 8.0) -> Variant:
+static func tarnish(period = null) -> Variant:
+	if period == null: period = 8
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1), 1, TX.sel(TX.lt(TX.hash(TX.floor(x), TX.floor(y)), 0.1), -1, 0))))
 
 ##  Grave cloth: long hanging folds.
@@ -213,7 +217,9 @@ static func GHOST_TEX(x, y, _a2 = null):
 
 ## A skull seen face on, its crown toward +x of F and its jaw toward -x (eyes either side of the x axis,
 ## so it reads the same mirrored): cranium, cheeks, burning sockets, nose and a mouth `mouth` agape.
-static func skull_front(r, F, x: float, s: float, skull: float, holes: float, eye: float, g: float, mouth: float = 0.5, eye_tone: float = 4.0) -> void:
+static func skull_front(r, F, x: float, s: float, skull: float, holes: float, eye: float, g: float, mouth = null, eye_tone = null) -> void:
+	if mouth == null: mouth = 0.5
+	if eye_tone == null: eye_tone = 4
 	var jaw: float = 1 + (mouth * 0.9)
 	r.fill(PixelSdf.union(F.circ(x + (0.6 * s), 0, 2.2 * s), F.poly([x, (-2) * s, x - (1.6 * s), (-1.5) * s, x - ((1.6 + jaw) * s), (-1) * s, x - ((1.6 + jaw) * s), 1 * s, x - (1.6 * s), 1.5 * s, x, 2 * s])), skull, {"group": g, "bevel": 1.2 * s})
 	for k in [-1, 1]:
@@ -227,7 +233,8 @@ static func upright(t) -> Variant:
 	return SpriteXform.Xf.new(t.ox, t.oy, PI / 2.0)
 
 ##  A ghost sword along +x of F (guard at 0): tattered trail, blade, bone-horn guard and the wailing skull on it.
-static func ghost_sword(r, F, f: float, h, trail: bool = true) -> void:
+static func ghost_sword(r, F, f: float, h, trail = null) -> void:
+	if trail == null: trail = true
 	var w: float = ([0, 0.8, 0.2, -0.7])[fmod(f, 4)]
 	if trail:
 		# A tattered ghostly trail streaming back off the hilt in ragged tongues.
@@ -309,7 +316,8 @@ static func lich_visage() -> Variant:
 # Gravecloth Robes
 # -----------------------------------------------------------------------------
 ##  A small skull facing the front (+x), upright in frame F at (x, y): returns nothing, draws cranium, sockets and teeth.
-static func skull_badge(r, F, x: float, y: float, s: float, bone_m: float, pit_m: float, eye_m: float, o, far: bool = false) -> void:
+static func skull_badge(r, F, x: float, y: float, s: float, bone_m: float, pit_m: float, eye_m: float, o, far = null) -> void:
+	if far == null: far = false
 	r.fill(PixelSdf.union(F.ell(x, y, 2 * s, 1.9 * s), F.rect(x + (0.6 * s), y - (1.7 * s), 1.1 * s, 0.9 * s, 0.3 * s)), bone_m, TS.merge([o, {"bevel": 1.2 * s, "local": F}]))
 	r.fill(F.ell(x + (0.9 * s), y - (0.1 * s), 0.75 * s, 0.7 * s), pit_m, {"group": o["group"], "flat": 0, "noLine": true})
 	r.dot(F.x(x + (0.9 * s), y - (0.1 * s)), F.y(x + (0.9 * s), y - (0.1 * s)), eye_m, (2 if far else 3), o["group"])

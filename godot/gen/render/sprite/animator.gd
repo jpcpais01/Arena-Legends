@@ -69,7 +69,8 @@ class Animator:
 		return (self.win_t - 0.6 if (self.win_t >= 0.6) and (self.out["clip"] == self.win_clip) else -1)
 
 	##  `x` is the interpolated world position, `dt` real seconds since the last call.
-	func update(f, x: float, dt: float, over: bool, winner: bool, sec_out: bool, use_out: bool = false) -> Variant:
+	func update(f, x: float, dt: float, over: bool, winner: bool, sec_out: bool, use_out = null) -> Variant:
+		if use_out == null: use_out = false
 		self.time += dt
 		var dx: float = (0 if self.last_x == null else x - self.last_x)
 		self.last_x = x
@@ -87,8 +88,14 @@ class Animator:
 			# Topple, hit the floor, bounce once and lie still.
 			self.set1("ko", (0 if k < 0.09 else (1 if k < 0.18 else (2 if k < 0.26 else (3 if k < 0.32 else (4 if k < 0.4 else 3))))))
 		else:
-			self.win_t += dt
-			if (over and winner) and (self.win_t > 0.6):
+			var _c0 = false
+			_c0 = over
+			if _c0:
+				_c0 = winner
+			if _c0:
+				self.win_t += dt
+				_c0 = self.win_t > 0.6
+			if _c0:
 				var c = self.set_["clips"].get(self.win_clip)
 				self.set1(self.win_clip, (SpriteWinPoses.pose_frame(c, self.win_t - 0.6) if (null if c == null else c.get("beats")) != null else fmod(floor(self.win_t * 4), 2)))
 			else:

@@ -144,7 +144,8 @@ static func musketeer_hat() -> Variant:
 	var barbs = (func(x, y, _a2 = null): return (TX.sel(TX.eq(TX.mod((TX.add((TX.mod(TX.floor(TX.sub(TX.mul(x, 1.3), TX.mul(y, 0.6))), 2)), 2)), 2), 0), -1, 0)))
 	var _fn1 = func(r, H, m, g: float, sway: float):
 		var s: float = sway * 2.4
-		var _fn0 = func(pts, mat: float, bias: float = 0.0):
+		var _fn0 = func(pts, mat: float, bias = null):
+			if bias == null: bias = 0
 			var segs = []
 			for i in range(1, pts.size()):
 				segs.append(H.cap(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1], pts[i - 1][2], pts[i][2]))

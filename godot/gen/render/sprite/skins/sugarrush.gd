@@ -72,7 +72,8 @@ static var SWEETS = [[12, 18, 1.1, 0], [24, 16, -0.85, 2.2], [33, 14, 1.3, 4.1]]
 const SPR_N = 22
 static var SUGARRUSH = {"warhammer.sugarrush": TS.merge([{"weapon": lollipop_smasher}, FX]), "buckler.sugarrush": TS.merge([{"weapon": cookie_buckler}, FX]), "echo_stone.sugarrush": gumballEcho, "storm_crown.sugarrush": cupcake_crown(), "leather_jerkin.sugarrush": candy_stripe_vest(), "windrunner_leggings.sugarrush": licorice_leggings(), "zephyr_boots.sugarrush": marshmallow_boots()}
 
-static func ramp(r, tex = null, shiny: bool = false) -> Variant:
+static func ramp(r, tex = null, shiny = null) -> Variant:
+	if shiny == null: shiny = false
 	return ({"base": r[2], "ramp": r, "tex": tex, "shiny": shiny})
 
 static func candy(r, tex = null) -> Variant:
@@ -101,11 +102,14 @@ static func built(specs) -> Variant:
 	return TS.from_entries(TS.entries(specs).map(_fn1))
 
 ##  Pleated paper (cupcake liners): a fold every `p` units across x.
-static func pleats(p: float = 1.6) -> Variant:
+static func pleats(p = null) -> Variant:
+	if p == null: p = 1.6
 	return (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, p), 0.55), -1, 0)))
 
 ##  Candy stripes: every other band sunk two tones down a ramp that runs from strawberry up to cream, so it reads as two colours (never reaching the glinting top tone).
-static func stripes(p: float = 2.6, lean: float = 0.35) -> Variant:
+static func stripes(p = null, lean = null) -> Variant:
+	if p == null: p = 2.6
+	if lean == null: lean = 0.35
 	return (func(x, y, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.add(x, TX.mul(y, lean)), p), TX.div(p, 2)), 0, -2)))
 
 ##  Licorice twist: glossy ridges running round the rope, a gloss glint sliding along one step a frame.
@@ -130,11 +134,12 @@ static func cookie_tex(x, y, _a2 = null):
 # Shapes
 # -----------------------------------------------------------------------------
 ##  A round disc as a polygon (squashes with its frame, unlike `circ`).
-static func disc(F, cx: float, cy: float, rx: float, ry = null, n: float = 18.0) -> Variant:
+static func disc(F, cx: float, cy: float, rx: float, ry = null, n = null) -> Variant:
 	if ry == null: ry = rx
+	if n == null: n = 18
 	var pts = []
 	for i in range(ceili(n)):
-		pts.append_array([cx + (cos(((i / n) * PI) * 2) * rx), cy + (sin(((i / n) * PI) * 2) * ry)])
+		pts.append_array([cx + (cos(((i / float(n)) * PI) * 2) * rx), cy + (sin(((i / float(n)) * PI) * 2) * ry)])
 	return F.poly(pts)
 
 ## One arm of a lollipop swirl round (cx, cy): the band between a spiral and the same spiral turned by `w`
@@ -155,7 +160,8 @@ static func swirl_arm(F, cx: float, cy: float, R: float, turns: float, rot: floa
 	return F.poly(out)
 
 ##  A satin bow: two loops either side of a knot at (x, y), tails trailing back along -x, fluttering by `fl`.
-static func bow(r, F, x: float, y: float, s: float, fl: float, mat: float, knot: float, g: float, bias: float = 0.0) -> void:
+static func bow(r, F, x: float, y: float, s: float, fl: float, mat: float, knot: float, g: float, bias = null) -> void:
+	if bias == null: bias = 0
 	var o = {"group": g, "bevel": 0.9 * s, "toneBias": bias}
 	r.fill(F.poly([x, y, (x - (3.2 * s)) - (fl * 0.3), (y + (2.2 * s)) + (fl * 0.4), (x - (2.6 * s)) - (fl * 0.6), (y + (3.2 * s)) + (fl * 0.5), x - (0.6 * s), y + (0.8 * s)]), mat, TS.merge([o, {"toneBias": bias - 1}]))
 	r.fill(F.poly([x, y, (x - (3 * s)) + (fl * 0.3), (y - (2.6 * s)) - (fl * 0.3), (x - (2.2 * s)) + (fl * 0.5), (y - (3.4 * s)) - (fl * 0.4), x - (0.6 * s), y - (0.8 * s)]), mat, TS.merge([o, {"toneBias": bias - 1}]))
@@ -164,7 +170,8 @@ static func bow(r, F, x: float, y: float, s: float, fl: float, mat: float, knot:
 	r.fill(F.ell(x + (0.2 * s), y, 0.75 * s, 0.85 * s), knot, TS.merge([o, {"bevel": 0.6}]))
 
 ##  A fizzy burst at raster point (x, y): a white heart and four sprinkles flying out, `k` = 0..3 how far along.
-static func fizz(r, x: float, y: float, k: float, m, p: String, hot: float, g: float, c0: float = 0.0) -> void:
+static func fizz(r, x: float, y: float, k: float, m, p: String, hot: float, g: float, c0 = null) -> void:
+	if c0 == null: c0 = 0
 	if k == 0:
 		r.dot(x, y, hot, 3, g)
 		return

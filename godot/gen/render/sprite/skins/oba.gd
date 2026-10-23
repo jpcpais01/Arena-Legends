@@ -65,7 +65,10 @@ static var ringBeat = 0
 static var OBA = {"spirit_wraps.oba": TS.merge([{"weapon": taped_fists}, FX]), "iron_cestus.oba": TS.merge([{"weapon": grace_wraps}, FX]), "echo_stone.oba": obaTitle, "gladiator_helm.oba": oba_beard(), "juggernaut_plate.oba": oba_muscles(), "charger_cuisses.oba": ring_trunks(), "colossus_boots.oba": ring_boots()}
 
 ##  A glint sliding along polished gold, one step a frame.
-static func sweep(period: float = 10.0, speed: float = 2.5, w: float = 1.1) -> Variant:
+static func sweep(period = null, speed = null, w = null) -> Variant:
+	if period == null: period = 10
+	if speed == null: speed = 2.5
+	if w == null: w = 1.1
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.45)), TX.mul(ph, speed)), period), w), 1, 0)))
 
 ##  Glossy leather: a few bright flecks.

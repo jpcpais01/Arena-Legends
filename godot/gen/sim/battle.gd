@@ -45,13 +45,13 @@ static var SHARED_FIGHTER_KEYS = TS.set_of(["abilities", "has", "base", "gear", 
 ##  One level deeper than a shallow copy: arrays of records and plain records are copied.
 static func clone_value(v) -> Variant:
 	if (v is Array):
-		return v.map((func(x, _a1 = null, _a2 = null): return (x if is_plain(x) else x)))
+		return v.map((func(x, _a1 = null, _a2 = null): return (TS.merge([x]) if is_plain(x) else x)))
 	if is_plain(v):
-		return v
+		return TS.merge([v])
 	return v
 
 static func clone_fighter(f) -> Variant:
-	var c = f
+	var c = TS.merge([f])
 	for k in TS.keys(c):
 		if not SHARED_FIGHTER_KEYS.has(k):
 			c[k] = clone_value(c.get(k))
@@ -111,7 +111,7 @@ class Battle:
 		self.fighters = [a, b]
 		var _fn1 = func(i: float, f, v: float):
 			var _q0 = cfg.get("brains")
-			return TS.nn((null if _q0 == null else (null if TS.at(_q0, i) == null else TS.at(_q0, i).call(f, v))), AiBrain.Brain.new(f, v))
+			return TS.nn_f((null if _q0 == null else (null if TS.at(_q0, i) == null else TS.at(_q0, i).call(f, v))), func(): return AiBrain.Brain.new(f, v))
 		var make = _fn1
 		self.brains = [make.call(0, a, self.rng.next()), make.call(1, b, self.rng.next())]
 		for f_2 in self.fighters:
@@ -314,15 +314,27 @@ class Battle:
 			if f["mendAcc"] >= (f["stats"]["maxHp"] * 0.006):
 				self.heal(f, f["mendAcc"])
 				f["mendAcc"] = 0
-		f["histT"] -= SimConstants.DT
-		if (has.has("hourglass") and (not f["rewindUsed"])) and ((f["histT"]) <= 0):
+		var _c0 = false
+		_c0 = has.has("hourglass")
+		if _c0:
+			_c0 = not f["rewindUsed"]
+		if _c0:
+			f["histT"] -= SimConstants.DT
+			_c0 = (f["histT"]) <= 0
+		if _c0:
 			f["histT"] = SimBattle.HISTORY_STEP
 			var i: float = fmod(f["histI"], SimBattle.HISTORY_SIZE)
 			f["hist"][i * 2] = f["x"]
 			f["hist"][(i * 2) + 1] = f["hp"]
 			f["histI"] += 1
-		f["cloudCd"] -= SimConstants.DT
-		if (has.has("storm_cloud") and (not self.over)) and ((f["cloudCd"]) <= 0):
+		var _c1 = false
+		_c1 = has.has("storm_cloud")
+		if _c1:
+			_c1 = not self.over
+		if _c1:
+			f["cloudCd"] -= SimConstants.DT
+			_c1 = (f["cloudCd"]) <= 0
+		if _c1:
 			# The cloud hangs over the enemy and marks the ground at their feet; the bolt follows a second later.
 			var e = self.other(f)
 			if (not e["alive"]) or (SimFighter.get_status(e, "hidden") != null):
@@ -588,9 +600,9 @@ class Battle:
 			var from: float = f["x"]
 			var dest: float = f["x"] - (f["facing"] * ab.get("dash")["distance"])
 			# Warp Step: a close enemy gets a visitor right behind them.
-			var behind = TS.and_((absf(e["x"] - f["x"]) < 4.5 if ab.get("dash").get("through") else ab.get("dash").get("through")), e["alive"])
+			var behind = TS.and_f((absf(e["x"] - f["x"]) < 4.5 if ab.get("dash").get("through") else ab.get("dash").get("through")), func(): return e["alive"])
 			if behind:
-				dest = CoreMath.clamp_(e["x"] + (signf(TS.or_(e["x"] - f["x"], f["facing"])) * 1.3), (-SimConstants.ARENA_HALF_WIDTH) + 0.5, SimConstants.ARENA_HALF_WIDTH - 0.5)
+				dest = CoreMath.clamp_(e["x"] + (signf((e["x"] - f["x"] if e["x"] - f["x"] else f["facing"])) * 1.3), (-SimConstants.ARENA_HALF_WIDTH) + 0.5, SimConstants.ARENA_HALF_WIDTH - 0.5)
 			elif absf(dest) > (SimConstants.ARENA_HALF_WIDTH - 0.5):
 				# Cornered: appear behind the enemy instead.
 				dest = e["x"] + (f["facing"] * 2.2)
@@ -818,7 +830,7 @@ class Battle:
 			self.emit({"type": "shockwave", "x": p["x"], "radius": radius, "f": owner["id"], "style": ("frost" if p["style"] == "frostflask" else "flask")})
 		var hit: bool = (((((not self.over) and target["alive"]) and (target["invuln"] <= 0)) and (absf(target["x"] - p["x"]) <= (radius + 0.35))) and (target["y"] < 1.8))
 		if hit:
-			var g = TS.and_((target["abilities"][target["action"]["ability"]].get("guard") if target["action"] != null else target["action"]), target["action"]["phase"] == "active")
+			var g = (target["action"]["phase"] == "active" if (target["abilities"][target["action"]["ability"]].get("guard") if target["action"] != null else target["action"]) != null else (target["abilities"][target["action"]["ability"]].get("guard") if target["action"] != null else target["action"]))
 			self.ability_hit(owner, target, p["def"], {"fromProjectile": p, "aoe": true}, (not (not g)))
 		self.emit({"type": "projectileEnd", "id": p["id"], "x": p["x"], "y": y, "style": p["style"], "hit": hit})
 
@@ -911,7 +923,7 @@ class Battle:
 				var _i0 = w
 				w += 1
 				self.projectiles[_i0] = p_2
-		self.projectiles["length"] = w
+		self.projectiles.resize(int(w))
 
 	func reflect_projectile(p, by) -> void:
 		p["owner"] = by["id"]
@@ -1132,7 +1144,8 @@ class Battle:
 	# ---------------------------------------------------------------------------
 	## Checks whether `defender` is guarding against `attacker`.
 	## Returns 'parry', 'block', 'reflect' or null.
-	func guard_check(defender, attacker, ab, p = null, aoe: bool = false) -> Variant:
+	func guard_check(defender, attacker, ab, p = null, aoe = null) -> Variant:
+		if aoe == null: aoe = false
 		var a = defender["action"]
 		if (a == null) or a["feint"]:
 			return null
@@ -1180,7 +1193,8 @@ class Battle:
 		return "block"
 
 	##  Returns whether the blow landed clean (not dodged, parried or blocked).
-	func ability_hit(att, tgt, ab, opts, blocked: bool = false) -> bool:
+	func ability_hit(att, tgt, ab, opts, blocked = null) -> bool:
+		if blocked == null: blocked = false
 		if not tgt["alive"]:
 			return false
 		if tgt["invuln"] > 0:
@@ -1233,7 +1247,7 @@ class Battle:
 				raw *= 1.5
 		if blocked:
 			var g_2 = tgt["abilities"][tgt["action"]["ability"]]
-			raw *= 1 - (TS.nn((null if g_2.get("guard") == null else g_2.get("guard")["reduction"]), 0.5))
+			raw *= 1 - ((null if g_2.get("guard") == null else g_2.get("guard")["reduction"]) if (null if g_2.get("guard") == null else g_2.get("guard")["reduction"]) != null else 0.5)
 		elif (heavy and (att["grudge"] >= 1)) and att["has"].has("grudge_mail"):
 			# Grudge Mail: every blow it remembered comes back at once.
 			raw += att["grudge"]
@@ -1400,7 +1414,7 @@ class Battle:
 			tgt["hp"] = 0
 			tgt["alive"] = false
 			tgt["action"] = null
-			tgt["vx"] += signf(TS.or_(tgt["x"] - att["x"], -tgt["facing"])) * 7
+			tgt["vx"] += signf((tgt["x"] - att["x"] if tgt["x"] - att["x"] else -tgt["facing"])) * 7
 			tgt["vy"] = 7
 			self.emit({"type": "ko", "f": tgt["id"]})
 		return dmg

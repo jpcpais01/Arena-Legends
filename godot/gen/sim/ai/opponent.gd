@@ -78,7 +78,7 @@ class OpponentModel:
 			self.recovery_watch = -1
 		# My telegraphed attack: how did they respond?
 		var ma = me["action"]
-		var my_offense = (me["abilities"][ma["ability"]]["power"] > 0 if TS.and_((ma["phase"] == "windup" if ma != null else ma), (not ma["feint"])) else TS.and_((ma["phase"] == "windup" if ma != null else ma), (not ma["feint"])))
+		var my_offense = (me["abilities"][ma["ability"]]["power"] > 0 if ((not ma["feint"]) if (ma["phase"] == "windup" if ma != null else ma) else (ma["phase"] == "windup" if ma != null else ma)) else ((not ma["feint"]) if (ma["phase"] == "windup" if ma != null else ma) else (ma["phase"] == "windup" if ma != null else ma)))
 		if my_offense:
 			if (self.watch == null) or (self.watch["key"] != my_key):
 				self.watch = {"key": my_key, "reaction": "none"}

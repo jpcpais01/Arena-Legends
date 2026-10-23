@@ -60,7 +60,8 @@ static func leaf(F, x: float, y: float, a: float, len_: float, w: float) -> Vari
 	return F.poly((TS.arr(p.call(0, 0)) + TS.arr(p.call(len_ * 0.4, w)) + TS.arr(p.call(len_, 0)) + TS.arr(p.call(len_ * 0.4, -w))))
 
 ##  A five-petal blossom at (x, y), with a glowing heart.
-static func blossom(r, F, x: float, y: float, size: float, petal: float, heart: float, g: float, bias: float = 0.0) -> void:
+static func blossom(r, F, x: float, y: float, size: float, petal: float, heart: float, g: float, bias = null) -> void:
+	if bias == null: bias = 0
 	var petals = []
 	for k in range(5):
 		var a: float = (((k / 5.0) * PI) * 2) + 0.4

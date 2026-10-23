@@ -55,26 +55,30 @@ static var LEAVES = [[30, 16, 0.9, 0, 5], [24, 19, 0.7, 2.2, 4], [34, 14, 1.1, 4
 static var ONI = {"halberd.oni": TS.merge([{"weapon": naginata}, FX]), "parrying_dagger.oni": TS.merge([{"weapon": kaiken}, FX]), "ward_stone.oni": omamoriSkin, "dread_helm.oni": oni_kabuto(), "juggernaut_plate.oni": o_yoroi(), "warlord_faulds.oni": kusazuri(), "iron_greaves.oni": suneate()}
 
 ##  A gleam sliding along gold, one step per frame.
-static func gleam(period: float = 8.0) -> Variant:
+static func gleam(period = null) -> Variant:
+	if period == null: period = 8
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1.1), 1, 0)))
 
 ## Odoshi: rows of small lacquered scales laced with silk. Each row's top edge
 ## is a dark seam; vertical cord runs between.
-static func odoshi(row: float = 2.4) -> Variant:
+static func odoshi(row = null) -> Variant:
+	if row == null: row = 2.4
 	var _fn0 = func(_x, y, _a2 = null):
 		var v = SkinsKit.wrap___tx(y, row)
 		return TX.sel(TX.lt(v, 0.55), -2, TX.sel(TX.gt(v, TX.sub(row, 0.6)), 1, 0))
 	return _fn0
 
 ##  Black lacquer lames: a dark seam at the top of each row, a lit lip at its bottom.
-static func lames(row: float = 2.2) -> Variant:
+static func lames(row = null) -> Variant:
+	if row == null: row = 2.2
 	var _fn0 = func(_x, y, _a2 = null):
 		var v = SkinsKit.wrap___tx(y, row)
 		return TX.sel(TX.lt(v, 0.45), -1, TX.sel(TX.gt(v, TX.sub(row, 0.5)), 1, 0))
 	return _fn0
 
 ##  Ribbed lacquer (the helmet bowl's plates, the shin splints).
-static func ribs(p: float = 1.7) -> Variant:
+static func ribs(p = null) -> Variant:
+	if p == null: p = 1.7
 	return (func(x, _a1 = null, _a2 = null): return (TX.sel(TX.lt(SkinsKit.wrap___tx(x, p), 0.4), -1, TX.sel(TX.gt(SkinsKit.wrap___tx(x, p), TX.sub(p, 0.45)), 1, 0))))
 
 ##  Silk wrap: a diamond lattice of crossing cords.
@@ -131,7 +135,8 @@ static func chain(F, pts) -> Variant:
 
 ## A maple leaf centred at (x, y) in frame F, `s` its radius, its top lobe
 ## pointing along angle `a` from +y: five pointed lobes and a short stem.
-static func maple_leaf(F, x: float, y: float, s: float, a: float = 0.0) -> Variant:
+static func maple_leaf(F, x: float, y: float, s: float, a = null) -> Variant:
+	if a == null: a = 0
 	var up: float = (PI / 2.0) + a
 	if s < 2.2:
 		# Too small for lobes: a spiky cross (three points and a stem) reads as a leaf at pixel size.
@@ -160,7 +165,8 @@ static func torso_body(T, b, top: float) -> Variant:
 	return PixelSdf.union(T.ell(0.3, 0.6, b["hipW"], 3.6), T.ell(0.5, top * 0.46, b["waistW"], top * 0.28), T.ell(b["chestPush"] * 0.7, top - 3.4, b["chestW"], 5.4))
 
 ##  A band across shape P between y0 and y1 at x = -12..12 of frame F, sloping by `k` per unit x.
-static func band(F, P, y0: float, y1: float, k: float = 0.0) -> Variant:
+static func band(F, P, y0: float, y1: float, k = null) -> Variant:
+	if k == null: k = 0
 	return PixelSdf.intersect(P, F.poly([-14, y0 - (k * 14), 14, y0 + (k * 14), 14, y1 + (k * 14), -14, y1 - (k * 14)]))
 
 # -----------------------------------------------------------------------------

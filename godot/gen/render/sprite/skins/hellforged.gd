@@ -70,7 +70,8 @@ static func _init_doom():
 static var HELLFORGED = {"greataxe.hellmaw": TS.merge([{"weapon": hellmaw}, FX]), "throwing_knives.brimstone": TS.merge([{"weapon": brimstone_fangs, "proj": {"knife": knifeProj}}, FX]), "meteor_sigil.doom": doom, "storm_crown.brimstone": brimstone_crown(), "thornmail.hellforged": carapace(), "iron_greaves.hellstride": hellstriders(), "runed_leggings.magma": cuisses()}
 
 ##  Cracks through the iron; magma pulses along them, one step per frame.
-static func magma(scale: float = 1.0) -> Variant:
+static func magma(scale = null) -> Variant:
+	if scale == null: scale = 1
 	var _fn3 = func(x, y, ph):
 		var v = TX.add(TX.sin(TX.add(TX.mul(TX.mul(x, 0.8), scale), TX.mul(TX.sin(TX.mul(TX.mul(y, 1.4), scale)), 2.2))), TX.mul(TX.sin(TX.sub(TX.mul(y, scale), TX.mul(TX.mul(x, 0.3), scale))), 0.6))
 		var _c0 = TX.ge(TX.abs(v), 0.15)
@@ -79,7 +80,8 @@ static func magma(scale: float = 1.0) -> Variant:
 		return TX.sel(_c0, _r1, _r2)
 	return _fn3
 
-static func iron(scale: float = 1.0) -> Variant:
+static func iron(scale = null) -> Variant:
+	if scale == null: scale = 1
 	return PixelRaster.material({"base": IRON[2], "ramp": (TS.arr(IRON) + [0xffa040]), "tex": magma(scale)})
 
 ##  Molten glow that brightens and dims over the loop.

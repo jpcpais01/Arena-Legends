@@ -141,7 +141,9 @@ static func veins(x, y, _a2 = null):
 	return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.mul(y, 1.1), TX.mul(x, 0.18)), 1.9), 0.3), -1, 0))
 
 ##  Silver dust on velvet: sparse motes that flare in turn (hot tone 4) over a soft nap.
-static func dust(cell: float = 2.8, density: float = 0.012) -> Variant:
+static func dust(cell = null, density = null) -> Variant:
+	if cell == null: cell = 2.8
+	if density == null: density = 0.012
 	var _fn3 = func(x, y, ph):
 		var cx = TX.floor(TX.div(x, cell))
 		var cy = TX.floor(TX.div(y, cell))
@@ -161,7 +163,10 @@ static func bark(x, y, _a2 = null):
 	return (TX.sel(TX.and_(TX.lt(SkinsKit.wrap___tx(x, 3.1), 0.5), TX.lt(TX.abs(TX.add(y, TX.mul(TX.sin(x), 0.4))), 0.7)), -2, TX.sel(TX.lt(TX.hash(TX.floor(TX.mul(x, 2)), TX.floor(TX.mul(y, 2))), 0.07), -1, 0)))
 
 ##  A glint sliding along a part, one step per frame.
-static func sheen(period: float = 8.0, speed: float = 2.0, w: float = 1.0) -> Variant:
+static func sheen(period = null, speed = null, w = null) -> Variant:
+	if period == null: period = 8
+	if speed == null: speed = 2
+	if w == null: w = 1
 	return (func(x, _y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(x, TX.mul(ph, speed)), period), w), 1, 0)))
 
 ##  A moonstone's milky light rolling over it.
@@ -177,16 +182,19 @@ static func silk(x, y, _a2 = null):
 # -----------------------------------------------------------------------------
 ## A frame at (x, y) of P pointing along local angle `a`, scaled by `k`; P's
 ## handedness is kept and `flip` mirrors the new frame across its own x axis.
-static func sub(P, x: float, y: float, a: float, k: float = 1.0, flip: float = 1.0) -> Variant:
+static func sub(P, x: float, y: float, a: float, k = null, flip = null) -> Variant:
+	if k == null: k = 1
+	if flip == null: flip = 1
 	var hand: float = (signf(P.sx * P.sy) if signf(P.sx * P.sy) else 1)
 	return SpriteXform.Xf.new(P.x(x, y), P.y(x, y), P.ang + (a * hand), absf(P.sx) * k, ((absf(P.sy) * k) * hand) * flip)
 
 ##  A ring as a polygon (stays round in squashed frames).
-static func hoop(F, cx: float, cy: float, rx: float, ry: float, w: float, n: float = 24.0) -> Variant:
+static func hoop(F, cx: float, cy: float, rx: float, ry: float, w: float, n = null) -> Variant:
+	if n == null: n = 24
 	var out = []
 	var inn = []
 	for i in range(floori(n) + 1):
-		var a: float = ((i / n) * PI) * 2
+		var a: float = ((i / float(n)) * PI) * 2
 		out.append_array([cx + (cos(a) * rx), cy + (sin(a) * ry)])
 		inn.append_array([cx + (cos(a) * (rx - w)), cy + (sin(a) * (ry - w))])
 	var pts = TS.arr(out).duplicate()
@@ -195,7 +203,8 @@ static func hoop(F, cx: float, cy: float, rx: float, ry: float, w: float, n: flo
 	return F.poly(pts)
 
 ##  A crescent moon opening toward angle `dir`.
-static func crescent(F, cx: float, cy: float, R: float, dir: float, bite: float = 0.45) -> Variant:
+static func crescent(F, cx: float, cy: float, R: float, dir: float, bite = null) -> Variant:
+	if bite == null: bite = 0.45
 	return PixelSdf.subtract(F.circ(cx, cy, R), F.circ(cx + ((cos(dir) * R) * bite), cy + ((sin(dir) * R) * bite), R * 0.86))
 
 ##  A tapering chain of capsules through [x, y, radius] points.
@@ -253,7 +262,8 @@ static func wing_mats() -> Variant:
 	return ({"wing": PixelRaster.material({"base": LUNA[2], "ramp": LUNA, "tex": veins}), "edge": PixelRaster.material({"base": EDGE[2], "ramp": EDGE}), "spot": PixelRaster.material({"base": SPOT[2], "ramp": SPOT, "shiny": true}), "eye": PixelRaster.material({"base": MOONSTONE[3], "ramp": MOONSTONE, "glow": true, "tex": milk})})
 
 ##  A little glowing mushroom on (x, y) of F growing toward +y: a pale stem and a domed teal cap.
-static func mushroom(r, F, x: float, y: float, h: float, w: float, stem: float, cap: float, g: float, lean: float = 0.0) -> void:
+static func mushroom(r, F, x: float, y: float, h: float, w: float, stem: float, cap: float, g: float, lean = null) -> void:
+	if lean == null: lean = 0
 	r.fill(F.cap(x, y, x + (lean * 0.5), y + h, 0.45, 0.4), stem, {"group": g, "bevel": 0.5})
 	r.fill(F.poly([(x + lean) - w, (y + h) - 0.2, (x + lean) - (w * 0.7), (y + h) + (w * 0.55), x + lean, (y + h) + (w * 0.8), (x + lean) + (w * 0.7), (y + h) + (w * 0.55), (x + lean) + w, (y + h) - 0.2]), cap, {"group": g})
 
@@ -291,7 +301,8 @@ static func moonlit_scepter() -> Variant:
 # Lunar Wing Chakram
 # -----------------------------------------------------------------------------
 ##  The chakram's blades: four luna wings pinwheeling off a silver ring (centre (cx, 0)), turned by `rot`.
-static func wing_wheel(r, t, cx: float, rot: float, k: float, m, g: float, bias: float = 0.0) -> void:
+static func wing_wheel(r, t, cx: float, rot: float, k: float, m, g: float, bias = null) -> void:
+	if bias == null: bias = 0
 	for i in range(4):
 		var a: float = rot + (i * (PI / 2.0))
 		var F = sub(t, cx + ((cos(a) * 2.6) * k), (sin(a) * 2.6) * k, a + 0.75, k * 0.54, 1)
@@ -324,7 +335,8 @@ static func glitter(r, t, f: float, x0: float, x1: float, w: float, n: float, ho
 		r.dot(t.x(x, y), t.y(x, y), (dim if fmod((k + f), 3) else hot), 3, g)
 
 ##  The moth's body seen side on, facing +x of B: fuzzy thorax and abdomen, a dark eye and feathery antennae.
-static func moth_body(r, B, m, g: float, ant: float = 0.0) -> void:
+static func moth_body(r, B, m, g: float, ant = null) -> void:
+	if ant == null: ant = 0
 	r.fill(PixelSdf.union(B.ell(-2.5, -0.5, 2.5, 1.2, -0.3), B.ell(0, 0, 1.6, 1.5)), m.call("k.fur"), {"group": g, "bevel": 1.1, "local": B})
 	r.fill(B.circ(1.8, 0.4, 1), m.call("k.fur"), {"group": g + 1, "bevel": 0.8})
 	dot(r, B, 2.3, 0.5, m.call("k.ink"), 1, g + 1)
@@ -335,7 +347,8 @@ static func moth_body(r, B, m, g: float, ant: float = 0.0) -> void:
 	r.line(B.x(0.9, -1.1), B.y(0.9, -1.1), B.x(1.2, -2.2), B.y(1.2, -2.2), m.call("k.ink"), 2, g)
 
 ##  The moth seen from above, heading along +x of F: wings at ±`fore` and ±`hind`, a furred body, feathered antennae.
-static func top_moth(r, F, m, fore: float, hind: float, k: float, g: float, ant: float = 0.0) -> void:
+static func top_moth(r, F, m, fore: float, hind: float, k: float, g: float, ant = null) -> void:
+	if ant == null: ant = 0
 	var ink = {"wing": m.call("k.wing"), "edge": m.call("k.edge"), "spot": m.call("k.spot"), "eye": m.call("k.eye")}
 	top_wings(r, F, -0.2, 0, fore, hind, k, ink, g)
 	var b: float = k / 0.62

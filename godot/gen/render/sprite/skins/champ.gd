@@ -124,7 +124,10 @@ static var AC = {"lime": PixelColor.css(LIME[3]), "limeDk": PixelColor.css(LIME[
 static var CHAMP = {"spirit_wraps.champ": TS.merge([{"weapon": wristbands, "proj": {"palm": cantSeeMe}}, FX]), "war_horn.champ": TS.merge([{"weapon": trumpet}, FX]), "phoenix_feather.champ": spinnerTitle, "duelist_band.champ": cap(), "leather_jerkin.champ": tee(), "leather_leggings.champ": jorts(), "leather_boots.champ": high_tops()}
 
 ##  A glint sliding along polished metal, one step a frame.
-static func sweep(period: float = 9.0, speed: float = 2.25, w: float = 1.0) -> Variant:
+static func sweep(period = null, speed = null, w = null) -> Variant:
+	if period == null: period = 9
+	if speed == null: speed = 2.25
+	if w == null: w = 1
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.45)), TX.mul(ph, speed)), period), w), 1, 0)))
 
 ##  Terry cloth: little loops of a darker tone.
@@ -496,7 +499,8 @@ static func wave_hand(g, x: float, y: float, k: float) -> void:
 	g["fillRect"].call(ex + s, y - 7, 1, 2)
 
 ##  The full-set aura around the feet at (x, y) art pixels; `t` is seconds.
-static func champ_aura(g, x: float, y: float, t: float, layer: String, facing: float = 1.0) -> void:
+static func champ_aura(g, x: float, y: float, t: float, layer: String, facing = null) -> void:
+	if facing == null: facing = 1
 	var back: bool = layer == "back"
 	# A ring at the feet in lime and black, its dashes running round like the lights on a ring apron.
 	var run: float = floor(t * 9)

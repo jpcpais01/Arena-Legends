@@ -55,7 +55,9 @@ static func _init_heart():
 static var CLOCKWORK = {"warhammer.steamforge": TS.merge([{"weapon": steamforge}, FX]), "buckler.cogwheel": TS.merge([{"weapon": cogwheel_aegis}, FX]), "echo_stone.heart": heart, "berserker_mask.automaton": automaton(), "plate_armor.titan": titan_frame(), "colossus_boots.piston": piston_stompers(), "stonehide_tassets.piston": piston_cuisses()}
 
 ##  Riveted panels: seams every few units, a rivet at each corner.
-static func rivets(p: float = 3.2, hi: float = 2.0) -> Variant:
+static func rivets(p = null, hi = null) -> Variant:
+	if p == null: p = 3.2
+	if hi == null: hi = 2
 	var _fn3 = func(x, y, _a2 = null):
 		var u = SkinsKit.wrap___tx(x, p)
 		var v = SkinsKit.wrap___tx(y, p)
@@ -66,7 +68,8 @@ static func rivets(p: float = 3.2, hi: float = 2.0) -> Variant:
 	return _fn3
 
 ##  A gleam sliding along polished brass, one step per frame.
-static func gleam(period: float = 8.0) -> Variant:
+static func gleam(period = null) -> Variant:
+	if period == null: period = 8
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1.2), 1, 0)))
 
 ##  Arcane circuits in dark steel: traces on a grid that light up in a running pulse.
@@ -89,7 +92,9 @@ static func brass(tex = null) -> Variant:
 	return PixelRaster.material({"base": BRASS[2], "ramp": BRASS, "shiny": true, "tex": tex})
 
 ##  A gear outline: `n` teeth `d` deep around radius `r`, turned by `spin` (a polygon, so it squashes with its frame).
-static func gear(F, cx: float, cy: float, r: float, n: float, spin: float, d: float = 1.0, hole: float = 0.0) -> Variant:
+static func gear(F, cx: float, cy: float, r: float, n: float, spin: float, d = null, hole = null) -> Variant:
+	if d == null: d = 1
+	if hole == null: hole = 0
 	var pts = []
 	var w: float = PI / n
 	for i in range(ceili(n)):
@@ -102,10 +107,11 @@ static func gear(F, cx: float, cy: float, r: float, n: float, spin: float, d: fl
 	return (PixelSdf.subtract(s, disc(F, cx, cy, hole)) if hole else s)
 
 ##  A round disc as a polygon (stays round in squashed frames, unlike `circ`).
-static func disc(F, cx: float, cy: float, r: float, n: float = 14.0) -> Variant:
+static func disc(F, cx: float, cy: float, r: float, n = null) -> Variant:
+	if n == null: n = 14
 	var pts = []
 	for i in range(ceili(n)):
-		pts.append_array([cx + (cos(((i / n) * PI) * 2) * r), cy + (sin(((i / n) * PI) * 2) * r)])
+		pts.append_array([cx + (cos(((i / float(n)) * PI) * 2) * r), cy + (sin(((i / float(n)) * PI) * 2) * r)])
 	return F.poly(pts)
 
 ##  A gear's turn per frame so `n` teeth loop seamlessly over four frames.
@@ -113,7 +119,8 @@ static func turn(n: float, ph: float) -> float:
 	return (((PI * 2) / n) / 4.0) * (fmod(ph, 4))
 
 ##  Steam puffs rising from (x, y) along `up` in frame F, two of them looping over four frames.
-static func steam(r, F, x: float, y: float, up: float, ph: float, mat: float, g: float, size: float = 1.0) -> void:
+static func steam(r, F, x: float, y: float, up: float, ph: float, mat: float, g: float, size = null) -> void:
+	if size == null: size = 1
 	var c: float = cos(up)
 	var s: float = sin(up)
 	for k in range(2):
@@ -286,7 +293,9 @@ static func piston_cuisses() -> Variant:
 	return TS.merge([{"mats": {"stoneLeg": SkinsKit.veined(STEEL, CORE, circuit), "stoneDark": {"base": STEEL[3], "ramp": (TS.arr(STEEL) + [0x8a96a4]), "shiny": true}, "l.plate": {"base": PLATE[2], "ramp": PLATE, "shiny": true, "step": 0.12, "tex": (func(x, y, ph): return TX.add(rivets__tx(2.8, 1).call(x, y, ph), gleam__tx(9).call(x, y, ph)))}, "l.brass": {"base": BRASS[2], "ramp": BRASS, "shiny": true}, "l.cog": SkinsKit.shiny(COPPER, null, 0.14), "l.cyl": SkinsKit.shiny(COPPER, null, 0.14), "l.rod": SkinsKit.shiny(0xc8d0dc, null, 0.15), "l.core": {"base": CORE, "glow": true, "ramp": [0x1a6a8a, 0x2ab8e0, CORE, 0xb8fcff, CORE_HOT], "tex": beat}, "l.steam": SkinsKit.plain(STEAM)}, "legs": {"mat": "stoneLeg", "trim": "stoneDark", "knee": null, "tasset": null, "rune": null, "wraps": null, "bulk": 0.4, "over": _fn0}}, FX])
 
 ## Builder-mode twin of rivets (called from surface textures).
-static func rivets__tx(p = 3.2, hi = 2, _a2 = null):
+static func rivets__tx(p = null, hi = null, _a2 = null):
+	if p == null: p = 3.2
+	if hi == null: hi = 2
 	var _fn3 = func(x, y, _a2 = null):
 		var u = SkinsKit.wrap___tx(x, p)
 		var v = SkinsKit.wrap___tx(y, p)
@@ -297,5 +306,6 @@ static func rivets__tx(p = 3.2, hi = 2, _a2 = null):
 	return _fn3
 
 ## Builder-mode twin of gleam (called from surface textures).
-static func gleam__tx(period = 8, _a1 = null, _a2 = null):
+static func gleam__tx(period = null, _a1 = null, _a2 = null):
+	if period == null: period = 8
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1.2), 1, 0)))

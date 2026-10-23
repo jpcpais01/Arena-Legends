@@ -91,7 +91,10 @@ static var auraBeat = 0
 static var LIONHEART = {"longsword.lionheart": TS.merge([{"weapon": pride_of_the_lion}, FX]), "tower_shield.lionheart": TS.merge([{"weapon": lion_rampant_pavise}, FX]), "ward_stone.lionheart": sigilSkin, "iron_helm.lionheart": lion_crested_helm(), "plate_armor.lionheart": lionheart_plate(), "chain_leggings.lionheart": lionheart_cuisses(), "iron_greaves.lionheart": lionheart_sabatons()}
 
 ##  Sunlight running along an edge: a bright band sliding one step per frame.
-static func blaze(period: float = 10.0, speed: float = 2.5, w: float = 1.1) -> Variant:
+static func blaze(period = null, speed = null, w = null) -> Variant:
+	if period == null: period = 10
+	if speed == null: speed = 2.5
+	if w == null: w = 1.1
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.8), TX.mul(y, 0.45)), TX.mul(ph, speed)), period), w), 1, 0)))
 
 ##  A sunstone swelling and dimming over the loop.
@@ -110,7 +113,8 @@ static func velvet(x, y, _a2 = null):
 # Shared shapes
 # -----------------------------------------------------------------------------
 ##  A star polygon: `n` points between radii `ro` and `ri`, turned by `a0` (stays round in squashed frames).
-static func star(F, cx: float, cy: float, ro: float, ri: float, n: float, a0: float = 0.0) -> Variant:
+static func star(F, cx: float, cy: float, ro: float, ri: float, n: float, a0 = null) -> Variant:
+	if a0 == null: a0 = 0
 	var pts = []
 	for i in range(ceili(n * 2)):
 		var a: float = a0 + (((i / (n * 2)) * PI) * 2)
@@ -124,7 +128,9 @@ static func at(P, x: float, y: float) -> Variant:
 
 ## A lion's face seen from the front, centred at (x, y) of F, `s` its scale (1 = a 4.6 unit mane):
 ## a spiked mane, the face, two eyes of sunstone and a dark muzzle. Mats: mane, face, eye, ink.
-static func lion_mask(r, F, x: float, y: float, s: float, mane: float, face: float, eye: float, ink: float, g: float, bias: float = 0.0, lit: float = 0.0) -> void:
+static func lion_mask(r, F, x: float, y: float, s: float, mane: float, face: float, eye: float, ink: float, g: float, bias = null, lit = null) -> void:
+	if bias == null: bias = 0
+	if lit == null: lit = 0
 	r.fill(star(F, x, y + (0.2 * s), 4.6 * s, 3.5 * s, 11, PI / 2.0), mane, {"group": g, "bevel": 1.2 * s, "toneBias": bias, "lightBias": lit, "local": at(F, x, y)})
 	# Face: a broad brow narrowing to the muzzle, with two small ears.
 	var face0 = F.poly([x - (2.6 * s), y + (1.6 * s), x - (1.6 * s), y + (2.7 * s), x + (1.6 * s), y + (2.7 * s), x + (2.6 * s), y + (1.6 * s), x + (2.2 * s), y - (0.6 * s), x + (1.2 * s), y - (2.6 * s), x - (1.2 * s), y - (2.6 * s), x - (2.2 * s), y - (0.6 * s)])
@@ -233,7 +239,8 @@ static func lion_rampant_pavise() -> Variant:
 		var mane = _d0.get("mane")
 		r.fill(body, m.call("lion"), {"group": 40, "bevel": 0.8, "toneBias": o.get("toneBias"), "local": L})
 		r.fill(mane, m.call("mane"), {"group": 41, "bevel": 0.8, "toneBias": o.get("toneBias"), "local": at.callv([t] + TS.arr(P.call(1.1, 4.5)))})
-		var _fn2 = func(u_2: float, v_2: float, k_2: String, tone: float, gg: float = 41.0):
+		var _fn2 = func(u_2: float, v_2: float, k_2: String, tone: float, gg = null):
+			if gg == null: gg = 41
 			var _d1 = P.call(u_2, v_2)
 			var x = _d1[0]
 			var y_2 = _d1[1]

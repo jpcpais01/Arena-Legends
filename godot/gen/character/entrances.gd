@@ -41,7 +41,8 @@ static func buy_entrance(id: String) -> bool:
 	return CharacterCollection.spend_gems(price)
 
 ##  The entrance a hero actually plays: theirs if they own it, else the free one.
-static func entrance_of(look, mine: bool = false) -> String:
+static func entrance_of(look, mine = null) -> String:
+	if mine == null: mine = false
 	var id: String = (look.get("entrance") if is_entrance((null if look == null else look.get("entrance"))) else FREE_ENTRANCE)
 	return (FREE_ENTRANCE if mine and (not owns_entrance(id)) else id)
 

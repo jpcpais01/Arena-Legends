@@ -2,7 +2,9 @@
 class_name SpriteXform
 
 ##  Frame at rig point `p` (rig space, y up) given the raster origin of the sprite.
-static func frame_at(ox: float, oy: float, p, ang: float, sx: float = 1.0, sy: float = 1.0) -> Variant:
+static func frame_at(ox: float, oy: float, p, ang: float, sx = null, sy = null) -> Variant:
+	if sx == null: sx = 1
+	if sy == null: sy = 1
 	return Xf.new(ox + p["x"], oy - p["y"], ang, sx, sy)
 
 ## A local frame placed in raster space: origin, rotation and scale, with
@@ -16,7 +18,9 @@ class Xf:
 	var sy: float
 	var c: float
 	var s: float
-	func _init(ox: float, oy: float, ang: float, sx: float = 1.0, sy: float = 1.0) -> void:
+	func _init(ox: float, oy: float, ang: float, sx = null, sy = null) -> void:
+		if sx == null: sx = 1
+		if sy == null: sy = 1
 		self.ox = ox
 		self.oy = oy
 		self.ang = ang
@@ -50,14 +54,17 @@ class Xf:
 	func circ(cx: float, cy: float, r: float) -> Variant:
 		return PixelSdf.circle(self.x(cx, cy), self.y(cx, cy), r * absf(self.sy))
 
-	func ell(cx: float, cy: float, rx: float, ry: float, rot: float = 0.0) -> Variant:
+	func ell(cx: float, cy: float, rx: float, ry: float, rot = null) -> Variant:
+		if rot == null: rot = 0
 		return PixelSdf.ellipse(self.x(cx, cy), self.y(cx, cy), rx * absf(self.sx), ry * absf(self.sy), -(self.ang + (rot * signf(self.sx * self.sy))))
 
-	func poly(pts, round_: float = 0.0) -> Variant:
+	func poly(pts, round_ = null) -> Variant:
+		if round_ == null: round_ = 0
 		var out = []
 		for i in range(0, pts.size(), 2):
 			out.append_array([self.x(pts[i], pts[i + 1]), self.y(pts[i], pts[i + 1])])
 		return PixelSdf.polygon(out, round_)
 
-	func rect(cx: float, cy: float, hx: float, hy: float, round_: float = 0.0) -> Variant:
+	func rect(cx: float, cy: float, hx: float, hy: float, round_ = null) -> Variant:
+		if round_ == null: round_ = 0
 		return PixelSdf.box(self.x(cx, cy), self.y(cx, cy), hx * absf(self.sx), hy * absf(self.sy), -self.ang, round_)

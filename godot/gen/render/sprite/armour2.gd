@@ -637,4 +637,4 @@ static func bark_tex(x, y, _a2 = null):
 
 ##  The stock headgear look for a new head piece, if it is one.
 static func stock_head(id) -> Variant:
-	return (TS.nn((null if ARMOUR2.get(id) == null else ARMOUR2.get(id).get("head")), null) if id else null)
+	return (((null if ARMOUR2.get(id) == null else ARMOUR2.get(id).get("head")) if (null if ARMOUR2.get(id) == null else ARMOUR2.get(id).get("head")) != null else null) if id else null)

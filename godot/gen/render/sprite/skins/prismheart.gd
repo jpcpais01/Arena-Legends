@@ -101,7 +101,10 @@ static func polished(tex = null) -> Variant:
 
 ## Geode rock: chunky angular facets (a few cells a shade darker) and thin
 ## crystal veins, a light running along them one step per frame.
-static func geode(cell: float = 3.4, vein: float = 0.09, seed_: float = 0.0) -> Variant:
+static func geode(cell = null, vein = null, seed_ = null) -> Variant:
+	if cell == null: cell = 3.4
+	if vein == null: vein = 0.09
+	if seed_ == null: seed_ = 0
 	var _fn3 = func(x, y, ph):
 		var v = TX.add(TX.sin(TX.add(TX.mul(x, 0.55), TX.mul(TX.sin(TX.add(TX.mul(y, 0.7), seed_)), 1.8))), TX.mul(TX.sin(TX.add(TX.sub(TX.mul(y, 0.8), TX.mul(x, 0.3)), seed_)), 0.6))
 		var _c0 = TX.lt(TX.abs(v), vein)
@@ -131,7 +134,9 @@ static func rk(p: String, k: float) -> String:
 ## angle `a`, `len` long and `w` half wide: split down its spine into a lit
 ## facet and a shaded one (whichever side faces the light), with a white glint
 ## on the lit edge. Returns the tip in raster space.
-static func shard(r, F, x: float, y: float, a: float, len_: float, w: float, mat: float, g: float, bias: float = 0.0, glint: bool = true) -> Variant:
+static func shard(r, F, x: float, y: float, a: float, len_: float, w: float, mat: float, g: float, bias = null, glint = null) -> Variant:
+	if bias == null: bias = 0
+	if glint == null: glint = true
 	var c: float = cos(a)
 	var s: float = sin(a)
 	var nx: float = -s
@@ -160,7 +165,8 @@ static func shard(r, F, x: float, y: float, a: float, len_: float, w: float, mat
 	return [F.x(tip[0], tip[1]), F.y(tip[0], tip[1])]
 
 ##  A tiny rainbow sparkle at a raster point: a coloured pixel with a white heart, or a small cross when `big`.
-static func sparkle(r, x: float, y: float, col: float, hot: float, g: float, big: bool = false) -> void:
+static func sparkle(r, x: float, y: float, col: float, hot: float, g: float, big = null) -> void:
+	if big == null: big = false
 	if big:
 		r.dot(x - 1, y, col, 3, g)
 		r.dot(x + 1, y, col, 3, g)
@@ -171,7 +177,8 @@ static func sparkle(r, x: float, y: float, col: float, hot: float, g: float, big
 		r.dot(x, y, col, 3, g)
 
 ##  A cut gem outline of `n` sides round (cx, cy), `rx` by `ry`, turned by `rot`.
-static func gem(cx: float, cy: float, rx: float, ry: float, n: float, rot: float = 0.0) -> Variant:
+static func gem(cx: float, cy: float, rx: float, ry: float, n: float, rot = null) -> Variant:
+	if rot == null: rot = 0
 	var pts = []
 	for i in range(ceili(n)):
 		var a: float = rot + (((i / n) * PI) * 2)
@@ -179,7 +186,8 @@ static func gem(cx: float, cy: float, rx: float, ry: float, n: float, rot: float
 	return pts
 
 ##  Facets fanning from (cx, cy) to each edge of an outline, toned in turn (shifted by `turn`) so the stone seems to rotate.
-static func facets(r, F, pts, cx: float, cy: float, mat: float, g: float, tones, turn: float, bias: float = 0.0) -> void:
+static func facets(r, F, pts, cx: float, cy: float, mat: float, g: float, tones, turn: float, bias = null) -> void:
+	if bias == null: bias = 0
 	var n: float = pts.size() / 2.0
 	for i in range(ceili(n)):
 		var j: float = fmod((i + 1), n)
@@ -556,7 +564,10 @@ static func prismheart_aura(g, x: float, y: float, t: float, layer: String) -> v
 			g["fillRect"].call(px_4, py_4 - 1, 1, 2)
 
 ## Builder-mode twin of geode (called from surface textures).
-static func geode__tx(cell = 3.4, vein = 0.09, seed_ = 0):
+static func geode__tx(cell = null, vein = null, seed_ = null):
+	if cell == null: cell = 3.4
+	if vein == null: vein = 0.09
+	if seed_ == null: seed_ = 0
 	var _fn3 = func(x, y, ph):
 		var v = TX.add(TX.sin(TX.add(TX.mul(x, 0.55), TX.mul(TX.sin(TX.add(TX.mul(y, 0.7), seed_)), 1.8))), TX.mul(TX.sin(TX.add(TX.sub(TX.mul(y, 0.8), TX.mul(x, 0.3)), seed_)), 0.6))
 		var _c0 = TX.lt(TX.abs(v), vein)

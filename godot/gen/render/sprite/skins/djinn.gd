@@ -48,7 +48,9 @@ static var DJINN = {"katana.djinn": TS.merge([{"weapon": scimitar}, FX]), "trick
 # Textures
 # -----------------------------------------------------------------------------
 ##  Silk: soft folds, and a sheen sliding across it one step per frame.
-static func silk(fold: float = 3.2, sheen: bool = true) -> Variant:
+static func silk(fold = null, sheen = null) -> Variant:
+	if fold == null: fold = 3.2
+	if sheen == null: sheen = true
 	var _fn3 = func(x, y, ph):
 		var _c0 = TX.and_(sheen, TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(TX.mul(x, 0.55), TX.mul(y, 0.35)), TX.mul(ph, 1.7)), 9), 1.1))
 		var _r1 = 1
@@ -155,7 +157,8 @@ static func chain(F, pts) -> Variant:
 	return PixelSdf.union.callv(TS.arr(s))
 
 ##  A plume from (x, y) toward angle `a`: a narrow quill widening to `w`, then a soft point; `curl` bends it.
-static func plume_shape(F, x: float, y: float, a: float, len_: float, w: float, curl: float = 0.0) -> Variant:
+static func plume_shape(F, x: float, y: float, a: float, len_: float, w: float, curl = null) -> Variant:
+	if curl == null: curl = 0
 	var c: float = cos(a)
 	var s: float = sin(a)
 	var nx: float = -s
@@ -167,14 +170,16 @@ static func plume_shape(F, x: float, y: float, a: float, len_: float, w: float, 
 	return F.poly((TS.arr(p.call(0, (-w) * 0.25)) + TS.arr(p.call(0.35, (-w) * 0.8)) + TS.arr(p.call(0.7, -w)) + TS.arr(p.call(0.92, (-w) * 0.6)) + TS.arr(p.call(1, 0)) + TS.arr(p.call(0.92, w * 0.6)) + TS.arr(p.call(0.7, w)) + TS.arr(p.call(0.35, w * 0.8)) + TS.arr(p.call(0, w * 0.25))))
 
 ##  Fills smoke puffs, alternating outline groups so each reads as its own puff.
-static func puffs(r, shapes, mat: float, g0: float, local = null, bias: float = 0.0) -> void:
+static func puffs(r, shapes, mat: float, g0: float, local = null, bias = null) -> void:
+	if bias == null: bias = 0
 	TS.for_each(shapes, (func(sh, i: float, _a2 = null): r.fill(sh, mat, {"group": g0 + (fmod(i, 2)), "bevel": 1.1, "toneBias": bias, "local": local, "softLight": true})))
 
 ##  A gold rosette: a disc ringed with `n` round petals (one shape).
-static func rosette(F, cx: float, cy: float, rad: float, n: float = 8.0) -> Variant:
+static func rosette(F, cx: float, cy: float, rad: float, n = null) -> Variant:
+	if n == null: n = 8
 	var parts = [F.circ(cx, cy, rad * 0.8)]
 	for i in range(ceili(n)):
-		var a: float = ((i / n) * PI) * 2
+		var a: float = ((i / float(n)) * PI) * 2
 		parts.append(F.circ(cx + ((cos(a) * rad) * 0.8), cy + ((sin(a) * rad) * 0.8), rad * 0.32))
 	return PixelSdf.union.callv(TS.arr(parts))
 

@@ -3,7 +3,9 @@ class_name SpriteWeaponKit
 
 static var M = {"steel": (func(): return PixelRaster.material({"base": 0xb8c4d4, "shiny": true, "step": 0.15})), "darkSteel": (func(): return PixelRaster.material({"base": 0x6a7488, "shiny": true})), "gold": (func(): return PixelRaster.material({"base": 0xd8a838, "shiny": true})), "bronze": (func(): return PixelRaster.material({"base": 0xb07a40, "shiny": true})), "wood": (func(): return PixelRaster.material({"base": 0x8a5a32})), "darkWood": (func(): return PixelRaster.material({"base": 0x5a3a24})), "leather": (func(): return PixelRaster.material({"base": 0x6a4028})), "wrap": (func(c: float): return PixelRaster.material({"base": c})), "cloth": (func(c: float): return PixelRaster.material({"base": c})), "glow": (func(c: float): return PixelRaster.material({"base": c, "glow": true})), "gem": (func(c: float): return PixelRaster.material({"base": c, "shiny": true, "step": 0.17})), "string": (func(): return PixelRaster.material({"base": 0xe8e0c8}))}
 
-static func fill_all(r, shapes, mat: float, o, bevel: float = 1.6, extra: float = 0.0) -> void:
+static func fill_all(r, shapes, mat: float, o, bevel = null, extra = null) -> void:
+	if bevel == null: bevel = 1.6
+	if extra == null: extra = 0
 	for s in shapes:
 		r.fill(s, mat, {"group": (o.get("group") if o.get("group") != null else 6), "bevel": bevel, "toneBias": (o.get("toneBias") if o.get("toneBias") != null else 0) + extra, "local": o.get("local")})
 
@@ -16,7 +18,8 @@ static func hang_at(t, lx: float, ly: float) -> Variant:
 
 ## A chain along a quadratic curve (raster space): one-pixel links in
 ## alternating tones, so it reads as metal links at any length.
-static func chain_line(r, ax: float, ay: float, cx: float, cy: float, bx: float, by: float, mat: float, group: float = 6.0) -> void:
+static func chain_line(r, ax: float, ay: float, cx: float, cy: float, bx: float, by: float, mat: float, group = null) -> void:
+	if group == null: group = 6
 	var len_: float = sqrt((cx - ax) * (cx - ax) + (cy - ay) * (cy - ay)) + sqrt((bx - cx) * (bx - cx) + (by - cy) * (by - cy))
 	var n: float = maxf(2, ceil(len_))
 	var lx: float = -1

@@ -9,6 +9,6 @@ static func run_headless(cfg, max_seconds = null) -> Variant:
 	var i: float = 0
 	while (i < max_ticks) and (not b.over):
 		b.step()
-		b.events["length"] = 0
+		b.events.resize(int(0))
 		i += 1
 	return b

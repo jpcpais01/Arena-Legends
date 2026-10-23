@@ -72,7 +72,9 @@ static var AC = {"gold": PixelColor.css(GOLD[3]), "goldDk": PixelColor.css(GOLD[
 static var JADEDRAGON = {"spear.guandao": TS.merge([{"weapon": guandao}, FX]), "hand_crossbow.chukonu": TS.merge([{"weapon": chukonu, "proj": {"bolt": boltProj}}, FX]), "echo_stone.pearl": pearlSkin, "iron_helm.dragonemperor": dragon_emperor_helm(), "plate_armor.lamellar": jade_lamellar(), "stonehide_tassets.jadedragon": jade_tassets(), "leather_boots.cloudstep": cloudstep()}
 
 ##  Lamellar: small lacquered scales in staggered rows, dark seams between.
-static func lamellar(px: float = 2.4, py: float = 2.0) -> Variant:
+static func lamellar(px = null, py = null) -> Variant:
+	if px == null: px = 2.4
+	if py == null: py = 2
 	var _fn3 = func(x, y, _a2 = null):
 		var row = TX.floor(TX.div(y, py))
 		var _c0 = TX.lt(SkinsKit.wrap___tx(y, py), 0.45)
@@ -82,7 +84,8 @@ static func lamellar(px: float = 2.4, py: float = 2.0) -> Variant:
 	return _fn3
 
 ##  A gleam sliding along gold, one step per frame.
-static func gleam(period: float = 8.0) -> Variant:
+static func gleam(period = null) -> Variant:
+	if period == null: period = 8
 	return (func(x, y, ph): return (TX.sel(TX.lt(SkinsKit.wrap___tx(TX.sub(TX.add(x, TX.mul(y, 0.5)), TX.mul(ph, 2)), period), 1.1), 1, 0)))
 
 ##  Dragon scale on lacquer: arcs in rows.
@@ -116,7 +119,8 @@ static func silk(tex = null) -> Variant:
 	return ({"base": SILK[2], "ramp": SILK, "tex": tex})
 
 ##  A small cloud scroll: a curl with a hole and a tail, centred at (x, y), `s` its radius, `dir` the tail's side (±1).
-static func cloud_scroll(F, x: float, y: float, s: float, dir: float = 1.0) -> Variant:
+static func cloud_scroll(F, x: float, y: float, s: float, dir = null) -> Variant:
+	if dir == null: dir = 1
 	return PixelSdf.union(PixelSdf.subtract(F.circ(x, y, s), F.circ(x + ((s * 0.25) * dir), y + (s * 0.2), s * 0.42)), F.circ(x - ((s * 1.1) * dir), y - (s * 0.25), s * 0.72), F.cap(x - ((s * 1.1) * dir), y - (s * 0.75), x + ((s * 0.9) * dir), y - (s * 0.9), s * 0.3))
 
 # -----------------------------------------------------------------------------
@@ -201,7 +205,8 @@ static func chukonu() -> Variant:
 	return {"tip": 9.4, "mats": {"stock": PixelRaster.material(lacquer()), "mag": PixelRaster.material(lacquer(lamellar(3, 1.6))), "gold": PixelRaster.material(gold()), "prod": PixelRaster.material(gold(gleam(6))), "string": PixelRaster.material({"base": 0xf0e0b0}), "bolt": PixelRaster.material({"base": JADE_LIT[3], "ramp": JADE_LIT, "glow": true}), "jade": PixelRaster.material(jade_lit()), "lever": PixelRaster.material({"base": 0x5a3a24})}, "draw": _fn0}
 
 ##  The flaming pearl at (0, 0) in frame t: tongues of flame looping round it, `f` of `n` frames.
-static func flaming_pearl(r, t, f: float, n: float, R: float, h, g0: float = 1.0) -> void:
+static func flaming_pearl(r, t, f: float, n: float, R: float, h, g0 = null) -> void:
+	if g0 == null: g0 = 1
 	var spin: float = (f / n) * ((PI * 2) / 3.0)
 	# Three tongues of flame wrapping round the pearl, leaning the way they turn; the back half behind it.
 	var tongues = ([0, 1, 2]).map((func(k: float, _a1 = null, _a2 = null): return (spin + (((k * PI) * 2) / 3.0)) + 0.4))
