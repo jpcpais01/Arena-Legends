@@ -21,31 +21,38 @@ export type MainWeaponId =
   | 'longsword' | 'katana' | 'mace' | 'dagger' | 'ember_wand'
   | 'warhammer' | 'spear' | 'greataxe' | 'arcane_staff' | 'longbow'
   | 'chain_sickle' | 'soul_scythe' | 'rapier' | 'storm_rod' | 'halberd' | 'grave_staff'
-  | 'boxing_gloves' | 'spiked_knuckles' | 'spirit_wraps';
+  | 'boxing_gloves' | 'spiked_knuckles' | 'spirit_wraps'
+  | 'bloodletter';
 export type SecondaryId =
   | 'kite_shield' | 'parrying_dagger' | 'buckler' | 'throwing_knives' | 'hand_crossbow'
   | 'wind_chakram' | 'frost_wand' | 'war_horn'
-  | 'bolas' | 'trickster_talisman' | 'tower_shield' | 'javelin' | 'iron_cestus';
+  | 'bolas' | 'trickster_talisman' | 'tower_shield' | 'javelin' | 'iron_cestus'
+  | 'grapnel';
 export type SpecialId =
   | 'meteor_sigil' | 'phantom_blade' | 'wisp_lantern' | 'phoenix_feather' | 'echo_stone'
   | 'vampiric_fang' | 'ember_core' | 'frost_core'
   | 'thunder_totem' | 'hourglass' | 'ward_stone' | 'hunter_hawk' | 'dragon_whelp'
-  | 'gale_bell';
+  | 'gale_bell' | 'storm_cloud';
 export type HeadId =
   | 'berserker_mask' | 'iron_helm' | 'chrono_circlet' | 'executioner_hood' | 'storm_crown' | 'duelist_band'
-  | 'seer_blindfold' | 'dread_helm' | 'hawkeye_hood' | 'gladiator_helm';
+  | 'seer_blindfold' | 'dread_helm' | 'hawkeye_hood' | 'gladiator_helm'
+  | 'magpie_mask';
 export type ChestId =
   | 'plate_armor' | 'phase_cloak' | 'thornmail' | 'mirror_mail' | 'leather_jerkin' | 'mage_robe'
-  | 'juggernaut_plate' | 'heartwood_armor' | 'shadow_garb' | 'runic_mail';
+  | 'juggernaut_plate' | 'heartwood_armor' | 'shadow_garb' | 'runic_mail'
+  | 'grudge_mail';
 export type UsableId =
   | 'healing_potion' | 'swiftness_draught' | 'fury_tonic' | 'stoneskin_elixir' | 'energy_tonic' | 'fire_bomb'
-  | 'smoke_bomb' | 'caltrops' | 'frost_bomb' | 'troll_tonic';
+  | 'smoke_bomb' | 'caltrops' | 'frost_bomb' | 'troll_tonic'
+  | 'maelstrom_flask';
 export type LegsId =
   | 'leather_leggings' | 'chain_leggings' | 'stonehide_tassets' | 'windrunner_leggings' | 'runed_leggings' | 'bloodrite_wraps'
-  | 'ghoststep_leggings' | 'charger_cuisses' | 'acrobat_trousers' | 'warlord_faulds';
+  | 'ghoststep_leggings' | 'charger_cuisses' | 'acrobat_trousers' | 'warlord_faulds'
+  | 'springheel_leggings';
 export type BootsId =
   | 'leather_boots' | 'zephyr_boots' | 'iron_greaves' | 'shadow_treads' | 'colossus_boots' | 'leaping_boots'
-  | 'warp_boots' | 'earthshaker_boots' | 'frostwalkers' | 'savate_boots';
+  | 'warp_boots' | 'earthshaker_boots' | 'frostwalkers' | 'savate_boots'
+  | 'mirage_boots';
 
 export type GearId = MainWeaponId | SecondaryId | SpecialId | UsableId | HeadId | ChestId | LegsId | BootsId;
 
@@ -78,7 +85,9 @@ export type StatusId =
   /** Heals a little every second. */
   | 'regen'
   /** Gladiator's momentum: each stack adds damage. */
-  | 'momentum';
+  | 'momentum'
+  /** An open wound: every metre the bleeder moves on their own feet tears it again. */
+  | 'bleed';
 
 /**
  * Animation the renderer plays for an ability. The sim never reads it; the
@@ -95,7 +104,8 @@ export type AnimKey =
 export type ProjectileStyle =
   | 'arcane' | 'hex' | 'wave' | 'groundwave' | 'meteor' | 'arrow' | 'knife' | 'bolt' | 'fire' | 'flamewave' | 'chakram' | 'wisp'
   | 'flask'
-  | 'hook' | 'bolas' | 'javelin' | 'spark' | 'soul' | 'bonespike' | 'frostflask' | 'caltrops' | 'hawk' | 'breath' | 'palm';
+  | 'hook' | 'bolas' | 'javelin' | 'spark' | 'soul' | 'bonespike' | 'frostflask' | 'caltrops' | 'hawk' | 'breath' | 'palm'
+  | 'grapnel' | 'vortexflask';
 
 export interface Stats {
   maxHp: number;
@@ -210,6 +220,8 @@ export interface AbilityDef {
   cleanse?: boolean;
   /** Yanks the target to the user on hit (chain hook). */
   pull?: boolean;
+  /** Reels the user in to the target on hit (grappling hook). */
+  reel?: boolean;
   /** Throws the target up into the air on hit (uppercut), metres per second. */
   launch?: number;
   /** Energy taken from the target on hit (it goes to the user). */
@@ -327,8 +339,12 @@ export interface Familiar {
   charge: number;
 }
 
-/** Something left on the ground that hurts the owner's enemy while it lasts. */
-export type ZoneKind = 'totem' | 'caltrops';
+/**
+ * Something left on the ground that hurts the owner's enemy while it lasts:
+ * a totem's circle, a caltrops patch, a vortex that drags them to its heart,
+ * or the ring a storm cloud marks right before its bolt strikes.
+ */
+export type ZoneKind = 'totem' | 'caltrops' | 'vortex' | 'strike';
 
 export interface Zone {
   id: number;
@@ -442,6 +458,14 @@ export type BattleEvent =
   | { type: 'foresight'; f: FighterId; x: number; y: number }
   /** A chain hook dragged the target in. */
   | { type: 'pull'; f: FighterId; target: FighterId }
+  /** Mirage Boots: a dodge left an afterimage that strikes back. */
+  | { type: 'mirage'; f: FighterId; x: number }
+  /** Grappling hook bit: `f` reels itself in to `target`. */
+  | { type: 'reel'; f: FighterId; target: FighterId }
+  /** Magpie Mask: a buff (or some energy) snatched from the enemy. */
+  | { type: 'snatch'; f: FighterId; from: FighterId; status: StatusId | null }
+  /** The storm cloud's bolt comes down (`hit`: it caught them). */
+  | { type: 'bolt'; f: FighterId; x: number; hit: boolean }
   /** A ward stone shield, an ambush out of smoke, a charge landing: a one-word callout over a fighter. */
   | { type: 'callout'; f: FighterId; text: string; color: string }
   | { type: 'projectileEnd'; id: number; x: number; y: number; style: ProjectileStyle; hit: boolean }

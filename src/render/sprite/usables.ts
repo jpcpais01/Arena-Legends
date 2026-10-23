@@ -151,6 +151,34 @@ const ART: Record<UsableId, () => UsableArt> = {
       r.dot(t.x(-2.2, 1.4), t.y(-2.2, 1.4), m('ice'), 4, g);
     },
   }),
+  // A teardrop flask with a whirlpool trapped inside, bound in brass with a shell for a stopper.
+  maelstrom_flask: () => ({
+    mats: {
+      glass: material({ base: 0xb8e8ec, shiny: true, step: 0.13 }),
+      liquid: material({ base: 0x1a7a8a, shiny: true, step: 0.13 }),
+      swirl: material({ base: 0x5af0e8, glow: true }),
+      band: material({ base: 0xc89a48, shiny: true }),
+      cork: material({ base: 0xf0d8c8, shiny: true }),
+    },
+    glow: [0x9afff4, 0x1a8a9a],
+    draw(r, t, m, o = {}) {
+      const fill = filler(r, o);
+      const g = o.group ?? 7;
+      neck(r, t, m, o, 1.6, 3.8, 0.85);
+      // A cockle shell for a stopper.
+      if (!o.open) fill(t.poly([4.4, -1.5, 6.2, -0.9, 6.6, 0, 6.2, 0.9, 4.4, 1.5]), m('cork'), 0.7);
+      fill(union(t.circ(-1.2, 0, 3.3), t.cap(-1, 0, 1.8, 0, 2.6, 1.1)), m('glass'), 2.2);
+      fill(t.circ(-1.2, 0, 2.7), m('liquid'), 1.6);
+      // The whirlpool: a spiral of bright water turning with the frame.
+      const k = (o.frame ?? 0) % 3;
+      for (let i = 0; i < 4; i++) {
+        const a = k * 2.1 + i * 1.7, rad = 0.5 + i * 0.55;
+        r.dot(t.x(-1.2 + Math.cos(a) * rad, Math.sin(a) * rad), t.y(-1.2 + Math.cos(a) * rad, Math.sin(a) * rad), m('swirl'), i ? 3 : 4, g);
+      }
+      // Brass band round the shoulder.
+      fill(t.rect(1.3, 0, 0.45, 1.7), m('band'), 0.5);
+    },
+  }),
   // A chunky bottle of murky green troll blood, a curved tusk for a stopper.
   troll_tonic: () => ({
     mats: {

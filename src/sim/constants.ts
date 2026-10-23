@@ -21,3 +21,6 @@ export const ENERGY_ON_DEAL = 0.09;
 export const ENERGY_ON_TAKE = 0.14;
 
 export const WALL_SPLAT_SPEED = 6;
+
+/** Bleeding: damage per metre the bleeder moves on their own, per stack (× the cutter's power). */
+export const BLEED_PER_M = 0.05;

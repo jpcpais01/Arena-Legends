@@ -36,7 +36,7 @@ export interface SkinDef {
 export type SkinSetId = 'sunborn' | 'hellforged' | 'foxfire' | 'wildwood' | 'abyssal' | 'clockwork' | 'bloodmoon' | 'starweaver' | 'frostbound' | 'stormcaller' | 'voidborn'
   | 'jadedragon' | 'seraph' | 'lichborne' | 'quetzal' | 'prismheart'
   | 'corsair' | 'oni' | 'beastlord' | 'djinn' | 'plague' | 'sugarrush' | 'hallow' | 'olympian' | 'lionheart' | 'mothqueen'
-  | 'skybell' | 'ruler' | 'undertaker' | 'champ' | 'rock' | 'oba';
+  | 'skybell' | 'ruler' | 'undertaker' | 'champ' | 'rock' | 'oba' | 'stormcrow';
 
 export interface SkinSet {
   id: SkinSetId;
@@ -78,6 +78,7 @@ export const SKIN_SETS: readonly SkinSet[] = [
   { id: 'champ', name: 'The Champ Is Here', blurb: 'John Cena\'s ring gear: a lime Never Give Up tee and cap, dog tags, jorts and high-tops, the spinner title at his shoulder and a trumpet for his entrance. You can\'t see him.' },
   { id: 'rock', name: 'The People\'s Champion', blurb: 'The Rock himself: a polished bald dome and the People\'s Eyebrow, the Brahma Bull on his shoulder, black trunks and taped fists, the mic in hand, and a pot on a red-hot stone. Can you smell what he\'s cooking?' },
   { id: 'oba', name: 'Oba, The Ruler', blurb: 'Oba Femi as he walks to the ring: shaved head, black beard, no shirt, just a wall of muscle. Black and gold trunks, kneepads and boots, taped fists, and his championship floating at his shoulder.' },
+  { id: 'stormcrow', name: 'Stormcrow', blurb: 'A thief who runs with the storm: raven-black feathers and silver talons, a beaked mask with eyes like lightning, and a murder of crows circling in a thundercloud overhead.' },
 ];
 export const SKIN_SET_BY_ID: ReadonlyMap<SkinSetId, SkinSet> = new Map(SKIN_SETS.map((s) => [s.id, s]));
 
@@ -504,6 +505,32 @@ export const SKINS: readonly SkinDef[] = [
   E('rock', 'leather_jerkin', 'rock', 'Brahma Bull Physique'),
   E('rock', 'charger_cuisses', 'rock', 'People\'s Champ Trunks'),
   E('rock', 'savate_boots', 'rock', 'Rock Bottom Boots'),
+  // Fifth wave (v0.99.0): the new items and the fist weapons
+  S('bloodletter', 'rare', 'bonesaw', 'Bonesaw'),
+  S('bloodletter', 'legendary', 'tithe', 'Crimson Tithe'),
+  S('grapnel', 'rare', 'tarred', 'Tarred Grapnel'),
+  S('grapnel', 'mythic', 'kraken', 'Kraken Grip'),
+  S('storm_cloud', 'rare', 'ember', 'Ember Squall'),
+  S('maelstrom_flask', 'rare', 'bog', 'Bog Whirl'),
+  S('maelstrom_flask', 'legendary', 'conch', 'Whirlpool Conch'),
+  S('magpie_mask', 'rare', 'raven', 'Raven Mask'),
+  S('grudge_mail', 'rare', 'gilded', 'Gilded Grudge'),
+  S('springheel_leggings', 'rare', 'clockwork', 'Clockspring Trousers'),
+  S('mirage_boots', 'rare', 'dune', 'Dune Mirage'),
+  S('boxing_gloves', 'rare', 'golden', 'Golden Gloves'),
+  S('boxing_gloves', 'legendary', 'dragon', 'Dragon Fists'),
+  S('spiked_knuckles', 'rare', 'obsidian', 'Obsidian Knuckles'),
+  S('spiked_knuckles', 'mythic', 'wolf', 'Wolf Fangs'),
+  S('spirit_wraps', 'rare', 'sunset', 'Sunset Wraps'),
+  S('spirit_wraps', 'mythic', 'lotus', 'Lotus Wraps'),
+  // Stormcrow (v0.99.0)
+  E('stormcrow', 'bloodletter', 'stormcrow', 'Crowbeak Cleaver'),
+  E('stormcrow', 'grapnel', 'stormcrow', 'Raven Talon'),
+  E('stormcrow', 'storm_cloud', 'stormcrow', 'Murder of Crows'),
+  E('stormcrow', 'magpie_mask', 'stormcrow', 'Stormcrow Visage'),
+  E('stormcrow', 'grudge_mail', 'stormcrow', 'Raven Mantle'),
+  E('stormcrow', 'springheel_leggings', 'stormcrow', 'Corvid Breeches'),
+  E('stormcrow', 'mirage_boots', 'stormcrow', 'Talon Greaves'),
 ];
 
 export const SKIN_BY_ID: ReadonlyMap<string, SkinDef> = new Map(SKINS.map((s) => [s.id, s]));

@@ -1,5 +1,5 @@
 import { clamp } from '../../core/math';
-import { BASE_ENERGY_REGEN, MAX_ENERGY, OVERTIME_DAMAGE } from '../constants';
+import { BASE_ENERGY_REGEN, BLEED_PER_M, MAX_ENERGY, OVERTIME_DAMAGE } from '../constants';
 import { comboStep, reachOf as abilityReach, stacksOf, type Fighter } from '../fighter';
 import type { AbilityDef, StatusId } from '../types';
 
@@ -118,7 +118,7 @@ export function analyzeKit(f: Fighter): Kit {
       ultimate: (ab.slot === 'item' && ab.kind !== 'repel') || ab.cost >= MAX_ENERGY,
       item: ab.slot === 'item',
       minReach, maxReach, ranged,
-      closer: (ab.kind === 'dash' && !!ab.dash?.strike) || (ab.lunge ?? 0) >= 1.4,
+      closer: (ab.kind === 'dash' && !!ab.dash?.strike) || (ab.lunge ?? 0) >= 1.4 || !!ab.reel,
       commit: ab.windup + ab.active + ab.recovery,
     };
   });
@@ -186,10 +186,15 @@ function swingDamage(src: Fighter, ab: AbilityDef, dst: Fighter, withPassives: b
         dmg += s.power * fx.dot * (a.stacks ?? 1) * a.duration * mitigation(dst, dtype);
       } else if (fx?.taken && fx.taken > 0) {
         dmg += raw * fx.taken * 1.5;
+      } else if (a.status === 'bleed') {
+        // Bleeding hurts as they move: count on about half a metre a second.
+        dmg += s.power * BLEED_PER_M * (a.stacks ?? 1) * Math.min(a.duration, 4) * 0.5;
       }
     }
   }
   if (withPassives && ab.power > 0) dmg += onHitBonus(src, dst, dmg) * (ab.hits ? Math.min(ab.hits, 3) / 1.5 : 1);
+  // Grudge Mail: a heavy hit carries every blow stored up.
+  if (ab.heavy && src.grudge > 0 && src.has.has('grudge_mail')) dmg += src.grudge * mitigation(dst, ab.damageType === 'true' ? 'true' : ab.damageType);
   dmg *= dst.stats.damageTakenMult;
   if (src.empowered) dmg *= OVERTIME_DAMAGE;
   return dmg / dst.stats.maxHp;
@@ -202,11 +207,15 @@ export function ccValue(ab: AbilityDef, followUpPerSec: number): number {
   // Launched: helpless while in the air. Pulled: dragged into my reach.
   if (ab.launch) v += (2 * ab.launch / 30) * followUpPerSec * 0.8;
   if (ab.pull) v += 0.015 + followUpPerSec * 0.25;
+  // Reeled in: I land in my reach while they stagger. A whirlpool holds them where I want them.
+  if (ab.reel) v += 0.012 + followUpPerSec * 0.3;
+  if (ab.projectile?.zone === 'vortex') v += 0.02 + followUpPerSec * 0.3;
   if (ab.drainEnergy) v += ab.drainEnergy * 0.0004;
   if (ab.applies) for (const a of ab.applies) {
     if (a.status === 'chill') v += 0.006 * (a.stacks ?? 1);
     else if (a.status === 'root') v += 0.01 * a.duration;
     else if (a.status === 'silence') v += 0.014 * a.duration;
+    else if (a.status === 'bleed') v += 0.002 * (a.stacks ?? 1);
     else if (STATUS_FX[a.status]?.cc) v += a.duration * followUpPerSec;
   }
   return v;
@@ -214,8 +223,8 @@ export function ccValue(ab: AbilityDef, followUpPerSec: number): number {
 
 /** Has crowd control worth valuing on top of the damage. */
 export function hasControl(ab: AbilityDef): boolean {
-  return !!ab.stun || !!ab.launch || !!ab.pull || !!ab.drainEnergy
-    || !!ab.applies?.some((s) => STATUS_FX[s.status]?.cc || s.status === 'root' || s.status === 'silence');
+  return !!ab.stun || !!ab.launch || !!ab.pull || !!ab.reel || !!ab.drainEnergy || ab.projectile?.zone === 'vortex'
+    || !!ab.applies?.some((s) => STATUS_FX[s.status]?.cc || s.status === 'root' || s.status === 'silence' || s.status === 'bleed');
 }
 
 // -----------------------------------------------------------------------------

@@ -236,6 +236,44 @@ const gladiatorHelm: StockArmour = {
   },
 };
 
+/** Magpie Mask: a black domino mask with a short beak, white cheek flashes and blue-green sheen feathers swept back. */
+const magpieMask: StockArmour = {
+  mats: {
+    'mag.black': ramp(0x22263a, [0x08080e, 0x12141e, 0x22263a, 0x3a4060, 0x5a6890], { shiny: true }),
+    'mag.white': ramp(0xeef0f4, [0x7a7e8a, 0xaeb2bc, 0xd6dae2, 0xf2f4f8, 0xffffff]),
+    'mag.sheen': ramp(0x2a7a8a, [0x0a1a2a, 0x143a54, 0x1e6a8a, 0x3aa8b8, 0x8ae8d8], { shiny: true, tex: (x, y) => (wrap(x * 0.9 - y * 0.7, 1.8) < 0.5 ? 1 : 0) }),
+    'mag.beak': ramp(0x3a3a44, [0x0e0e12, 0x1e1e26, 0x34343e, 0x5a5a66, 0x9a9aa8], { shiny: true }),
+    'mag.coin': shiny(0xe8b840, undefined, 0.16),
+    'mag.gem': glow(0x7af0ff),
+  },
+  head: {
+    hair: false, face: false, ears: null,
+    draw(r, H, m, g, sway) {
+      const s = sway * 1.4;
+      // Sheen feathers swept back from the temple, the far one darker.
+      r.fill(leaf(H, -1.4, 2.6, 2.75 + s * 0.05, 8.2, 1.3), m('mag.sheen'), { group: g, bevel: 1, toneBias: -1 });
+      r.fill(leaf(H, -1, 1.6, 2.95 + s * 0.06, 9.6, 1.5), m('mag.sheen'), { group: GA, bevel: 1.2 });
+      r.fill(leaf(H, -1.2, 0.4, 3.2 + s * 0.06, 6.6, 1.1), m('mag.black'), { group: GA, bevel: 0.8 });
+      // The mask: a band over the eyes, wings flaring up at the temple, the near eye cut out.
+      const band = intersect(H.ell(0.1, 0.5, 7, 6.9), H.poly([-1.6, 2.6, 4, 2.4, 9, 1.2, 9, -2.4, 3.4, -2.8, -1.6, -1.8]));
+      const flare = H.poly([-1.6, 1.4, -3.4, 4.2, -0.2, 2.8]);
+      const hole = H.ell(2, -0.5, 1.35, 1.15);
+      r.fill(subtract(union(band, flare), hole), m('mag.black'), { group: GA + 1, bevel: 1.6 });
+      // The white flash under the eye, and a white brow stripe.
+      r.fill(intersect(band, H.poly([-0.6, -1.9, 3.4, -2.8, 2.6, -1.6, 0, -1.2])), m('mag.white'), { group: GA + 1, flat: 2, noLine: true });
+      ln(r, H, 0.2, 2.2, 4.6, 2, m('mag.white'), 2, GA + 1);
+      // A short hooked beak over the nose.
+      r.fill(H.poly([5.6, -0.6, 9.6, -1.4, 10.2, -2.6, 8.6, -2.6, 5.8, -2.4]), m('mag.beak'), { group: GA + 2, bevel: 0.9 });
+      dt(r, H, 7.4, -1.1, m('mag.beak'), 4, GA + 2);
+      // A stolen coin on a cord behind the ear, and a little gem in the mask's brow.
+      const cy = -2.6 - Math.abs(s) * 0.3;
+      ln(r, H, -1.6, 0.4, -2.2 - s * 0.4, cy, m('mag.black'), 1, GA);
+      r.fill(H.circ(-2.3 - s * 0.4, cy - 1, 0.95), m('mag.coin'), { group: GA, bevel: 0.6 });
+      dt(r, H, 3.6, 1.4, m('mag.gem'), 3, GA + 1);
+    },
+  },
+};
+
 // -----------------------------------------------------------------------------
 // Chest
 // -----------------------------------------------------------------------------
@@ -442,6 +480,54 @@ const runicMail: StockArmour = {
   },
 };
 
+/** Grudge Mail: blackened iron over a blood-red gambeson, a spiked pauldron, every slight tallied in glowing scratches. */
+const grudgeMail: StockArmour = {
+  mats: {
+    'gm.cloth': ramp(0x6a1e24, [0x1e0608, 0x3a0c10, 0x5e1a20, 0x8a2e32, 0xb04a48], { tex: (_x, y) => (wrap(y * 1.2, 1.6) < 0.4 ? -1 : 0) }),
+    'gm.iron': ramp(0x3e3a40, [0x0e0c10, 0x1e1a20, 0x34303a, 0x58525e, 0x948c98], { shiny: true, tex: (x, y) => (hash(Math.floor(x * 1.3) + 7, Math.floor(y * 1.3)) < 0.05 ? -1 : 0) }),
+    'gm.dark': ramp(0x24202a, [0x08060a, 0x121016, 0x201c24, 0x34303a, 0x5a5462], { shiny: true }),
+    'gm.chain': ramp(0x6a6670, [0x1e1c22, 0x3a3640, 0x5e5a66, 0x8a8692, 0xc0bcc8], { shiny: true }),
+    'gm.spike': ramp(0xa8a0a8, [0x2e2a30, 0x544e56, 0x847e88, 0xb8b2bc, 0xeee8f2], { shiny: true }),
+    'gm.tally': glow(0xff4a3a),
+    'gm.eye': glow(0xffa040),
+  },
+  chest: {
+    torso: 'gm.cloth', sleeve: 'gm.cloth', sleeveLen: 0.8, forearm: 'gm.iron', hands: 'gm.dark', pauldron: null,
+    trim: null, belt: 'gm.dark',
+    over(r, T, m, c) {
+      const b = c.body, top = c.top, fx = b.chestPush * 0.7;
+      const body = torsoBody(T, b, top);
+      // A blackened breastplate over the gambeson, its lower edge cut ragged.
+      const plate = intersect(body, T.poly([fx - 3, top - 0.2, fx + b.chestW + 0.8, top - 0.6, fx + b.chestW + 0.6, top * 0.5, fx + 2.6, top * 0.42, fx + 1, top * 0.5, fx - 1, top * 0.4, fx - 3, top * 0.5], 0.4));
+      r.fill(plate, m('gm.iron'), { group: GA, bevel: 2 });
+      r.fill(intersect(plate, T.rect(0, top - 0.9, 12, 0.4)), m('gm.dark'), { group: GA, flat: 1, noLine: true });
+      // The grudge tally: four strokes and a slash, scratched in and glowing.
+      const tx = fx + 0.8, ty = top - 4.6, k = m('gm.tally');
+      for (let i = 0; i < 4; i++) ln(r, T, tx + i * 0.9, ty - 1.3, tx + i * 0.9 + 0.2, ty + 1.3, k, 3, GA);
+      ln(r, T, tx - 0.6, ty - 1, tx + 3.4, ty + 1, k, 3, GA);
+      // A chain slung from shoulder to hip across the plate.
+      const ch = m('gm.chain');
+      for (let u = 0; u <= 1.001; u += 0.11) {
+        const x = fx + b.chestW - 0.4 + (-b.waistW - fx - b.chestW + 1) * u, y = top - 0.8 + (3.4 - top + 0.8) * u - Math.sin(u * Math.PI) * 1.2;
+        dt(r, T, x, y, ch, Math.round(u / 0.11) % 2 ? 1 : 3, GA + 1);
+      }
+      // An iron belt plate.
+      r.fill(T.rect(b.waistW - 0.4, 2.6, 1.3, 1.4, 0.2), m('gm.iron'), { group: GA + 1, bevel: 0.8 });
+    },
+    shoulder(r, S, m, c) {
+      const a = c.body.armR, o = { group: c.g, toneBias: c.bias };
+      // A heavy layered pauldron, three spikes along its crest.
+      r.fill(S.ell(0.2, -2.6, a + 1.4, 1.2), m('gm.dark'), { ...o, bevel: 1 });
+      const pd = S.ell(-0.2, -0.4, a + 2.2, a + 1.5);
+      for (const [x, h] of [[-2, 2.2], [0, 3], [2, 2.2]] as const) r.fill(S.poly([x - 0.8, a, x, a + h + 0.8, x + 0.8, a]), m('gm.spike'), { ...o, bevel: 0.6 });
+      r.fill(pd, m('gm.iron'), { ...o, bevel: 2 });
+      r.fill(intersect(pd, S.rect(0, -1.4, a + 3, 0.4)), m('gm.dark'), { group: c.g, flat: 1, noLine: true });
+      // An ember eye glaring from the near pauldron.
+      if (!c.far) dt(r, S, 0.6, 0.4, m('gm.eye'), 3, c.g);
+    },
+  },
+};
+
 // -----------------------------------------------------------------------------
 // Legs
 // -----------------------------------------------------------------------------
@@ -563,6 +649,39 @@ const warlordFaulds: StockArmour = {
   },
 };
 
+/** Springheel Leggings: light padded trousers with brass coil springs wound round the knees and down the calves. */
+const springheelLeggings: StockArmour = {
+  mats: {
+    'sh.cloth': ramp(0x3a9a7a, [0x0e2e24, 0x1a5444, 0x2e8068, 0x56b090, 0x96e0c0], { tex: (x) => (wrap(x * 1.1, 2.2) < 0.4 ? -1 : 0) }),
+    'sh.pad': ramp(0x2a6a58, [0x0a1e18, 0x14382e, 0x245a4a, 0x3a806a, 0x60aa90]),
+    'sh.spring': ramp(0xd8a848, [0x5a3a10, 0x8a6020, 0xc89838, 0xf0cc6a, 0xfff2b8], { shiny: true }),
+    'sh.strap': ramp(0x5a3e2a, [0x1a100a, 0x2e2016, 0x4a3424, 0x6a4c34, 0x8e6a4c]),
+  },
+  legs: {
+    mat: 'sh.cloth', trim: null, knee: null, tasset: null, rune: null, wraps: null, bulk: 0.3,
+    over(r, t, m, c) {
+      const w = c.w, L = c.len, o = { group: c.g, toneBias: c.bias };
+      // A padded panel down the front of the thigh, stitched in rows.
+      r.fill(t.poly([L * 0.86, w - 0.6, L * 0.86, w + 0.9, L * 0.22, w + 1, L * 0.22, w - 0.6], 0.4), m('sh.pad'), { ...o, bevel: 1.2 });
+      for (const x of [L * 0.66, L * 0.44]) ln(r, t, x, w - 0.4, x, w + 0.8, m('sh.strap'), 1, c.g);
+      r.fill(t.cap(L * 0.9, -w - 0.3, L * 0.92, w + 0.4, 0.6), m('sh.strap'), { ...o, bevel: 0.6 });
+      // The coil spring wound round the knee: brass loops, bright on their near edge.
+      const sp = m('sh.spring');
+      for (let i = 0; i < 4; i++) {
+        const x = 2.4 - i * 1.1;
+        r.fill(t.cap(x + 0.5, -w - 0.5, x - 0.3, w + 0.6, 0.42), sp, { group: GA, bevel: 0.5, toneBias: c.bias });
+      }
+      if (!c.far) dt(r, t, 0.9, w + 0.4, sp, 4, GA);
+    },
+    shin(r, shin, _foot, m, c) {
+      // A leaf spring down the back of the calf, strapped at the top and seated at the heel.
+      const w = c.body.shinR + 0.3, top = Math.max(c.top, 2) + 3.6;
+      r.fill(shin.cap(top, -w - 0.4, 1.2, -w - 0.9, 0.55, 0.4), m('sh.spring'), { group: c.g, bevel: 0.6, toneBias: c.bias });
+      r.fill(shin.cap(top - 0.4, -w - 0.8, top - 0.4, w + 0.6, 0.55), m('sh.strap'), { group: c.g, bevel: 0.6, toneBias: c.bias });
+    },
+  },
+};
+
 // -----------------------------------------------------------------------------
 // Boots
 // -----------------------------------------------------------------------------
@@ -679,6 +798,33 @@ const savateBoots: StockArmour = {
   },
 };
 
+/** Mirage Boots: lilac silk boots with curled toes and a gold anklet, a violet gem shimmering an afterimage of the foot. */
+const mirageBoots: StockArmour = {
+  mats: {
+    'mi.boot': ramp(0xb4a0e8, [0x3a2a6a, 0x5e4a9a, 0x9078cc, 0xbcaaf0, 0xeee6ff], { tex: (x, y) => (wrap(x * 0.5 + y * 1.1, 2.4) < 0.45 ? -1 : 0) }),
+    'mi.gold': ramp(0xe0b048, [0x5a3a10, 0x8a6020, 0xc89838, 0xf0cc6a, 0xfff2b8], { shiny: true }),
+    'mi.gem': glow(0xc88aff),
+    'mi.ghost': glow(0xd8c8ff),
+  },
+  boots: {
+    mat: 'mi.boot', height: 0.58, bulk: 0.25, trim: 'mi.gold', wing: null, knee: null,
+    over(r, shin, foot, m, c) {
+      const o = { group: c.g, toneBias: c.bias }, w = c.w, ph = r.phase % 4;
+      // The toe sweeps up into a curl, tipped with a gold bead.
+      r.fill(chain(foot, [[c.toe - 1.6, 0, 1.1], [c.toe + 1.2, 0.2, 0.75], [c.toe + 2.4, 1.4, 0.5], [c.toe + 1.8, 2.4, 0.35]]), m('mi.boot'), { ...o, bevel: 0.8 });
+      dt(r, foot, c.toe + 1.7, 2.6, m('mi.gold'), 4, c.g);
+      // A gold anklet with its gem.
+      r.fill(shin.cap(2.6, -w - 0.4, 2.6, w + 0.4, 0.5), m('mi.gold'), { ...o, bevel: 0.6 });
+      if (!c.far) {
+        dt(r, shin, 2.6, w + 0.1, m('mi.gem'), 3, c.g);
+        // The afterimage: a few shimmering motes trailing the heel, drifting with the frame.
+        const gh = m('mi.ghost');
+        for (let i = 0; i < 3; i++) dt(r, foot, -2.6 - i * 1.3 - (ph % 2) * 0.4, -0.6 + i * 0.7 + (ph > 1 ? 0.4 : 0), gh, i ? 2 : 3, c.g);
+      }
+    },
+  },
+};
+
 // -----------------------------------------------------------------------------
 
 export const ARMOUR2: Partial<Record<GearId, StockArmour>> = {
@@ -698,6 +844,10 @@ export const ARMOUR2: Partial<Record<GearId, StockArmour>> = {
   earthshaker_boots: earthshakerBoots,
   frostwalkers,
   savate_boots: savateBoots,
+  magpie_mask: magpieMask,
+  grudge_mail: grudgeMail,
+  springheel_leggings: springheelLeggings,
+  mirage_boots: mirageBoots,
 };
 
 /** The stock headgear look for a new head piece, if it is one. */
