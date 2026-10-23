@@ -1,6 +1,5 @@
 extends Control
-## First screen: straight into a battle for now (menus come in a later phase).
+## First screen: the game (title over the background duel, then the menus).
 
 func _ready() -> void:
-	var scene := BattleScene.new()
-	add_child(scene)
+	add_child(Game.new())

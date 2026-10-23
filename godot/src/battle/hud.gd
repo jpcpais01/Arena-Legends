@@ -41,6 +41,11 @@ var _time := 0.0
 var _plans := ["", ""]
 ## Seconds spent waiting for the arena (-1: not waiting).
 var _loading := -1.0
+## Thought bubbles over the fighters (the Battle quotes setting).
+var bubbles := true
+var _bubble := ["", ""]
+var _bubble_t := [0.0, 0.0]
+var _bubble_at := [Vector2.ZERO, Vector2.ZERO]
 
 
 func _init() -> void:
@@ -65,6 +70,7 @@ func setup(b, arena_name: String) -> void:
 	_last_hp = [-1.0, -1.0]
 	_jolt = [0.0, 0.0]
 	_full_t = [0.0, 0.0]
+	_bubble_t = [0.0, 0.0]
 	var f = b.fighters
 	banner("%s  VS  %s" % [f[0]["name"], f[1]["name"]], arena_name, 0)
 
@@ -77,8 +83,21 @@ func banner(text: String, sub := "", seconds := 1.2) -> void:
 	_banner_age = 0.0
 
 
-func on_event(_e) -> void:
-	pass
+func on_event(e) -> void:
+	match e["type"]:
+		"thought":
+			if not bubbles: return
+			var i := int(e["f"])
+			_bubble[i] = str(e["text"])
+			_bubble_t[i] = 1.4 + minf(1.4, _bubble[i].length() * 0.035)
+		"overtime":
+			banner("OVERTIME!", "Night falls: double damage", 2.2)
+
+
+## Shows or hides the thought bubbles (hiding clears any on screen).
+func set_bubbles(on: bool) -> void:
+	bubbles = on
+	if not on: _bubble_t = [0.0, 0.0]
 
 
 func update_from(view, b, dt: float) -> void:
@@ -96,6 +115,12 @@ func update_from(view, b, dt: float) -> void:
 		_jolt[i] = maxf(0.0, _jolt[i] - dt)
 		var full: bool = f["energy"] >= SimConstants.MAX_ENERGY
 		_full_t[i] = _full_t[i] + dt if full else 0.0
+		if _bubble_t[i] > 0.0:
+			_bubble_t[i] -= dt
+			if not f["alive"]: _bubble_t[i] = 0.0
+			var a: Array = view.head_at(i)
+			var c: Array = view.screen.to_css(a[0], a[1])
+			_bubble_at[i] = Vector2(c[0], c[1])
 	if _banner_t > 0.0:
 		_banner_t -= dt
 		if _banner_t <= 0.0: _banner = ""
@@ -125,6 +150,8 @@ func _draw() -> void:
 	var side_w := (size.x - clock_w - pad * 4) / 2.0
 	for i in 2: _draw_side(i, u, pad, side_w)
 	_draw_clock(u, pad)
+	for i in 2:
+		if _bubble_t[i] > 0.0: _draw_bubble(i, u)
 	if _banner != "": _draw_banner(u)
 
 
@@ -297,6 +324,26 @@ func _draw_banner(u: float) -> void:
 		var ss := int(21.6 * u)
 		var sw := _bold_font.get_string_size(_banner_sub, HORIZONTAL_ALIGNMENT_LEFT, -1, ss).x
 		_outlined(_bold_font, Vector2(c.x - sw / 2, c.y + fs * 0.35 + 10 * u + ss), _banner_sub, ss, TEXT, 2.0 * u)
+
+
+## A speech bubble over a fighter's head with a little tail (the web's .bubble).
+func _draw_bubble(i: int, u: float) -> void:
+	var fs := int(10.5 * u)
+	var max_w := 182.0 * u - 14.0 * u
+	var txt: String = _bubble[i]
+	var ts := _text_font.get_multiline_string_size(txt, HORIZONTAL_ALIGNMENT_CENTER, max_w, fs)
+	var w := minf(max_w, ts.x) + 14.0 * u + 4.0 * u
+	var h := ts.y + 8.0 * u + 4.0 * u
+	var at: Vector2 = _bubble_at[i]
+	var r := Rect2(roundf(clampf(at.x - w / 2.0, 4.0 * u, size.x - w - 4.0 * u)), roundf(at.y - 6.0 * u - 8.0 * u - h), roundf(w), roundf(h))
+	var paper := Color("#f6efe0")
+	draw_rect(r, INK)
+	draw_rect(r.grow(-2.0 * u), paper)
+	var tx := roundf(at.x - 5.0 * u)
+	draw_rect(Rect2(tx, r.end.y - 2.0 * u, 10.0 * u, 8.0 * u), INK)
+	draw_rect(Rect2(tx + 2.0 * u, r.end.y - 2.0 * u, 6.0 * u, 6.0 * u), paper)
+	var tw := minf(max_w, ts.x)
+	draw_multiline_string(_text_font, Vector2(r.position.x + 9.0 * u, r.position.y + 6.0 * u + _text_font.get_ascent(fs)), txt, HORIZONTAL_ALIGNMENT_CENTER, tw, fs, -1, Color("#1a1020"))
 
 
 # --- Drawing helpers ---------------------------------------------------------------

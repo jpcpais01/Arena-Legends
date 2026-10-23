@@ -12,6 +12,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.101.0',
+    date: '2026-10-23',
+    title: 'Android: the title, home screen and your own hero',
+    notes: [
+      'The Android preview now starts like the web game: the logo drops in over a live duel, and a tap opens the home screen with the same rampart dock, nameplates and Fight crest.',
+      'You get a hero of your own on first launch (the hero creator comes in a later update) and fight your rival with entrances, the 3-2-1 countdown, thought bubbles and the fight controls: camera, 1x/2x/4x speed, pause and leave.',
+      'Wins pay gems and every fight gives XP, with the results screen showing the verdict, the rewards and both fighters\' stats side by side. Your record, gems, level and rival are saved.',
+      'Settings (battle quotes, small numbers, arena pick, volume) and the patch notes are in too. Hero, Armory, Online, World and the Shop arrive in the next Android updates.',
+    ],
+  },
+  {
     version: '0.100.0',
     date: '2026-10-23',
     title: 'Arena Legends on Android (first preview)',

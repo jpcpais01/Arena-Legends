@@ -24,8 +24,21 @@ release `android-v<version>` on every push to main.
     together.
   - `render/arena_cache.gd`: painted arenas kept in memory and on disk
     (`user://arenas`), painted ahead on a worker.
+  - `boot/game.gd`: the game's flow (title, home, fights, results, sheets)
+    and the saved state it touches (hero, rival, record, gems, XP, settings,
+    all in `Store`, the web's localStorage keys).
+  - `ui/`: the menus, drawn in device pixels to match the web's phone
+    landscape CSS. `ui.gd` is the kit: the rem/px scale (`UI.r`, `UI.c`,
+    `UI.px` device pixels per art pixel), palette, fonts (Rubik; Pixelify Sans
+    with Rubik digits via `pixel-*.woff2`), pixel frames, bevels, glyphs,
+    logo and portrait backdrops. `px_button.gd` is the web's `.btn`;
+    `sheet.gd` the modal sheet the settings, notes and results build on;
+    `scroll_view.gd` a custom-drawn scroller; `fighter_preview.gd` a hero in a
+    little stage (a `Canvas2D.Gpu` inside a Control); `gear_icons.gd` bakes
+    item icons on the GPU, batched per frame.
   - `patches/`: hand-written replacements and additions merged into generated
     modules (ignored by Godot itself, see below).
+- `assets/`: fonts (OFL) and the baked logo (`tools/ref/logo.mjs`).
 - `tools/ts2gd/`: the TypeScript → GDScript converter. `tools/ref/`: scripts that
   dump reference data from the web code for the tests.
 - `test/`: headless checks and tools (see below).
@@ -52,6 +65,9 @@ function or `Class.method` in the config and write it in a patch to replace it
     # Screenshots of a running battle (needs a GPU or xvfb + lavapipe)
     xvfb-run $G --path godot --rendering-driver vulkan --rendering-method mobile \
       --resolution 1600x720 -s res://test/battle_shot.gd -- OUT SEED ARENA 6 12
+    # Screenshots of the menus: title, home, settings, notes, a fight, results
+    xvfb-run $G --path godot --rendering-driver vulkan --rendering-method mobile \
+      --resolution 1600x720 -s res://test/ui_shot.gd -- OUT
 
 The simulation must stay identical to the web's (every reference battle replays
 tick for tick), and arenas paint pixel for pixel the same.

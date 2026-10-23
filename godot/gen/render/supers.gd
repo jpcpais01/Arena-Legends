@@ -21,9 +21,7 @@ static func super_look(ab, art) -> Variant:
 	var ult: bool = ab["slot"] == "item"
 	# Any skinned weapon or special item brings its own colours.
 	var skin = ((null if art == null else (null if art["specialSkin"] == null else art["specialSkin"].get("glow"))) if ult else skin_colours((null if art == null else art["mainSkin"])))
-	var _q1 = art["specialSkin"]
-	var _q2 = art["mainSkin"]
-	var skin_kind = ((null if art == null else (null if _q1 == null else (null if _q1.get("fx") == null else _q1.get("fx").get("kind")))) if ult else (null if art == null else (null if _q2 == null else (null if _q2.get("fx") == null else _q2.get("fx").get("kind")))))
+	var skin_kind = ((null if art == null else (null if art["specialSkin"] == null else (null if art["specialSkin"].get("fx") == null else art["specialSkin"].get("fx").get("kind")))) if ult else (null if art == null else (null if art["mainSkin"] == null else (null if art["mainSkin"].get("fx") == null else art["mainSkin"].get("fx").get("kind")))))
 	var look = {"name": ab["name"], "ult": ult, "el": el, "hi": ((null if skin == null else skin[0]) if (null if skin == null else skin[0]) != null else hi0), "lo": ((null if skin == null else skin[1]) if (null if skin == null else skin[1]) != null else lo0), "kind": (skin_kind if skin_kind != null else ("flame" if el == "fire" else "twinkle"))}
 	if art != null:
 		if m == null:

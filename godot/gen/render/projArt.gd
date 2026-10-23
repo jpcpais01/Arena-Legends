@@ -291,18 +291,15 @@ static func usable_shot(id: String, skin: String) -> Variant:
 
 ##  The art for a sprite: the skin's reshaped one if it has it, else the stock one.
 static func art_for(id: String, skin = null) -> Variant:
-	var _q0 = SkinsIndex.SKIN_ART.get(skin)
-	return TS.nn_f((((null if _q0 == null else (null if _q0.get("proj") == null else _q0.get("proj").get(id))) if (null if _q0 == null else (null if _q0.get("proj") == null else _q0.get("proj").get(id))) != null else usable_shot(id, skin)) if skin else null), func(): return (null if ((id == "lantern") or (id == "lanternCharge")) or (id == "core") else ART.get(id)))
+	return TS.nn_f((((null if SkinsIndex.SKIN_ART.get(skin) == null else (null if SkinsIndex.SKIN_ART.get(skin).get("proj") == null else SkinsIndex.SKIN_ART.get(skin).get("proj").get(id))) if (null if SkinsIndex.SKIN_ART.get(skin) == null else (null if SkinsIndex.SKIN_ART.get(skin).get("proj") == null else SkinsIndex.SKIN_ART.get(skin).get("proj").get(id))) != null else usable_shot(id, skin)) if skin else null), func(): return (null if ((id == "lantern") or (id == "lanternCharge")) or (id == "core") else ART.get(id)))
 
 ##  Whether a sprite is a usable item thrown in its skin (its materials are the item's, not swapped by name).
 static func is_usable_shot(id: String, skin = null) -> bool:
-	var _q0 = SkinsIndex.SKIN_ART.get(skin)
-	return (((not (not skin)) and ((null if _q0 == null else (null if _q0.get("proj") == null else _q0.get("proj").get(id))) == null)) and (not (not (usable_shot(id, skin) != null))))
+	return (((not (not skin)) and ((null if SkinsIndex.SKIN_ART.get(skin) == null else (null if SkinsIndex.SKIN_ART.get(skin).get("proj") == null else SkinsIndex.SKIN_ART.get(skin).get("proj").get(id))) == null)) and (not (not (usable_shot(id, skin) != null))))
 
 ##  Whether a skin reshapes this sprite.
 static func skin_draws(id: String, skin = null) -> bool:
-	var _q0 = SkinsIndex.SKIN_ART.get(skin)
-	return ((not (not skin)) and (not ((null if _q0 == null else (null if _q0.get("proj") == null else _q0.get("proj").get(id))) == null)))
+	return ((not (not skin)) and (not ((null if SkinsIndex.SKIN_ART.get(skin) == null else (null if SkinsIndex.SKIN_ART.get(skin).get("proj") == null else SkinsIndex.SKIN_ART.get(skin).get("proj").get(id))) == null)))
 
 ##  Whether a (rare) weapon skin recolours its thrown sprite: its `mats` name some of the stock sprite materials above.
 static func skin_tints(skin = null) -> bool:
@@ -319,9 +316,7 @@ static func proj_frames(id: String, skin = null) -> float:
 
 ##  Whether a skin's sprite plays its frames over the item's windup rather than on the clock.
 static func proj_timed(id: String, skin = null) -> bool:
-	var _q0 = SkinsIndex.SKIN_ART.get(skin)
-	var _q1 = _q0.get("proj")
-	return ((not (not skin)) and (not (not (null if _q0 == null else (null if _q1 == null else (null if _q1.get(id) == null else _q1.get(id).get("timed")))))))
+	return ((not (not skin)) and (not (not (null if SkinsIndex.SKIN_ART.get(skin) == null else (null if SkinsIndex.SKIN_ART.get(skin).get("proj") == null else (null if SkinsIndex.SKIN_ART.get(skin).get("proj").get(id) == null else SkinsIndex.SKIN_ART.get(skin).get("proj").get(id).get("timed")))))))
 
 ##  One projectile frame rasterized at `angle` (uncached; projSprite caches it as a canvas).
 static func proj_frame(id: String, frame: float, angle = null, skin = null) -> Variant:

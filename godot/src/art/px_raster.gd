@@ -115,7 +115,7 @@ class Raster extends RefCounted:
 		return materials.size()
 
 	func _skipped(handle: int) -> bool:
-		return skip != null and skip.has(materials[handle - 1])
+		return skip != null and TS.id_has(skip, materials[handle - 1])
 
 	func _bounds(box: Dictionary) -> PackedInt32Array:
 		var x0 := maxi(0, floori(box["x0"]) - 1)

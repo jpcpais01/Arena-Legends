@@ -131,8 +131,7 @@ static func recolor(pal, map, skin) -> Variant:
 
 ##  A skin's reshaped battle sprite, if it brings one.
 static func reshaped(id: String, skin) -> Variant:
-	var _q0 = SkinsIndex.SKIN_ART.get(skin)
-	return ((null if _q0 == null else (null if _q0.get("proj") == null else _q0.get("proj").get(id))) if skin else null)
+	return ((null if SkinsIndex.SKIN_ART.get(skin) == null else (null if SkinsIndex.SKIN_ART.get(skin).get("proj") == null else SkinsIndex.SKIN_ART.get(skin).get("proj").get(id))) if skin else null)
 
 ##  Sprites with a resting and a lit state: the first half of the frames rests, the second half is lit; `tick` animates either.
 static func pair_frame(art, on: bool, tick: float) -> float:

@@ -43,6 +43,11 @@ export const CONFIG: Config = {
     'character/entrances',
     'render/battleView',
     'character/profile',
+    'character/progress',
+    'patchnotes',
+    'render/icons',
+    'render/backdrops',
+    'ui/icons',
   ],
   manual: {
     'render/pixel/raster': { cls: 'PixelRaster' },
@@ -69,6 +74,12 @@ export const CONFIG: Config = {
     // Their frames bake straight to GPU sprites (Forge.bake_one).
     'render/projArt': ['projSprite', 'bottleSprite'],
     'render/specialArt': ['sprite', 'skinFrame'],
+    // Icons bake on the GPU in batches (GearIcons); crop only notes the square.
+    'render/icons': ['crop', 'iconCanvas'],
+    // Painted into an Image (Backdrops in src/ui).
+    'render/backdrops': ['backdropURL', 'applyBackdrop'],
+    // Glyph grids only; the UI draws them (src/ui/glyphs.gd).
+    'ui/icons': ['path', 'icon'],
   },
   rename: {
     'render/arena': { 'ArenaView.light': 'light__web' },

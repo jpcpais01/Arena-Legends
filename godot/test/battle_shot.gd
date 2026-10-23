@@ -19,6 +19,7 @@ func _initialize() -> void:
 	_scene = BattleScene.new()
 	_scene.seed_override = int(a[1]) if a.size() > 1 else 1234
 	_scene.arena_override = a[2] if a.size() > 2 else "isle"
+	_scene.auto = true
 	for i in range(3, a.size()): _times.append(float(a[i]))
 	if _times.is_empty(): _times = [3.0, 8.0]
 	root.add_child(_scene)

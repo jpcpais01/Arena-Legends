@@ -1112,8 +1112,7 @@ class Brain:
 			elif dist < (self.m["engage"] + 1):
 				val *= 0.5
 		# A storm mark of mine under them: anything that holds them there keeps them under the bolt.
-		var _q1 = ab.get("applies")
-		if (AiKit.has_control(ab) and (self.mark_on(b, e) != null)) and (((ab.get("stun") or ab.get("reel")) or ((null if ab.get("projectile") == null else ab.get("projectile").get("zone")) == "vortex")) or (null if _q1 == null else TS.some(_q1, (func(s, _a1 = null, _a2 = null): return ((s["status"] == "root") or (s["status"] == "chill")))))):
+		if (AiKit.has_control(ab) and (self.mark_on(b, e) != null)) and (((ab.get("stun") or ab.get("reel")) or ((null if ab.get("projectile") == null else ab.get("projectile").get("zone")) == "vortex")) or (null if ab.get("applies") == null else TS.some(ab.get("applies"), (func(s, _a1 = null, _a2 = null): return ((s["status"] == "root") or (s["status"] == "chill")))))):
 			val += 0.02 * p_hit
 			why = (why if why else "Pins them under the storm!")
 		# Magpie Mask: hit them while they're buffed and the buff is mine.

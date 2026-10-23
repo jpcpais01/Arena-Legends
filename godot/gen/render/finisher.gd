@@ -215,7 +215,7 @@ static func _init_defs():
 		var k: float = t - go
 		e.fall(("#ff9040" if k < 0.7 else "#2a1410"), (0.7 if k < 0.7 else maxf(0, 0.55 - ((k - 0.7) * 0.6))))
 	var _fn13 = func(e, g, v, layer: String, t: float):
-		var go: float = e.mark.get("erupt")
+		var go = e.mark.get("erupt")
 		var x: float = TS.round(v["sx"].call((e.mark.get("x") if e.mark.get("x") != null else e.F[0])))
 		var gy: float = TS.round(v["sy"].call(0))
 		if layer == "under":
@@ -481,10 +481,10 @@ static func _init_defs():
 			e.light({"kind": "rays", "x": e.mark.get("x"), "y": e.sky(0.7), "r0": 1, "r1": 2.4, "hi": 0xfff0c0, "lo": 0xc8901a, "life": plant - 0.2, "power": 0.45, "fin": 0.3})
 		if e.at(drop):
 			e.sound("entFall", 0.9)
-			var x: float = e.mark.get("x")
+			var x = e.mark.get("x")
 			e.light({"kind": "beam", "x": x, "y": 0, "r0": 9, "r1": 9, "w": 0.35, "rot": UP, "hi": 0xfff4c0, "lo": 0xffb040, "life": (plant - drop) + 0.3, "power": 0.7, "fin": 0.4})
 		if e.at(plant):
-			var x_2: float = e.mark.get("x")
+			var x_2 = e.mark.get("x")
 			e.sound("explosion")
 			e.sound("entSlam")
 			e.sound("shing", 0.8)

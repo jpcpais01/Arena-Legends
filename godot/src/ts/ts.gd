@@ -610,3 +610,15 @@ static func id_delete(m: Dictionary, k) -> bool:
 	if not id_has(m, k): return false
 	m.erase(_oid(k))
 	return true
+
+
+static var _res := {}
+
+
+## /pattern/.test(s), with the pattern compiled once.
+static func re_test(pattern: String, s) -> bool:
+	var re: RegEx = _res.get(pattern)
+	if re == null:
+		re = RegEx.create_from_string(pattern)
+		_res[pattern] = re
+	return re.search(str(s)) != null
