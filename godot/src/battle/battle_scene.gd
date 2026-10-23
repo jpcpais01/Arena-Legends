@@ -248,3 +248,7 @@ func _on_end(b) -> void:
 
 func _exit_tree() -> void:
 	if feed != null: feed.stop()
+	# Leaving the tree only happens on quit: no worker may still be drawing then.
+	if view != null and view.fighters != null:
+		for f in view.fighters: f["bank"].release()
+	ArenaCache.finish_all()

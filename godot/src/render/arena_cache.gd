@@ -54,6 +54,15 @@ static func _finish(key: String) -> void:
 	if job >= 0: WorkerThreadPool.wait_for_task_completion(job)
 
 
+## Waits for every arena still painting on a worker (the game is quitting: a
+## worker left running would outlive the scripts it runs).
+static func finish_all() -> void:
+	_lock.lock()
+	var keys := _jobs.keys()
+	_lock.unlock()
+	for k in keys: _finish(k)
+
+
 ## The view's arena parameters for a screen of w × h art px (BattleView.layout).
 static func params(w: float, h: float) -> Array:
 	var lift: float = TS.round(h * 0.1)
